@@ -1,0 +1,46 @@
+import { readFileSync } from "node:fs"
+import path from "node:path"
+import { describe, expect, it } from "vitest"
+import { DRAFT_UNNAMED_TITLE, displayTitle, isUnnamedTitle, titleForStorage } from "@/lib/creations"
+
+const read = (file: string) => readFileSync(path.resolve(__dirname, "..", file), "utf8")
+
+describe("unnamed draft titles", () => {
+  it("stores a marker that is not Tanpa judul or Untitled", () => {
+    expect(DRAFT_UNNAMED_TITLE).not.toBe("Tanpa judul")
+    expect(DRAFT_UNNAMED_TITLE).not.toBe("Untitled")
+    expect(isUnnamedTitle(DRAFT_UNNAMED_TITLE)).toBe(true)
+    expect(isUnnamedTitle("Tanpa judul")).toBe(true)
+    expect(isUnnamedTitle("Sky")).toBe(false)
+    expect(titleForStorage("")).toBe(DRAFT_UNNAMED_TITLE)
+    expect(titleForStorage("  Moon  ")).toBe("Moon")
+    expect(displayTitle("Tanpa judul", "id")).toBe("Belum dinamai")
+  })
+
+  it("keeps Create from writing the old untitled labels", () => {
+    const form = read("components/creations/StudioNewForm.tsx")
+    expect(form).toMatch(/DRAFT_UNNAMED_TITLE/)
+    expect(form).not.toMatch(/pixelUntitled/)
+  })
+
+  it("blocks publish without a real name in the playground and on the server", () => {
+    const playground = read("components/creations/PlaygroundForm.tsx")
+    const actions = read("features/creations/actions.ts")
+    expect(playground).toMatch(/requestPublish/)
+    expect(playground).toMatch(/worksNamePublishTitle/)
+    expect(playground).toMatch(/worksPublishDoneTitle/)
+    expect(playground).toMatch(/worksNamePlaceholder/)
+    expect(actions).toMatch(/title_required/)
+    expect(actions).toMatch(/isUnnamedTitle/)
+  })
+})
+
+describe("My Works delete", () => {
+  it("offers delete with confirmation on the work list", () => {
+    const dashboard = read("app/[lang]/(member)/dashboard/page.tsx")
+    const button = read("components/creations/WorksDeleteButton.tsx")
+    expect(dashboard).toMatch(/WorksDeleteButton/)
+    expect(button).toMatch(/deleteCreationAction/)
+    expect(button).toMatch(/createDeleteConfirm/)
+  })
+})

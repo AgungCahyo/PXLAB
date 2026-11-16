@@ -1,0 +1,293 @@
+# THE COMMONS — Redesign Blueprint
+
+**Dokumen:** REDESIGN-BLUEPRINT.md  
+**Tanggal:** 16 Nov 2026  
+**Sifat:** Rancangan pengalaman. Tidak mengubah kode pada tahap ini.
+
+Identitas visual tetap Classic Pixel Adventure. Jangan membuat kulit baru per halaman.
+
+Palet yang dipertahankan:
+
+| Token | Hex |
+|---|---|
+| Sky | `#59BCEB` |
+| Grass | `#45A849` |
+| Brick | `#E94B3C` |
+| Coin | `#FFD447` |
+| Earth | `#936037` |
+| Paper | `#FFFDF7` |
+| Ink | `#282B35` |
+
+Sudah dipetakan di `app/globals.css` sebagai `--sky`, `--grass`, `--brick`, `--coin`, `--earth`, `--bg`, `--fg`. Border 3px, bayangan keras, Press Start 2P untuk judul, DM Sans untuk isi. Satu aksen per kelompok. Karya pengguna tetap fokus; chrome tidak menambah pigura kedua pada kartu.
+
+---
+
+## 1. Layout per halaman
+
+### Beranda `/`
+
+Tujuan: tamu mengerti ini rumah pixel art dan melihat karya sungguhan.
+
+Susunan:
+
+1. Satu kalimat.
+2. Satu baris tombol: Jelajahi karya, dan Gabung atau Buat jika sudah masuk.
+3. Grid `CreationCard` karya pixel terbit (halaman pertama, paling banyak 6). Jika gagal atau kosong, jangan berpura-pura ada galeri. Satu kalimat “belum ada karya” dan tombol Jelajah sudah cukup.
+4. Dua kartu penjelasan yang sudah ada, di bawah karya.
+5. Ruang Bersama tetap satu baris redup ke `/space`.
+
+Bukan rumah anggota. Jangan redirect paksa.
+
+### Jelajah `/explore`
+
+Tujuan: menemukan karya.
+
+Susunan yang tetap: judul pendek, satu kalimat, filter, grid, paginasi, empty state, gagal-muat dengan coba lagi.
+
+Yang berubah:
+
+- Pixel adalah filter yang terlihat sebagai pilihan utama.
+- Tulisan, Visual, Ide, Cerita, dan Semua pindah ke satu kontrol “Jenis lain”, bukan lima tombol yang selalu setara. Mereka tidak hilang.
+- Kartu tetap gambar + satu baris kreator. Tidak ada angka apresiasi. Tidak ada urutan popularitas.
+
+### Buat `/create`
+
+Tujuan: mulai kanvas baru.
+
+Susunan:
+
+1. Judul “Karya baru”.
+2. Pemilih ukuran yang sudah ada (`StudioNewForm`), termasuk ukuran khusus dan tanda terpilih.
+3. Tindakan utama: Lanjut. Ini yang membuat draf dan membuka `/create/[id]`.
+4. Tautan teks sekunder: Kelola karya yang sudah ada → `/dashboard`.
+
+Tidak ada daftar karya di halaman ini.
+
+Judul tidak dikirim sebagai “Tanpa judul”. Draf baru boleh tanpa judul tersimpan, atau menyimpan string kosong jika kolom mengizinkan tanpa migrasi. Jika kolom judul di skema wajib dan tidak boleh kosong, simpan penanda internal yang **tidak** ditampilkan sebagai judul publik. Tampilan pengelola dan galeri memakai salinan “Belum dinamai” hanya untuk draf. Karya terbit tidak boleh memakai penanda itu. Irisan implementasi harus memilih opsi yang tidak mengubah skema. Opsi yang aman: jangan izinkan terbit sampai pengguna mengisi judul, dan selama draf, jangan menaruh “Tanpa judul” ke galeri karena draf memang tidak publik.
+
+### Playground `/create/[id]`
+
+Tujuan: menggambar, menyimpan, meninjau, menerbitkan.
+
+Yang tetap:
+
+- Kanvas penuh di bawah header situs.
+- Tab bawah dan footer disembunyikan.
+- Pensil, penghapus, geser, undo, redo, palet, pratinjau.
+- Autosave, kembali yang menyimpan dulu, peringatan menutup tab, peringatan offline lalu coba lagi saat online.
+- Hapus hanya dari dialog, dengan konfirmasi.
+- Lepas-terbit tidak menghapus source.
+
+Yang berubah:
+
+- Bidang judul terlihat: border 3px, placeholder “Nama karya”, bukan teks polos yang sudah terisi “Tanpa judul”.
+- Baris status tetap satu: Draf atau Terbit, keadaan simpan, ukuran.
+- Terbit, jika nama kosong, membuka dialog satu bidang. Setelah terbit, dialog singkat: Lihat karya, tetap di kanvas.
+- Kembali menuju `/dashboard`.
+- Menu Lainnya tetap untuk muat pas, zoom, lepas-terbit, lihat publik, hapus. Zoom tidak perlu jadi satu-satunya tempat “lihat publik” setelah tombol sukses ada.
+
+Studio jenis lama di URL yang sama tidak didesain ulang. Jangan jadikan itu jalur buat-baru.
+
+### My Works `/dashboard`
+
+Tujuan: melihat dan melanjutkan milik sendiri.
+
+Susunan:
+
+1. Judul “Karyamu”. Satu tautan Buat karya baru.
+2. Kelompok Draf, lalu kelompok Terbit. Kosong masing-masing punya satu kalimat, bukan halaman buntu.
+3. Baris atau kartu kecil: thumbnail pixel, nama atau “Belum dinamai”, tanggal, tindakan utama.
+   - Draf: Lanjutkan → `/create/[id]`
+   - Terbit: Lihat → `/creation/[id]`, ditambah Sunting → `/create/[id]`
+4. Jangan memakai `CreationCard` publik apa adanya, karena kartu itu menyembunyikan status. Boleh memakai `PixelArt` yang sama.
+
+Bukan sapaan. Bukan pengaturan. Bukan galeri orang lain.
+
+### Detail `/creation/[id]`
+
+Tujuan: melihat karya, lalu mengenali kreator, lalu menanggapi.
+
+Susunan baru, tanpa mengubah aturan percakapan:
+
+1. Gambar (`PixelArt`, `contain`, pixelated), selebar kolom baca.
+2. Judul satu baris yang bisa dibaca, bukan headline pixel yang mengalahkan gambar. Nama pixel besar boleh tinggal untuk judul halaman di beranda dan Jelajah.
+3. Kreator dan tanggal satu baris. Pemilik: Sunting karya ini.
+4. Apresiasi dan bagikan langsung di bawah meta. Teks tetap mendampingi ikon.
+5. Percakapan di bawahnya: jumlah, kosong, muat yang lebih lama, catatan, balasan satu tingkat, komposer yang tertutup sampai dibuka. Fork tetap untuk bukan-pemilik. Laporkan tetap ada.
+
+Jangan mengubah: apresiasi bukan komentar, balasan tidak bersarang lebih dari satu, komposer tidak menggantikan karya.
+
+### Profil `/u/[username]`
+
+Tujuan: etalase.
+
+Susunan yang tetap: `@username`, nama, bio, grid kartu yang sama dengan Jelajah.
+
+Tambahan hanya untuk pemilik:
+
+- Kelola karya (utama, sekunder secara visual)
+- Pengaturan
+- Keluar
+
+Bukan halaman pengikut. Bukan daftar draf.
+
+### Pengaturan `/settings`
+
+Tetap formulir. Kembali ke profil menyimpan dulu jika kotor. Tidak menambah navigasi kedua.
+
+### Masuk dan daftar
+
+Tetap singkat. Tidak menambah footer promosi. Setelah berhasil, hormati `next` internal; jika tidak ada, Jelajah.
+
+### Admin `/admin`
+
+Tetap alat laporan. Tidak masuk nav publik. Tetap lewat menu Akun bagi admin.
+
+### Ruang Bersama `/space`
+
+Jangan dijadikan tujuan produk. Biarkan di luar nav. Catatan beranda tetap satu baris. Papan SVG yang masih terpasang adalah warisan B5, bukan undangan untuk B6. Audit tidak meminta papan itu dihidupkan lebih lanjut dan tidak meminta dihapus.
+
+## 2. Komponen yang dipakai ulang
+
+Jangan membuat kartu galeri kedua.
+
+| Komponen | Pemakaian |
+|---|---|
+| `CreationCard` | Beranda, Jelajah, profil publik. |
+| `PixelArt` | Semua gambar pixel, termasuk baris My Works. |
+| `GallerySkeleton`, `EmptyState`, `Alert` | Muat, kosong, gagal, offline. |
+| `Button`, `Input`, `Dialog` | Tindakan, judul saat terbit, hapus. |
+| `StudioNewForm` | Hanya di `/create`. |
+| `PlaygroundForm` | Hanya di `/create/[id]` pixel. |
+| `CreationCommunity` | Hanya dipindah urutan visualnya. Perilaku tidak ditulis ulang. |
+| `SiteHeader`, `SiteNav`, `AppTabBar` | Chrome bersama. |
+
+My Works membutuhkan baris karya dengan status. Itu komposisi baru yang memakai `PixelArt`, bukan klon `CreationCard`.
+
+## 3. Navigasi
+
+### Desktop
+
+Header tetap setinggi sekarang, `z-50`.
+
+Terlihat: tanda, Jelajah, Buat, Profil, bahasa, Akun.
+
+Akun membuka panel: Kelola karya, Pengaturan, Admin bila ada, Keluar. Tutup dengan Escape dan klik luar, seperti sekarang.
+
+Tidak ada sidebar kiri atau kanan.
+
+Keadaan aktif: garis bawah Sky pada tujuan yang cocok, termasuk `/explore?type=…` untuk Jelajah dan `/create/[id]` tidak menandai Buat sebagai “sedang membuat” ketika studio menyembunyikan nav. My Works tidak ada di baris primer, jadi tidak perlu state di bar utama. Saat pengguna ada di `/dashboard`, tidak ada item primer yang berpura-pura aktif.
+
+### Ponsel
+
+Header: tanda dan bahasa saja.
+
+Tab bawah, `md:hidden`, tinggi tautan minimal 44px, tiga kolom: Jelajah, Buat, Profil. Profil tamu ke masuk dengan `next`.
+
+Padding bawah shell tetap agar hak cipta tidak tertutup tab. Studio menyembunyikan tab lewat `data-chrome="playground"`.
+
+Daftar `/create` dan `/dashboard` **tidak** memakai `data-chrome="studio"`, supaya footer dan tab berperilaku seperti halaman aplikasi lain. Hanya kanvas yang menyembunyikan chrome.
+
+### Kembali
+
+- Studio: tombol Kembali, menyimpan dulu, ke My Works.
+- Pengaturan: kembali ke profil, menyimpan dulu.
+- Detail, Jelajah, profil: tidak perlu tombol kembali tambahan. Nav dan riwayat browser cukup.
+- Dialog: Tutup atau Batal membuang hanya langkah itu (laporan yang belum terkirim, warna yang belum dipakai, teks yang belum ditempatkan, judul terbit yang dibatalkan). Karya yang sudah tersimpan tidak ikut terbuang.
+- Tidak ada breadcrumb. Kedalaman situs tidak memintanya.
+
+## 4. Iconography
+
+Prinsip: ikon untuk mengenali, teks untuk kejelasan.
+
+Library yang ada: `PixelIcon` 16×16, satu set pixel buatan sendiri. `lucide-react` hanya muncul di `SpaceBoard` (`PenLine`). Jangan menyebarkan Lucide ke chrome produk. Jangan menambah paket ikon.
+
+| Tempat | Ikon | Teks |
+|---|---|---|
+| Tab ponsel | Boleh ikon pixel kecil (grid, pensil, orang) **ditambah** label yang sudah ada. | Wajib tetap. |
+| Nav desktop | Tidak wajib. Tiga kata sudah jelas. | Wajib. |
+| Alat studio | Pensil, penghapus, geser, undo, redo, palet. Sudah icon-only dengan `aria-label` dan 44px. | Tidak diulang di ponsel. Di desktop lebar, tooltip tidak wajib karena nama aksesibel sudah ada. |
+| Apresiasi dan bagikan | Hati dan bagikan, seperti sekarang. | Wajib di samping ikon. |
+| Terbit, hapus, lepas-terbit, simpan | Tidak icon-only. | Wajib. |
+| Status simpan dan offline | Tidak diganti ikon. | Wajib. |
+| Tutup dialog | Ikon tutup dengan `aria-label`. | Tidak perlu kata di samping. |
+| Bahasa | Tetap ID \| EN. | Bukan ikon bendera. |
+
+`PixelIcon` sudah punya `menu`, `grid`, `flag`, `heart`, `share`, `back`, `star`. `menu` tidak lagi dipakai setelah hamburger dihapus. Jangan menghidupkan hamburger.
+
+Setiap tombol icon-only yang tetap: `aria-label` atau `<title>` yang terlihat oleh aksesibilitas, `:focus-visible` (sudah global, outline Sky), target minimal 44×44. Swatch 36px dinaikkan ke 44px pada irisan refinement.
+
+Jangan mengganti “Terbit”, “Hapus”, atau “Kelola karya” menjadi ikon.
+
+## 5. Design system
+
+Yang sudah sama di seluruh halaman dan harus dipertahankan:
+
+- Paper sebagai latar, Ink sebagai teks, Earth sebagai garis.
+- `.pixel-frame` untuk kartu dan dialog.
+- `.pixel-choice` dan `.pixel-swatch` untuk keadaan terpilih. Jangan kembali ke border Tailwind yang kalah oleh `.pixel-frame`.
+- Tombol primer Brick, sekunder Grass, outline Earth.
+- Fokus keyboard satu gaya.
+
+Yang tidak konsisten dan dirapikan, bukan diganti sistemnya:
+
+- Judul halaman galeri memakai `.pixel-title`. Judul di dalam detail karya tidak boleh sebesar itu di atas gambar.
+- `/create` menyembunyikan footer lewat atribut studio meskipun bukan kanvas.
+- Halaman sapaan dashboard memakai layout artikel, sementara tujuannya baru adalah daftar karya `max-w-6xl` seperti Jelajah.
+
+Tidak ada mode gelap, pill, atau komponen pelangi.
+
+## 6. Interaksi
+
+| Keadaan | Pola yang dipakai |
+|---|---|
+| Hover | Latar `--soft` pada kartu dan baris. Jangan menggeser layout. |
+| Aktif / terpilih | `aria-pressed` atau `aria-current`, garis Sky atau isi Brick yang sudah ada. |
+| Disabled | `opacity` dan `disabled`. Jangan hanya warna. |
+| Loading galeri | `GallerySkeleton` di dalam Suspense. |
+| Gagal muat | `EmptyState` + coba lagi ke URL yang sama. |
+| Sukses simpan studio | Teks status, bukan toast. |
+| Sukses terbit | Dialog singkat dengan jalan ke detail. Ini yang belum ada. |
+| Sukses pengaturan | `Alert` yang sudah ada. |
+| Error | `Alert` tone error, salinan dari `lib/copy.ts`. |
+| Offline | `Alert` `pixelOffline`, simpan ditahan, coba lagi saat `online`. |
+| Konfirmasi hapus | Dialog yang sudah ada. |
+| Tooltip | Tidak ditambah. Nama aksesibel cukup untuk alat. |
+| Dropdown | Hanya menu Akun. Tidak perlu komponen baru jika panel sekarang diperluas isinya. |
+| Modal | `Dialog` untuk palet, lainnya, hapus, dan nanti judul-saat-terbit. |
+| Keyboard | Fokus terlihat. Escape menutup menu dan dialog. |
+| Sentuh | 44px pada tab, alat, dan tombol utama. |
+
+Autosave 1200ms dan antrean simpan tetap. Kembali tidak boleh membuang goresan yang lebih baru. `beforeunload` tetap jika kotor atau masih menyimpan.
+
+## 7. Responsive
+
+| | Desktop ≥768 | Tablet | Ponsel 390 |
+|---|---|---|---|
+| Nav | Bilah atas lengkap + menu Akun | Sama dengan desktop begitu lebar ≥768 | Header tipis + tab bawah |
+| Grid karya | 3 kolom di `lg` | 2 kolom mulai `sm` | 1 kolom |
+| Detail | Gambar contain, kolom `max-w-5xl` | Sama, gambar tidak dipaksa penuh layar sampai terpotong | Gambar di atas judul |
+| Profil | Grid sama dengan Jelajah | Sama | Header lalu satu kolom |
+| Studio | Kanvas di antara header dan toolbar | Sama | Toolbar dua baris: alat, lalu palet yang bisa digeser. Tab disembunyikan |
+| My Works | Daftar longgar, thumbnail tetap kecil | Sama | Satu kolom, tindakan di dalam baris, bukan menu tersembunyi |
+| Dialog | Tengah, tidak lebih lebar dari layar | Sama | Lebar layar dikurangi padding, tombol bertumpuk |
+| Formulir | `max-w-xl` | Sama | Lebar penuh, label di atas field |
+
+Jangan mengecilkan desktop menjadi ponsel. Tab bawah bukan bilah atas yang diperkecil; isinya tiga tujuan yang sama.
+
+## 8. Salinan
+
+Semua teks baru masuk `lib/copy.ts` dalam ID dan EN. Jangan menaruh string Indonesia langsung di komponen.
+
+Istilah yang disarankan:
+
+| ID | EN | Dipakai untuk |
+|---|---|---|
+| Karyamu | Your works | My Works |
+| Belum dinamai | Not named yet | Draf tanpa judul |
+| Nama karya | Work name | Placeholder judul |
+| Karya baru | New work | Pintu Create |
+| Lihat karya | View work | Setelah terbit |
+| Kelola karya | Manage works | Tautan dari profil |
+
+“Tanpa judul” boleh tetap sebagai cadangan baca untuk data lama, bukan sebagai nilai yang ditulis form baru.

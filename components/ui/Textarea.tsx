@@ -1,0 +1,45 @@
+import type { ReactNode, TextareaHTMLAttributes } from "react"
+import { cn } from "@/lib/utils"
+
+type TextareaProps = TextareaHTMLAttributes<HTMLTextAreaElement> & {
+  label?: ReactNode
+  hint?: ReactNode
+  error?: ReactNode
+}
+
+export function Textarea({ className, label, hint, error, id, ...props }: TextareaProps) {
+  const describedBy = [hint ? `${id}-hint` : null, error ? `${id}-error` : null]
+    .filter(Boolean)
+    .join(" ") || undefined
+
+  return (
+    <div className="grid gap-1.5">
+      {label ? (
+        <label htmlFor={id} className="text-[14px] font-medium text-fg">
+          {label}
+        </label>
+      ) : null}
+      <textarea
+        id={id}
+        aria-invalid={error ? true : undefined}
+        aria-describedby={describedBy}
+        className={cn(
+          "min-h-28 w-full border-[3px] bg-bg px-3 py-2 text-[15px] text-fg placeholder:text-muted",
+          error ? "border-brick" : "border-earth",
+          className,
+        )}
+        {...props}
+      />
+      {hint ? (
+        <p id={id ? `${id}-hint` : undefined} className="text-[13px] text-muted">
+          {hint}
+        </p>
+      ) : null}
+      {error ? (
+        <p id={id ? `${id}-error` : undefined} className="text-[13px] text-brick" role="alert">
+          {error}
+        </p>
+      ) : null}
+    </div>
+  )
+}
