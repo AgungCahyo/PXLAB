@@ -9,6 +9,7 @@ import { DRAFT_UNNAMED_TITLE } from "@/lib/creations"
 import { copy, pixelSizePresetLabels } from "@/lib/copy"
 import type { Lang } from "@/lib/i18n"
 import {
+  formatPixelSize,
   PIXEL_CANVAS_MAX,
   PIXEL_CANVAS_MIN,
   PIXEL_DEFAULT_PRESET,
@@ -18,11 +19,11 @@ import {
 } from "@/lib/pixel"
 
 function SizePreview({ width, height }: { width: number; height: number }) {
-  const box = 80
+  const box = 96
   const w = Math.max(12, Math.round((width / PIXEL_CANVAS_MAX) * box))
   const h = Math.max(12, Math.round((height / PIXEL_CANVAS_MAX) * box))
   return (
-    <div className="flex h-24 items-center justify-center bg-soft">
+    <div className="flex h-28 items-center justify-center border-[3px] border-earth bg-soft">
       <div
         className="pixel-deco border-[3px] border-earth bg-card"
         style={{
@@ -58,9 +59,10 @@ export function StudioNewForm({ lang }: { lang: Lang }) {
   const rangeHint = copy.sizeRangeError[lang]
     .replaceAll("{min}", String(PIXEL_CANVAS_MIN))
     .replaceAll("{max}", String(PIXEL_CANVAS_MAX))
+  const sizeLabel = formatPixelSize(size.width, size.height)
 
   return (
-    <form action={action} className="grid gap-6 pb-36 md:pb-0">
+    <form action={action} className="grid gap-5 pb-36 md:pb-0">
       <input type="hidden" name="lang" value={lang} />
       <input type="hidden" name="type" value="pixel" />
       <input type="hidden" name="title" value={DRAFT_UNNAMED_TITLE} />
@@ -70,9 +72,16 @@ export function StudioNewForm({ lang }: { lang: Lang }) {
         <Alert tone="error">{copy.errors[state.error][lang]}</Alert>
       ) : null}
 
-      <p className="text-[15px] leading-relaxed text-muted">{copy.sizePickerIntro[lang]}</p>
+      <div>
+        <SizePreview width={size.width} height={size.height} />
+        <p className="mt-2 text-center text-[13px] text-muted">{sizeLabel}</p>
+      </div>
 
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+      <div
+        className="grid grid-cols-3 gap-2 sm:grid-cols-4"
+        role="group"
+        aria-label={copy.createTitle[lang]}
+      >
         {PIXEL_SIZE_PRESETS.map((item) => {
           const labels = pixelSizePresetLabels[item.id]
           const selected = preset === item.id
@@ -82,17 +91,10 @@ export function StudioNewForm({ lang }: { lang: Lang }) {
               type="button"
               onClick={() => setPreset(item.id)}
               aria-pressed={selected}
-              className="pixel-choice grid gap-2 p-3 text-left hover:bg-soft"
+              className="pixel-choice px-2 py-3 text-center text-[14px] font-medium hover:bg-soft"
             >
-              <SizePreview width={item.width} height={item.height} />
-              {selected ? (
-                <span className="pixel-kicker text-brick">{copy.sizeSelected[lang]}</span>
-              ) : null}
-              <span className="font-medium">{labels.name[lang]}</span>
-              <span className="text-[12px] text-muted">
-                {item.width} × {item.height}
-              </span>
-              <span className="text-[13px] leading-snug text-muted">{labels.use[lang]}</span>
+              {selected ? <span className="sr-only">{copy.sizeSelected[lang]}</span> : null}
+              {labels.name[lang]}
             </button>
           )
         })}
@@ -100,57 +102,53 @@ export function StudioNewForm({ lang }: { lang: Lang }) {
           type="button"
           onClick={() => setPreset("custom")}
           aria-pressed={preset === "custom"}
-          className="pixel-choice grid gap-2 p-3 text-left hover:bg-soft"
+          className="pixel-choice px-2 py-3 text-center text-[14px] font-medium hover:bg-soft"
         >
-          <SizePreview width={customWidth} height={customHeight} />
           {preset === "custom" ? (
-            <span className="pixel-kicker text-brick">{copy.sizeSelected[lang]}</span>
+            <span className="sr-only">{copy.sizeSelected[lang]}</span>
           ) : null}
-          <span className="font-medium">{copy.sizeCustom[lang]}</span>
-          <span className="text-[12px] text-muted">
-            {customWidth} × {customHeight}
-          </span>
-          <span className="text-[13px] leading-snug text-muted">{copy.sizeCustomHint[lang]}</span>
+          {copy.sizeCustom[lang]}
         </button>
       </div>
 
       {preset === "custom" ? (
-        <div className="grid gap-4 sm:grid-cols-2">
-          <Input
-            id="custom-width"
-            type="number"
-            min={PIXEL_CANVAS_MIN}
-            max={PIXEL_CANVAS_MAX}
-            label={copy.sizeWidth[lang]}
-            value={customWidth}
-            error={
-              customWidth < PIXEL_CANVAS_MIN || customWidth > PIXEL_CANVAS_MAX
-                ? rangeHint
-                : undefined
-            }
-            onChange={(event) => setCustomWidth(Number(event.target.value))}
-          />
-          <Input
-            id="custom-height"
-            type="number"
-            min={PIXEL_CANVAS_MIN}
-            max={PIXEL_CANVAS_MAX}
-            label={copy.sizeHeight[lang]}
-            value={customHeight}
-            error={
-              customHeight < PIXEL_CANVAS_MIN || customHeight > PIXEL_CANVAS_MAX
-                ? rangeHint
-                : undefined
-            }
-            onChange={(event) => setCustomHeight(Number(event.target.value))}
-          />
+        <div className="grid gap-3">
+          <p className="text-[13px] leading-snug text-muted">{copy.sizeCustomHint[lang]}</p>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Input
+              id="custom-width"
+              type="number"
+              min={PIXEL_CANVAS_MIN}
+              max={PIXEL_CANVAS_MAX}
+              label={copy.sizeWidth[lang]}
+              value={customWidth}
+              error={
+                customWidth < PIXEL_CANVAS_MIN || customWidth > PIXEL_CANVAS_MAX
+                  ? rangeHint
+                  : undefined
+              }
+              onChange={(event) => setCustomWidth(Number(event.target.value))}
+            />
+            <Input
+              id="custom-height"
+              type="number"
+              min={PIXEL_CANVAS_MIN}
+              max={PIXEL_CANVAS_MAX}
+              label={copy.sizeHeight[lang]}
+              value={customHeight}
+              error={
+                customHeight < PIXEL_CANVAS_MIN || customHeight > PIXEL_CANVAS_MAX
+                  ? rangeHint
+                  : undefined
+              }
+              onChange={(event) => setCustomHeight(Number(event.target.value))}
+            />
+          </div>
         </div>
       ) : null}
 
       <div className="fixed inset-x-0 bottom-[calc(4rem+env(safe-area-inset-bottom,0px))] z-30 border-t-[3px] border-earth bg-bg px-5 py-3 sm:px-8 lg:px-16 md:static md:bottom-auto md:z-auto md:border-0 md:bg-transparent md:p-0">
-        <p className="mb-2 text-[13px] text-muted md:sr-only">
-          {size.width} × {size.height}
-        </p>
+        <p className="mb-2 text-[13px] text-muted md:sr-only">{sizeLabel}</p>
         <Button
           type="submit"
           className="w-full md:w-auto"

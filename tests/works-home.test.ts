@@ -27,11 +27,29 @@ describe("Create and My Works stay separate", () => {
     expect(dashboard).not.toMatch(/dashboardHello/)
   })
 
+  it("links My Works back to the owner profile", () => {
+    expect(dashboard).toMatch(/worksBack/)
+    expect(dashboard).toMatch(/PixelIcon/)
+    expect(dashboard).toMatch(/\/u\/\$\{profile\.username\}/)
+  })
+
   it("links the owner profile and account menu to My Works", () => {
     expect(profile).toMatch(/\/dashboard/)
     expect(profile).toMatch(/nav\.dashboard/)
     expect(nav).toMatch(/\/dashboard/)
     expect(nav).toMatch(/nav\.dashboard/)
+  })
+
+  it("keeps a minimal public profile header with avatar and works grid", () => {
+    expect(profile).toMatch(/w-full min-w-0 max-w-6xl/)
+    expect(profile).toMatch(/ProfileAvatar/)
+    expect(profile).toMatch(/avatar_url/)
+    expect(profile).toMatch(/showAuthor=\{false\}/)
+    expect(profile).toMatch(/grid-cols-2 gap-3 lg:grid-cols-3 lg:gap-4 xl:grid-cols-4/)
+    expect(profile).toMatch(/nav\.dashboard/)
+    expect(profile).toMatch(/nav\.settings/)
+    expect(profile).not.toMatch(/memberSince/)
+    expect(profile).not.toMatch(/LogoutButton/)
   })
 
   it("returns delete to My Works", () => {

@@ -113,7 +113,7 @@ Sumber: `ARTWORK-METADATA-EXPLORE-AUDIT.md`. **Jangan mulai tanpa persetujuan ek
 | M4 Explore card hierarchy | P1 | Judul/username 2 baris; caption/tags; tanpa label ukuran; search tetap; paginasi X/Y; filter ukuran scroll di mobile — **selesai di kode** (lipat disclosure penuh = M7) |
 | M5 Filter `?tag=` | P2 | Query + UI filter ringkas; tanpa trending |
 | M6 Backfill color_usage | P2 | **Batch terkontrol** karya pixel published lama |
-| M7 Lipat filter ukuran mobile | P2 | Disclosure ukuran |
+| M7 Lipat filter ukuran mobile | P2 | Disclosure ukuran — **kode** (17 Nov 2026); search form stack + `min-w-0` anti-overflow |
 
 Keputusan produk terkunci: lihat tabel di `ARTWORK-METADATA-EXPLORE-AUDIT.md`.
 

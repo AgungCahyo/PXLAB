@@ -52,12 +52,9 @@ export default async function ExplorePage({
 
   return (
     <PageTransition>
-      <div className="mx-auto max-w-6xl px-5 py-10 sm:px-8 sm:py-12 lg:px-16">
+      <div className="mx-auto w-full min-w-0 max-w-6xl px-5 py-8 sm:px-8 sm:py-10 lg:px-16">
         <h1 className="pixel-title">{copy.exploreTitle[lang]}</h1>
-        <p className="mt-3 max-w-2xl text-[15px] leading-relaxed text-muted">
-          {copy.exploreIntro[lang]}
-        </p>
-        <div className="mt-8">
+        <div className="mt-5 min-w-0">
           <ExploreFilters lang={lang} category={category} q={q} />
           <Suspense fallback={<GallerySkeleton />}>
             <ExploreResults lang={lang} category={category} q={q} page={page} />

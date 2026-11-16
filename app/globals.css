@@ -17,6 +17,29 @@
   --shadow: 4px 4px 0 #282b35;
   --shadow-pressed: 1px 1px 0 #282b35;
   color-scheme: light;
+
+  /* DM Sans — informative UI */
+  --text-body: 0.9375rem; /* 15px */
+  --text-body-lh: 1.55;
+  --text-ui: 0.875rem; /* 14px */
+  --text-ui-lh: 1.45;
+  --text-meta: 0.8125rem; /* 13px */
+  --text-meta-lh: 1.45;
+  --text-small: 0.75rem; /* 12px */
+  --text-small-lh: 1.4;
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+
+  /* Press Start 2P — short titles / decorative only (never long copy) */
+  --pixel-title-size: clamp(1.05rem, 2.6vw, 1.35rem);
+  --pixel-title-lh: 1.5;
+  --pixel-title-ls: 0.06em;
+  --pixel-kicker-size: 0.625rem; /* 10px accents */
+  --pixel-kicker-lh: 1.6;
+  --pixel-kicker-ls: 0.08em;
+  --pixel-brand-size: 0.6875rem; /* 11px — nav mark floor */
+  --pixel-brand-lh: 1.35;
+  --pixel-brand-ls: 0.06em;
 }
 
 @theme inline {
@@ -46,7 +69,10 @@ html {
 body {
   background: var(--bg);
   color: var(--fg);
-  font-family: var(--font-sans);
+  font-family: var(--font-sans), system-ui, sans-serif;
+  font-size: var(--text-body);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--text-body-lh);
   -webkit-font-smoothing: antialiased;
 }
 
@@ -62,9 +88,10 @@ body:has([data-chrome="playground"]) .app-tabbar {
   display: none;
 }
 
-/* More canvas on phones: hide the global site header while the playground is open. */
+/* More canvas on phones: hide the global site header only (not the studio chrome). */
 @media (max-width: 767px) {
-  body:has([data-chrome="playground"]) header {
+  body.playground-open .site-header,
+  body:has([data-chrome="playground"]) .site-header {
     display: none;
   }
 }
@@ -132,26 +159,152 @@ body:has([data-chrome="playground"]) .app-tabbar {
   box-shadow: 3px 3px 0 0 var(--fg);
 }
 
+/* Short decorative label — never body copy */
 .pixel-kicker {
   font-family: var(--font-pixel), ui-monospace, monospace;
-  font-size: 0.625rem;
-  letter-spacing: 0.08em;
-  line-height: 1.6;
+  font-size: var(--pixel-kicker-size);
+  font-weight: 400;
+  letter-spacing: var(--pixel-kicker-ls);
+  line-height: var(--pixel-kicker-lh);
   color: var(--muted);
 }
 
+/* Page / section titles — short phrases only */
 .pixel-title {
   font-family: var(--font-pixel), ui-monospace, monospace;
-  font-size: clamp(1.05rem, 2.6vw, 1.4rem);
+  font-size: var(--pixel-title-size);
   font-weight: 400;
-  letter-spacing: 0.06em;
-  line-height: 1.5;
+  letter-spacing: var(--pixel-title-ls);
+  line-height: var(--pixel-title-lh);
+  color: var(--fg);
+  text-wrap: balance;
+}
+
+/* Brand mark in chrome (SITE_NAME) */
+.pixel-brand {
+  font-family: var(--font-pixel), ui-monospace, monospace;
+  font-size: var(--pixel-brand-size);
+  font-weight: 400;
+  letter-spacing: var(--pixel-brand-ls);
+  line-height: var(--pixel-brand-lh);
+  color: var(--fg);
+}
+
+/* User-generated or long headings stay on DM Sans */
+.page-heading-sans {
+  font-family: var(--font-sans), system-ui, sans-serif;
+  font-size: clamp(1.375rem, 2.4vw, 1.75rem); /* 22–28px */
+  font-weight: var(--font-weight-medium);
+  letter-spacing: -0.01em;
+  line-height: 1.25;
+  color: var(--fg);
+  text-wrap: balance;
 }
 
 .pixel-deco {
   image-rendering: pixelated;
   image-rendering: crisp-edges;
   shape-rendering: crispEdges;
+}
+
+/* Pixel World — Classic Pixel Adventure stage behind content */
+.pixel-world {
+  pointer-events: none;
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+}
+
+.pixel-world-sky {
+  position: absolute;
+  inset: 0;
+  background: #5c94fc;
+}
+
+.pixel-world-ground {
+  position: absolute;
+  inset: auto 0 0 0;
+  /* ~10% of stage height — matches SVG ground line y=180/200 with xMidYMax */
+  height: 10%;
+  min-height: 3.25rem;
+  background-color: #c84c0c;
+  background-image:
+    linear-gradient(#000 2px, transparent 2px),
+    linear-gradient(90deg, #000 2px, transparent 2px);
+  background-size: 32px 16px;
+  border-top: 4px solid #fcbcb0;
+  box-shadow: inset 0 4px 0 #000;
+}
+
+/* Soft paper band so body copy stays readable over the sky */
+.pixel-world-veil {
+  position: absolute;
+  inset: 4.5rem 0 10% 0;
+  background: linear-gradient(
+    180deg,
+    transparent 0%,
+    color-mix(in srgb, var(--bg) 82%, transparent) 8%,
+    color-mix(in srgb, var(--bg) 92%, transparent) 40%,
+    color-mix(in srgb, var(--bg) 92%, transparent) 70%,
+    color-mix(in srgb, var(--bg) 78%, transparent) 92%,
+    transparent 100%
+  );
+}
+
+@keyframes pixel-world-drift {
+  from {
+    translate: 0 0;
+  }
+  to {
+    translate: 12px 0;
+  }
+}
+
+@keyframes pixel-world-bob {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-4px);
+  }
+}
+
+@keyframes pixel-world-twinkle {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.3;
+  }
+}
+
+.pixel-world-drift-a {
+  animation: pixel-world-drift 28s ease-in-out infinite alternate;
+}
+
+.pixel-world-drift-b {
+  animation: pixel-world-drift 36s ease-in-out infinite alternate-reverse;
+}
+
+.pixel-world-drift-c {
+  animation: pixel-world-drift 44s ease-in-out infinite alternate;
+}
+
+.pixel-world-bob {
+  animation: pixel-world-bob 1.2s steps(3) infinite;
+}
+
+.pixel-world-twinkle {
+  animation: pixel-world-twinkle 1.5s steps(2) infinite;
+}
+
+body.playground-open .pixel-world,
+body:has([data-chrome="playground"]) .pixel-world,
+body:has([data-chrome="studio"]) .pixel-world {
+  display: none;
 }
 
 .pixel-mark {
@@ -317,6 +470,14 @@ body:has([data-chrome="playground"]) .app-tabbar {
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;
+  }
+
+  .pixel-world-bob,
+  .pixel-world-twinkle,
+  .pixel-world-drift-a,
+  .pixel-world-drift-b,
+  .pixel-world-drift-c {
+    animation: none !important;
   }
 
   *,

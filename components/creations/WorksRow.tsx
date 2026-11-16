@@ -9,7 +9,6 @@ import { captionForCard, displayTitle } from "@/lib/creations"
 import { copy, creationTypeLabels } from "@/lib/copy"
 import { formatDayMonthYear } from "@/lib/format"
 import { href, type Lang } from "@/lib/i18n"
-import { pixelCoverUrl } from "@/lib/site"
 import type { CreationCard } from "@/features/creations/queries"
 
 export function WorksRow({
@@ -24,7 +23,7 @@ export function WorksRow({
   const [removed, setRemoved] = useState(false)
   if (removed) return null
 
-  const cover = item.type === "pixel" ? item.cover_url || pixelCoverUrl(item.id) : null
+  const cover = item.type === "pixel" ? item.cover_url : null
   const statusLabel =
     item.status === "published"
       ? copy.createPublishedBadge[lang]

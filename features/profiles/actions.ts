@@ -3,20 +3,58 @@
 import { revalidatePath } from "next/cache"
 import { canEditProfile } from "@/lib/auth/permissions"
 import { getSessionUserId } from "@/lib/auth/session"
+import type { AuthErrorCode } from "@/lib/auth/errors"
 import { href, isLang, type Lang } from "@/lib/i18n"
+import {
+  AVATAR_BUCKET,
+  AVATAR_MAX_BYTES,
+  avatarObjectPath,
+  isAvatarMimeType,
+} from "@/lib/site"
 import { createServerSupabase } from "@/lib/supabase/server"
 import { parseProfileUpdate } from "@/lib/validations/profile"
-import type { AuthErrorCode } from "@/lib/auth/errors"
 
 export type ProfileActionState = { error: AuthErrorCode } | { ok: true } | null
+
+function langFromForm(formData: FormData): Lang {
+  return isLang(String(formData.get("lang") ?? "")) ? (formData.get("lang") as Lang) : "id"
+}
+
+type OwnProfileGate =
+  | { ok: true; userId: string; supabase: NonNullable<Awaited<ReturnType<typeof createServerSupabase>>>; username: string }
+  | { ok: false; error: AuthErrorCode }
+
+async function requireOwnProfile(): Promise<OwnProfileGate> {
+  const userId = await getSessionUserId()
+  if (!userId) return { ok: false, error: "not_authenticated" }
+
+  const supabase = await createServerSupabase()
+  if (!supabase) return { ok: false, error: "not_configured" }
+
+  const { data: existing } = await supabase
+    .from("profiles")
+    .select("id, username")
+    .eq("id", userId)
+    .maybeSingle()
+
+  if (!existing || !canEditProfile(userId, existing.id)) {
+    return { ok: false, error: "forbidden" }
+  }
+
+  return { ok: true, userId, supabase, username: existing.username as string }
+}
+
+function revalidateProfilePaths(lang: Lang, username: string) {
+  revalidatePath(href(lang, "/settings"))
+  revalidatePath(href(lang, `/u/${username}`))
+  revalidatePath(href(lang, "/dashboard"))
+}
 
 export async function updateProfileAction(
   _prev: ProfileActionState,
   formData: FormData,
 ): Promise<ProfileActionState> {
-  const lang: Lang = isLang(String(formData.get("lang") ?? ""))
-    ? (formData.get("lang") as Lang)
-    : "id"
+  const lang = langFromForm(formData)
 
   const parsed = parseProfileUpdate({
     username: formData.get("username"),
@@ -34,21 +72,9 @@ export async function updateProfileAction(
     return { error: "invalid_input" }
   }
 
-  const userId = await getSessionUserId()
-  if (!userId) return { error: "not_authenticated" }
-
-  const supabase = await createServerSupabase()
-  if (!supabase) return { error: "not_configured" }
-
-  const { data: existing } = await supabase
-    .from("profiles")
-    .select("id")
-    .eq("id", userId)
-    .maybeSingle()
-
-  if (!existing || !canEditProfile(userId, existing.id)) {
-    return { error: "forbidden" }
-  }
+  const gate = await requireOwnProfile()
+  if (!gate.ok) return { error: gate.error }
+  const { userId, supabase } = gate
 
   const { error } = await supabase
     .from("profiles")
@@ -66,8 +92,63 @@ export async function updateProfileAction(
     return { error: "invalid_input" }
   }
 
-  revalidatePath(href(lang, "/settings"))
-  revalidatePath(href(lang, `/u/${parsed.data.username}`))
-  revalidatePath(href(lang, "/dashboard"))
+  revalidateProfilePaths(lang, parsed.data.username)
+  return { ok: true }
+}
+
+export async function uploadAvatarAction(
+  _prev: ProfileActionState,
+  formData: FormData,
+): Promise<ProfileActionState> {
+  const lang = langFromForm(formData)
+  const gate = await requireOwnProfile()
+  if (!gate.ok) return { error: gate.error }
+  const { userId, supabase, username } = gate
+
+  const file = formData.get("avatar")
+  if (!(file instanceof File) || file.size === 0) return { error: "invalid_input" }
+  if (file.size > AVATAR_MAX_BYTES) return { error: "payload_too_large" }
+  if (!isAvatarMimeType(file.type)) return { error: "invalid_input" }
+
+  const path = avatarObjectPath(userId)
+  const uploaded = await supabase.storage.from(AVATAR_BUCKET).upload(path, file, {
+    upsert: true,
+    contentType: file.type,
+    cacheControl: "3600",
+  })
+  if (uploaded.error) return { error: "invalid_input" }
+
+  const { data: publicUrl } = supabase.storage.from(AVATAR_BUCKET).getPublicUrl(path)
+  const avatarUrl = `${publicUrl.publicUrl}?v=${Date.now()}`
+
+  const { error } = await supabase
+    .from("profiles")
+    .update({ avatar_url: avatarUrl })
+    .eq("id", userId)
+  if (error) return { error: "invalid_input" }
+
+  revalidateProfilePaths(lang, username)
+  return { ok: true }
+}
+
+export async function removeAvatarAction(
+  _prev: ProfileActionState,
+  formData: FormData,
+): Promise<ProfileActionState> {
+  const lang = langFromForm(formData)
+  const gate = await requireOwnProfile()
+  if (!gate.ok) return { error: gate.error }
+  const { userId, supabase, username } = gate
+
+  const path = avatarObjectPath(userId)
+  await supabase.storage.from(AVATAR_BUCKET).remove([path])
+
+  const { error } = await supabase
+    .from("profiles")
+    .update({ avatar_url: null })
+    .eq("id", userId)
+  if (error) return { error: "invalid_input" }
+
+  revalidateProfilePaths(lang, username)
   return { ok: true }
 }

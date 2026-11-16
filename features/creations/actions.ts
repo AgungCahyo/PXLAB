@@ -7,6 +7,7 @@ import { canForkCreation, canMutateCreation } from "@/lib/auth/permissions"
 import { getCurrentProfile, getSessionUserId } from "@/lib/auth/session"
 import { isUnnamedTitle } from "@/lib/creations"
 import { href, isLang, type Lang } from "@/lib/i18n"
+import { isVirginPixelDraft } from "@/lib/virgin-draft"
 import {
   PIXEL_SIZE_PRESETS,
   colorUsageFromSource,
@@ -479,6 +480,40 @@ export async function deleteCreationAction(formData: FormData) {
   const profile = await getCurrentProfile()
   revalidateCreation(lang, existing.id, profile?.username)
   redirect(href(lang, "/dashboard"))
+}
+
+/** Drop a never-saved pixel draft when the member leaves without painting or naming it. */
+export async function discardVirginPixelDraftAction(
+  creationId: string,
+  langRaw: string,
+): Promise<{ discarded: boolean }> {
+  const lang = isLang(langRaw) ? langRaw : "id"
+  const idResult = updateCreationSchema.shape.id.safeParse(creationId)
+  if (!idResult.success) return { discarded: false }
+
+  const userId = await getSessionUserId()
+  const existing = await getOwnedCreation(idResult.data)
+  if (!userId || !existing || !canMutateCreation(userId, existing.user_id)) {
+    return { discarded: false }
+  }
+  if (!isVirginPixelDraft(existing)) return { discarded: false }
+
+  await removePixelObjects(existing.user_id, existing.id)
+
+  const supabase = await createServerSupabase()
+  if (!supabase) return { discarded: false }
+
+  const { error } = await supabase
+    .from("creations")
+    .delete()
+    .eq("id", existing.id)
+    .eq("user_id", userId)
+
+  if (error) return { discarded: false }
+
+  const profile = await getCurrentProfile()
+  revalidateCreation(lang, existing.id, profile?.username)
+  return { discarded: true }
 }
 
 export async function updateAllowPngDownloadAction(

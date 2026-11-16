@@ -353,4 +353,5 @@ Tidak memblokir penulisan audit; memblokir **mulai D1**:
 
 ---
 
-**Status:** Audit + roadmap siap. **D1–D3 diimplementasikan di kode** (17 Nov 2026) setelah persetujuan eksplisit.
+**Status:** Audit + roadmap siap. **D1–D3 diimplementasikan di kode** (17 Nov 2026) setelah persetujuan eksplisit.  
+**Chrome mobile:** toolbar Playground memakai **2 baris kontrol** (tool full-width scroll + brush/symmetry/undo) agar tool D terlihat di ~390px — diperbaiki 17 Nov 2026 sebelum D4.

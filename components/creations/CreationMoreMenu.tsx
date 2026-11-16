@@ -108,7 +108,7 @@ export function CreationMoreMenu({
   if (variant === "embedded") return body
 
   return (
-    <div className="mt-4">
+    <div>
       <button
         type="button"
         aria-label={copy.pixelMore[lang]}

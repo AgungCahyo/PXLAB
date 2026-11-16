@@ -49,7 +49,7 @@ export function Dialog({
       }}
     >
       <div className="flex items-start justify-between gap-4 border-b border-line px-5 py-4">
-        <h2 id={titleId} className="font-pixel text-[13px] leading-relaxed">
+        <h2 id={titleId} className="pixel-title">
           {title}
         </h2>
         <button

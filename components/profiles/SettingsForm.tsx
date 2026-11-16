@@ -1,13 +1,22 @@
 "use client"
 
-import { useActionState, useEffect, useRef, useState } from "react"
+import { startTransition, useActionState, useEffect, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
+import { LogoutButton } from "@/components/auth/LogoutButton"
+import { LanguageSwitch } from "@/components/layout/LanguageSwitch"
+import { ProfileAvatar } from "@/components/profiles/ProfileAvatar"
 import { Alert } from "@/components/ui/Alert"
 import { Button } from "@/components/ui/Button"
 import { Input } from "@/components/ui/Input"
 import { PixelIcon } from "@/components/ui/PixelIcon"
 import { Textarea } from "@/components/ui/Textarea"
-import { updateProfileAction, type ProfileActionState } from "@/features/profiles/actions"
+import {
+  removeAvatarAction,
+  updateProfileAction,
+  uploadAvatarAction,
+  type ProfileActionState,
+} from "@/features/profiles/actions"
+import { prepareAvatarFile } from "@/lib/avatar-image"
 import type { MemberProfile } from "@/lib/auth/session"
 import { copy } from "@/lib/copy"
 import { href, type Lang } from "@/lib/i18n"
@@ -15,17 +24,42 @@ import { href, type Lang } from "@/lib/i18n"
 export function SettingsForm({ lang, profile }: { lang: Lang; profile: MemberProfile }) {
   const router = useRouter()
   const formRef = useRef<HTMLFormElement>(null)
+  const fileRef = useRef<HTMLInputElement>(null)
   const dirtyRef = useRef(false)
   const [leaving, setLeaving] = useState(false)
   const [leaveError, setLeaveError] = useState<ProfileActionState>(null)
+  const [preview, setPreview] = useState<string | null>(null)
+  const [preparing, setPreparing] = useState(false)
+  const [compressError, setCompressError] = useState(false)
   const [state, action, pending] = useActionState<ProfileActionState, FormData>(
     updateProfileAction,
+    null,
+  )
+  const [uploadState, uploadAction, uploadPending] = useActionState<ProfileActionState, FormData>(
+    uploadAvatarAction,
+    null,
+  )
+  const [removeState, removeAction, removePending] = useActionState<ProfileActionState, FormData>(
+    removeAvatarAction,
     null,
   )
 
   useEffect(() => {
     if (state && "ok" in state) dirtyRef.current = false
   }, [state])
+
+  useEffect(() => {
+    if ((uploadState && "ok" in uploadState) || (removeState && "ok" in removeState)) {
+      setPreview(null)
+      if (fileRef.current) fileRef.current.value = ""
+    }
+  }, [uploadState, removeState])
+
+  useEffect(() => {
+    return () => {
+      if (preview) URL.revokeObjectURL(preview)
+    }
+  }, [preview])
 
   useEffect(() => {
     const warn = (event: BeforeUnloadEvent) => {
@@ -58,71 +92,168 @@ export function SettingsForm({ lang, profile }: { lang: Lang; profile: MemberPro
     router.push(href(lang, `/u/${username}`))
   }
 
+  const avatarSrc = preview ?? profile.avatar_url
+  const avatarBusy = preparing || uploadPending || removePending
+  const avatarError =
+    uploadState && "error" in uploadState
+      ? uploadState
+      : removeState && "error" in removeState
+        ? removeState
+        : null
+
+  async function onAvatarPicked(file: File) {
+    setCompressError(false)
+    setPreparing(true)
+    if (preview) URL.revokeObjectURL(preview)
+    const prepared = await prepareAvatarFile(file)
+    if (!prepared) {
+      setPreview(null)
+      setCompressError(true)
+      setPreparing(false)
+      if (fileRef.current) fileRef.current.value = ""
+      return
+    }
+    const nextPreview = URL.createObjectURL(prepared)
+    setPreview(nextPreview)
+    const data = new FormData()
+    data.set("lang", lang)
+    data.set("avatar", prepared)
+    startTransition(() => {
+      uploadAction(data)
+    })
+    setPreparing(false)
+    if (fileRef.current) fileRef.current.value = ""
+  }
+
   return (
-    <form
-      ref={formRef}
-      action={action}
-      className="mt-8 grid max-w-xl gap-4"
-      onChange={() => {
-        dirtyRef.current = true
-      }}
-    >
-      <button
-        type="button"
-        onClick={() => void leave()}
-        disabled={leaving || pending}
-        aria-busy={leaving || undefined}
-        className="inline-flex h-11 w-fit items-center gap-2 border-[3px] border-earth bg-card px-3 text-[14px] font-medium disabled:opacity-50"
+    <div className="mt-6 grid max-w-xl gap-8">
+      <section className="grid gap-3" aria-labelledby="avatar-heading">
+        <h2 id="avatar-heading" className="text-[15px] font-medium text-fg">
+          {copy.avatarPhotoLabel[lang]}
+        </h2>
+        <p className="text-[13px] text-muted">{copy.avatarPhotoHint[lang]}</p>
+        <div className="flex items-center gap-3">
+          <ProfileAvatar
+            src={avatarSrc}
+            alt={profile.display_name ?? profile.username}
+            size="sm"
+          />
+          <div className="flex min-w-0 flex-wrap gap-2">
+            <div className="contents">
+              <input
+                ref={fileRef}
+                id="avatar"
+                name="avatar"
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                className="sr-only"
+                disabled={avatarBusy}
+                onChange={(event) => {
+                  const file = event.target.files?.[0]
+                  if (!file) return
+                  void onAvatarPicked(file)
+                }}
+              />
+              <Button
+                type="button"
+                size="sm"
+                variant="secondary"
+                disabled={avatarBusy}
+                onClick={() => fileRef.current?.click()}
+              >
+                {preparing || uploadPending
+                  ? copy.avatarUploading[lang]
+                  : copy.avatarChooseFile[lang]}
+              </Button>
+            </div>
+            {profile.avatar_url || preview ? (
+              <form action={removeAction}>
+                <input type="hidden" name="lang" value={lang} />
+                <Button
+                  type="submit"
+                  size="sm"
+                  variant="ghost"
+                  disabled={avatarBusy}
+                  aria-busy={removePending || undefined}
+                >
+                  {removePending ? copy.avatarRemoving[lang] : copy.avatarRemove[lang]}
+                </Button>
+              </form>
+            ) : null}
+          </div>
+        </div>
+        {compressError ? <Alert tone="error">{copy.avatarCompressFailed[lang]}</Alert> : null}
+        {avatarError ? <Alert tone="error">{copy.errors[avatarError.error][lang]}</Alert> : null}
+      </section>
+
+      <form
+        ref={formRef}
+        action={action}
+        className="grid gap-4"
+        onChange={() => {
+          dirtyRef.current = true
+        }}
       >
-        <PixelIcon name="back" />
-        {leaving ? copy.settingsSaving[lang] : copy.settingsBack[lang]}
-      </button>
-      {leaveError && "error" in leaveError ? (
-        <Alert tone="error">{copy.errors[leaveError.error][lang]}</Alert>
-      ) : null}
-      <input type="hidden" name="lang" value={lang} />
-      {state && "error" in state ? (
-        <Alert tone="error">{copy.errors[state.error][lang]}</Alert>
-      ) : null}
-      {state && "ok" in state ? <Alert tone="info">{copy.settingsSaved[lang]}</Alert> : null}
-      <Input
-        id="displayName"
-        name="displayName"
-        type="text"
-        required
-        maxLength={50}
-        defaultValue={profile.display_name ?? ""}
-        label={copy.displayNameLabel[lang]}
-      />
-      <Input
-        id="username"
-        name="username"
-        type="text"
-        required
-        minLength={3}
-        maxLength={20}
-        defaultValue={profile.username}
-        label={copy.usernameLabel[lang]}
-        hint={copy.usernameHint[lang]}
-      />
-      <Textarea
-        id="bio"
-        name="bio"
-        maxLength={280}
-        defaultValue={profile.bio ?? ""}
-        label={copy.bioLabel[lang]}
-      />
-      <Input
-        id="role"
-        type="text"
-        readOnly
-        value={profile.role}
-        label={copy.roleLabel[lang]}
-        hint={copy.roleHint[lang]}
-      />
-      <Button type="submit" disabled={pending || leaving} aria-busy={pending || undefined}>
-        {pending ? copy.settingsSaving[lang] : copy.settingsSave[lang]}
-      </Button>
-    </form>
+        <button
+          type="button"
+          onClick={() => void leave()}
+          disabled={leaving || pending}
+          aria-busy={leaving || undefined}
+          className="inline-flex h-11 w-fit items-center gap-2 border-[3px] border-earth bg-card px-3 text-[14px] font-medium disabled:opacity-50"
+        >
+          <PixelIcon name="back" />
+          {leaving ? copy.settingsSaving[lang] : copy.settingsBack[lang]}
+        </button>
+        {leaveError && "error" in leaveError ? (
+          <Alert tone="error">{copy.errors[leaveError.error][lang]}</Alert>
+        ) : null}
+        <input type="hidden" name="lang" value={lang} />
+        {state && "error" in state ? (
+          <Alert tone="error">{copy.errors[state.error][lang]}</Alert>
+        ) : null}
+        {state && "ok" in state ? <Alert tone="info">{copy.settingsSaved[lang]}</Alert> : null}
+        <Input
+          id="displayName"
+          name="displayName"
+          type="text"
+          required
+          maxLength={50}
+          defaultValue={profile.display_name ?? ""}
+          label={copy.displayNameLabel[lang]}
+        />
+        <Input
+          id="username"
+          name="username"
+          type="text"
+          required
+          minLength={3}
+          maxLength={20}
+          defaultValue={profile.username}
+          label={copy.usernameLabel[lang]}
+          hint={copy.usernameHint[lang]}
+        />
+        <Textarea
+          id="bio"
+          name="bio"
+          maxLength={280}
+          defaultValue={profile.bio ?? ""}
+          label={copy.bioLabel[lang]}
+        />
+        <Button type="submit" disabled={pending || leaving} aria-busy={pending || undefined}>
+          {pending ? copy.settingsSaving[lang] : copy.settingsSave[lang]}
+        </Button>
+      </form>
+
+      <div className="grid gap-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <p className="text-[14px] font-medium text-fg">{copy.settingsLanguage[lang]}</p>
+          <LanguageSwitch lang={lang} />
+        </div>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <p className="text-[14px] font-medium text-fg">{copy.nav.signOut[lang]}</p>
+          <LogoutButton lang={lang} />
+        </div>
+      </div>
+    </div>
   )
 }

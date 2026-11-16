@@ -101,9 +101,9 @@ async function LandingWorks({ lang }: { lang: Lang }) {
   const items = result.items.slice(0, 6)
   if (result.failed || items.length === 0) return null
   return (
-    <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+    <ul className="grid grid-cols-2 gap-3 lg:grid-cols-3 lg:gap-4 xl:grid-cols-4">
       {items.map((item) => (
-        <li key={item.id}>
+        <li key={item.id} className="min-w-0">
           <CreationCard creation={item} lang={lang} />
         </li>
       ))}

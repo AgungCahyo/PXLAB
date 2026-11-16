@@ -23,7 +23,7 @@ function FilterLink({
       href={to}
       aria-current={selected ? "page" : undefined}
       className={cn(
-        "inline-flex min-h-11 items-center border-[3px] px-4 text-[14px]",
+        "inline-flex min-h-11 items-center border-[3px] px-3 text-[14px]",
         "whitespace-nowrap",
         selected
           ? "border-earth bg-brick text-white shadow-[4px_4px_0_0_var(--fg)]"
@@ -32,6 +32,38 @@ function FilterLink({
     >
       {label}
     </Link>
+  )
+}
+
+function SizeFilterList({
+  lang,
+  category,
+  q,
+}: {
+  lang: Lang
+  category: ExploreCategoryFilter
+  q: string
+}) {
+  const base = { category, q }
+  return (
+    <ul className="flex w-full min-w-0 flex-nowrap gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] sm:flex-wrap sm:overflow-visible [&::-webkit-scrollbar]:hidden">
+      <li className="shrink-0">
+        <FilterLink
+          href={exploreHref(lang, { ...base, category: "all", page: 1 })}
+          selected={category === "all"}
+          label={copy.categoryAll[lang]}
+        />
+      </li>
+      {CREATION_CATEGORIES.map((item) => (
+        <li key={item} className="shrink-0">
+          <FilterLink
+            href={exploreHref(lang, { ...base, category: item, page: 1 })}
+            selected={category === item}
+            label={creationCategoryLabels[item][lang]}
+          />
+        </li>
+      ))}
+    </ul>
   )
 }
 
@@ -44,61 +76,58 @@ export function ExploreFilters({
   category: ExploreCategoryFilter
   q: string
 }) {
-  const base = { category, q }
+  const selectedSizeLabel =
+    category === "all" ? copy.categoryAll[lang] : creationCategoryLabels[category][lang]
 
   return (
-    <div className="mb-6 grid gap-4">
+    <div className="mb-5 grid min-w-0 gap-3">
       <form
         action={href(lang, "/explore")}
         method="get"
         role="search"
-        className="flex flex-wrap items-end gap-2"
+        className="flex w-full min-w-0 gap-2"
       >
         {category !== "all" ? <input type="hidden" name="category" value={category} /> : null}
-        <label className="grid min-w-[min(100%,16rem)] flex-1 gap-1.5">
-          <span className="text-[14px] font-medium text-fg">{copy.exploreSearchLabel[lang]}</span>
-          <span className="relative block">
-            <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-muted">
-              <PixelIcon name="search" className="h-4 w-4" />
-            </span>
-            <input
-              type="search"
-              name="q"
-              defaultValue={q}
-              maxLength={EXPLORE_SEARCH_MAX}
-              placeholder={copy.exploreSearchPlaceholder[lang]}
-              className="min-h-11 w-full border-[3px] border-earth bg-bg py-2 pl-10 pr-3 text-[15px] text-fg placeholder:text-muted"
-            />
+        <label className="relative block min-w-0 flex-1">
+          <span className="sr-only">{copy.exploreSearchLabel[lang]}</span>
+          <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-muted">
+            <PixelIcon name="search" className="h-4 w-4" />
           </span>
+          <input
+            type="search"
+            name="q"
+            defaultValue={q}
+            maxLength={EXPLORE_SEARCH_MAX}
+            placeholder={copy.exploreSearchPlaceholder[lang]}
+            className="min-h-11 w-full min-w-0 border-[3px] border-earth bg-bg py-2 pl-10 pr-3 text-[15px] text-fg placeholder:text-muted"
+          />
         </label>
         <button
           type="submit"
-          className="inline-flex min-h-11 items-center border-[3px] border-earth bg-brick px-4 text-[14px] text-white"
+          className="inline-flex h-11 shrink-0 items-center justify-center border-[3px] border-earth bg-brick px-3 text-[14px] text-white sm:px-4"
         >
           {copy.exploreSearchSubmit[lang]}
         </button>
       </form>
 
-      <nav aria-label={copy.categoryAria[lang]}>
-        {/* Horizontal scroll on narrow viewports so size chips do not own the first screen (full fold = M7). */}
-        <ul className="flex flex-nowrap gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] sm:flex-wrap sm:overflow-visible [&::-webkit-scrollbar]:hidden">
-          <li className="shrink-0">
-            <FilterLink
-              href={exploreHref(lang, { ...base, category: "all", page: 1 })}
-              selected={category === "all"}
-              label={copy.categoryAll[lang]}
-            />
-          </li>
-          {CREATION_CATEGORIES.map((item) => (
-            <li key={item} className="shrink-0">
-              <FilterLink
-                href={exploreHref(lang, { ...base, category: item, page: 1 })}
-                selected={category === item}
-                label={creationCategoryLabels[item][lang]}
-              />
-            </li>
-          ))}
-        </ul>
+      <nav aria-label={copy.categoryAria[lang]} className="min-w-0 max-w-full">
+        <details className="group sm:hidden">
+          <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 border-[3px] border-earth bg-card px-3 text-[14px] font-medium text-fg [&::-webkit-details-marker]:hidden">
+            <span>
+              {copy.categoryFilterSummary[lang]}
+              <span className="ml-2 font-normal text-muted">· {selectedSizeLabel}</span>
+            </span>
+            <span className="text-muted transition group-open:rotate-180" aria-hidden="true">
+              ▾
+            </span>
+          </summary>
+          <div className="pt-2">
+            <SizeFilterList lang={lang} category={category} q={q} />
+          </div>
+        </details>
+        <div className="hidden min-w-0 sm:block">
+          <SizeFilterList lang={lang} category={category} q={q} />
+        </div>
       </nav>
     </div>
   )
@@ -127,17 +156,13 @@ export function ExploreGallery({
       : copy.exploreEmptyAll[lang]
 
   return (
-    <div className="grid gap-8">
+    <div className="grid min-w-0 gap-6">
       {items.length === 0 ? (
-        <EmptyState
-          icon={<PixelIcon name="grid" className="h-6 w-6" />}
-          title={copy.exploreEmptyTitle[lang]}
-          description={emptyDescription}
-        />
+        <EmptyState title={copy.exploreEmptyTitle[lang]} description={emptyDescription} />
       ) : (
-        <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <ul className="grid min-w-0 grid-cols-2 gap-3 lg:grid-cols-3 lg:gap-4 xl:grid-cols-4">
           {items.map((item) => (
-            <li key={item.id}>
+            <li key={item.id} className="min-w-0">
               <CreationCard creation={item} lang={lang} />
             </li>
           ))}

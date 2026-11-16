@@ -6,7 +6,9 @@ import { WorksRow } from "@/components/creations/WorksRow"
 import { PageTransition } from "@/components/layout/PageTransition"
 import { EmptyState } from "@/components/ui/EmptyState"
 import { buttonClassName } from "@/components/ui/Button"
+import { PixelIcon } from "@/components/ui/PixelIcon"
 import { listOwnCreations } from "@/features/creations/queries"
+import { getCurrentProfile } from "@/lib/auth/session"
 import { copy } from "@/lib/copy"
 import { href, isLang, type Lang } from "@/lib/i18n"
 import { pageMeta } from "@/lib/meta"
@@ -38,6 +40,8 @@ export default async function DashboardPage({
   if (!isLang(raw)) notFound()
   const lang = raw
   await connection()
+  const profile = await getCurrentProfile()
+  if (!profile) notFound()
   const own = await listOwnCreations()
   const drafts = own.filter((item) => item.status !== "published")
   const published = own.filter((item) => item.status === "published")
@@ -45,7 +49,14 @@ export default async function DashboardPage({
   return (
     <PageTransition>
       <div className="mx-auto max-w-6xl px-5 py-10 sm:px-8 sm:py-12 lg:px-16">
-        <div className="flex flex-wrap items-end justify-between gap-4">
+        <Link
+          href={href(lang, `/u/${profile.username}`)}
+          className="inline-flex h-11 w-fit items-center gap-2 border-[3px] border-earth bg-card px-3 text-[14px] font-medium"
+        >
+          <PixelIcon name="back" />
+          {copy.worksBack[lang]}
+        </Link>
+        <div className="mt-6 flex flex-wrap items-end justify-between gap-4">
           <div>
             <h1 className="pixel-title">{copy.worksTitle[lang]}</h1>
             <p className="mt-3 max-w-xl text-[15px] leading-relaxed text-muted">{copy.worksIntro[lang]}</p>

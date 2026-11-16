@@ -17,7 +17,7 @@
 | 3 | Perhitungan `color_usage` | **Saat publish** (bukan setiap draft save). Unpublish/draf boleh membiarkan snapshot lama atau `null` sampai publish berikutnya — lihat §5.3 |
 | 4 | Fork menyalin metadata? | **Tidak** — caption, tags, dan `color_usage` tidak disalin; usage dihitung ulang saat forker publish |
 | 5 | Search judul Explore | **Tetap** (P1-8 disetujui sebagai fitur yang ada; jangan perluas ke search global) |
-| 6 | Label ukuran di kartu | **Sembunyikan** dari `CreationCard` (Explore + profil). Filter ukuran di Explore tetap |
+| 6 | Label ukuran di kartu | **Tampilkan sekunder** di `CreationCard` (kecil, muted). Caption/tags tetap detail-only. Filter ukuran di Explore tetap |
 | 7 | Backfill karya lama | **Batch backfill terkontrol pada M6** (bukan lazy-on-view) |
 | 8 | Autosave Studio (metadata + pixel) | **Tidak ada server autosave** — judul, caption, hashtag, **dan goresan pixel** hanya lokal (+ `localStorage` untuk pemulihan). Kirim ke DB hanya pada **Simpan** eksplisit, leave→simpan, atau **Publish**. Publish commit metadata + pixel + hitung ulang `color_usage`. |
 
@@ -274,13 +274,12 @@ Alasan: tetap dekat karya (konteks visual), tidak di atas gambar, tidak mendoron
 ### 7.2 Hierarki kartu (target)
 
 1. Gambar karya (`PixelArt` thumb, `framed={false}` di dalam `pixel-frame` artikel — **satu** bingkai).
-2. Judul (baris 1, truncate).
-3. `@username` (baris 2, muted) — perbaiki P2-13.
-4. Caption ringkas 2 baris jika ada.
-5. Hashtag ringkas jika ada.
-6. Label ukuran (`category`): **tidak ditampilkan di kartu** (terkunci). Ukuran tetap tersedia lewat filter Explore dan meta detail bila berguna.
+2. Judul (truncate).
+3. `@username` (muted; disembunyikan di profil milik sendiri).
+4. Ukuran karya (`category`) sebagai meta sekunder kecil — **terkunci ulang 17 Nov 2026**.
+5. Caption & hashtag: **hanya di detail**, bukan di kartu.
 
-Kartu tanpa caption/tag: tinggi meta lebih pendek; grid tetap rata di sumbu gambar (tinggi thumb konsisten), meta boleh bervariasi ringan.
+Grid Explore/profil: **2 / lg:3 / xl:4** kolom (bukan masonry).
 
 ### 7.3 Filter
 

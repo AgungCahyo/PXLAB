@@ -3,7 +3,8 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { useEffect, useId, useRef, useState } from "react"
-import { LogoutButton } from "@/components/auth/LogoutButton"
+import { LanguageSwitch } from "@/components/layout/LanguageSwitch"
+import { ProfileAvatar } from "@/components/profiles/ProfileAvatar"
 import { buttonClassName } from "@/components/ui/Button"
 import { PixelIcon, type PixelIconName } from "@/components/ui/PixelIcon"
 import { copy } from "@/lib/copy"
@@ -12,7 +13,12 @@ import { loginHref, registerHref } from "@/lib/paths"
 import { NAV_ITEMS } from "@/lib/site"
 import { cn } from "@/lib/utils"
 
-export type NavMember = { username: string; displayName: string | null; isAdmin?: boolean } | null
+export type NavMember = {
+  username: string
+  displayName: string | null
+  avatarUrl?: string | null
+  isAdmin?: boolean
+} | null
 
 function useHere() {
   const pathname = usePathname() ?? "/"
@@ -26,7 +32,6 @@ export function SiteNav({ lang, member }: { lang: Lang; member: NavMember }) {
   const menuId = useId()
   const menuRef = useRef<HTMLDivElement>(null)
   const [accountOpen, setAccountOpen] = useState(false)
-  const other: Lang = lang === "id" ? "en" : "id"
   const authNext =
     here === "/" || here === "/login" || here === "/register" ? undefined : pathname
 
@@ -46,23 +51,9 @@ export function SiteNav({ lang, member }: { lang: Lang; member: NavMember }) {
     }
   }, [accountOpen])
 
-  const langSwitch = (
-    <a
-      href={href(other, here)}
-      hrefLang={other}
-      lang={other}
-      aria-label={other === "en" ? copy.switchToEn[lang] : copy.switchToId[lang]}
-      className="inline-flex h-10 min-w-[4.25rem] items-center justify-center gap-1.5 border-[3px] border-earth bg-card px-3 font-pixel text-[9px] tracking-wider hover:bg-soft"
-    >
-      <span className={lang === "id" ? "text-fg" : "text-muted"}>ID</span>
-      <span aria-hidden="true" className="h-3 w-px bg-line" />
-      <span className={lang === "en" ? "text-fg" : "text-muted"}>EN</span>
-    </a>
-  )
-
   const itemClass = (active: boolean) =>
     cn(
-      "inline-flex min-h-11 items-center px-3 text-[14px]",
+      "inline-flex min-h-11 items-center px-3 text-[14px] font-medium leading-snug",
       active ? "text-fg underline decoration-sky decoration-4 underline-offset-8" : "text-muted hover:text-fg",
     )
 
@@ -86,8 +77,14 @@ export function SiteNav({ lang, member }: { lang: Lang; member: NavMember }) {
           <Link
             href={href(lang, `/u/${member.username}`)}
             aria-current={isActive(`/u/${member.username}`) ? "page" : undefined}
-            className={itemClass(isActive(`/u/${member.username}`))}
+            className={cn(itemClass(isActive(`/u/${member.username}`)), "gap-2")}
           >
+            <ProfileAvatar
+              src={member.avatarUrl}
+              alt={member.displayName ?? member.username}
+              size="xs"
+              className="border-earth"
+            />
             {copy.nav.profile[lang]}
           </Link>
         ) : (
@@ -159,12 +156,16 @@ export function SiteNav({ lang, member }: { lang: Lang; member: NavMember }) {
                   {copy.nav.admin[lang]}
                 </Link>
               ) : null}
-              <LogoutButton lang={lang} className="w-full justify-start" />
             </div>
           ) : null}
         </div>
       ) : null}
-      <div className="ml-2">{langSwitch}</div>
+      {/* Members change language in Settings; guests keep the header switch. */}
+      {!member ? (
+        <div className="ml-2">
+          <LanguageSwitch lang={lang} className="h-10" />
+        </div>
+      ) : null}
     </div>
   )
 }
@@ -172,28 +173,34 @@ export function SiteNav({ lang, member }: { lang: Lang; member: NavMember }) {
 export function AppTabBar({ lang, member }: { lang: Lang; member: NavMember }) {
   const { pathname, isActive } = useHere()
   const items: {
+    key: string
     href: string
     label: string
     icon: PixelIconName
     active: boolean
+    avatar?: boolean
   }[] = [
     {
+      key: "explore",
       href: href(lang, "/explore"),
       label: copy.nav.explore[lang],
       icon: "grid",
       active: isActive("/explore"),
     },
     {
+      key: "create",
       href: member ? href(lang, "/create") : loginHref(lang, href(lang, "/create")),
       label: copy.nav.create[lang],
       icon: "pencil",
       active: isActive("/create"),
     },
     {
+      key: "profile",
       href: member ? href(lang, `/u/${member.username}`) : loginHref(lang, pathname),
       label: copy.nav.profile[lang],
       icon: "user",
       active: member ? isActive(`/u/${member.username}`) : false,
+      avatar: Boolean(member),
     },
   ]
 
@@ -205,7 +212,7 @@ export function AppTabBar({ lang, member }: { lang: Lang; member: NavMember }) {
     >
       <ul className="grid grid-cols-3">
         {items.map((item) => (
-          <li key={item.label}>
+          <li key={item.key}>
             <Link
               href={item.href}
               aria-current={item.active ? "page" : undefined}
@@ -214,7 +221,15 @@ export function AppTabBar({ lang, member }: { lang: Lang; member: NavMember }) {
                 item.active ? "text-fg" : "text-muted",
               )}
             >
-              <PixelIcon name={item.icon} className="h-4 w-4" />
+              {item.avatar && member ? (
+                <ProfileAvatar
+                  src={member.avatarUrl}
+                  alt={member.displayName ?? member.username}
+                  size="xs"
+                />
+              ) : (
+                <PixelIcon name={item.icon} className="h-4 w-4" />
+              )}
               <span
                 className={cn(
                   item.active && "underline decoration-sky decoration-4 underline-offset-4",

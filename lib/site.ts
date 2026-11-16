@@ -77,6 +77,23 @@ export const CREATION_CONTENT_JSON_MAX = 32_000;
 export const PIXEL_SOURCE_MAX_BYTES = 512 * 1024;
 export const PIXEL_PNG_MAX_BYTES = 512 * 1024;
 export const PIXEL_BUCKET = "pixel-creations";
+
+/** Profile photo storage (public bucket). */
+export const AVATAR_BUCKET = "avatars";
+export const AVATAR_MAX_BYTES = 512 * 1024;
+/** Longest edge after compress/resize for oversized uploads. */
+export const AVATAR_MAX_EDGE = 512;
+export const AVATAR_MIME_TYPES = ["image/jpeg", "image/png", "image/webp"] as const;
+export type AvatarMimeType = (typeof AVATAR_MIME_TYPES)[number];
+
+export function isAvatarMimeType(value: string): value is AvatarMimeType {
+  return (AVATAR_MIME_TYPES as readonly string[]).includes(value);
+}
+
+/** Fixed object key per member — upsert replaces the previous photo. */
+export function avatarObjectPath(userId: string) {
+  return `${userId}/avatar`;
+}
 export const CREATION_PER_MEMBER_MAX = 100;
 export const EXPLORE_PAGE_SIZE = 12;
 

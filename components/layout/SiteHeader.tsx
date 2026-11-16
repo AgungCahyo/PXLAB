@@ -11,7 +11,7 @@ export function SiteHeader({ lang, member }: { lang: Lang; member: NavMember }) 
   return (
     <>
       <header
-        className="fixed inset-x-0 top-0 z-50 border-b-[3px] border-earth bg-bg"
+        className="site-header fixed inset-x-0 top-0 z-50 border-b-[3px] border-earth bg-bg"
         style={{ viewTransitionName: "site-header" }}
       >
         <div className="h-1.5 bg-sky" aria-hidden="true" />
@@ -25,9 +25,7 @@ export function SiteHeader({ lang, member }: { lang: Lang; member: NavMember }) 
             className="flex min-h-11 items-center gap-2.5"
           >
             <CommonsMark />
-            <span className="font-pixel text-[10px] leading-none tracking-wide sm:text-[11px]">
-              {SITE_NAME}
-            </span>
+            <span className="pixel-brand">{SITE_NAME}</span>
           </Link>
           <SiteNav lang={lang} member={member} />
         </nav>

@@ -1,6 +1,7 @@
 export type ConversationAuthor = {
   username: string
   displayName: string | null
+  avatarUrl: string | null
 }
 
 export type ConversationNote = {

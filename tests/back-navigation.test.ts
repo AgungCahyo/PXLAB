@@ -16,6 +16,11 @@ describe("back and cancel keep unsaved work", () => {
     expect(playground).not.toMatch(/href=\{href\(lang, "\/create"\)\}/)
   })
 
+  it("discards never-saved virgin drafts on leave", () => {
+    expect(playground).toMatch(/discardVirginPixelDraftAction/)
+    expect(playground).toMatch(/isVirginPixelDraft/)
+  })
+
   it("guards site chrome navigation while the playground has unsaved work", () => {
     expect(playground).toMatch(/guardChromeNav/)
     expect(playground).toMatch(/app-tabbar/)
@@ -45,5 +50,21 @@ describe("back and cancel keep unsaved work", () => {
     expect(settings).toMatch(/settingsBack/)
     expect(settings).toMatch(/updateProfileAction/)
     expect(settings).toMatch(/beforeunload/)
+  })
+
+  it("keeps language switch and sign out on Settings, not profile chrome", () => {
+    const profile = read("app/[lang]/(public)/u/[username]/page.tsx")
+    const nav = read("components/layout/SiteNav.tsx")
+    expect(settings).toMatch(/LanguageSwitch/)
+    expect(settings).toMatch(/LogoutButton/)
+    expect(settings).toMatch(/settingsLanguage/)
+    expect(settings).toMatch(/ProfileAvatar/)
+    expect(settings).toMatch(/uploadAvatarAction/)
+    expect(settings).toMatch(/avatarChooseFile/)
+    expect(settings).not.toMatch(/settingsLanguageHint/)
+    expect(settings).not.toMatch(/roleLabel/)
+    expect(profile).not.toMatch(/LogoutButton/)
+    expect(nav).not.toMatch(/LogoutButton/)
+    expect(nav).toMatch(/!member[\s\S]*LanguageSwitch/)
   })
 })

@@ -8,16 +8,21 @@ import { createServerSupabase } from "@/lib/supabase/server"
 export type { ConversationNote, ConversationRoot }
 export type CommentRow = ConversationNote
 
-type ProfileEmbed = { username: string; display_name: string | null }
+type ProfileEmbed = {
+  username: string
+  display_name: string | null
+  avatar_url: string | null
+}
 
 const COMMENT_COLUMNS =
-  "id, user_id, creation_id, content, status, parent_id, created_at, updated_at, profiles (username, display_name)"
+  "id, user_id, creation_id, content, status, parent_id, created_at, updated_at, profiles (username, display_name, avatar_url)"
 
 function authorOf(row: { profiles?: ProfileEmbed | ProfileEmbed[] | null }) {
   const profile = Array.isArray(row.profiles) ? row.profiles[0] : row.profiles
   return {
     username: profile?.username ?? "member",
     displayName: profile?.display_name ?? null,
+    avatarUrl: profile?.avatar_url ?? null,
   }
 }
 
@@ -114,7 +119,7 @@ async function listConversationFlat(args: {
   total: number
 }): Promise<{ roots: ConversationRoot[]; total: number; hasEarlier: boolean }> {
   const legacyColumns =
-    "id, user_id, creation_id, content, status, created_at, profiles (username, display_name)"
+    "id, user_id, creation_id, content, status, created_at, profiles (username, display_name, avatar_url)"
   let query = args.supabase
     .from("comments")
     .select(legacyColumns)

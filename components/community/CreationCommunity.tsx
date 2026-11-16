@@ -3,6 +3,7 @@
 import { useActionState, useEffect, useRef, useState } from "react"
 import { flushSync } from "react-dom"
 import Link from "next/link"
+import { ProfileAvatar } from "@/components/profiles/ProfileAvatar"
 import { Alert } from "@/components/ui/Alert"
 import { Button } from "@/components/ui/Button"
 import { PixelIcon } from "@/components/ui/PixelIcon"
@@ -27,6 +28,12 @@ import { loginHref } from "@/lib/paths"
 import { COMMENT_BODY_MAX } from "@/lib/site"
 import { cn } from "@/lib/utils"
 
+export type CommunityMember = {
+  id: string
+  username: string
+  avatarUrl: string | null
+}
+
 export function CreationCommunity({
   lang,
   creationId,
@@ -48,7 +55,7 @@ export function CreationCommunity({
   hasEarlier: boolean
   appreciateCount?: number
   appreciated?: boolean
-  member: { id: string; username: string } | null
+  member: CommunityMember | null
   forkedFrom: string | null
   allowFork?: boolean
 }) {
@@ -98,7 +105,11 @@ export function CreationCommunity({
       created_at: posted.created_at,
       updated_at: posted.updated_at,
       status: "published",
-      author: { username: member?.username ?? "member", displayName: null },
+      author: {
+        username: member?.username ?? "member",
+        displayName: null,
+        avatarUrl: member?.avatarUrl ?? null,
+      },
     }
   }
 
@@ -330,15 +341,6 @@ export function CreationCommunity({
   )
 }
 
-function PixelMark({ username }: { username: string }) {
-  const letter = (username.trim()[0] ?? "?").toUpperCase()
-  return (
-    <span className="pixel-mark" aria-hidden>
-      {letter}
-    </span>
-  )
-}
-
 function ConversationNoteRow({
   lang,
   note,
@@ -353,7 +355,7 @@ function ConversationNoteRow({
 }: {
   lang: Lang
   note: ConversationNote
-  member: { id: string; username: string } | null
+  member: CommunityMember | null
   canReply: boolean
   sendStatus?: "sending" | "failed"
   onReply?: () => void
@@ -373,7 +375,11 @@ function ConversationNoteRow({
       className={cn("flex gap-3", sendStatus === "sending" && "opacity-80")}
       aria-busy={sendStatus === "sending" || undefined}
     >
-      <PixelMark username={note.author.username} />
+      <ProfileAvatar
+        src={note.author.avatarUrl}
+        alt={note.author.username}
+        size="xs"
+      />
       <div className="min-w-0 flex-1">
         <p className="text-[13px] text-muted">
           <Link href={href(lang, `/u/${note.author.username}`)} className="hover:text-fg">
@@ -451,7 +457,7 @@ function ConversationComposer({
 }: {
   lang: Lang
   creationId: string
-  member: { id: string; username: string }
+  member: CommunityMember
   parentId?: string
   replyTo?: string
   collapsed?: boolean
@@ -493,7 +499,11 @@ function ConversationComposer({
       parent_id: parentId ?? null,
       created_at: now,
       updated_at: now,
-      author: { username: member.username, displayName: null },
+      author: {
+        username: member.username,
+        displayName: null,
+        avatarUrl: member.avatarUrl,
+      },
     })
     setPending(true)
     setError(null)
@@ -518,7 +528,7 @@ function ConversationComposer({
       {parentId ? <input type="hidden" name="parent_id" value={parentId} /> : null}
       {error && "error" in error ? <Alert tone="error">{copy.errors[error.error][lang]}</Alert> : null}
       <div className="flex gap-3">
-        <PixelMark username={member.username} />
+        <ProfileAvatar src={member.avatarUrl} alt={member.username} size="xs" />
         <div className="min-w-0 flex-1">
           <Textarea
             id={parentId ? `reply-${parentId}` : "conversation-body"}
@@ -638,7 +648,7 @@ export function CreationEngagement({
   title: string
   appreciated: boolean
   appreciateCount: number
-  member: { id: string; username: string } | null
+  member: CommunityMember | null
 }) {
   return (
     <div className="flex flex-wrap items-center gap-2">

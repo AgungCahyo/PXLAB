@@ -1,33 +1,31 @@
 import Link from "next/link"
 import { ViewTransition } from "react"
 import { PixelArt } from "@/components/creations/PixelArt"
-import {
-  captionForCard,
-  displayTitle,
-  formatCreationTag,
-  tagsForCard,
-} from "@/lib/creations"
+import { displayTitle } from "@/lib/creations"
+import { creationCategoryLabels } from "@/lib/copy"
 import { href, type Lang } from "@/lib/i18n"
-import { pixelCoverUrl } from "@/lib/site"
 import type { CreationCard as CreationCardData } from "@/features/creations/queries"
 
 export function CreationCard({
   creation,
   lang,
   hrefPath,
+  showAuthor = true,
 }: {
   creation: CreationCardData
   lang: Lang
   hrefPath?: string
+  /** Hide @username on profile grids where the author is already known. */
+  showAuthor?: boolean
 }) {
   const path = hrefPath ?? `/creation/${creation.id}`
-  const cover =
-    creation.type === "pixel" ? creation.cover_url || pixelCoverUrl(creation.id) : null
-  const cardCaption = captionForCard(creation.caption)
-  const { visible: cardTags, more: moreTags } = tagsForCard(creation.tags)
+  const cover = creation.type === "pixel" ? creation.cover_url : null
+  const sizeLabel = creation.category
+    ? creationCategoryLabels[creation.category][lang]
+    : null
 
   return (
-    <article className="pixel-frame h-full bg-card">
+    <article className="pixel-frame h-full min-w-0 bg-card">
       <Link
         href={href(lang, path)}
         transitionTypes={["nav-forward"]}
@@ -40,19 +38,15 @@ export function CreationCard({
         ) : (
           <div className="pixel-thumb bg-soft" />
         )}
-        <div className="px-3 pt-2.5 pb-3">
-          <p className="truncate text-[14px] font-medium leading-snug text-fg">
+        <div className="px-2.5 pt-2 pb-2.5">
+          <p className="truncate text-[13px] font-medium leading-snug text-fg sm:text-[14px]">
             {displayTitle(creation.title, lang)}
           </p>
-          <p className="mt-0.5 truncate text-[13px] text-muted">@{creation.author.username}</p>
-          {cardCaption ? (
-            <p className="mt-1.5 line-clamp-2 text-[13px] leading-snug text-muted">{cardCaption}</p>
+          {showAuthor ? (
+            <p className="mt-0.5 truncate text-[12px] text-muted">@{creation.author.username}</p>
           ) : null}
-          {cardTags.length > 0 ? (
-            <p className="mt-1 truncate text-[12px] leading-snug text-muted">
-              {cardTags.map(formatCreationTag).join(" ")}
-              {moreTags > 0 ? ` +${moreTags}` : ""}
-            </p>
+          {sizeLabel ? (
+            <p className="mt-0.5 truncate text-[11px] leading-snug text-muted">{sizeLabel}</p>
           ) : null}
         </div>
       </Link>

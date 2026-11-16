@@ -7,6 +7,8 @@ import { copy } from "@/lib/copy"
 import { isLang } from "@/lib/i18n"
 import { pageMeta } from "@/lib/meta"
 
+export const instant = false
+
 export async function generateMetadata({
   params,
 }: {
@@ -36,11 +38,8 @@ export default async function SettingsPage({
   if (!profile) notFound()
 
   return (
-    <div className="mx-auto max-w-3xl px-5 py-16 sm:px-8 lg:px-16">
-      <h1 className="pixel-title">
-        {copy.settingsTitle[lang]}
-      </h1>
-      <p className="mt-3 text-[15px] text-muted">{copy.settingsMeta[lang]}</p>
+    <div className="mx-auto w-full min-w-0 max-w-xl px-5 py-8 sm:px-8 sm:py-10">
+      <h1 className="pixel-title">{copy.settingsTitle[lang]}</h1>
       <SettingsForm lang={lang} profile={profile} />
     </div>
   )

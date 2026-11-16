@@ -20,12 +20,12 @@ export function CreationColorPalette({
 
   if (usage.length === 0) {
     return (
-      <section className="mt-6" aria-labelledby="color-palette-heading">
-        <h2 id="color-palette-heading" className="text-[15px] font-medium text-fg">
+      <section className="mt-4" aria-labelledby="color-palette-heading">
+        <h2 id="color-palette-heading" className="text-[14px] font-medium text-fg">
           {copy.colorPaletteTitle[lang]}
         </h2>
-        <p className="mt-1 text-[13px] text-muted">{copy.colorPaletteHint[lang]}</p>
-        <p className="mt-3 text-[14px] text-muted">{copy.colorPaletteEmpty[lang]}</p>
+        <p className="mt-0.5 text-[12px] text-muted">{copy.colorPaletteHint[lang]}</p>
+        <p className="mt-2 text-[13px] text-muted">{copy.colorPaletteEmpty[lang]}</p>
       </section>
     )
   }
@@ -45,14 +45,14 @@ export function CreationColorPalette({
   }
 
   return (
-    <section className="mt-6" aria-labelledby="color-palette-heading">
-      <h2 id="color-palette-heading" className="text-[15px] font-medium text-fg">
+    <section className="mt-4" aria-labelledby="color-palette-heading">
+      <h2 id="color-palette-heading" className="text-[14px] font-medium text-fg">
         {copy.colorPaletteTitle[lang]}
       </h2>
-      <p className="mt-1 text-[13px] text-muted">{copy.colorPaletteHint[lang]}</p>
+      <p className="mt-0.5 text-[12px] text-muted">{copy.colorPaletteHint[lang]}</p>
 
       <div
-        className="mt-3 flex h-3.5 w-full overflow-hidden border-[3px] border-earth sm:h-4"
+        className="mt-2 flex h-3 w-full overflow-hidden border-[3px] border-earth sm:h-3.5"
         role="img"
         aria-label={copy.colorPaletteTitle[lang]}
       >
@@ -70,13 +70,13 @@ export function CreationColorPalette({
         })}
       </div>
 
-      <ul className="mt-3 grid gap-1.5">
+      <ul className="mt-2 grid gap-1">
         {visible.map((entry, index) => {
           const pct = percents[index] ?? 0
           return (
-            <li key={`${entry.hex}-${index}`} className="flex items-center gap-3 text-[13px]">
+            <li key={`${entry.hex}-${index}`} className="flex items-center gap-2.5 text-[12px]">
               <span
-                className="h-4 w-4 shrink-0 border-[3px] border-earth"
+                className="h-3.5 w-3.5 shrink-0 border-[2px] border-earth"
                 style={{ backgroundColor: entry.hex }}
                 aria-hidden
               />
@@ -100,7 +100,7 @@ export function CreationColorPalette({
       {hasMore ? (
         <button
           type="button"
-          className="mt-3 text-[13px] font-medium text-fg underline-offset-2 hover:underline"
+          className="mt-2 text-[12px] font-medium text-fg underline-offset-2 hover:underline"
           onClick={() => setExpanded((value) => !value)}
         >
           {expanded ? copy.colorPaletteShowLess[lang] : copy.colorPaletteShowAll[lang]}

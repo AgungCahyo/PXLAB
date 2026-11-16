@@ -16,9 +16,11 @@ import { Dialog } from "@/components/ui/Dialog"
 import { PixelIcon } from "@/components/ui/PixelIcon"
 import {
   deleteCreationAction,
+  discardVirginPixelDraftAction,
   updatePixelCreationAction,
   type CreationActionState,
 } from "@/features/creations/actions"
+import { isVirginPixelDraft } from "@/lib/virgin-draft"
 import type { CreationRow } from "@/features/creations/queries"
 import {
   clearLocalCreationDraft,
@@ -33,6 +35,7 @@ import { displayTitle, isUnnamedTitle, titleForStorage } from "@/lib/creations"
 import { copy } from "@/lib/copy"
 import { href, type Lang } from "@/lib/i18n"
 import {
+  formatPixelSize,
   PIXEL_BRUSH_SIZES,
   PIXEL_INK,
   PIXEL_PALETTE,
@@ -322,10 +325,25 @@ export function PlaygroundForm({
   /** Explicit save only — no server autosave for pixels or metadata. */
   const saveExplicit = () => persist("draft", { commitMetadata: true })
 
+  const discardVirginIfNeeded = async () => {
+    if (!isVirginPixelDraft(creation)) return
+    clearLocalCreationDraft(creation.id)
+    try {
+      await discardVirginPixelDraftAction(creation.id, lang)
+    } catch {
+      /* navigation still proceeds; orphan draft can be deleted manually */
+    }
+  }
+
   const leave = async (dest = href(lang, "/dashboard")) => {
     leaveDestRef.current = dest
     window.clearTimeout(localSourceTimerRef.current)
     if (!hasUnsavedWork()) {
+      setLeaving(true)
+      leavingRef.current = true
+      await discardVirginIfNeeded()
+      setLeaving(false)
+      leavingRef.current = false
       router.push(dest)
       return
     }
@@ -359,9 +377,13 @@ export function PlaygroundForm({
     clearLocalCreationDraft(creation.id)
     setLeaveConfirmOpen(false)
     setLeaveBlockedOpen(false)
-    setLeaving(false)
-    leavingRef.current = false
-    router.push(leaveDestRef.current)
+    setLeaving(true)
+    leavingRef.current = true
+    void discardVirginIfNeeded().finally(() => {
+      setLeaving(false)
+      leavingRef.current = false
+      router.push(leaveDestRef.current)
+    })
   }
 
   const retryLeave = () => {
@@ -541,9 +563,9 @@ export function PlaygroundForm({
   return (
     <div
       data-chrome="playground"
-      className="fixed inset-x-0 bottom-0 top-0 z-40 flex flex-col overflow-hidden overscroll-none bg-bg md:top-[66px]"
+      className="fixed inset-x-0 bottom-0 top-0 z-[60] flex flex-col overflow-hidden overscroll-none bg-bg md:top-[66px]"
     >
-      <header className="grid shrink-0 grid-cols-[auto_1fr_auto] items-center gap-2 border-b-[3px] border-earth px-2 py-2 sm:px-3">
+      <header className="playground-header grid shrink-0 grid-cols-[auto_1fr_auto] items-center gap-2 border-b-[3px] border-earth bg-bg px-2 py-2 sm:px-3">
         <button
           type="button"
           onClick={() => void leave()}
@@ -580,7 +602,7 @@ export function PlaygroundForm({
             </span>
             <span aria-hidden="true">·</span>
             <span>
-              {width} × {height}
+              {formatPixelSize(width, height)}
             </span>
             <span aria-hidden="true">·</span>
             <span>{zoomLabel}</span>
@@ -593,21 +615,49 @@ export function PlaygroundForm({
               variant="outline"
               disabled={pending || leaving}
               aria-busy={(pending && busyIntent === "draft") || undefined}
+              aria-label={
+                pending && busyIntent === "draft" ? copy.pixelSaving[lang] : saveButtonLabel
+              }
               onClick={() => void saveExplicit()}
+              className="h-11 w-11 shrink-0 px-0 sm:w-auto sm:px-5"
             >
-              {pending && busyIntent === "draft" ? copy.pixelSaving[lang] : saveButtonLabel}
+              <PixelIcon name="save" />
+              <span className="hidden sm:inline">
+                {pending && busyIntent === "draft" ? copy.pixelSaving[lang] : saveButtonLabel}
+              </span>
             </Button>
           ) : null}
-          <Button type="button" variant="outline" onClick={() => void togglePreview()} disabled={pending}>
-            {preview ? copy.createEdit[lang] : copy.createPreview[lang]}
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => void togglePreview()}
+            disabled={pending}
+            aria-label={preview ? copy.createEdit[lang] : copy.createPreview[lang]}
+            className="h-11 w-11 shrink-0 px-0 sm:w-auto sm:px-5"
+          >
+            <PixelIcon name={preview ? "pencil" : "eye"} />
+            <span className="hidden sm:inline">
+              {preview ? copy.createEdit[lang] : copy.createPreview[lang]}
+            </span>
           </Button>
           <Button
             type="button"
             disabled={pending || leaving}
             aria-busy={(pending && busyIntent === "publish") || undefined}
+            aria-label={
+              pending && busyIntent === "publish"
+                ? copy.pixelPublishing[lang]
+                : copy.createPublish[lang]
+            }
             onClick={requestPublish}
+            className="h-11 w-11 shrink-0 px-0 sm:w-auto sm:px-5"
           >
-            {pending && busyIntent === "publish" ? copy.pixelPublishing[lang] : copy.createPublish[lang]}
+            <PixelIcon name="publish" />
+            <span className="hidden sm:inline">
+              {pending && busyIntent === "publish"
+                ? copy.pixelPublishing[lang]
+                : copy.createPublish[lang]}
+            </span>
           </Button>
         </div>
       </header>
@@ -675,83 +725,86 @@ export function PlaygroundForm({
       </div>
 
       <div className="playground-toolbar shrink-0 border-t-[3px] border-earth bg-card px-2 pt-2 sm:px-3">
-        <div className="flex items-center gap-2">
-          <div className="flex min-w-0 flex-1 items-center gap-1.5 overflow-x-auto pb-1">
-            {toolButton("pencil", "pencil", copy.pixelPencil[lang])}
-            {toolButton("eraser", "eraser", copy.pixelEraser[lang])}
-            {toolButton("select", "select", copy.pixelSelect[lang])}
-            {toolButton("fill", "fill", copy.pixelFill[lang])}
-            {toolButton("eyedropper", "eyedropper", copy.pixelEyedropper[lang])}
-            {toolButton("line", "line", copy.pixelLine[lang])}
-            {toolButton("rect", "rect", copy.pixelRect[lang])}
-            {toolButton("ellipse", "ellipse", copy.pixelEllipse[lang])}
-            {toolButton("pan", "pan", copy.pixelPan[lang])}
-          </div>
-          <div className="flex shrink-0 items-center gap-1.5">
-            <label className="sr-only" htmlFor="playground-brush">
-              {copy.pixelBrushSize[lang]}
-            </label>
-            <select
-              id="playground-brush"
-              aria-label={copy.pixelBrushSize[lang]}
-              value={brushSize}
-              onChange={(event) => setBrushSize(Number(event.target.value) as PixelBrushSize)}
-              className="h-11 border-[3px] border-earth bg-card px-2 text-[13px] font-medium text-fg"
-            >
-              {PIXEL_BRUSH_SIZES.map((size) => (
-                <option key={size} value={size}>
-                  {size}×
-                </option>
-              ))}
-            </select>
-            <label className="sr-only" htmlFor="playground-symmetry">
-              {copy.pixelSymmetry[lang]}
-            </label>
-            <select
-              id="playground-symmetry"
-              aria-label={copy.pixelSymmetry[lang]}
-              value={symmetry}
-              onChange={(event) => setSymmetry(event.target.value as PixelSymmetry)}
-              className="h-11 max-w-[7.5rem] border-[3px] border-earth bg-card px-2 text-[13px] font-medium text-fg"
-            >
-              <option value="off">{copy.pixelSymmetryOff[lang]}</option>
-              <option value="x">{copy.pixelSymmetryX[lang]}</option>
-              <option value="y">{copy.pixelSymmetryY[lang]}</option>
-              <option value="xy">{copy.pixelSymmetryXY[lang]}</option>
-            </select>
-            <button
-              type="button"
-              aria-label={copy.pixelGridToggle[lang]}
-              aria-pressed={gridVisible}
-              onClick={() => setGridVisible((value) => !value)}
-              className={cn(
-                "inline-flex h-11 w-11 items-center justify-center border-[3px]",
-                gridVisible ? "border-fg bg-soft text-fg" : "border-earth bg-card text-fg",
-              )}
-            >
-              <PixelIcon name="grid" />
-            </button>
-            <button
-              type="button"
-              aria-label={copy.pixelUndo[lang]}
-              disabled={!history.canUndo}
-              onClick={() => boardRef.current?.undo()}
-              className="inline-flex h-11 w-11 items-center justify-center border-[3px] border-earth bg-card text-fg disabled:opacity-40"
-            >
-              <PixelIcon name="undo" />
-            </button>
-            <button
-              type="button"
-              aria-label={copy.pixelRedo[lang]}
-              disabled={!history.canRedo}
-              onClick={() => boardRef.current?.redo()}
-              className="inline-flex h-11 w-11 items-center justify-center border-[3px] border-earth bg-card text-fg disabled:opacity-40"
-            >
-              <PixelIcon name="redo" />
-            </button>
-            <button
-              type="button"
-              aria-label={copy.pixelMore[lang]}
+        <div
+          className="flex w-full items-center gap-1.5 overflow-x-auto pb-1"
+          role="toolbar"
+          aria-label={copy.pixelTools[lang]}
+        >
+          {toolButton("pencil", "pencil", copy.pixelPencil[lang])}
+          {toolButton("eraser", "eraser", copy.pixelEraser[lang])}
+          {toolButton("select", "select", copy.pixelSelect[lang])}
+          {toolButton("fill", "fill", copy.pixelFill[lang])}
+          {toolButton("eyedropper", "eyedropper", copy.pixelEyedropper[lang])}
+          {toolButton("line", "line", copy.pixelLine[lang])}
+          {toolButton("rect", "rect", copy.pixelRect[lang])}
+          {toolButton("ellipse", "ellipse", copy.pixelEllipse[lang])}
+          {toolButton("pan", "pan", copy.pixelPan[lang])}
+        </div>
+        <div className="mt-2 flex w-full flex-wrap items-center gap-1.5">
+          <label className="sr-only" htmlFor="playground-brush">
+            {copy.pixelBrushSize[lang]}
+          </label>
+          <select
+            id="playground-brush"
+            aria-label={copy.pixelBrushSize[lang]}
+            value={brushSize}
+            onChange={(event) => setBrushSize(Number(event.target.value) as PixelBrushSize)}
+            className="h-11 border-[3px] border-earth bg-card px-2 text-[13px] font-medium text-fg"
+          >
+            {PIXEL_BRUSH_SIZES.map((size) => (
+              <option key={size} value={size}>
+                {size}×
+              </option>
+            ))}
+          </select>
+          <label className="sr-only" htmlFor="playground-symmetry">
+            {copy.pixelSymmetry[lang]}
+          </label>
+          <select
+            id="playground-symmetry"
+            aria-label={copy.pixelSymmetry[lang]}
+            value={symmetry}
+            onChange={(event) => setSymmetry(event.target.value as PixelSymmetry)}
+            className="h-11 max-w-[7.5rem] border-[3px] border-earth bg-card px-2 text-[13px] font-medium text-fg"
+          >
+            <option value="off">{copy.pixelSymmetryOff[lang]}</option>
+            <option value="x">{copy.pixelSymmetryX[lang]}</option>
+            <option value="y">{copy.pixelSymmetryY[lang]}</option>
+            <option value="xy">{copy.pixelSymmetryXY[lang]}</option>
+          </select>
+          <button
+            type="button"
+            aria-label={copy.pixelGridToggle[lang]}
+            aria-pressed={gridVisible}
+            onClick={() => setGridVisible((value) => !value)}
+            className={cn(
+              "inline-flex h-11 w-11 items-center justify-center border-[3px]",
+              gridVisible ? "border-fg bg-soft text-fg" : "border-earth bg-card text-fg",
+            )}
+          >
+            <PixelIcon name="grid" />
+          </button>
+          <button
+            type="button"
+            aria-label={copy.pixelUndo[lang]}
+            disabled={!history.canUndo}
+            onClick={() => boardRef.current?.undo()}
+            className="inline-flex h-11 w-11 items-center justify-center border-[3px] border-earth bg-card text-fg disabled:opacity-40"
+          >
+            <PixelIcon name="undo" />
+          </button>
+          <button
+            type="button"
+            aria-label={copy.pixelRedo[lang]}
+            disabled={!history.canRedo}
+            onClick={() => boardRef.current?.redo()}
+            className="inline-flex h-11 w-11 items-center justify-center border-[3px] border-earth bg-card text-fg disabled:opacity-40"
+          >
+            <PixelIcon name="redo" />
+          </button>
+          <button
+            type="button"
+            aria-label={copy.pixelMore[lang]}
             onClick={() => {
               setRotateHint(false)
               setMoreOpen(true)
@@ -760,7 +813,6 @@ export function PlaygroundForm({
           >
             <PixelIcon name="more" />
           </button>
-          </div>
         </div>
         <div className="mt-2 flex items-center gap-2">
           <div

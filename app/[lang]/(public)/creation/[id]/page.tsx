@@ -71,7 +71,9 @@ export default async function CreationDetailPage({
   // Identity + engagement must paint with the artwork (not behind Suspense),
   // so Apresiasi/Bagikan never disappear during streaming.
   const profile = await getCurrentProfile()
-  const member = profile ? { id: profile.id, username: profile.username } : null
+  const member = profile
+    ? { id: profile.id, username: profile.username, avatarUrl: profile.avatar_url }
+    : null
   const reaction = await getReactionSummary(creation.id, member?.id ?? null)
   const isOwner = profile?.id === creation.user_id
   const title = displayTitle(creation.title, lang)
@@ -82,16 +84,8 @@ export default async function CreationDetailPage({
 
   const identity = (
     <>
-      <h1
-        className={
-          isPixel
-            ? "mt-6 text-[22px] font-medium leading-snug sm:text-[24px]"
-            : "pixel-title"
-        }
-      >
-        {title}
-      </h1>
-      <p className="mt-3 text-[15px] text-muted">
+      <h1 className="page-heading-sans mt-4">{title}</h1>
+      <p className="mt-2 text-[14px] leading-snug text-muted sm:text-[15px]">
         {copy.byAuthor[lang]}{" "}
         <Link href={href(lang, `/u/${creation.author.username}`)} className="hover:text-fg">
           @{creation.author.username}
@@ -102,14 +96,14 @@ export default async function CreationDetailPage({
           : ""}
       </p>
       {creation.caption ? (
-        <p className="mt-4 max-w-prose whitespace-pre-wrap text-[15px] leading-relaxed text-fg">
+        <p className="mt-3 max-w-prose whitespace-pre-wrap text-[15px] leading-relaxed text-fg">
           {creation.caption}
         </p>
       ) : null}
       <CreationTags lang={lang} tags={creation.tags} />
       {isPixel ? <CreationColorPalette lang={lang} usage={creation.color_usage} /> : null}
-      {isOwner ? (
-        <div className="mt-4">
+      <div className="mt-4 flex flex-wrap items-center gap-2">
+        {isOwner ? (
           <Link
             href={href(lang, `/create/${creation.id}`)}
             className={buttonClassName({ size: "sm", variant: "secondary" })}
@@ -117,9 +111,7 @@ export default async function CreationDetailPage({
             <PixelIcon name="pencil" />
             {copy.createEditThis[lang]}
           </Link>
-        </div>
-      ) : null}
-      <div className="mt-5">
+        ) : null}
         <CreationEngagement
           lang={lang}
           creationId={creation.id}
@@ -128,17 +120,17 @@ export default async function CreationDetailPage({
           appreciateCount={reaction.count}
           member={member}
         />
+        {isPixel ? (
+          <CreationMoreMenu
+            lang={lang}
+            creationId={creation.id}
+            ownerId={creation.user_id}
+            viewerId={profile?.id ?? null}
+            status={creation.status}
+            allowPngDownload={creation.allow_png_download}
+          />
+        ) : null}
       </div>
-      {isPixel ? (
-        <CreationMoreMenu
-          lang={lang}
-          creationId={creation.id}
-          ownerId={creation.user_id}
-          viewerId={profile?.id ?? null}
-          status={creation.status}
-          allowPngDownload={creation.allow_png_download}
-        />
-      ) : null}
     </>
   )
 
@@ -146,10 +138,17 @@ export default async function CreationDetailPage({
     <article
       className={
         isPixel
-          ? "mx-auto max-w-5xl px-5 py-10 sm:px-8 sm:py-12 lg:px-16"
-          : "mx-auto max-w-3xl px-5 py-16 sm:px-8 lg:px-16"
+          ? "mx-auto max-w-5xl px-5 py-8 sm:px-8 sm:py-10 lg:px-16"
+          : "mx-auto max-w-3xl px-5 py-12 sm:px-8 sm:py-12 lg:px-16"
       }
     >
+      <Link
+        href={href(lang, "/explore")}
+        className="mb-6 inline-flex h-11 w-fit items-center gap-2 border-[3px] border-earth bg-card px-3 text-[14px] font-medium"
+      >
+        <PixelIcon name="back" />
+        {copy.creationBack[lang]}
+      </Link>
       {isPixel ? (
         <>
           <CreationBody
@@ -206,7 +205,7 @@ async function CreationConversationSlot({
   title: string
   source: { id: string; title: string } | null
   forkedFrom: string | null
-  member: { id: string; username: string } | null
+  member: { id: string; username: string; avatarUrl: string | null } | null
   allowFork: boolean
 }) {
   const conversation = await listConversation({ creationId })

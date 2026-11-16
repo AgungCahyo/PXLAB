@@ -13,15 +13,17 @@ export function PublicShell({
   lang: Lang
 }) {
   return (
-    <div className="flex min-h-dvh flex-col pb-[calc(4rem+env(safe-area-inset-bottom,0px))] md:pb-0">
+    <div className="relative flex min-h-dvh flex-col pb-[calc(4rem+env(safe-area-inset-bottom,0px))] md:pb-0">
       <ViewTransitionGuard />
-      <Suspense fallback={<SiteHeader lang={lang} member={null} />}>
-        <AuthHeader lang={lang} />
-      </Suspense>
-      <main id="main" className="flex-1 pt-[66px]">
-        {children}
-      </main>
-      <SiteFooter />
+      <div className="relative z-10 flex min-h-dvh flex-col">
+        <Suspense fallback={<SiteHeader lang={lang} member={null} />}>
+          <AuthHeader lang={lang} />
+        </Suspense>
+        <main id="main" className="min-w-0 flex-1 pt-[66px]">
+          {children}
+        </main>
+        <SiteFooter />
+      </div>
     </div>
   )
 }
@@ -32,6 +34,7 @@ async function AuthHeader({ lang }: { lang: Lang }) {
     ? {
         username: profile.username,
         displayName: profile.display_name,
+        avatarUrl: profile.avatar_url,
         isAdmin: profile.role === "admin",
       }
     : null

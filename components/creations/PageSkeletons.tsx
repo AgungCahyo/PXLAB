@@ -8,16 +8,16 @@ function Bone({ className }: { className?: string }) {
 export function ArtworkDetailSkeleton() {
   return (
     <div
-      className="mx-auto max-w-5xl px-5 py-10 sm:px-8 sm:py-12 lg:px-16"
+      className="mx-auto max-w-5xl px-5 py-8 sm:px-8 sm:py-10 lg:px-16"
       aria-busy="true"
       aria-label="Loading"
     >
       <div className="pixel-frame pixel-present">
         <Bone className="aspect-square w-full border-0 sm:aspect-[4/3]" />
       </div>
-      <Bone className="mt-6 h-7 w-2/3 max-w-md" />
-      <Bone className="mt-3 h-4 w-48" />
-      <div className="mt-5 flex gap-2">
+      <Bone className="mt-4 h-7 w-2/3 max-w-md" />
+      <Bone className="mt-2 h-4 w-48" />
+      <div className="mt-4 flex gap-2">
         <Bone className="h-9 w-28" />
         <Bone className="h-9 w-24" />
       </div>
@@ -28,17 +28,20 @@ export function ArtworkDetailSkeleton() {
     </div>
   )
 }
-
 /** Route loading shell for creator profile. */
 export function ProfileSkeleton() {
   return (
     <div
-      className="mx-auto max-w-6xl px-5 py-10 sm:px-8 sm:py-12 lg:px-16"
+      className="mx-auto w-full min-w-0 max-w-6xl px-5 py-8 sm:px-8 sm:py-10 lg:px-16"
       aria-hidden="true"
     >
-      <div className="h-4 w-28 bg-soft" />
-      <div className="mt-2 h-8 w-48 bg-soft" />
-      <div className="mt-3 h-4 w-full max-w-xl bg-soft" />
+      <div className="flex items-start gap-4">
+        <div className="h-16 w-16 shrink-0 bg-soft sm:h-20 sm:w-20" />
+        <div className="min-w-0 flex-1 space-y-2">
+          <div className="h-3 w-24 bg-soft" />
+          <div className="h-7 w-40 max-w-full bg-soft" />
+        </div>
+      </div>
       <div className="mt-8">
         <GallerySkeleton />
       </div>
@@ -104,26 +107,36 @@ export function CreateSkeleton() {
 export function StudioSkeleton() {
   return (
     <div
-      className="fixed inset-x-0 bottom-0 top-0 z-40 flex flex-col overflow-hidden bg-bg md:top-[66px]"
+      className="fixed inset-x-0 bottom-0 top-0 z-[60] flex flex-col overflow-hidden bg-bg md:top-[66px]"
       aria-busy="true"
       aria-label="Loading"
     >
-      <div className="grid shrink-0 grid-cols-[auto_1fr_auto] items-center gap-2 border-b-[3px] border-earth px-2 py-2 sm:px-3">
+      <div className="playground-header grid shrink-0 grid-cols-[auto_1fr_auto] items-center gap-2 border-b-[3px] border-earth bg-bg px-2 py-2 sm:px-3">
         <div className="h-11 w-11 bg-soft" />
         <div className="min-w-0">
           <div className="h-9 w-full bg-soft" />
           <div className="mt-1 h-3 w-40 bg-soft" />
         </div>
         <div className="flex gap-1.5">
-          <div className="h-11 w-24 bg-soft" />
-          <div className="h-11 w-28 bg-soft" />
+          <div className="h-11 w-11 bg-soft sm:w-24" />
+          <div className="h-11 w-11 bg-soft sm:w-28" />
         </div>
       </div>
       <div className="min-h-0 flex-1 bg-soft/60" />
       <div className="playground-toolbar shrink-0 border-t-[3px] border-earth px-2 pt-2">
-        <div className="flex flex-wrap gap-2">
+        <div className="flex w-full gap-1.5 overflow-x-auto pb-1">
+          {Array.from({ length: 9 }, (_, index) => (
+            <div key={`tool-${index}`} className="h-11 w-11 shrink-0 bg-soft" />
+          ))}
+        </div>
+        <div className="mt-2 flex w-full flex-wrap gap-1.5">
           {Array.from({ length: 6 }, (_, index) => (
-            <div key={index} className="h-11 w-11 bg-soft" />
+            <div key={`action-${index}`} className="h-11 w-11 bg-soft" />
+          ))}
+        </div>
+        <div className="mt-2 flex gap-1.5">
+          {Array.from({ length: 5 }, (_, index) => (
+            <div key={`swatch-${index}`} className="h-11 w-11 shrink-0 bg-soft" />
           ))}
         </div>
       </div>

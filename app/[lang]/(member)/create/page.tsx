@@ -36,16 +36,18 @@ export default async function CreatePage({
   await connection()
 
   return (
-    <div className="mx-auto max-w-3xl px-5 py-16 sm:px-8 lg:px-16">
-      <p className="pixel-kicker mb-3">{copy.createEyebrow[lang]}</p>
+    <div className="mx-auto w-full min-w-0 max-w-3xl px-5 py-8 sm:px-8 sm:py-10 lg:px-16">
       <h1 className="pixel-title">{copy.createNewHeading[lang]}</h1>
-      <p className="mt-4 text-[15px] leading-relaxed text-muted">{copy.createIntro[lang]}</p>
-      <p className="mt-3 text-[14px]">
-        <Link href={href(lang, "/dashboard")} className="text-muted underline decoration-earth underline-offset-4 hover:text-fg">
+      <p className="mt-3 text-[15px] leading-relaxed text-muted">{copy.createIntro[lang]}</p>
+      <p className="mt-2 text-[13px]">
+        <Link
+          href={href(lang, "/dashboard")}
+          className="text-muted underline-offset-4 hover:text-fg hover:underline"
+        >
           {copy.createManageLink[lang]}
         </Link>
       </p>
-      <div className="mt-10">
+      <div className="mt-8">
         <StudioNewForm lang={lang} />
       </div>
     </div>

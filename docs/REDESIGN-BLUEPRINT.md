@@ -137,15 +137,14 @@ Susunan yang tetap: `@username`, nama, bio, grid kartu yang sama dengan Jelajah.
 
 Tambahan hanya untuk pemilik:
 
-- Kelola karya (utama, sekunder secara visual)
-- Pengaturan
-- Keluar
+- Kelola karya (utama)
+- Pengaturan (bahasa + keluar ada di sini)
 
 Bukan halaman pengikut. Bukan daftar draf.
 
 ### Pengaturan `/settings`
 
-Tetap formulir. Kembali ke profil menyimpan dulu jika kotor. Tidak menambah navigasi kedua.
+Formulir profil. Bagian **Bahasa** (ID/EN) dan **Sesi** (Keluar). Kembali ke profil menyimpan dulu jika kotor. Tidak menambah navigasi kedua.
 
 ### Masuk dan daftar
 
@@ -182,9 +181,9 @@ My Works membutuhkan baris karya dengan status. Itu komposisi baru yang memakai 
 
 Header tetap setinggi sekarang, `z-50`.
 
-Terlihat: tanda, Jelajah, Buat, Profil, bahasa, Akun.
+Terlihat: tanda, Jelajah, Buat, Profil, Akun. Switch bahasa di header hanya untuk **tamu**; anggota mengganti bahasa di Pengaturan.
 
-Akun membuka panel: Kelola karya, Pengaturan, Admin bila ada, Keluar. Tutup dengan Escape dan klik luar, seperti sekarang.
+Akun membuka panel: Kelola karya, Pengaturan, Admin bila ada. Keluar ada di Pengaturan. Tutup dengan Escape dan klik luar, seperti sekarang.
 
 Tidak ada sidebar kiri atau kanan.
 
@@ -192,7 +191,7 @@ Keadaan aktif: garis bawah Sky pada tujuan yang cocok, termasuk `/explore?type=�
 
 ### Ponsel
 
-Header: tanda dan bahasa saja.
+Header: tanda; bahasa hanya untuk tamu; anggota lewat Akun → Pengaturan.
 
 Tab bawah, `md:hidden`, tinggi tautan minimal 44px, tiga kolom: Jelajah, Buat, Profil. Profil tamu ke masuk dengan `next`.
 
@@ -277,7 +276,7 @@ Autosave 1200ms dan antrean simpan tetap. Kembali tidak boleh membuang goresan y
 | | Desktop ≥768 | Tablet | Ponsel 390 |
 |---|---|---|---|
 | Nav | Bilah atas lengkap + menu Akun | Sama dengan desktop begitu lebar ≥768 | Header tipis + tab bawah |
-| Grid karya | 3 kolom di `lg` | 2 kolom mulai `sm` | 1 kolom |
+| Grid karya | 4 kolom di `xl`, 3 di `lg` | 3 kolom | 2 kolom |
 | Detail | Gambar contain, kolom `max-w-5xl` | Sama, gambar tidak dipaksa penuh layar sampai terpotong | Gambar di atas judul |
 | Profil | Grid sama dengan Jelajah | Sama | Header lalu satu kolom |
 | Studio | Kanvas di antara header dan toolbar | Sama | Toolbar dua baris: alat, lalu palet yang bisa digeser. Tab disembunyikan |

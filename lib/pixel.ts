@@ -54,6 +54,11 @@ export const PIXEL_SIZE_PRESETS = [
 export type PixelSizePresetId = (typeof PIXEL_SIZE_PRESETS)[number]["id"]
 export const PIXEL_DEFAULT_PRESET: PixelSizePresetId = "sprite"
 
+/** User-facing canvas size label, e.g. `16×16`. */
+export function formatPixelSize(width: number, height: number) {
+  return `${width}×${height}`
+}
+
 export function isPixelCanvasDimension(value: unknown): value is number {
   return typeof value === "number" && Number.isInteger(value) && value >= PIXEL_CANVAS_MIN && value <= PIXEL_CANVAS_MAX
 }

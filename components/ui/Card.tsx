@@ -16,7 +16,7 @@ export function CardTitle({
 }: HTMLAttributes<HTMLHeadingElement>) {
   return (
     <h2
-      className={cn("font-pixel text-[13px] leading-relaxed sm:text-[14px]", className)}
+      className={cn("pixel-title", className)}
       {...props}
     />
   );
