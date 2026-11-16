@@ -417,6 +417,74 @@ export function emptyPixelIndices(width = PIXEL_CANVAS_SIZE, height = PIXEL_CANV
   return new Uint8Array(width * height)
 }
 
+/** Ink usage entry derived from RLE (Paper/index 0 never included). */
+export type ColorUsageEntry = {
+  hex: string
+  count: number
+}
+
+/**
+ * Histogram from RLE runs without expanding to a full bitmap.
+ * Excludes palette index 0 (Paper / empty). Sorted by count descending.
+ */
+export function colorUsageFromSource(source: Pick<PixelSourceV1, "palette" | "runs">): ColorUsageEntry[] {
+  const counts = new Map<number, number>()
+  const runs = source.runs
+  for (let i = 0; i + 1 < runs.length; i += 2) {
+    const index = runs[i]
+    const count = runs[i + 1]
+    if (!Number.isInteger(index) || !Number.isInteger(count) || count < 1) continue
+    if (index === 0) continue
+    if (index < 0 || index >= source.palette.length) continue
+    counts.set(index, (counts.get(index) ?? 0) + count)
+  }
+
+  const entries: ColorUsageEntry[] = []
+  for (const [index, count] of counts) {
+    const hex = normalizePixelHex(source.palette[index] ?? "")
+    if (!hex) continue
+    entries.push({ hex, count })
+  }
+  entries.sort((a, b) => b.count - a.count || a.hex.localeCompare(b.hex))
+  return entries
+}
+
+export function parseColorUsage(input: unknown): ColorUsageEntry[] | null {
+  if (input == null) return null
+  if (!Array.isArray(input)) return null
+  const entries: ColorUsageEntry[] = []
+  for (const item of input) {
+    if (!item || typeof item !== "object") return null
+    const row = item as Record<string, unknown>
+    if (typeof row.hex !== "string" || typeof row.count !== "number") return null
+    if (!Number.isInteger(row.count) || row.count < 1) return null
+    const hex = normalizePixelHex(row.hex)
+    if (!hex) return null
+    entries.push({ hex, count: row.count })
+  }
+  return entries
+}
+
+/** Integer percents that sum to 100 when total > 0 (largest-remainder). */
+export function colorUsagePercents(entries: ColorUsageEntry[]) {
+  const total = entries.reduce((sum, item) => sum + item.count, 0)
+  if (total <= 0 || entries.length === 0) {
+    return entries.map(() => 0)
+  }
+  const exact = entries.map((item) => (item.count / total) * 100)
+  const floors = exact.map((value) => Math.floor(value))
+  let remain = 100 - floors.reduce((sum, value) => sum + value, 0)
+  const order = exact
+    .map((value, index) => ({ index, frac: value - floors[index] }))
+    .sort((a, b) => b.frac - a.frac)
+  const out = [...floors]
+  for (let i = 0; i < order.length && remain > 0; i += 1) {
+    out[order[i].index] += 1
+    remain -= 1
+  }
+  return out
+}
+
 export const PNG_SIGNATURE = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a] as const
 
 export function isPngBuffer(bytes: Uint8Array) {

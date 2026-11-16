@@ -6,6 +6,7 @@ export function PixelArt({
   variant = "stage",
   fill = false,
   framed = true,
+  priority = false,
   className,
 }: {
   src: string
@@ -13,6 +14,8 @@ export function PixelArt({
   variant?: "stage" | "thumb"
   fill?: boolean
   framed?: boolean
+  /** Prefer high fetch priority for LCP artwork on detail. */
+  priority?: boolean
   className?: string
 }) {
   return (
@@ -31,6 +34,9 @@ export function PixelArt({
         src={src}
         alt={alt}
         className={variant === "thumb" ? "pixel-thumb-art" : "pixel-present-art"}
+        fetchPriority={priority ? "high" : undefined}
+        loading={priority ? "eager" : undefined}
+        decoding={priority ? "async" : undefined}
       />
     </figure>
   )

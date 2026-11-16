@@ -18,10 +18,12 @@ describe("Create and My Works stay separate", () => {
   })
 
   it("turns dashboard into the owner work list", () => {
+    const row = read("components/creations/WorksRow.tsx")
     expect(dashboard).toMatch(/listOwnCreations/)
     expect(dashboard).toMatch(/worksDrafts/)
     expect(dashboard).toMatch(/worksPublished/)
-    expect(dashboard).toMatch(/PixelArt/)
+    expect(dashboard).toMatch(/WorksRow/)
+    expect(row).toMatch(/PixelArt/)
     expect(dashboard).not.toMatch(/dashboardHello/)
   })
 

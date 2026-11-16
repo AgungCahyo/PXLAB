@@ -290,7 +290,8 @@ export async function toggleAppreciationAction(
     if (error) return { error: "invalid_input" }
   }
 
-  revalidateCreation(creation.id)
+  // Skip revalidatePath: the client already applied optimistic UI.
+  // Refreshing the whole creation route made navigation feel like a reload.
   return { ok: true }
 }
 

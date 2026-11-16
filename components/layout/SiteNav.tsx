@@ -107,6 +107,15 @@ export function SiteNav({ lang, member }: { lang: Lang; member: NavMember }) {
           </>
         )}
       </div>
+      {/* One guest CTA on small screens — Join covers convert; sign-in lives on that page. */}
+      {!member ? (
+        <Link
+          href={registerHref(lang, authNext)}
+          className={cn(buttonClassName({ size: "sm" }), "md:hidden")}
+        >
+          {copy.nav.join[lang]}
+        </Link>
+      ) : null}
       {member ? (
         <div className="relative ml-1 hidden md:block" ref={menuRef}>
           <button
@@ -192,6 +201,7 @@ export function AppTabBar({ lang, member }: { lang: Lang; member: NavMember }) {
     <nav
       aria-label={copy.navAria[lang]}
       className="app-tabbar fixed inset-x-0 bottom-0 z-40 border-t-[3px] border-earth bg-bg md:hidden"
+      style={{ viewTransitionName: "site-tabbar" }}
     >
       <ul className="grid grid-cols-3">
         {items.map((item) => (

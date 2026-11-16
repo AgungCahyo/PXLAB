@@ -16,6 +16,24 @@ describe("back and cancel keep unsaved work", () => {
     expect(playground).not.toMatch(/href=\{href\(lang, "\/create"\)\}/)
   })
 
+  it("guards site chrome navigation while the playground has unsaved work", () => {
+    expect(playground).toMatch(/guardChromeNav/)
+    expect(playground).toMatch(/app-tabbar/)
+    expect(playground).toMatch(/leaveRef\.current/)
+  })
+
+  it("offers retry or leave without saving when leave save fails", () => {
+    expect(playground).toMatch(/pixelLeaveBlockedTitle/)
+    expect(playground).toMatch(/pixelLeaveRetry/)
+    expect(playground).toMatch(/pixelLeaveDiscard/)
+    expect(playground).toMatch(/leaveWithoutSaving/)
+  })
+
+  it("announces save status to assistive tech", () => {
+    expect(playground).toMatch(/role="status"/)
+    expect(playground).toMatch(/aria-live="polite"/)
+  })
+
   it("saves a legacy draft before returning to My Works", () => {
     expect(studio).toMatch(/createBackToWorks/)
     expect(studio).toMatch(/intent", "draft"/)

@@ -38,9 +38,23 @@ describe("unnamed draft titles", () => {
 describe("My Works delete", () => {
   it("offers delete with confirmation on the work list", () => {
     const dashboard = read("app/[lang]/(member)/dashboard/page.tsx")
+    const row = read("components/creations/WorksRow.tsx")
     const button = read("components/creations/WorksDeleteButton.tsx")
-    expect(dashboard).toMatch(/WorksDeleteButton/)
+    expect(dashboard).toMatch(/WorksRow/)
+    expect(row).toMatch(/WorksDeleteButton/)
     expect(button).toMatch(/deleteCreationAction/)
-    expect(button).toMatch(/createDeleteConfirm/)
+    expect(button).toMatch(/DeleteCreationCopy/)
+    expect(button).toMatch(/onDeleted/)
+    expect(button).toMatch(/createDeleting/)
+  })
+
+  it("names the work and warns when published", () => {
+    const copyBody = read("components/creations/DeleteCreationCopy.tsx")
+    const studio = read("components/creations/StudioForm.tsx")
+    expect(copyBody).toMatch(/createDeleteConfirmTitle/)
+    expect(copyBody).toMatch(/createDeleteConfirmPublished/)
+    expect(studio).toMatch(/StudioDeleteSubmit/)
+    expect(studio).toMatch(/createDeleting/)
+    expect(studio).toMatch(/DeleteCreationCopy/)
   })
 })

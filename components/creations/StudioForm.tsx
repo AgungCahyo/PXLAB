@@ -1,8 +1,11 @@
 "use client"
 
 import { useActionState, useEffect, useRef, useState } from "react"
+import { useFormStatus } from "react-dom"
 import { useRouter } from "next/navigation"
 import { CreationBody } from "@/components/creations/CreationBody"
+import { CreationTagInput } from "@/components/creations/CreationTagInput"
+import { DeleteCreationCopy } from "@/components/creations/DeleteCreationCopy"
 import { VisualEditor } from "@/components/creations/VisualEditor"
 import { Alert } from "@/components/ui/Alert"
 import { Button } from "@/components/ui/Button"
@@ -16,9 +19,11 @@ import {
   type CreationActionState,
 } from "@/features/creations/actions"
 import type { CreationRow } from "@/features/creations/queries"
+import { displayTitle } from "@/lib/creations"
 import { copy } from "@/lib/copy"
 import { href, type Lang } from "@/lib/i18n"
 import {
+  CREATION_CAPTION_MAX,
   CREATION_IDEA_BODY_MAX,
   CREATION_IDEA_CONTEXT_MAX,
   CREATION_STORY_BODY_MAX,
@@ -27,6 +32,15 @@ import {
   CREATION_TITLE_MAX,
 } from "@/lib/site"
 import type { IdeaContent, StoryContent, TextContent, VisualContent } from "@/lib/validations/creation"
+
+function StudioDeleteSubmit({ lang }: { lang: Lang }) {
+  const { pending } = useFormStatus()
+  return (
+    <Button type="submit" variant="primary" disabled={pending} aria-busy={pending || undefined}>
+      {pending ? copy.createDeleting[lang] : copy.createDelete[lang]}
+    </Button>
+  )
+}
 
 export function StudioForm({ lang, creation }: { lang: Lang; creation: CreationRow }) {
   const router = useRouter()
@@ -41,6 +55,8 @@ export function StudioForm({ lang, creation }: { lang: Lang; creation: CreationR
   const [preview, setPreview] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [title, setTitle] = useState(creation.title)
+  const [caption, setCaption] = useState(creation.caption ?? "")
+  const [tags, setTags] = useState<string[]>(creation.tags ?? [])
   const [textBody, setTextBody] = useState(
     "body" in creation.content ? creation.content.body : "",
   )
@@ -157,6 +173,29 @@ export function StudioForm({ lang, creation }: { lang: Lang; creation: CreationR
             touch()
           }}
         />
+        <Textarea
+          id="caption"
+          name="caption"
+          rows={3}
+          maxLength={CREATION_CAPTION_MAX}
+          label={copy.createCaptionLabel[lang]}
+          hint={copy.createCaptionHint[lang]}
+          placeholder={copy.createCaptionPlaceholder[lang]}
+          value={caption}
+          onChange={(event) => {
+            setCaption(event.target.value)
+            touch()
+          }}
+        />
+        <CreationTagInput
+          lang={lang}
+          id="tags"
+          value={tags}
+          onChange={(next) => {
+            setTags(next)
+            touch()
+          }}
+        />
         {creation.type === "visual" ? (
           <VisualEditor
             lang={lang}
@@ -222,16 +261,35 @@ export function StudioForm({ lang, creation }: { lang: Lang; creation: CreationR
           {preview ? copy.createEdit[lang] : copy.createPreview[lang]}
         </Button>
         {creation.status !== "published" ? (
-          <Button type="submit" name="intent" value="draft" disabled={pending || leaving}>
-            {copy.createSaveDraft[lang]}
+          <Button
+            type="submit"
+            name="intent"
+            value="draft"
+            disabled={pending || leaving}
+            aria-busy={pending || undefined}
+          >
+            {pending ? copy.pixelSaving[lang] : copy.createSaveDraft[lang]}
           </Button>
         ) : null}
-        <Button type="submit" name="intent" value="publish" disabled={pending || leaving}>
-          {copy.createPublish[lang]}
+        <Button
+          type="submit"
+          name="intent"
+          value="publish"
+          disabled={pending || leaving}
+          aria-busy={pending || undefined}
+        >
+          {pending ? copy.pixelPublishing[lang] : copy.createPublish[lang]}
         </Button>
         {creation.status === "published" ? (
-          <Button type="submit" name="intent" value="unpublish" variant="outline" disabled={pending || leaving}>
-            {copy.createUnpublish[lang]}
+          <Button
+            type="submit"
+            name="intent"
+            value="unpublish"
+            variant="outline"
+            disabled={pending || leaving}
+            aria-busy={pending || undefined}
+          >
+            {pending ? copy.pixelUnpublishing[lang] : copy.createUnpublish[lang]}
           </Button>
         ) : null}
         {creation.status === "published" ? (
@@ -250,14 +308,16 @@ export function StudioForm({ lang, creation }: { lang: Lang; creation: CreationR
         title={copy.createDelete[lang]}
         closeLabel={copy.closeMenu[lang]}
       >
-        <p className="text-[15px] text-muted">{copy.createDeleteConfirm[lang]}</p>
+        <DeleteCreationCopy
+          lang={lang}
+          title={displayTitle(creation.title, lang)}
+          published={creation.status === "published"}
+        />
         <div className="mt-4 flex flex-wrap gap-3">
           <form action={deleteCreationAction}>
             <input type="hidden" name="lang" value={lang} />
             <input type="hidden" name="id" value={creation.id} />
-            <Button type="submit" variant="primary">
-              {copy.createDelete[lang]}
-            </Button>
+            <StudioDeleteSubmit lang={lang} />
           </form>
           <Button type="button" variant="secondary" onClick={() => setConfirmDelete(false)}>
             {copy.createCancel[lang]}

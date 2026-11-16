@@ -24,6 +24,7 @@ function FilterLink({
       aria-current={selected ? "page" : undefined}
       className={cn(
         "inline-flex min-h-11 items-center border-[3px] px-4 text-[14px]",
+        "whitespace-nowrap",
         selected
           ? "border-earth bg-brick text-white shadow-[4px_4px_0_0_var(--fg)]"
           : "border-earth bg-card text-muted hover:bg-soft hover:text-fg",
@@ -78,21 +79,27 @@ export function ExploreFilters({
         </button>
       </form>
 
-      <div role="toolbar" aria-label={copy.categoryAria[lang]} className="flex flex-wrap gap-2">
-        <FilterLink
-          href={exploreHref(lang, { ...base, category: "all", page: 1 })}
-          selected={category === "all"}
-          label={copy.categoryAll[lang]}
-        />
-        {CREATION_CATEGORIES.map((item) => (
-          <FilterLink
-            key={item}
-            href={exploreHref(lang, { ...base, category: item, page: 1 })}
-            selected={category === item}
-            label={creationCategoryLabels[item][lang]}
-          />
-        ))}
-      </div>
+      <nav aria-label={copy.categoryAria[lang]}>
+        {/* Horizontal scroll on narrow viewports so size chips do not own the first screen (full fold = M7). */}
+        <ul className="flex flex-nowrap gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] sm:flex-wrap sm:overflow-visible [&::-webkit-scrollbar]:hidden">
+          <li className="shrink-0">
+            <FilterLink
+              href={exploreHref(lang, { ...base, category: "all", page: 1 })}
+              selected={category === "all"}
+              label={copy.categoryAll[lang]}
+            />
+          </li>
+          {CREATION_CATEGORIES.map((item) => (
+            <li key={item} className="shrink-0">
+              <FilterLink
+                href={exploreHref(lang, { ...base, category: item, page: 1 })}
+                selected={category === item}
+                label={creationCategoryLabels[item][lang]}
+              />
+            </li>
+          ))}
+        </ul>
+      </nav>
     </div>
   )
 }
@@ -138,23 +145,35 @@ export function ExploreGallery({
       )}
 
       {pageCount > 1 ? (
-        <nav aria-label={copy.exploreTitle[lang]} className="flex items-center gap-3">
-          {page > 1 ? (
-            <Link
-              href={exploreHref(lang, { ...query, page: page - 1 })}
-              className="inline-flex min-h-11 items-center text-[14px] text-muted hover:text-fg"
-            >
-              {copy.pagePrev[lang]}
-            </Link>
-          ) : null}
-          {page < pageCount ? (
-            <Link
-              href={exploreHref(lang, { ...query, page: page + 1 })}
-              className="inline-flex min-h-11 items-center text-[14px] text-muted hover:text-fg"
-            >
-              {copy.pageNext[lang]}
-            </Link>
-          ) : null}
+        <nav
+          aria-label={copy.explorePaginationAria[lang]}
+          className="flex flex-wrap items-center justify-between gap-3"
+        >
+          <div className="min-w-[5.5rem]">
+            {page > 1 ? (
+              <Link
+                href={exploreHref(lang, { ...query, page: page - 1 })}
+                className="inline-flex min-h-11 items-center text-[14px] text-muted hover:text-fg"
+              >
+                {copy.pagePrev[lang]}
+              </Link>
+            ) : null}
+          </div>
+          <p className="text-[13px] text-muted" aria-current="page">
+            {copy.explorePageStatus[lang]
+              .replace("{page}", String(page))
+              .replace("{pages}", String(pageCount))}
+          </p>
+          <div className="flex min-w-[5.5rem] justify-end">
+            {page < pageCount ? (
+              <Link
+                href={exploreHref(lang, { ...query, page: page + 1 })}
+                className="inline-flex min-h-11 items-center text-[14px] text-muted hover:text-fg"
+              >
+                {copy.pageNext[lang]}
+              </Link>
+            ) : null}
+          </div>
         </nav>
       ) : null}
     </div>

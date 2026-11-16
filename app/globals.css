@@ -62,6 +62,21 @@ body:has([data-chrome="playground"]) .app-tabbar {
   display: none;
 }
 
+/* More canvas on phones: hide the global site header while the playground is open. */
+@media (max-width: 767px) {
+  body:has([data-chrome="playground"]) header {
+    display: none;
+  }
+}
+
+.app-tabbar {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+.playground-toolbar {
+  padding-bottom: max(0.5rem, env(safe-area-inset-bottom, 0px));
+}
+
 :focus-visible {
   outline: 3px solid var(--sky);
   outline-offset: 3px;
@@ -189,6 +204,116 @@ body:has([data-chrome="playground"]) .app-tabbar {
   image-rendering: pixelated;
 }
 
+/* Route / shared-element view transitions (React <ViewTransition>) */
+:root {
+  --duration-exit: 150ms;
+  --duration-enter: 210ms;
+  --duration-move: 360ms;
+}
+
+::view-transition {
+  pointer-events: none;
+}
+
+::view-transition-group(site-header),
+::view-transition-group(site-tabbar) {
+  animation: none;
+  z-index: 100;
+}
+
+::view-transition-old(site-header),
+::view-transition-old(site-tabbar) {
+  display: none;
+}
+
+::view-transition-new(site-header),
+::view-transition-new(site-tabbar) {
+  animation: none;
+}
+
+::view-transition-group(.morph) {
+  animation-duration: var(--duration-move);
+}
+
+::view-transition-image-pair(.morph) {
+  animation-name: via-blur;
+}
+
+::view-transition-old(.fade),
+::view-transition-old(.slide-down) {
+  animation: var(--duration-exit) ease-out both vt-fade reverse;
+}
+
+::view-transition-new(.fade),
+::view-transition-new(.slide-up) {
+  animation:
+    var(--duration-enter) ease-in var(--duration-exit) both vt-fade,
+    var(--duration-move) ease-out both vt-slide-y;
+}
+
+::view-transition-old(.nav-forward) {
+  --slide-offset: -48px;
+  animation:
+    var(--duration-exit) ease-in both vt-fade reverse,
+    var(--duration-move) ease-in-out both vt-slide-x reverse;
+}
+
+::view-transition-new(.nav-forward) {
+  --slide-offset: 48px;
+  animation:
+    var(--duration-enter) ease-out var(--duration-exit) both vt-fade,
+    var(--duration-move) ease-in-out both vt-slide-x;
+}
+
+::view-transition-old(.nav-back) {
+  --slide-offset: 48px;
+  animation:
+    var(--duration-exit) ease-in both vt-fade reverse,
+    var(--duration-move) ease-in-out both vt-slide-x reverse;
+}
+
+::view-transition-new(.nav-back) {
+  --slide-offset: -48px;
+  animation:
+    var(--duration-enter) ease-out var(--duration-exit) both vt-fade,
+    var(--duration-move) ease-in-out both vt-slide-x;
+}
+
+@keyframes via-blur {
+  30% {
+    filter: blur(2px);
+  }
+}
+
+@keyframes vt-fade {
+  from {
+    filter: blur(2px);
+    opacity: 0;
+  }
+  to {
+    filter: blur(0);
+    opacity: 1;
+  }
+}
+
+@keyframes vt-slide-y {
+  from {
+    transform: translateY(10px);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+@keyframes vt-slide-x {
+  from {
+    translate: var(--slide-offset);
+  }
+  to {
+    translate: 0;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;
@@ -199,6 +324,13 @@ body:has([data-chrome="playground"]) .app-tabbar {
   *::after {
     animation: none !important;
     transition: none !important;
+  }
+
+  ::view-transition-old(*),
+  ::view-transition-new(*),
+  ::view-transition-group(*) {
+    animation-duration: 0s !important;
+    animation-delay: 0s !important;
   }
 
   .pixel-press:active {

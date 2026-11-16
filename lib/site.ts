@@ -60,6 +60,12 @@ export const CREATION_STATUSES = ["draft", "published", "hidden"] as const;
 export type CreationStatus = (typeof CREATION_STATUSES)[number];
 
 export const CREATION_TITLE_MAX = 80;
+export const CREATION_CAPTION_MAX = 500;
+export const CREATION_TAGS_MAX = 5;
+export const CREATION_TAG_MIN_LEN = 2;
+export const CREATION_TAG_MAX_LEN = 24;
+/** Dominant colors shown before “see all” on the detail Color Usage Bar. */
+export const COLOR_USAGE_PREVIEW_MAX = 12;
 export const CREATION_TEXT_BODY_MAX = 8000;
 export const CREATION_IDEA_BODY_MAX = 2000;
 export const CREATION_IDEA_CONTEXT_MAX = 1000;

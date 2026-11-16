@@ -110,8 +110,8 @@ function ReportDialog({
           label={copy.reportDetails[lang]}
         />
         <div className="flex flex-wrap gap-3">
-          <Button type="submit" disabled={pending}>
-            {copy.reportSubmit[lang]}
+          <Button type="submit" disabled={pending} aria-busy={pending || undefined}>
+            {pending ? copy.reportSubmitting[lang] : copy.reportSubmit[lang]}
           </Button>
           <Button type="button" variant="ghost" onClick={onClose} disabled={pending}>
             {copy.createCancel[lang]}

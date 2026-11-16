@@ -2,7 +2,11 @@ import type { Metadata } from "next"
 import Link from "next/link"
 import { notFound } from "next/navigation"
 import { connection } from "next/server"
+import { Suspense } from "react"
 import { CreationBody } from "@/components/creations/CreationBody"
+import { CreationColorPalette } from "@/components/creations/CreationColorPalette"
+import { CreationTags } from "@/components/creations/CreationTags"
+import { ConversationSkeleton } from "@/components/creations/PageSkeletons"
 import { CreationCommunity, CreationEngagement } from "@/components/community/CreationCommunity"
 import { buttonClassName } from "@/components/ui/Button"
 import { PixelIcon } from "@/components/ui/PixelIcon"
@@ -12,7 +16,7 @@ import { getCurrentProfile } from "@/lib/auth/session"
 import { displayTitle } from "@/lib/creations"
 import { copy, creationCategoryLabels, creationTypeLabels } from "@/lib/copy"
 import { formatDayMonthYear } from "@/lib/format"
-import { href, isLang } from "@/lib/i18n"
+import { href, isLang, type Lang } from "@/lib/i18n"
 import { pageMeta } from "@/lib/meta"
 import { pixelCoverUrl } from "@/lib/site"
 import { creationIdSchema } from "@/lib/validations/creation"
@@ -36,11 +40,14 @@ export async function generateMetadata({
       noIndex: true,
     })
   }
+  const metaCaption = creation.caption?.trim()
   return pageMeta({
     lang,
     path: `/creation/${creation.id}`,
     title: displayTitle(creation.title, lang),
-    description: copy.creationMeta,
+    description: metaCaption
+      ? metaCaption.slice(0, 160)
+      : copy.creationMeta,
     image:
       creation.type === "pixel"
         ? creation.cover_url || pixelCoverUrl(creation.id)
@@ -60,21 +67,19 @@ export default async function CreationDetailPage({
   const creation = await getPublishedCreation(id)
   if (!creation) notFound()
 
+  // Identity + engagement must paint with the artwork (not behind Suspense),
+  // so Apresiasi/Bagikan never disappear during streaming.
   const profile = await getCurrentProfile()
-  const [conversation, reaction] = await Promise.all([
-    listConversation({ creationId: creation.id }),
-    getReactionSummary(creation.id, profile?.id ?? null),
-  ])
-
-  const published = creation.published_at ?? creation.created_at
   const member = profile ? { id: profile.id, username: profile.username } : null
+  const reaction = await getReactionSummary(creation.id, member?.id ?? null)
   const isOwner = profile?.id === creation.user_id
   const title = displayTitle(creation.title, lang)
+  const published = creation.published_at ?? creation.created_at
   const coverUrl =
     creation.type === "pixel" ? creation.cover_url || pixelCoverUrl(creation.id) : creation.cover_url
   const isPixel = creation.type === "pixel"
 
-  const meta = (
+  const identity = (
     <>
       <h1
         className={
@@ -95,6 +100,13 @@ export default async function CreationDetailPage({
           ? ` · ${creationCategoryLabels[creation.category][lang]}`
           : ""}
       </p>
+      {creation.caption ? (
+        <p className="mt-4 max-w-prose whitespace-pre-wrap text-[15px] leading-relaxed text-fg">
+          {creation.caption}
+        </p>
+      ) : null}
+      <CreationTags lang={lang} tags={creation.tags} />
+      {isPixel ? <CreationColorPalette lang={lang} usage={creation.color_usage} /> : null}
       {isOwner ? (
         <div className="mt-4">
           <Link
@@ -134,13 +146,15 @@ export default async function CreationDetailPage({
             content={creation.content}
             lang={lang}
             coverUrl={coverUrl}
+            creationId={creation.id}
+            priority
           />
-          {meta}
+          {identity}
         </>
       ) : (
         <>
           <p className="pixel-kicker mb-3">{creationTypeLabels[creation.type][lang]}</p>
-          {meta}
+          {identity}
           <div className="mt-10">
             <CreationBody
               type={creation.type}
@@ -152,20 +166,51 @@ export default async function CreationDetailPage({
         </>
       )}
 
-      <CreationCommunity
-        lang={lang}
-        creationId={creation.id}
-        title={title}
-        source={creation.source}
-        forkedFrom={creation.forked_from}
-        roots={conversation.roots}
-        total={conversation.total}
-        hasEarlier={conversation.hasEarlier}
-        appreciateCount={reaction.count}
-        appreciated={reaction.appreciated}
-        member={member}
-        allowFork={!isOwner}
-      />
+      <Suspense fallback={<ConversationSkeleton />}>
+        <CreationConversationSlot
+          lang={lang}
+          creationId={creation.id}
+          title={title}
+          source={creation.source}
+          forkedFrom={creation.forked_from}
+          member={member}
+          allowFork={!isOwner}
+        />
+      </Suspense>
     </article>
+  )
+}
+
+async function CreationConversationSlot({
+  lang,
+  creationId,
+  title,
+  source,
+  forkedFrom,
+  member,
+  allowFork,
+}: {
+  lang: Lang
+  creationId: string
+  title: string
+  source: { id: string; title: string } | null
+  forkedFrom: string | null
+  member: { id: string; username: string } | null
+  allowFork: boolean
+}) {
+  const conversation = await listConversation({ creationId })
+  return (
+    <CreationCommunity
+      lang={lang}
+      creationId={creationId}
+      title={title}
+      source={source}
+      forkedFrom={forkedFrom}
+      roots={conversation.roots}
+      total={conversation.total}
+      hasEarlier={conversation.hasEarlier}
+      member={member}
+      allowFork={allowFork}
+    />
   )
 }

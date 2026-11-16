@@ -9,12 +9,23 @@ describe("artwork detail hierarchy", () => {
   const community = read("components/community/CreationCommunity.tsx")
 
   it("puts the pixel artwork above the title and engagement", () => {
-    expect(page).toMatch(/isPixel \? \([\s\S]*?<CreationBody[\s\S]*?\{meta\}/)
+    expect(page).toMatch(/isPixel \? \([\s\S]*?<CreationBody[\s\S]*?\{identity\}/)
     expect(page).toMatch(/CreationEngagement/)
     expect(page).toMatch(/<CreationCommunity/)
     expect(page).toMatch(/text-\[22px\]/)
     expect(page).toMatch(/displayTitle/)
     expect(page).not.toMatch(/pixel-title[\s\S]*CreationBody[\s\S]*isPixel/)
+  })
+
+  it("keeps engagement with the artwork shell and streams only conversation", () => {
+    expect(page).toMatch(/getReactionSummary/)
+    expect(page).toMatch(/CreationEngagement/)
+    expect(page).toMatch(/Suspense[\s\S]*CreationConversationSlot/)
+    expect(page).not.toMatch(/CreationEngagementSlot/)
+    expect(page).toMatch(/priority/)
+    expect(page.indexOf("CreationEngagement")).toBeLessThan(
+      page.indexOf("CreationConversationSlot"),
+    )
   })
 
   it("keeps conversation rules and moves engagement out of the thread header", () => {

@@ -10,6 +10,8 @@ const indonesianRoutes = [
   "/create",
   "/login",
   "/register",
+  "/forgot-password",
+  "/reset-password",
   "/dashboard",
   "/settings",
   "/admin",

@@ -212,11 +212,37 @@ export const copy = {
   pixelSaving: { id: "Menyimpan…", en: "Saving…" } satisfies Bi,
   pixelSavedJustNow: { id: "Tersimpan", en: "Saved" } satisfies Bi,
   pixelUnsaved: { id: "Belum tersimpan", en: "Unsaved" } satisfies Bi,
+  pixelPublishing: { id: "Menerbitkan…", en: "Publishing…" } satisfies Bi,
+  pixelLeaving: { id: "Menyimpan lalu keluar…", en: "Saving, then leaving…" } satisfies Bi,
+  pixelUnpublishing: { id: "Menarik terbit…", en: "Unpublishing…" } satisfies Bi,
+  pixelLeaveBlockedTitle: {
+    id: "Belum bisa keluar",
+    en: "Could not leave yet",
+  } satisfies Bi,
+  pixelLeaveBlockedBody: {
+    id: "Penyimpanan gagal atau sedang offline. Coba lagi, atau keluar tanpa menyimpan goresan terakhir.",
+    en: "Saving failed or you are offline. Try again, or leave without saving the latest strokes.",
+  } satisfies Bi,
+  pixelLeaveUnsavedTitle: {
+    id: "Ada perubahan belum disimpan",
+    en: "You have unsaved changes",
+  } satisfies Bi,
+  pixelLeaveUnsavedBody: {
+    id: "Simpan perubahan, atau buang judul, caption, hashtag, dan goresan yang belum tersimpan.",
+    en: "Save your changes, or discard unsaved title, caption, hashtag, and stroke edits.",
+  } satisfies Bi,
+  pixelLeaveRetry: { id: "Coba lagi", en: "Try again" } satisfies Bi,
+  pixelLeaveDiscard: {
+    id: "Keluar tanpa menyimpan",
+    en: "Leave without saving",
+  } satisfies Bi,
+  createSaveChanges: { id: "Simpan perubahan", en: "Save changes" } satisfies Bi,
   pixelOffline: {
-    id: "Tidak ada jaringan. Goresan tetap di kanvas sampai bisa disimpan.",
-    en: "You are offline. Strokes stay on the canvas until they can be saved.",
+    id: "Tidak ada jaringan. Perubahan tetap di perangkat sampai kamu menyimpan.",
+    en: "You are offline. Changes stay on this device until you save.",
   } satisfies Bi,
   pixelBack: { id: "Kembali", en: "Back" } satisfies Bi,
+  actionWorking: { id: "Memproses…", en: "Working…" } satisfies Bi,
   createBackToWorks: { id: "Kembali ke karyamu", en: "Back to your work" } satisfies Bi,
   pixelUntitled: { id: "Tanpa judul", en: "Untitled" } satisfies Bi,
   sizePickerIntro: {
@@ -230,7 +256,12 @@ export const copy = {
   } satisfies Bi,
   sizeWidth: { id: "Lebar", en: "Width" } satisfies Bi,
   sizeHeight: { id: "Tinggi", en: "Height" } satisfies Bi,
+  sizeRangeError: {
+    id: "Masukkan angka antara {min} dan {max}.",
+    en: "Enter a number between {min} and {max}.",
+  } satisfies Bi,
   sizeStart: { id: "Mulai menggambar", en: "Start drawing" } satisfies Bi,
+  sizeStarting: { id: "Menyiapkan kanvas…", en: "Preparing canvas…" } satisfies Bi,
   sizeSelected: { id: "Dipilih", en: "Selected" } satisfies Bi,
 
   createEyebrow: { id: "Playground", en: "Playground" } satisfies Bi,
@@ -254,6 +285,46 @@ export const copy = {
   } satisfies Bi,
   createStart: { id: "Mulai karya", en: "Start artwork" } satisfies Bi,
   createTitleLabel: { id: "Judul", en: "Title" } satisfies Bi,
+  createCaptionLabel: { id: "Caption", en: "Caption" } satisfies Bi,
+  createCaptionPlaceholder: {
+    id: "Cerita atau konteks di balik karya (opsional)",
+    en: "Story or context behind the work (optional)",
+  } satisfies Bi,
+  createCaptionHint: {
+    id: "Opsional. Maksimal 500 karakter.",
+    en: "Optional. Up to 500 characters.",
+  } satisfies Bi,
+  createDetailsMenu: { id: "Caption & hashtag", en: "Caption & hashtags" } satisfies Bi,
+  createDetailsTitle: { id: "Keterangan karya", en: "Work details" } satisfies Bi,
+  createDetailsDone: { id: "Selesai", en: "Done" } satisfies Bi,
+  createTagsLabel: { id: "Hashtag", en: "Hashtags" } satisfies Bi,
+  createTagsPlaceholder: {
+    id: "Tambah tag, lalu Enter",
+    en: "Add a tag, then Enter",
+  } satisfies Bi,
+  createTagsHint: {
+    id: "Opsional. Maksimal 5. Huruf, angka, dan _. Contoh: pixelart",
+    en: "Optional. Up to 5. Letters, numbers, and _. Example: pixelart",
+  } satisfies Bi,
+  createTagsFull: { id: "Batas 5 tag tercapai", en: "5-tag limit reached" } satisfies Bi,
+  createTagInvalid: {
+    id: "Tag tidak valid. Pakai 2–24 karakter: a–z, 0–9, _.",
+    en: "Invalid tag. Use 2–24 characters: a–z, 0–9, _.",
+  } satisfies Bi,
+  createTagRemove: { id: "Hapus {tag}", en: "Remove {tag}" } satisfies Bi,
+  colorPaletteTitle: { id: "Palet warna", en: "Color palette" } satisfies Bi,
+  colorPaletteHint: {
+    id: "Komposisi warna yang digambar (latar Paper tidak dihitung).",
+    en: "Ink colors used in the work (Paper background is excluded).",
+  } satisfies Bi,
+  colorPaletteEmpty: {
+    id: "Belum ada warna selain latar.",
+    en: "No ink colors yet — only the Paper background.",
+  } satisfies Bi,
+  colorPaletteShowAll: { id: "Lihat semua", en: "Show all" } satisfies Bi,
+  colorPaletteShowLess: { id: "Tampilkan lebih sedikit", en: "Show less" } satisfies Bi,
+  colorHexCopied: { id: "HEX disalin", en: "HEX copied" } satisfies Bi,
+  colorCopyHex: { id: "Salin {hex}", en: "Copy {hex}" } satisfies Bi,
   createTypeLabel: { id: "Jenis", en: "Type" } satisfies Bi,
   createBodyLabel: { id: "Isi", en: "Body" } satisfies Bi,
   createContextLabel: { id: "Konteks", en: "Context" } satisfies Bi,
@@ -268,9 +339,22 @@ export const copy = {
   createEdit: { id: "Sunting", en: "Edit" } satisfies Bi,
   createEditThis: { id: "Sunting karya ini", en: "Edit this work" } satisfies Bi,
   createDelete: { id: "Hapus", en: "Delete" } satisfies Bi,
+  createDeleting: { id: "Menghapus…", en: "Deleting…" } satisfies Bi,
   createDeleteConfirm: {
     id: "Hapus karya ini? Tindakan ini tidak bisa dibatalkan.",
     en: "Delete this work? This cannot be undone.",
+  } satisfies Bi,
+  createDeleteConfirmTitle: {
+    id: "Hapus “{title}”? Tindakan ini tidak bisa dibatalkan.",
+    en: "Delete “{title}”? This cannot be undone.",
+  } satisfies Bi,
+  createDeleteConfirmPublished: {
+    id: "Komentar dan apresiasi pada karya ini juga akan hilang.",
+    en: "Comments and appreciations on this work will also be removed.",
+  } satisfies Bi,
+  createDeleteUnpublishHint: {
+    id: "Kalau kamu hanya ingin menyembunyikannya dari publik, tarik terbit saja.",
+    en: "If you only want to hide it from the public, unpublish instead.",
   } satisfies Bi,
   createCancel: { id: "Batal", en: "Cancel" } satisfies Bi,
   createViewPublic: { id: "Lihat halaman publik", en: "View public page" } satisfies Bi,
@@ -303,6 +387,11 @@ export const copy = {
   visualCanvasTitle: { id: "Komposisi visual", en: "Visual composition" } satisfies Bi,
   pagePrev: { id: "Sebelumnya", en: "Previous" } satisfies Bi,
   pageNext: { id: "Berikutnya", en: "Next" } satisfies Bi,
+  explorePaginationAria: { id: "Halaman galeri", en: "Gallery pages" } satisfies Bi,
+  explorePageStatus: {
+    id: "Halaman {page} dari {pages}",
+    en: "Page {page} of {pages}",
+  } satisfies Bi,
   byAuthor: { id: "oleh", en: "by" } satisfies Bi,
   creationNotFound: { id: "Karya tidak ditemukan.", en: "That creation was not found." } satisfies Bi,
   creationMeta: {
@@ -311,10 +400,12 @@ export const copy = {
   } satisfies Bi,
 
   appreciate: { id: "Apresiasi", en: "Appreciate" } satisfies Bi,
+  appreciateWorking: { id: "Memproses…", en: "Working…" } satisfies Bi,
   appreciated: { id: "Diapresiasi", en: "Appreciated" } satisfies Bi,
   share: { id: "Bagikan", en: "Share" } satisfies Bi,
   shareCopied: { id: "Tautan disalin.", en: "Link copied." } satisfies Bi,
   fork: { id: "Fork", en: "Fork" } satisfies Bi,
+  forkWorking: { id: "Membuat fork…", en: "Forking…" } satisfies Bi,
   forkedFrom: { id: "Fork dari", en: "Forked from" } satisfies Bi,
   forkedUnavailable: {
     id: "Fork dari karya yang sudah tidak publik.",
@@ -330,6 +421,13 @@ export const copy = {
     en: "What do you think about this artwork?",
   } satisfies Bi,
   conversationSend: { id: "Kirim", en: "Send" } satisfies Bi,
+  conversationSending: { id: "Mengirim…", en: "Sending…" } satisfies Bi,
+  conversationSendFailed: {
+    id: "Tidak terkirim.",
+    en: "Not sent.",
+  } satisfies Bi,
+  conversationRetry: { id: "Coba lagi", en: "Try again" } satisfies Bi,
+  conversationDiscard: { id: "Buang", en: "Discard" } satisfies Bi,
   conversationReply: { id: "Balas", en: "Reply" } satisfies Bi,
   conversationReplyTo: { id: "Balas", en: "Reply to" } satisfies Bi,
   conversationEdit: { id: "Ubah", en: "Edit" } satisfies Bi,
@@ -339,8 +437,13 @@ export const copy = {
     id: "Muat percakapan sebelumnya",
     en: "Load earlier notes",
   } satisfies Bi,
+  conversationLoadingEarlier: {
+    id: "Memuat…",
+    en: "Loading…",
+  } satisfies Bi,
   commentLabel: { id: "Catatan", en: "Note" } satisfies Bi,
   commentSubmit: { id: "Kirim", en: "Send" } satisfies Bi,
+  commentSubmitting: { id: "Mengirim…", en: "Sending…" } satisfies Bi,
   commentPosted: { id: "Catatan terkirim.", en: "Note posted." } satisfies Bi,
   commentSignIn: {
     id: "Masuk untuk ikut percakapan atau mengapresiasi.",
@@ -356,6 +459,7 @@ export const copy = {
   reportReason: { id: "Alasan", en: "Reason" } satisfies Bi,
   reportDetails: { id: "Keterangan (opsional)", en: "Details (optional)" } satisfies Bi,
   reportSubmit: { id: "Kirim laporan", en: "Submit report" } satisfies Bi,
+  reportSubmitting: { id: "Mengirim laporan…", en: "Submitting report…" } satisfies Bi,
   reportThanks: {
     id: "Laporan diterima. Tim moderasi akan meninjaunya.",
     en: "Report received. Moderators will review it.",
@@ -394,6 +498,7 @@ export const copy = {
   adminRestore: { id: "Pulihkan", en: "Restore" } satisfies Bi,
   adminReview: { id: "Tandai ditinjau", en: "Mark reviewed" } satisfies Bi,
   adminResolve: { id: "Selesaikan", en: "Resolve" } satisfies Bi,
+  adminWorking: { id: "Memproses…", en: "Working…" } satisfies Bi,
   adminReporter: { id: "Pelapor", en: "Reporter" } satisfies Bi,
   adminTarget: { id: "Sasaran", en: "Target" } satisfies Bi,
   adminHidden: { id: "Tersembunyi dari publik", en: "Hidden from the public" } satisfies Bi,
@@ -409,7 +514,42 @@ export const copy = {
     en: "Sign in to THE COMMONS with email.",
   } satisfies Bi,
   loginSubmit: { id: "Masuk", en: "Sign in" } satisfies Bi,
+  loginSubmitting: { id: "Masuk…", en: "Signing in…" } satisfies Bi,
   loginToRegister: { id: "Belum punya akun? Gabung", en: "No account yet? Join" } satisfies Bi,
+  loginForgotPassword: { id: "Lupa kata sandi?", en: "Forgot password?" } satisfies Bi,
+
+  forgotPasswordTitle: { id: "Lupa kata sandi", en: "Forgot password" } satisfies Bi,
+  forgotPasswordMeta: {
+    id: "Kirim tautan untuk membuat kata sandi baru.",
+    en: "Send a link to set a new password.",
+  } satisfies Bi,
+  forgotPasswordSubmit: { id: "Kirim tautan", en: "Send link" } satisfies Bi,
+  forgotPasswordSubmitting: { id: "Mengirim…", en: "Sending…" } satisfies Bi,
+  forgotPasswordSent: {
+    id: "Jika alamat ini terdaftar, kami mengirim tautan untuk mengatur kata sandi baru.",
+    en: "If this address is registered, we sent a link to set a new password.",
+  } satisfies Bi,
+  forgotPasswordBack: { id: "Kembali ke masuk", en: "Back to sign in" } satisfies Bi,
+
+  resetPasswordTitle: { id: "Kata sandi baru", en: "New password" } satisfies Bi,
+  resetPasswordMeta: {
+    id: "Pilih kata sandi baru untuk akunmu.",
+    en: "Choose a new password for your account.",
+  } satisfies Bi,
+  resetPasswordSubmit: { id: "Simpan kata sandi", en: "Save password" } satisfies Bi,
+  resetPasswordSubmitting: { id: "Menyimpan…", en: "Saving…" } satisfies Bi,
+  resetPasswordDone: {
+    id: "Kata sandi diperbarui. Kamu sudah masuk.",
+    en: "Password updated. You are signed in.",
+  } satisfies Bi,
+  resetPasswordInvalid: {
+    id: "Tautan tidak valid atau sudah kedaluwarsa. Minta tautan baru.",
+    en: "That link is invalid or expired. Request a new one.",
+  } satisfies Bi,
+  resetPasswordConfirmLabel: {
+    id: "Ulangi kata sandi",
+    en: "Confirm password",
+  } satisfies Bi,
 
   registerTitle: { id: "Gabung", en: "Join" } satisfies Bi,
   registerMeta: {
@@ -417,10 +557,25 @@ export const copy = {
     en: "Create a THE COMMONS member account.",
   } satisfies Bi,
   registerSubmit: { id: "Buat akun", en: "Create account" } satisfies Bi,
+  registerSubmitting: { id: "Membuat akun…", en: "Creating account…" } satisfies Bi,
   registerToLogin: { id: "Sudah punya akun? Masuk", en: "Already a member? Sign in" } satisfies Bi,
   registerEmailSent: {
     id: "Jika alamat ini bisa dipakai, kami mengirim tautan untuk menyelesaikan pendaftaran.",
     en: "If this address can be used, we sent a link to finish joining.",
+  } satisfies Bi,
+  registerEmailSentTo: {
+    id: "Periksa kotak masuk untuk {email}.",
+    en: "Check your inbox for {email}.",
+  } satisfies Bi,
+  registerResend: { id: "Kirim ulang tautan", en: "Resend link" } satisfies Bi,
+  registerResending: { id: "Mengirim ulang…", en: "Resending…" } satisfies Bi,
+  registerResent: {
+    id: "Jika alamat itu bisa dipakai, tautan baru sudah dikirim.",
+    en: "If that address can be used, a new link was sent.",
+  } satisfies Bi,
+  registerChangeEmail: {
+    id: "Pakai email lain",
+    en: "Use a different email",
   } satisfies Bi,
 
   emailLabel: { id: "Email", en: "Email" } satisfies Bi,
@@ -430,8 +585,8 @@ export const copy = {
   bioLabel: { id: "Bio", en: "Bio" } satisfies Bi,
   roleLabel: { id: "Peran", en: "Role" } satisfies Bi,
   usernameHint: {
-    id: "3–20 karakter: huruf kecil, angka, dan garis bawah.",
-    en: "3–20 characters: lowercase letters, numbers, and underscores.",
+    id: "3–20 karakter: huruf, angka, garis bawah. Disimpan sebagai huruf kecil.",
+    en: "3–20 characters: letters, numbers, underscores. Stored as lowercase.",
   } satisfies Bi,
   passwordHint: { id: "Minimal 8 karakter.", en: "At least 8 characters." } satisfies Bi,
   roleHint: {
@@ -493,6 +648,7 @@ export const copy = {
   } satisfies Bi,
   settingsBack: { id: "Kembali ke profil", en: "Back to profile" } satisfies Bi,
   settingsSave: { id: "Simpan", en: "Save" } satisfies Bi,
+  settingsSaving: { id: "Menyimpan…", en: "Saving…" } satisfies Bi,
   settingsSaved: { id: "Profil disimpan.", en: "Profile saved." } satisfies Bi,
 
   profileTitle: { id: "Profil", en: "Profile" } satisfies Bi,
@@ -516,9 +672,25 @@ export const copy = {
       id: "Akun tidak bisa dibuat sekarang.",
       en: "The account could not be created right now.",
     } satisfies Bi,
+    email_not_confirmed: {
+      id: "Konfirmasi emailmu dulu lewat tautan yang kami kirim, lalu masuk lagi.",
+      en: "Confirm your email with the link we sent, then sign in again.",
+    } satisfies Bi,
     invalid_input: {
       id: "Periksa isianmu lalu coba lagi.",
       en: "Check your details and try again.",
+    } satisfies Bi,
+    invalid_email: {
+      id: "Masukkan alamat email yang valid.",
+      en: "Enter a valid email address.",
+    } satisfies Bi,
+    invalid_password: {
+      id: "Kata sandi minimal 8 karakter.",
+      en: "Password must be at least 8 characters.",
+    } satisfies Bi,
+    password_mismatch: {
+      id: "Kata sandi tidak sama.",
+      en: "Passwords do not match.",
     } satisfies Bi,
     username_taken: {
       id: "Nama pengguna itu sudah dipakai.",

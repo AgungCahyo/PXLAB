@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest"
+import { normalizeCreationTag } from "@/lib/creations"
+import { CREATION_CAPTION_MAX } from "@/lib/site"
 import {
+  creationCaptionSchema,
+  creationTagsSchema,
   emptyCreationContent,
   parseCreationContent,
   updateCreationSchema,
@@ -137,13 +141,83 @@ describe("pixel header", () => {
   })
 })
 
+describe("creationCaptionSchema", () => {
+  it("turns blank caption into null", () => {
+    expect(creationCaptionSchema.safeParse("   ").success).toBe(true)
+    expect(creationCaptionSchema.safeParse("   ").data).toBeNull()
+    expect(creationCaptionSchema.safeParse(undefined).data).toBeNull()
+  })
+
+  it("trims a non-empty caption", () => {
+    const result = creationCaptionSchema.safeParse("  hello world  ")
+    expect(result.success).toBe(true)
+    expect(result.data).toBe("hello world")
+  })
+
+  it(`rejects captions longer than ${CREATION_CAPTION_MAX}`, () => {
+    const result = creationCaptionSchema.safeParse("a".repeat(CREATION_CAPTION_MAX + 1))
+    expect(result.success).toBe(false)
+  })
+
+  it(`accepts captions of ${CREATION_CAPTION_MAX} characters`, () => {
+    const value = "a".repeat(CREATION_CAPTION_MAX)
+    const result = creationCaptionSchema.safeParse(value)
+    expect(result.success).toBe(true)
+    expect(result.data).toBe(value)
+  })
+})
+
+describe("creation tags", () => {
+  it("normalizes case, hash, and rejects bad tags", () => {
+    expect(normalizeCreationTag("#Nature")).toBe("nature")
+    expect(normalizeCreationTag("pixel_art")).toBe("pixel_art")
+    expect(normalizeCreationTag("#")).toBeNull()
+    expect(normalizeCreationTag("a")).toBeNull()
+    expect(normalizeCreationTag("bad-tag")).toBeNull()
+  })
+
+  it("dedupes and caps at five from JSON", () => {
+    const result = creationTagsSchema.safeParse(
+      JSON.stringify(["#Nature", "nature", "pixelart", "landscape", "character", "extra"]),
+    )
+    expect(result.success).toBe(true)
+    expect(result.data).toEqual(["nature", "pixelart", "landscape", "character", "extra"])
+  })
+
+  it("rejects an invalid token", () => {
+    const result = creationTagsSchema.safeParse(JSON.stringify(["ok", "bad-tag"]))
+    expect(result.success).toBe(false)
+  })
+})
+
 describe("updateCreationSchema", () => {
   it("accepts unpublish without deleting the work", () => {
     const result = updateCreationSchema.safeParse({
       id: "11111111-1111-4111-8111-111111111111",
       title: "Sky",
+      caption: "",
+      tags: "[]",
       intent: "unpublish",
     })
     expect(result.success).toBe(true)
+    if (result.success) {
+      expect(result.data.caption).toBeNull()
+      expect(result.data.tags).toEqual([])
+    }
+  })
+
+  it("accepts a caption with the update payload", () => {
+    const result = updateCreationSchema.safeParse({
+      id: "11111111-1111-4111-8111-111111111111",
+      title: "Sky",
+      caption: "Drawn at dawn",
+      tags: JSON.stringify(["pixelart"]),
+      intent: "draft",
+    })
+    expect(result.success).toBe(true)
+    if (result.success) {
+      expect(result.data.caption).toBe("Drawn at dawn")
+      expect(result.data.tags).toEqual(["pixelart"])
+    }
   })
 })

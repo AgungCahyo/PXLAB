@@ -55,9 +55,12 @@ export function StudioNewForm({ lang }: { lang: Lang }) {
   }, [preset, customWidth, customHeight])
 
   const sizeOk = isPixelCanvasSize(size.width, size.height)
+  const rangeHint = copy.sizeRangeError[lang]
+    .replaceAll("{min}", String(PIXEL_CANVAS_MIN))
+    .replaceAll("{max}", String(PIXEL_CANVAS_MAX))
 
   return (
-    <form action={action} className="grid gap-6">
+    <form action={action} className="grid gap-6 pb-36 md:pb-0">
       <input type="hidden" name="lang" value={lang} />
       <input type="hidden" name="type" value="pixel" />
       <input type="hidden" name="title" value={DRAFT_UNNAMED_TITLE} />
@@ -120,6 +123,11 @@ export function StudioNewForm({ lang }: { lang: Lang }) {
             max={PIXEL_CANVAS_MAX}
             label={copy.sizeWidth[lang]}
             value={customWidth}
+            error={
+              customWidth < PIXEL_CANVAS_MIN || customWidth > PIXEL_CANVAS_MAX
+                ? rangeHint
+                : undefined
+            }
             onChange={(event) => setCustomWidth(Number(event.target.value))}
           />
           <Input
@@ -129,14 +137,29 @@ export function StudioNewForm({ lang }: { lang: Lang }) {
             max={PIXEL_CANVAS_MAX}
             label={copy.sizeHeight[lang]}
             value={customHeight}
+            error={
+              customHeight < PIXEL_CANVAS_MIN || customHeight > PIXEL_CANVAS_MAX
+                ? rangeHint
+                : undefined
+            }
             onChange={(event) => setCustomHeight(Number(event.target.value))}
           />
         </div>
       ) : null}
 
-      <Button type="submit" disabled={pending || !sizeOk}>
-        {copy.sizeStart[lang]}
-      </Button>
+      <div className="fixed inset-x-0 bottom-[calc(4rem+env(safe-area-inset-bottom,0px))] z-30 border-t-[3px] border-earth bg-bg px-5 py-3 sm:px-8 lg:px-16 md:static md:bottom-auto md:z-auto md:border-0 md:bg-transparent md:p-0">
+        <p className="mb-2 text-[13px] text-muted md:sr-only">
+          {size.width} × {size.height}
+        </p>
+        <Button
+          type="submit"
+          className="w-full md:w-auto"
+          disabled={pending || !sizeOk}
+          aria-busy={pending || undefined}
+        >
+          {pending ? copy.sizeStarting[lang] : copy.sizeStart[lang]}
+        </Button>
+      </div>
     </form>
   )
 }

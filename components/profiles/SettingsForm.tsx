@@ -71,10 +71,11 @@ export function SettingsForm({ lang, profile }: { lang: Lang; profile: MemberPro
         type="button"
         onClick={() => void leave()}
         disabled={leaving || pending}
+        aria-busy={leaving || undefined}
         className="inline-flex h-11 w-fit items-center gap-2 border-[3px] border-earth bg-card px-3 text-[14px] font-medium disabled:opacity-50"
       >
         <PixelIcon name="back" />
-        {copy.settingsBack[lang]}
+        {leaving ? copy.settingsSaving[lang] : copy.settingsBack[lang]}
       </button>
       {leaveError && "error" in leaveError ? (
         <Alert tone="error">{copy.errors[leaveError.error][lang]}</Alert>
@@ -119,8 +120,8 @@ export function SettingsForm({ lang, profile }: { lang: Lang; profile: MemberPro
         label={copy.roleLabel[lang]}
         hint={copy.roleHint[lang]}
       />
-      <Button type="submit" disabled={pending || leaving}>
-        {copy.settingsSave[lang]}
+      <Button type="submit" disabled={pending || leaving} aria-busy={pending || undefined}>
+        {pending ? copy.settingsSaving[lang] : copy.settingsSave[lang]}
       </Button>
     </form>
   )

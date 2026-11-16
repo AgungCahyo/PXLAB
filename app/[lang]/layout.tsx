@@ -59,7 +59,11 @@ export default async function LangLayout({
   if (!isLang(lang)) notFound();
 
   return (
-    <html lang={lang} className={`${sans.variable} ${pixel.variable}`}>
+    <html
+      lang={lang}
+      className={`${sans.variable} ${pixel.variable}`}
+      data-scroll-behavior="smooth"
+    >
       <body>
         <a href="#main" className="skip-link">
           {copy.skip[lang]}

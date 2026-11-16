@@ -1,9 +1,15 @@
+import { cache } from "react"
 import { connection } from "next/server"
 import { getSessionUserId } from "@/lib/auth/session"
 import { ilikeContains } from "@/lib/creations"
 import { createPublicSupabase } from "@/lib/supabase/public"
 import { createServerSupabase } from "@/lib/supabase/server"
-import { parsePixelSource, type PixelSourceV1 } from "@/lib/pixel"
+import {
+  parseColorUsage,
+  parsePixelSource,
+  type ColorUsageEntry,
+  type PixelSourceV1,
+} from "@/lib/pixel"
 import {
   EXPLORE_PAGE_SIZE,
   PIXEL_BUCKET,
@@ -17,6 +23,9 @@ export type CreationRow = {
   id: string
   user_id: string
   title: string
+  caption: string | null
+  tags: string[]
+  color_usage: ColorUsageEntry[] | null
   type: CreationType
   category: CreationCategory | null
   content: CreationContent
@@ -31,6 +40,8 @@ export type CreationRow = {
 export type CreationCard = {
   id: string
   title: string
+  caption: string | null
+  tags: string[]
   type: CreationType
   category: CreationCategory | null
   published_at: string | null
@@ -41,8 +52,9 @@ export type CreationCard = {
 }
 
 const CREATION_COLUMNS =
-  "id, user_id, title, type, category, content, cover_url, status, forked_from, created_at, updated_at, published_at"
-const CARD_COLUMNS = "id, title, type, category, status, published_at, updated_at, user_id, cover_url"
+  "id, user_id, title, caption, tags, color_usage, type, category, content, cover_url, status, forked_from, created_at, updated_at, published_at"
+const CARD_COLUMNS =
+  "id, title, caption, tags, type, category, status, published_at, updated_at, user_id, cover_url"
 
 type ProfileEmbed = { username: string; display_name: string | null }
 
@@ -54,10 +66,17 @@ function authorOf(row: { profiles?: ProfileEmbed | ProfileEmbed[] | null }) {
   }
 }
 
+function tagsOf(row: Record<string, unknown>) {
+  const value = row.tags
+  return Array.isArray(value) ? value.map(String) : []
+}
+
 function cardFromRow(row: Record<string, unknown>): CreationCard {
   return {
     id: row.id as string,
     title: row.title as string,
+    caption: (row.caption as string | null) ?? null,
+    tags: tagsOf(row),
     type: row.type as CreationType,
     category: (row.category as CreationCategory | null) ?? null,
     published_at: (row.published_at as string | null) ?? null,
@@ -129,7 +148,8 @@ export async function listPublishedCreationsByUser(
   }
 }
 
-export async function getPublishedCreation(
+/** Dedupes metadata + page (and any same-request callers) via React cache. */
+export const getPublishedCreation = cache(async function getPublishedCreation(
   id: string,
 ): Promise<
   | (CreationRow & {
@@ -165,11 +185,14 @@ export async function getPublishedCreation(
 
   return {
     ...row,
+    caption: row.caption ?? null,
+    tags: Array.isArray(row.tags) ? row.tags : [],
+    color_usage: parseColorUsage(row.color_usage),
     category: row.category ?? null,
     author: authorOf(row),
     source,
   }
-}
+})
 
 export async function getOwnedCreation(id: string): Promise<CreationRow | null> {
   const userId = await getSessionUserId()
@@ -186,7 +209,13 @@ export async function getOwnedCreation(id: string): Promise<CreationRow | null> 
 
   if (!data) return null
   const row = data as CreationRow
-  return { ...row, category: row.category ?? null }
+  return {
+    ...row,
+    caption: row.caption ?? null,
+    tags: Array.isArray(row.tags) ? row.tags : [],
+    color_usage: parseColorUsage(row.color_usage),
+    category: row.category ?? null,
+  }
 }
 
 export async function listOwnCreations(): Promise<CreationCard[]> {

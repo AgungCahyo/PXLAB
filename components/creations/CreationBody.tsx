@@ -1,3 +1,4 @@
+import { ViewTransition } from "react"
 import { PixelArt } from "@/components/creations/PixelArt"
 import { VisualCanvas } from "@/components/creations/VisualCanvas"
 import { copy } from "@/lib/copy"
@@ -10,15 +11,33 @@ export function CreationBody({
   content,
   lang,
   coverUrl,
+  creationId,
+  priority = false,
 }: {
   type: CreationType
   content: CreationContent
   lang: Lang
   coverUrl?: string | null
+  /** Shared view-transition name with gallery thumbs. */
+  creationId?: string
+  priority?: boolean
 }) {
   if (type === "pixel") {
     if (!coverUrl) return <p className="text-[15px] text-muted">—</p>
-    return <PixelArt src={coverUrl} alt={copy.pixelPreviewAlt[lang]} variant="stage" />
+    const art = (
+      <PixelArt
+        src={coverUrl}
+        alt={copy.pixelPreviewAlt[lang]}
+        variant="stage"
+        priority={priority}
+      />
+    )
+    if (!creationId) return art
+    return (
+      <ViewTransition name={`creation-art-${creationId}`} share="morph" default="none">
+        {art}
+      </ViewTransition>
+    )
   }
 
   if (type === "visual" && "elements" in content) {

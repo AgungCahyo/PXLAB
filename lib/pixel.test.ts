@@ -7,6 +7,8 @@ import {
   PIXEL_SOURCE_VERSION,
   buildPixelSource,
   clientToCell,
+  colorUsageFromSource,
+  colorUsagePercents,
   decodeRle,
   encodeRle,
   ensurePaletteColor,
@@ -17,6 +19,7 @@ import {
   indicesToRgba,
   isPixelCanvasSize,
   normalizePixelHex,
+  parseColorUsage,
   parsePixelSource,
   rgbToPaletteIndex,
   rgbaToIndices,
@@ -222,5 +225,29 @@ describe("pixel editor source", () => {
     }
     expect(palette).toHaveLength(PIXEL_DOCUMENT_PALETTE_MAX)
     expect(ensurePaletteColor(palette, "#ABCDEF")).toEqual({ error: "palette_full" })
+  })
+})
+
+describe("color usage from RLE", () => {
+  it("excludes Paper and sorts by count", () => {
+    const palette = [PIXEL_PAPER, "#FF5C5C", "#55B8FF"]
+    // 4×4 = 16 pixels: 10 paper, 4 blue, 2 red
+    const runs = [0, 10, 2, 4, 1, 2]
+    const usage = colorUsageFromSource({ palette, runs })
+    expect(usage).toEqual([
+      { hex: "#55B8FF", count: 4 },
+      { hex: "#FF5C5C", count: 2 },
+    ])
+    expect(colorUsagePercents(usage)).toEqual([67, 33])
+  })
+
+  it("returns an empty list when the canvas is only Paper", () => {
+    const usage = colorUsageFromSource({
+      palette: [PIXEL_PAPER],
+      runs: [0, 64],
+    })
+    expect(usage).toEqual([])
+    expect(parseColorUsage([])).toEqual([])
+    expect(parseColorUsage(null)).toBeNull()
   })
 })

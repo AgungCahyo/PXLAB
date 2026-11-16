@@ -1,6 +1,7 @@
 "use client"
 
-import { useActionState, useState } from "react"
+import { useActionState, useEffect, useRef, useState } from "react"
+import { flushSync } from "react-dom"
 import Link from "next/link"
 import { Alert } from "@/components/ui/Alert"
 import { Button } from "@/components/ui/Button"
@@ -24,6 +25,7 @@ import { formatRelativeTime } from "@/lib/format"
 import { href, type Lang } from "@/lib/i18n"
 import { loginHref } from "@/lib/paths"
 import { COMMENT_BODY_MAX } from "@/lib/site"
+import { cn } from "@/lib/utils"
 
 export function CreationCommunity({
   lang,
@@ -55,6 +57,8 @@ export function CreationCommunity({
   const [loadingEarlier, setLoadingEarlier] = useState(false)
   const [pendingRoots, setPendingRoots] = useState<ConversationRoot[]>([])
   const [pendingReplies, setPendingReplies] = useState<ConversationNote[]>([])
+  const [sendStatus, setSendStatus] = useState<Record<string, "sending" | "failed">>({})
+  const retryingRef = useRef<Set<string>>(new Set())
   const [edits, setEdits] = useState<Record<string, { content: string; updated_at: string }>>({})
   const [removed, setRemoved] = useState<Set<string>>(new Set())
   const [replyingTo, setReplyingTo] = useState<string | null>(null)
@@ -99,11 +103,23 @@ export function CreationCommunity({
   }
 
   function onOptimistic(note: ConversationNote) {
+    setSendStatus((current) => ({ ...current, [note.id]: "sending" }))
     if (note.parent_id) setPendingReplies((current) => [...current, note])
     else setPendingRoots((current) => [...current, { ...note, replies: [] }])
   }
 
+  function clearSendStatus(tempId: string) {
+    setSendStatus((current) => {
+      if (!(tempId in current)) return current
+      const next = { ...current }
+      delete next[tempId]
+      return next
+    })
+  }
+
   function onPosted(tempId: string, posted: PostedComment) {
+    clearSendStatus(tempId)
+    retryingRef.current.delete(tempId)
     if (posted.parent_id) {
       setPendingReplies((current) =>
         current.map((note) => (note.id === tempId ? asNote(posted, note) : note)),
@@ -117,8 +133,37 @@ export function CreationCommunity({
   }
 
   function onFailed(tempId: string) {
+    retryingRef.current.delete(tempId)
+    setSendStatus((current) => ({ ...current, [tempId]: "failed" }))
+  }
+
+  function discardFailed(tempId: string) {
+    retryingRef.current.delete(tempId)
+    clearSendStatus(tempId)
     setPendingRoots((current) => current.filter((root) => root.id !== tempId))
     setPendingReplies((current) => current.filter((note) => note.id !== tempId))
+  }
+
+  async function retryFailed(tempId: string) {
+    if (retryingRef.current.has(tempId) || sendStatus[tempId] !== "failed") return
+    const note =
+      pendingRoots.find((root) => root.id === tempId) ??
+      pendingReplies.find((reply) => reply.id === tempId)
+    if (!note) return
+
+    retryingRef.current.add(tempId)
+    setSendStatus((current) => ({ ...current, [tempId]: "sending" }))
+    const formData = new FormData()
+    formData.set("creation_id", creationId)
+    formData.set("content", note.content)
+    if (note.parent_id) formData.set("parent_id", note.parent_id)
+
+    const result = await addCommentAction(null, formData)
+    if (result && "ok" in result && result.comment) {
+      onPosted(tempId, result.comment)
+      return
+    }
+    onFailed(tempId)
   }
 
   async function loadEarlier() {
@@ -165,8 +210,15 @@ export function CreationCommunity({
 
       {hasEarlier ? (
         <div className="mt-8">
-          <Button type="button" size="sm" variant="ghost" onClick={loadEarlier} disabled={loadingEarlier}>
-            {copy.conversationLoadEarlier[lang]}
+          <Button
+            type="button"
+            size="sm"
+            variant="ghost"
+            onClick={loadEarlier}
+            disabled={loadingEarlier}
+            aria-busy={loadingEarlier || undefined}
+          >
+            {loadingEarlier ? copy.conversationLoadingEarlier[lang] : copy.conversationLoadEarlier[lang]}
           </Button>
         </div>
       ) : null}
@@ -181,8 +233,11 @@ export function CreationCommunity({
                 lang={lang}
                 note={root}
                 member={member}
-                canReply={Boolean(member)}
+                canReply={Boolean(member) && !sendStatus[root.id]}
+                sendStatus={sendStatus[root.id]}
                 onReply={() => setReplyingTo(root.id)}
+                onRetry={() => void retryFailed(root.id)}
+                onDiscard={() => discardFailed(root.id)}
                 onEdited={(content, updatedAt) =>
                   setEdits((current) => ({ ...current, [root.id]: { content, updated_at: updatedAt } }))
                 }
@@ -206,6 +261,9 @@ export function CreationCommunity({
                       note={reply}
                       member={member}
                       canReply={false}
+                      sendStatus={sendStatus[reply.id]}
+                      onRetry={() => void retryFailed(reply.id)}
+                      onDiscard={() => discardFailed(reply.id)}
                       onEdited={(content, updatedAt) =>
                         setEdits((current) => ({
                           ...current,
@@ -286,7 +344,10 @@ function ConversationNoteRow({
   note,
   member,
   canReply,
+  sendStatus,
   onReply,
+  onRetry,
+  onDiscard,
   onEdited,
   onDeleted,
 }: {
@@ -294,24 +355,35 @@ function ConversationNoteRow({
   note: ConversationNote
   member: { id: string; username: string } | null
   canReply: boolean
+  sendStatus?: "sending" | "failed"
   onReply?: () => void
+  onRetry?: () => void
+  onDiscard?: () => void
   onEdited: (content: string, updatedAt: string) => void
   onDeleted: () => void
 }) {
   const [editing, setEditing] = useState(false)
   const [editDraft, setEditDraft] = useState<string | null>(null)
-  const own = Boolean(member && member.id === note.user_id)
-  const edited = isCommentEdited(note.created_at, note.updated_at)
+  const pendingLocal = Boolean(sendStatus)
+  const own = Boolean(member && member.id === note.user_id) && !pendingLocal
+  const edited = !pendingLocal && isCommentEdited(note.created_at, note.updated_at)
 
   return (
-    <div className="flex gap-3">
+    <div
+      className={cn("flex gap-3", sendStatus === "sending" && "opacity-80")}
+      aria-busy={sendStatus === "sending" || undefined}
+    >
       <PixelMark username={note.author.username} />
       <div className="min-w-0 flex-1">
         <p className="text-[13px] text-muted">
           <Link href={href(lang, `/u/${note.author.username}`)} className="hover:text-fg">
             @{note.author.username}
           </Link>
-          {` · ${formatRelativeTime(note.created_at, lang)}`}
+          {sendStatus === "sending"
+            ? ` · ${copy.conversationSending[lang]}`
+            : sendStatus === "failed"
+              ? ` · ${copy.conversationSendFailed[lang]}`
+              : ` · ${formatRelativeTime(note.created_at, lang)}`}
           {edited ? ` · ${copy.conversationEdited[lang]}` : ""}
         </p>
         {editing ? (
@@ -333,7 +405,17 @@ function ConversationNoteRow({
           <p className="mt-2 whitespace-pre-wrap text-[15px] leading-relaxed">{note.content}</p>
         )}
         <div className="mt-3 flex flex-wrap items-center gap-3">
-          {canReply && onReply ? (
+          {sendStatus === "failed" ? (
+            <>
+              <Button type="button" size="sm" onClick={onRetry}>
+                {copy.conversationRetry[lang]}
+              </Button>
+              <Button type="button" size="sm" variant="ghost" onClick={onDiscard}>
+                {copy.conversationDiscard[lang]}
+              </Button>
+            </>
+          ) : null}
+          {canReply && onReply && !pendingLocal ? (
             <Button type="button" size="sm" variant="ghost" onClick={onReply}>
               {copy.conversationReply[lang]}
             </Button>
@@ -344,7 +426,7 @@ function ConversationNoteRow({
             </Button>
           ) : null}
           {own ? <DeleteComment lang={lang} id={note.id} onDeleted={onDeleted} /> : null}
-          {member ? (
+          {member && !pendingLocal ? (
             <ReportButton lang={lang} targetType="comment" targetId={note.id} member />
           ) : null}
         </div>
@@ -424,7 +506,9 @@ function ConversationComposer({
       else onCancel?.()
       return
     }
+    // Keep the optimistic row (marked failed) and clear the field so content isn't duplicated.
     onFailed(tempId)
+    setContent("")
     setError(result && "error" in result ? result : { error: "invalid_input" })
   }
 
@@ -459,8 +543,13 @@ function ConversationComposer({
         </div>
       </div>
       <div className="flex flex-wrap items-center gap-2">
-        <Button type="submit" size="sm" disabled={pending || content.trim().length === 0}>
-          {copy.conversationSend[lang]}
+        <Button
+          type="submit"
+          size="sm"
+          disabled={pending || content.trim().length === 0}
+          aria-busy={pending || undefined}
+        >
+          {pending ? copy.conversationSending[lang] : copy.conversationSend[lang]}
         </Button>
         {onCancel ? (
           <Button type="button" size="sm" variant="ghost" onClick={onCancel}>
@@ -520,8 +609,13 @@ function EditComment({
         className="min-h-24"
       />
       <div className="flex flex-wrap gap-2">
-        <Button type="submit" size="sm" disabled={pending || content.trim().length === 0}>
-          {copy.conversationSave[lang]}
+        <Button
+          type="submit"
+          size="sm"
+          disabled={pending || content.trim().length === 0}
+          aria-busy={pending || undefined}
+        >
+          {pending ? copy.actionWorking[lang] : copy.conversationSave[lang]}
         </Button>
         <Button type="button" size="sm" variant="ghost" onClick={() => onCancel(content)}>
           {copy.createCancel[lang]}
@@ -555,12 +649,13 @@ export function CreationEngagement({
           appreciated={appreciated}
           count={appreciateCount}
         />
-      ) : appreciateCount > 0 ? (
-        <p className="inline-flex items-center gap-2 text-[14px] text-muted">
+      ) : (
+        <p className="inline-flex min-h-9 items-center gap-2 border-[3px] border-earth bg-card px-3 text-[13px] text-muted">
           <PixelIcon name="heart" />
-          {copy.appreciate[lang]} · {appreciateCount}
+          {copy.appreciate[lang]}
+          {appreciateCount > 0 ? ` · ${appreciateCount}` : ""}
         </p>
-      ) : null}
+      )}
       <ShareButton lang={lang} creationId={creationId} title={title} />
     </div>
   )
@@ -569,38 +664,85 @@ export function CreationEngagement({
 function AppreciateForm({
   lang,
   creationId,
-  appreciated,
-  count,
+  appreciated: initialAppreciated,
+  count: initialCount,
 }: {
   lang: Lang
   creationId: string
   appreciated: boolean
   count: number
 }) {
-  const [state, action, pending] = useActionState<CommunityActionState, FormData>(
-    toggleAppreciationAction,
-    null,
-  )
+  const [appreciated, setAppreciated] = useState(initialAppreciated)
+  const [count, setCount] = useState(initialCount)
+  const [pending, setPending] = useState(false)
+  const [error, setError] = useState<CommunityActionState>(null)
+  const pendingRef = useRef(false)
+  pendingRef.current = pending
+
+  useEffect(() => {
+    // Do not clobber an in-flight optimistic toggle with a stale RSC snapshot.
+    if (pendingRef.current) return
+    setAppreciated(initialAppreciated)
+    setCount(initialCount)
+  }, [initialAppreciated, initialCount])
+
+  function toggle() {
+    if (pendingRef.current) return
+    const previous = { appreciated, count }
+    const next = !appreciated
+    // Commit the toggle to the DOM in this click turn so the user sees
+    // active/inactive + count before the server round-trip starts.
+    flushSync(() => {
+      setAppreciated(next)
+      setCount(Math.max(0, count + (next ? 1 : -1)))
+      setPending(true)
+      setError(null)
+    })
+    pendingRef.current = true
+
+    const formData = new FormData()
+    formData.set("creation_id", creationId)
+    void toggleAppreciationAction(null, formData).then((result) => {
+      pendingRef.current = false
+      setPending(false)
+      if (result && "error" in result) {
+        flushSync(() => {
+          setAppreciated(previous.appreciated)
+          setCount(previous.count)
+          setError(result)
+        })
+        return
+      }
+      // Keep optimistic values until props catch up after revalidate.
+    })
+  }
+
   return (
-    <form action={action}>
-      <input type="hidden" name="creation_id" value={creationId} />
-      {state && "error" in state ? (
+    <div>
+      {error && "error" in error ? (
         <Alert tone="error" className="mb-2">
-          {copy.errors[state.error][lang]}
+          {copy.errors[error.error][lang]}
         </Alert>
       ) : null}
       <Button
-        type="submit"
+        type="button"
         size="sm"
-        variant="secondary"
+        variant={appreciated ? "secondary" : "outline"}
         disabled={pending}
+        aria-busy={pending || undefined}
         aria-pressed={appreciated}
+        onClick={toggle}
+        className={cn(
+          // Keep the optimistic active look visible while the request runs.
+          "disabled:opacity-100",
+          appreciated && "shadow-[4px_4px_0_0_var(--fg)]",
+        )}
       >
         <PixelIcon name="heart" />
         {appreciated ? copy.appreciated[lang] : copy.appreciate[lang]}
         {count > 0 ? ` · ${count}` : ""}
       </Button>
-    </form>
+    </div>
   )
 }
 
@@ -659,8 +801,8 @@ function ForkForm({ lang, creationId }: { lang: Lang; creationId: string }) {
           {copy.errors[state.error][lang]}
         </Alert>
       ) : null}
-      <Button type="submit" size="sm" variant="ghost" disabled={pending}>
-        {copy.fork[lang]}
+      <Button type="submit" size="sm" variant="ghost" disabled={pending} aria-busy={pending || undefined}>
+        {pending ? copy.forkWorking[lang] : copy.fork[lang]}
       </Button>
     </form>
   )
@@ -704,8 +846,8 @@ function DeleteComment({
       <input type="hidden" name="id" value={id} />
       {error && "error" in error ? <Alert tone="error">{copy.errors[error.error][lang]}</Alert> : null}
       <span className="text-[13px] text-muted">{copy.commentDeleteConfirm[lang]}</span>
-      <Button type="submit" size="sm" disabled={pending}>
-        {copy.commentDelete[lang]}
+      <Button type="submit" size="sm" disabled={pending} aria-busy={pending || undefined}>
+        {pending ? copy.createDeleting[lang] : copy.commentDelete[lang]}
       </Button>
       <Button type="button" size="sm" variant="ghost" onClick={() => setConfirming(false)}>
         {copy.createCancel[lang]}

@@ -9,6 +9,7 @@ import { isUnnamedTitle } from "@/lib/creations"
 import { href, isLang, type Lang } from "@/lib/i18n"
 import {
   PIXEL_SIZE_PRESETS,
+  colorUsageFromSource,
   isPixelCanvasSize,
   isPngBuffer,
   parsePixelSource,
@@ -246,6 +247,8 @@ export async function updateCreationAction(
   const parsed = updateCreationSchema.safeParse({
     id: formData.get("id"),
     title: formData.get("title"),
+    caption: formData.get("caption"),
+    tags: formData.get("tags"),
     intent: formData.get("intent"),
   })
   if (!parsed.success) return { error: "invalid_input" }
@@ -259,7 +262,14 @@ export async function updateCreationAction(
   if (!isCreationType(existing.type)) return { error: "invalid_input" }
 
   if (parsed.data.intent === "unpublish") {
-    return unpublishCreation(lang, existing.id, userId, existing.title)
+    return unpublishCreation(
+      lang,
+      existing.id,
+      userId,
+      existing.title,
+      parsed.data.caption,
+      parsed.data.tags,
+    )
   }
 
   if (parsed.data.intent === "publish" && isUnnamedTitle(parsed.data.title)) {
@@ -293,6 +303,8 @@ export async function updateCreationAction(
     .from("creations")
     .update({
       title: parsed.data.title,
+      caption: parsed.data.caption,
+      tags: parsed.data.tags,
       content: contentParsed.data as CreationContent,
       status: nextStatus,
       published_at: publishedAt,
@@ -315,6 +327,8 @@ export async function updatePixelCreationAction(
   const parsed = updateCreationSchema.safeParse({
     id: formData.get("id"),
     title: formData.get("title"),
+    caption: formData.get("caption"),
+    tags: formData.get("tags"),
     intent: formData.get("intent"),
   })
   if (!parsed.success) return { error: "invalid_input" }
@@ -328,7 +342,14 @@ export async function updatePixelCreationAction(
   if (existing.type !== "pixel") return { error: "invalid_input" }
 
   if (parsed.data.intent === "unpublish") {
-    return unpublishCreation(lang, existing.id, userId, parsed.data.title)
+    return unpublishCreation(
+      lang,
+      existing.id,
+      userId,
+      parsed.data.title,
+      parsed.data.caption,
+      parsed.data.tags,
+    )
   }
 
   if (parsed.data.intent === "publish" && isUnnamedTitle(parsed.data.title)) {
@@ -377,16 +398,24 @@ export async function updatePixelCreationAction(
   const publishedAt =
     nextStatus === "published" ? (existing.published_at ?? new Date().toISOString()) : existing.published_at
 
+  const updatePayload: Record<string, unknown> = {
+    title: parsed.data.title,
+    caption: parsed.data.caption,
+    tags: parsed.data.tags,
+    category: pixelSizeCategory(payload.source.width, payload.source.height),
+    content: headerParsed.data,
+    cover_url: pixelCoverUrl(existing.id),
+    status: nextStatus,
+    published_at: publishedAt,
+  }
+  // Snapshot ink usage only on publish (not draft autosave). Unpublish keeps the last value.
+  if (parsed.data.intent === "publish") {
+    updatePayload.color_usage = colorUsageFromSource(payload.source)
+  }
+
   const { error } = await supabase
     .from("creations")
-    .update({
-      title: parsed.data.title,
-      category: pixelSizeCategory(payload.source.width, payload.source.height),
-      content: headerParsed.data,
-      cover_url: pixelCoverUrl(existing.id),
-      status: nextStatus,
-      published_at: publishedAt,
-    })
+    .update(updatePayload)
     .eq("id", existing.id)
     .eq("user_id", userId)
 
@@ -402,6 +431,8 @@ async function unpublishCreation(
   id: string,
   userId: string,
   title: string,
+  caption: string | null,
+  tags: string[],
 ): Promise<CreationActionState> {
   const supabase = await createServerSupabase()
   if (!supabase) return { error: "not_configured" }
@@ -410,6 +441,8 @@ async function unpublishCreation(
     .from("creations")
     .update({
       title,
+      caption,
+      tags,
       status: "draft",
     })
     .eq("id", id)

@@ -103,22 +103,46 @@ function ReportCard({ lang, report }: { lang: Lang; report: AdminReport }) {
       <form action={action} className="mt-4 flex flex-wrap gap-2">
         <input type="hidden" name="id" value={report.id} />
         {!report.targetHidden ? (
-          <Button type="submit" name="intent" value="hide" size="sm" disabled={pending}>
-            {copy.adminHide[lang]}
+          <Button type="submit" name="intent" value="hide" size="sm" disabled={pending} aria-busy={pending || undefined}>
+            {pending ? copy.adminWorking[lang] : copy.adminHide[lang]}
           </Button>
         ) : (
-          <Button type="submit" name="intent" value="restore" size="sm" variant="secondary" disabled={pending}>
-            {copy.adminRestore[lang]}
+          <Button
+            type="submit"
+            name="intent"
+            value="restore"
+            size="sm"
+            variant="secondary"
+            disabled={pending}
+            aria-busy={pending || undefined}
+          >
+            {pending ? copy.adminWorking[lang] : copy.adminRestore[lang]}
           </Button>
         )}
         {report.status === "pending" ? (
-          <Button type="submit" name="intent" value="review" size="sm" variant="secondary" disabled={pending}>
-            {copy.adminReview[lang]}
+          <Button
+            type="submit"
+            name="intent"
+            value="review"
+            size="sm"
+            variant="secondary"
+            disabled={pending}
+            aria-busy={pending || undefined}
+          >
+            {pending ? copy.adminWorking[lang] : copy.adminReview[lang]}
           </Button>
         ) : null}
         {report.status !== "resolved" ? (
-          <Button type="submit" name="intent" value="resolve" size="sm" variant="ghost" disabled={pending}>
-            {copy.adminResolve[lang]}
+          <Button
+            type="submit"
+            name="intent"
+            value="resolve"
+            size="sm"
+            variant="ghost"
+            disabled={pending}
+            aria-busy={pending || undefined}
+          >
+            {pending ? copy.adminWorking[lang] : copy.adminResolve[lang]}
           </Button>
         ) : null}
       </form>

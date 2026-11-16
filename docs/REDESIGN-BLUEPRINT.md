@@ -46,9 +46,11 @@ Susunan yang tetap: judul pendek, satu kalimat, filter, grid, paginasi, empty st
 
 Yang berubah:
 
-- Pixel adalah filter yang terlihat sebagai pilihan utama.
-- Tulisan, Visual, Ide, Cerita, dan Semua pindah ke satu kontrol “Jenis lain”, bukan lima tombol yang selalu setara. Mereka tidak hilang.
-- Kartu tetap gambar + satu baris kreator. Tidak ada angka apresiasi. Tidak ada urutan popularitas.
+- Pixel adalah filter yang terlihat sebagai pilihan utama. (Kode aktual saat ini hanya memuat `type = pixel`; filter yang padat adalah ukuran kanvas + pencarian judul.)
+- Tulisan, Visual, Ide, Cerita, dan Semua — jika digabung kembali ke Jelajah — masuk “Jenis lain”, bukan lima tombol setara.
+- Hierarki kartu target: gambar → judul → `@username` (baris terpisah) → caption ringkas (opsional) → hashtag ringkas (opsional). **Tanpa label ukuran di kartu.** Tidak ada angka apresiasi. Tidak ada urutan popularitas. Bukan masonry.
+- Pencarian judul (`q`) **tetap**; jangan diperluas ke search global.
+- Filter hashtag (`?tag=`) adalah tahap terpisah setelah metadata tag ada. Lihat `ARTWORK-METADATA-EXPLORE-AUDIT.md`.
 
 ### Buat `/create`
 
@@ -81,8 +83,9 @@ Yang tetap:
 Yang berubah:
 
 - Bidang judul terlihat: border 3px, placeholder “Nama karya”, bukan teks polos yang sudah terisi “Tanpa judul”.
+- Caption + hashtag (opsional, max 5): lewat **Lainnya → Caption & hashtag**, dan di dialog nama sebelum terbit — bukan strip tetap di atas kanvas.
 - Baris status tetap satu: Draf atau Terbit, keadaan simpan, ukuran.
-- Terbit, jika nama kosong, membuka dialog satu bidang. Setelah terbit, dialog singkat: Lihat karya, tetap di kanvas.
+- Terbit, jika nama kosong, membuka dialog satu bidang. Setelah terbit, dialog singkat: Lihat karya, tetap di kanvas. Caption/hashtag tidak wajib untuk terbit.
 - Kembali menuju `/dashboard`.
 - Menu Lainnya tetap untuk muat pas, zoom, lepas-terbit, lihat publik, hapus. Zoom tidak perlu jadi satu-satunya tempat “lihat publik” setelah tombol sukses ada.
 
@@ -112,10 +115,15 @@ Susunan baru, tanpa mengubah aturan percakapan:
 1. Gambar (`PixelArt`, `contain`, pixelated), selebar kolom baca.
 2. Judul satu baris yang bisa dibaca, bukan headline pixel yang mengalahkan gambar. Nama pixel besar boleh tinggal untuk judul halaman di beranda dan Jelajah.
 3. Kreator dan tanggal satu baris. Pemilik: Sunting karya ini.
-4. Apresiasi dan bagikan langsung di bawah meta. Teks tetap mendampingi ikon.
-5. Percakapan di bawahnya: jumlah, kosong, muat yang lebih lama, catatan, balasan satu tingkat, komposer yang tertutup sampai dibuka. Fork tetap untuk bukan-pemilik. Laporkan tetap ada.
+4. Caption opsional (teks body, bukan judul pixel).
+5. Hashtag opsional (max 5), tautan siap ke filter Jelajah.
+6. Color Palette + Color Usage Bar (pixel; dari snapshot RLE, bukan analisis PNG).
+7. Apresiasi dan bagikan. Teks tetap mendampingi ikon.
+8. Percakapan di bawahnya: jumlah, kosong, muat yang lebih lama, catatan, balasan satu tingkat, komposer yang tertutup sampai dibuka. Fork tetap untuk bukan-pemilik. Laporkan tetap ada.
 
 Jangan mengubah: apresiasi bukan komentar, balasan tidak bersarang lebih dari satu, komposer tidak menggantikan karya.
+
+Rincian caption, hashtag, dan palet warna: `ARTWORK-METADATA-EXPLORE-AUDIT.md` (belum diimplementasikan).
 
 ### Profil `/u/[username]`
 
@@ -291,3 +299,22 @@ Istilah yang disarankan:
 | Kelola karya | Manage works | Tautan dari profil |
 
 “Tanpa judul” boleh tetap sebagai cadangan baca untuk data lama, bukan sebagai nilai yang ditulis form baru.
+
+---
+
+## 9. Metadata karya & Color Palette (belum diimplementasikan)
+
+Spesifikasi audit lengkap: **`docs/ARTWORK-METADATA-EXPLORE-AUDIT.md`**.
+
+Ringkas:
+
+| Fitur | Keputusan blueprint (terkunci 17 Nov 2026) |
+|---|---|
+| Caption | Kolom terpisah, opsional, max **500**; penuh di detail, 2 baris di kartu |
+| Hashtag | `tags[]` max 5, dinormalisasi; bukan `category` ukuran; filter Explore = M5 |
+| Color Usage | Snapshot dari RLE **saat publish**; **exclude Paper** (latar/penghapus); bar + HEX di detail; backfill batch M6 |
+| Kartu Explore | Tanpa label ukuran; search judul tetap |
+| Fork | Tidak menyalin caption, tags, atau `color_usage` |
+| Skema | Jangan ubah RLE/PNG/RLS source; jangan reuse `content` pixel untuk caption/tags |
+
+Tidak ada izin implementasi di dokumen ini. Irisan M1–M7 ada di audit dan di `IMPLEMENTATION-ROADMAP.md`.

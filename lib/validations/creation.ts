@@ -1,4 +1,5 @@
 import { z } from "zod"
+import { normalizeCreationTag } from "@/lib/creations"
 import {
   PIXEL_CANVAS_MAX,
   PIXEL_CANVAS_MIN,
@@ -13,6 +14,8 @@ import {
   normalizePixelHex,
 } from "@/lib/pixel"
 import {
+  CREATION_CAPTION_MAX,
+  CREATION_TAGS_MAX,
   CREATION_CONTENT_JSON_MAX,
   CREATION_IDEA_BODY_MAX,
   CREATION_IDEA_CONTEXT_MAX,
@@ -33,7 +36,60 @@ const fill = z.enum(VISUAL_FILLS)
 
 export const creationTypeSchema = z.enum(CREATION_TYPES)
 export const creationTitleSchema = z.string().trim().min(1).max(CREATION_TITLE_MAX)
+/** Empty / whitespace → null. Max CREATION_CAPTION_MAX after trim is enforced by max on raw then trim. */
+export const creationCaptionSchema = z.preprocess(
+  (value) => (typeof value === "string" ? value : ""),
+  z
+    .string()
+    .max(CREATION_CAPTION_MAX)
+    .transform((value) => {
+      const trimmed = value.trim()
+      return trimmed.length > 0 ? trimmed : null
+    }),
+)
 export const creationIdSchema = z.uuid()
+
+function tagsFromUnknown(value: unknown): string[] {
+  if (Array.isArray(value)) return value.map(String)
+  if (typeof value !== "string") return []
+  const trimmed = value.trim()
+  if (!trimmed) return []
+  try {
+    const parsed = JSON.parse(trimmed) as unknown
+    if (Array.isArray(parsed)) return parsed.map(String)
+  } catch {
+    /* comma / space separated */
+  }
+  return trimmed.split(/[\s,]+/).filter(Boolean)
+}
+
+/** Optional tags from FormData JSON array or comma list. Max 5, normalized, unique. */
+export const creationTagsSchema = z.preprocess(tagsFromUnknown, z.array(z.string()).superRefine((items, ctx) => {
+  const out: string[] = []
+  for (const item of items) {
+    const raw = item.trim()
+    if (!raw) continue
+    const tag = normalizeCreationTag(raw)
+    if (!tag) {
+      ctx.addIssue({ code: "custom", message: "tag" })
+      return
+    }
+    if (!out.includes(tag)) out.push(tag)
+    if (out.length > CREATION_TAGS_MAX) {
+      ctx.addIssue({ code: "custom", message: "tags_max" })
+      return
+    }
+  }
+}).transform((items) => {
+  const out: string[] = []
+  for (const item of items) {
+    const tag = normalizeCreationTag(item)
+    if (!tag || out.includes(tag)) continue
+    out.push(tag)
+    if (out.length >= CREATION_TAGS_MAX) break
+  }
+  return out
+}))
 
 export const visualRectSchema = z
   .object({
@@ -213,5 +269,7 @@ export const createDraftSchema = z.object({
 export const updateCreationSchema = z.object({
   id: creationIdSchema,
   title: creationTitleSchema,
+  caption: creationCaptionSchema,
+  tags: creationTagsSchema,
   intent: z.enum(["draft", "publish", "unpublish"]),
 })

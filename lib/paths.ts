@@ -25,6 +25,14 @@ export function registerHref(lang: Lang, next?: string | null) {
   return withNextQuery(href(lang, "/register"), next)
 }
 
+export function forgotPasswordHref(lang: Lang, next?: string | null) {
+  return withNextQuery(href(lang, "/forgot-password"), next)
+}
+
+export function resetPasswordHref(lang: Lang, next?: string | null) {
+  return withNextQuery(href(lang, "/reset-password"), next)
+}
+
 export function authDestination(lang: Lang, next: unknown) {
   const fallback = href(lang, "/explore")
   const safe = safeInternalPath(next, fallback)

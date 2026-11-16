@@ -28,9 +28,11 @@ describe("edit existing work instead of copying it", () => {
     expect(createPage).toMatch(/\/dashboard/)
     expect(createPage).not.toMatch(/listOwnCreations/)
     expect(createPage).not.toMatch(/data-chrome="studio"/)
+    const row = read("components/creations/WorksRow.tsx")
     expect(dashboard).toMatch(/listOwnCreations/)
-    expect(dashboard).toMatch(/worksContinue/)
-    expect(dashboard).toMatch(/\/create\/\$\{item\.id\}/)
+    expect(dashboard).toMatch(/WorksRow/)
+    expect(row).toMatch(/worksContinue/)
+    expect(row).toMatch(/\/create\/\$\{item\.id\}/)
   })
 
   it("gives the owner an edit CTA on the public page and hides self-fork", () => {

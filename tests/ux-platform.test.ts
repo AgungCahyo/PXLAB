@@ -31,6 +31,7 @@ describe("visual-first gallery", () => {
     expect(card).toMatch(/PixelArt/)
     expect(card).not.toMatch(/pixel-title/)
     expect(card).not.toMatch(/creationTypeLabels/)
+    expect(card).not.toMatch(/creationCategoryLabels/)
   })
 
   it("shows published work on the landing page", () => {

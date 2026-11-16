@@ -10,7 +10,10 @@ import { SITE_NAME } from "@/lib/site"
 export function SiteHeader({ lang, member }: { lang: Lang; member: NavMember }) {
   return (
     <>
-      <header className="fixed inset-x-0 top-0 z-50 border-b-[3px] border-earth bg-bg">
+      <header
+        className="fixed inset-x-0 top-0 z-50 border-b-[3px] border-earth bg-bg"
+        style={{ viewTransitionName: "site-header" }}
+      >
         <div className="h-1.5 bg-sky" aria-hidden="true" />
         <nav
           aria-label={copy.navAria[lang]}

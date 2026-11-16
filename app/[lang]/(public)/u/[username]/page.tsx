@@ -5,6 +5,7 @@ import { Suspense } from "react"
 import { CreationCard } from "@/components/creations/CreationCard"
 import { GallerySkeleton } from "@/components/creations/GallerySkeleton"
 import { LogoutButton } from "@/components/auth/LogoutButton"
+import { PageTransition } from "@/components/layout/PageTransition"
 import { EmptyState } from "@/components/ui/EmptyState"
 import { buttonClassName } from "@/components/ui/Button"
 import { PixelIcon } from "@/components/ui/PixelIcon"
@@ -58,31 +59,33 @@ export default async function PublicProfilePage({
   const ownProfile = me?.id === profile.id
 
   return (
-    <div className="mx-auto max-w-6xl px-5 py-10 sm:px-8 sm:py-12 lg:px-16">
-      <p className="text-[15px] text-muted">@{profile.username}</p>
-      <h1 className="pixel-title mt-2">{name}</h1>
-      {profile.bio ? (
-        <p className="mt-3 max-w-xl text-[15px] leading-relaxed text-muted">{profile.bio}</p>
-      ) : null}
-      {ownProfile ? (
-        <div className="mt-5 flex flex-wrap items-center gap-3">
-          <Link href={href(lang, "/dashboard")} className={buttonClassName({ size: "sm" })}>
-            <PixelIcon name="folder" />
-            {copy.nav.dashboard[lang]}
-          </Link>
-          <Link href={href(lang, "/settings")} className={buttonClassName({ variant: "outline", size: "sm" })}>
-            <PixelIcon name="pencil" />
-            {copy.nav.settings[lang]}
-          </Link>
-          <LogoutButton lang={lang} />
+    <PageTransition>
+      <div className="mx-auto max-w-6xl px-5 py-10 sm:px-8 sm:py-12 lg:px-16">
+        <p className="text-[15px] text-muted">@{profile.username}</p>
+        <h1 className="pixel-title mt-2">{name}</h1>
+        {profile.bio ? (
+          <p className="mt-3 max-w-xl text-[15px] leading-relaxed text-muted">{profile.bio}</p>
+        ) : null}
+        {ownProfile ? (
+          <div className="mt-5 flex flex-wrap items-center gap-3">
+            <Link href={href(lang, "/dashboard")} className={buttonClassName({ size: "sm" })}>
+              <PixelIcon name="folder" />
+              {copy.nav.dashboard[lang]}
+            </Link>
+            <Link href={href(lang, "/settings")} className={buttonClassName({ variant: "outline", size: "sm" })}>
+              <PixelIcon name="pencil" />
+              {copy.nav.settings[lang]}
+            </Link>
+            <LogoutButton lang={lang} />
+          </div>
+        ) : null}
+        <div className="mt-8">
+          <Suspense fallback={<GallerySkeleton />}>
+            <ProfileWorks lang={lang} userId={profile.id} username={profile.username} />
+          </Suspense>
         </div>
-      ) : null}
-      <div className="mt-8">
-        <Suspense fallback={<GallerySkeleton />}>
-          <ProfileWorks lang={lang} userId={profile.id} username={profile.username} />
-        </Suspense>
       </div>
-    </div>
+    </PageTransition>
   )
 }
 

@@ -98,3 +98,23 @@ Irisan 3 dan 4 boleh dikerjakan bersamaan dengan 1 jika orangnya berbeda, karena
 ## 5. Cek yang tetap di luar kode
 
 Dokumen fase masih menyatakan migrasi Supabase dan uji Playground dalam keadaan masuk belum tentu dilakukan operator. Irisan di atas tidak menggantikan cek itu. Setelah irisan 1–2, satu lulusan masuk akun harus: buat ukuran, gambar, kembali, melihat draf di My Works, menamai, terbit, membuka detail, dan melihat karya di profil.
+
+---
+
+## 6. Antrian berikutnya — Artwork metadata & Explore (belum disetujui)
+
+Sumber: `ARTWORK-METADATA-EXPLORE-AUDIT.md`. **Jangan mulai tanpa persetujuan eksplisit.** Jangan digabung jadi satu PR.
+
+| Irisan | Prioritas | Isi |
+|---|---|---|
+| M1 Caption | P1 | Kolom `caption` max 500; Studio; detail; clamp di kartu — **kode siap; jalankan migrasi `20261117002000_creation_caption.sql`**; Studio **tanpa server autosave** (metadata + pixel lokal sampai Simpan / Publish / leave→simpan) |
+| M2 Hashtag metadata | P1 | Kolom `tags`; input; tampil; href `?tag=` siap — **kode siap; jalankan migrasi `20261117003000_creation_tags.sql`**; sama: lokal sampai simpan eksplisit |
+| M3 Color usage | P1 | Snapshot RLE **saat publish**; exclude Paper; UI detail bar + HEX — **kode siap; jalankan migrasi `20261117004000_creation_color_usage.sql`** |
+| M4 Explore card hierarchy | P1 | Judul/username 2 baris; caption/tags; tanpa label ukuran; search tetap; paginasi X/Y; filter ukuran scroll di mobile — **selesai di kode** (lipat disclosure penuh = M7) |
+| M5 Filter `?tag=` | P2 | Query + UI filter ringkas; tanpa trending |
+| M6 Backfill color_usage | P2 | **Batch terkontrol** karya pixel published lama |
+| M7 Lipat filter ukuran mobile | P2 | Disclosure ukuran |
+
+Keputusan produk terkunci: lihat tabel di `ARTWORK-METADATA-EXPLORE-AUDIT.md`.
+
+Di luar antrian ini tetap: trending, ranking, popularitas di kartu, search global baru, follower, masonry, ubah format RLE/PNG.

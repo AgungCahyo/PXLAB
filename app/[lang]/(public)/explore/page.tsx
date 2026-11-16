@@ -4,6 +4,7 @@ import { notFound } from "next/navigation"
 import { Suspense } from "react"
 import { ExploreFilters, ExploreGallery } from "@/components/creations/ExploreGallery"
 import { GallerySkeleton } from "@/components/creations/GallerySkeleton"
+import { PageTransition } from "@/components/layout/PageTransition"
 import { EmptyState } from "@/components/ui/EmptyState"
 import { buttonClassName } from "@/components/ui/Button"
 import { listPublishedCreations } from "@/features/creations/queries"
@@ -50,16 +51,20 @@ export default async function ExplorePage({
   const page = Math.max(1, Number.parseInt(query.page ?? "1", 10) || 1)
 
   return (
-    <div className="mx-auto max-w-6xl px-5 py-10 sm:px-8 sm:py-12 lg:px-16">
-      <h1 className="pixel-title">{copy.exploreTitle[lang]}</h1>
-      <p className="mt-3 max-w-2xl text-[15px] leading-relaxed text-muted">{copy.exploreIntro[lang]}</p>
-      <div className="mt-8">
-        <ExploreFilters lang={lang} category={category} q={q} />
-        <Suspense fallback={<GallerySkeleton />}>
-          <ExploreResults lang={lang} category={category} q={q} page={page} />
-        </Suspense>
+    <PageTransition>
+      <div className="mx-auto max-w-6xl px-5 py-10 sm:px-8 sm:py-12 lg:px-16">
+        <h1 className="pixel-title">{copy.exploreTitle[lang]}</h1>
+        <p className="mt-3 max-w-2xl text-[15px] leading-relaxed text-muted">
+          {copy.exploreIntro[lang]}
+        </p>
+        <div className="mt-8">
+          <ExploreFilters lang={lang} category={category} q={q} />
+          <Suspense fallback={<GallerySkeleton />}>
+            <ExploreResults lang={lang} category={category} q={q} page={page} />
+          </Suspense>
+        </div>
       </div>
-    </div>
+    </PageTransition>
   )
 }
 
