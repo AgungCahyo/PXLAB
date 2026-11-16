@@ -36,6 +36,8 @@ Constants live in `lib/pixel.ts` (`PIXEL_CANVAS_SIZE` 512, `PIXEL_TILE_SIZE` 32,
 
 Eyedropper and fill bucket stay deferred until PRODUCT-SPEC approves them. The Playground custom color picker is approved (free color, HEX, recent, favorites).
 
+**Design-tool expansion (beyond MVP pencil/eraser/pan):** audit and phased roadmap live in [PIXEL-PLAYGROUND-DESIGN-FEATURES-AUDIT.md](PIXEL-PLAYGROUND-DESIGN-FEATURES-AUDIT.md). That document is planning-only until an explicit D1+ slice is approved. Do not treat this SPEC’s “deferred” list as a denial of that roadmap — only as the current shipped baseline.
+
 ---
 
 ## 2. Pixel Art Playground (personal)

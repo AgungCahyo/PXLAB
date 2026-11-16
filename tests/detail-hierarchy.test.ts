@@ -28,6 +28,13 @@ describe("artwork detail hierarchy", () => {
     )
   })
 
+  it("adds download More menu outside engagement and keeps fork in conversation", () => {
+    expect(page).toMatch(/<CreationEngagement[\s\S]*?<CreationMoreMenu/)
+    expect(community).toMatch(/allowFork/)
+    expect(community).toMatch(/AppreciateForm/)
+    expect(page).not.toMatch(/AppreciateForm/)
+  })
+
   it("keeps conversation rules and moves engagement out of the thread header", () => {
     expect(community).toMatch(/export function CreationEngagement/)
     expect(community).toMatch(/ConversationComposer/)

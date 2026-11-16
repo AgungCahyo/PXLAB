@@ -11,20 +11,37 @@ import {
   colorUsagePercents,
   decodeRle,
   encodeRle,
+  blitRect,
+  clearRectToPaper,
+  constrainSquareEnd,
   ensurePaletteColor,
+  extractRect,
   fillPaper,
+  fillRect,
   fitScale,
+  flipRectHorizontal,
+  floodFill,
   hexToRgb,
   inCanvas,
   indicesToRgba,
   isPixelCanvasSize,
   normalizePixelHex,
+  normalizePixelRect,
+  paintEllipse,
   parseColorUsage,
   parsePixelSource,
+  rgbToHex,
   rgbToPaletteIndex,
   rgbaToIndices,
+  removeDocumentColor,
+  replaceRgbInPixels,
+  rotateRect90Cw,
   setPixel,
+  stampBrush,
+  strokeBrushLineSymmetric,
+  strokeRect,
   stepZoom,
+  symmetryPoints,
   walkLine,
 } from "@/lib/pixel"
 
@@ -93,6 +110,86 @@ describe("pixel buffer", () => {
     expect([pixels[8], pixels[9], pixels[10]]).toEqual([0, 0, 0])
     setPixel(pixels, -1, 0, [255, 0, 0])
     expect(pixels[0]).toBe(pr)
+  })
+
+  it("flood-fills a contiguous region and stamps brushes", () => {
+    const w = 8
+    const h = 8
+    const pixels = new Uint8ClampedArray(w * h * 4)
+    fillPaper(pixels)
+    setPixel(pixels, 1, 1, [255, 0, 0], w, h)
+    setPixel(pixels, 2, 1, [255, 0, 0], w, h)
+    expect(floodFill(pixels, 1, 1, [0, 0, 255], w, h)).toBe(2)
+    expect(rgbToHex([0, 0, 255])).toBe("#0000FF")
+    stampBrush(pixels, 4, 4, [0, 0, 0], 3, w, h)
+    expect([pixels[(4 * w + 4) * 4], pixels[(4 * w + 4) * 4 + 1], pixels[(4 * w + 4) * 4 + 2]]).toEqual([
+      0, 0, 0,
+    ])
+  })
+
+  it("draws rect and ellipse shapes", () => {
+    const w = 16
+    const h = 16
+    const pixels = new Uint8ClampedArray(w * h * 4)
+    fillPaper(pixels)
+    strokeRect(pixels, 2, 2, 5, 5, [0, 0, 0], w, h)
+    expect([pixels[(2 * w + 2) * 4], pixels[(2 * w + 2) * 4 + 1], pixels[(2 * w + 2) * 4 + 2]]).toEqual([
+      0, 0, 0,
+    ])
+    fillRect(pixels, 8, 8, 10, 10, [1, 2, 3], w, h)
+    expect([pixels[(9 * w + 9) * 4], pixels[(9 * w + 9) * 4 + 1], pixels[(9 * w + 9) * 4 + 2]]).toEqual([
+      1, 2, 3,
+    ])
+    paintEllipse(pixels, 0, 0, 6, 4, [9, 9, 9], true, w, h)
+    expect(constrainSquareEnd(0, 0, 5, 2)).toEqual({ x: 5, y: 5 })
+  })
+
+  it("extracts, blits, flips, and rotates a rect", () => {
+    const w = 8
+    const h = 8
+    const pixels = new Uint8ClampedArray(w * h * 4)
+    fillPaper(pixels)
+    setPixel(pixels, 1, 1, [10, 20, 30], w, h)
+    setPixel(pixels, 2, 1, [40, 50, 60], w, h)
+    const rect = normalizePixelRect(1, 1, 2, 2)
+    const clip = extractRect(pixels, rect, w, h)
+    expect(clip.width).toBe(2)
+    expect(clip.data[0]).toBe(10)
+    clearRectToPaper(pixels, rect, w, h)
+    expect([pixels[(1 * w + 1) * 4], pixels[(1 * w + 1) * 4 + 1], pixels[(1 * w + 1) * 4 + 2]]).toEqual(
+      hexToRgb("#FFFDF7"),
+    )
+    blitRect(pixels, clip, 3, 3, w, h)
+    expect([pixels[(3 * w + 3) * 4], pixels[(3 * w + 3) * 4 + 1], pixels[(3 * w + 3) * 4 + 2]]).toEqual([
+      10, 20, 30,
+    ])
+    flipRectHorizontal(pixels, { x: 3, y: 3, width: 2, height: 2 }, w, h)
+    expect([pixels[(3 * w + 3) * 4], pixels[(3 * w + 3) * 4 + 1], pixels[(3 * w + 3) * 4 + 2]]).toEqual([
+      40, 50, 60,
+    ])
+    const next = rotateRect90Cw(pixels, { x: 3, y: 3, width: 2, height: 2 }, w, h)
+    expect(next.width).toBe(2)
+    expect(next.height).toBe(2)
+  })
+
+  it("mirrors strokes and replaces or removes document colors", () => {
+    expect(symmetryPoints(1, 2, 8, 8, "xy")).toEqual([
+      { x: 1, y: 2 },
+      { x: 6, y: 2 },
+      { x: 1, y: 5 },
+      { x: 6, y: 5 },
+    ])
+    const w = 8
+    const h = 8
+    const pixels = new Uint8ClampedArray(w * h * 4)
+    fillPaper(pixels)
+    strokeBrushLineSymmetric(pixels, 1, 1, 1, 1, [1, 2, 3], 1, w, h, "x")
+    expect([pixels[(1 * w + 1) * 4], pixels[(1 * w + 6) * 4]]).toEqual([1, 1])
+    expect(replaceRgbInPixels(pixels, [1, 2, 3], [9, 9, 9], undefined, w, h)).toBe(2)
+    const palette = [PIXEL_PAPER, "#010203", "#090909"]
+    setPixel(pixels, 0, 0, hexToRgb("#090909"), w, h)
+    const removed = removeDocumentColor(pixels, palette, "#090909", w, h)
+    expect("palette" in removed && removed.palette).toEqual([PIXEL_PAPER, "#010203"])
   })
 })
 

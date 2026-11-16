@@ -13,8 +13,35 @@ export const PIXEL_GRID_MIN_ZOOM = 8
 export const PIXEL_ZOOM_STEPS = [1, 2, 4, 8, 12, 16, 24, 32, 48] as const
 export const PIXEL_ZOOM_PINCH_MIN = 0.25
 export const PIXEL_ZOOM_PINCH_MAX = 48
+/** Discrete brush diameters for pencil / eraser (odd sizes stay centered). */
+export const PIXEL_BRUSH_SIZES = [1, 2, 3, 4, 6, 8] as const
+export type PixelBrushSize = (typeof PIXEL_BRUSH_SIZES)[number]
 export type PixelZoomStep = (typeof PIXEL_ZOOM_STEPS)[number]
 export type PixelZoom = "fit" | number
+
+/** Studio drawing tools (pan is navigation). */
+export type PixelDrawTool =
+  | "pencil"
+  | "eraser"
+  | "pan"
+  | "eyedropper"
+  | "fill"
+  | "line"
+  | "rect"
+  | "ellipse"
+  | "select"
+
+export type PixelRect = { x: number; y: number; width: number; height: number }
+
+export type PixelClipboard = {
+  width: number
+  height: number
+  /** RGBA length width*height*4 */
+  data: Uint8ClampedArray
+}
+
+/** Mirror axes while drawing (X = left-right, Y = top-bottom). */
+export type PixelSymmetry = "off" | "x" | "y" | "xy"
 
 export const PIXEL_SIZE_PRESETS = [
   { id: "icon", width: 16, height: 16 },
@@ -78,6 +105,11 @@ export function hexToRgb(hex: string): [number, number, number] {
   return [(value >> 16) & 255, (value >> 8) & 255, value & 255]
 }
 
+export function rgbToHex(rgb: readonly [number, number, number]) {
+  const to = (n: number) => n.toString(16).padStart(2, "0").toUpperCase()
+  return `#${to(rgb[0])}${to(rgb[1])}${to(rgb[2])}`
+}
+
 export function fillPaper(pixels: Uint8ClampedArray) {
   const [r, g, b] = hexToRgb(PIXEL_PAPER)
   for (let i = 0; i < pixels.length; i += 4) {
@@ -106,6 +138,55 @@ export function setPixel(
   pixels[i + 1] = rgb[1]
   pixels[i + 2] = rgb[2]
   pixels[i + 3] = 255
+}
+
+export function getPixelRgb(
+  pixels: Uint8ClampedArray,
+  x: number,
+  y: number,
+  width = PIXEL_CANVAS_SIZE,
+  height = PIXEL_CANVAS_SIZE,
+): [number, number, number] | null {
+  if (!inCanvas(x, y, width, height)) return null
+  const i = (y * width + x) * 4
+  return [pixels[i], pixels[i + 1], pixels[i + 2]]
+}
+
+export function rgbEqual(
+  a: readonly [number, number, number],
+  b: readonly [number, number, number],
+) {
+  return a[0] === b[0] && a[1] === b[1] && a[2] === b[2]
+}
+
+/** Disk brush (size 1 = single pixel). Radius uses floor((size-1)/2) Chebyshev for odd; Euclidean for even. */
+export function stampBrush(
+  pixels: Uint8ClampedArray,
+  cx: number,
+  cy: number,
+  rgb: readonly [number, number, number],
+  size: number,
+  width = PIXEL_CANVAS_SIZE,
+  height = PIXEL_CANVAS_SIZE,
+) {
+  const brush = Math.max(1, Math.min(8, Math.round(size)))
+  if (brush === 1) {
+    setPixel(pixels, cx, cy, rgb, width, height)
+    return
+  }
+  const r = (brush - 1) / 2
+  const r2 = r * r
+  const minX = Math.floor(cx - r)
+  const maxX = Math.ceil(cx + r)
+  const minY = Math.floor(cy - r)
+  const maxY = Math.ceil(cy + r)
+  for (let y = minY; y <= maxY; y += 1) {
+    for (let x = minX; x <= maxX; x += 1) {
+      const dx = x - cx
+      const dy = y - cy
+      if (dx * dx + dy * dy <= r2 + 0.25) setPixel(pixels, x, y, rgb, width, height)
+    }
+  }
 }
 
 /** Inclusive Bresenham so fast pointer moves do not skip cells. */
@@ -137,6 +218,431 @@ export function walkLine(
       y += sy
     }
   }
+}
+
+export function strokeBrushLine(
+  pixels: Uint8ClampedArray,
+  x0: number,
+  y0: number,
+  x1: number,
+  y1: number,
+  rgb: readonly [number, number, number],
+  size: number,
+  width = PIXEL_CANVAS_SIZE,
+  height = PIXEL_CANVAS_SIZE,
+) {
+  walkLine(x0, y0, x1, y1, (x, y) => stampBrush(pixels, x, y, rgb, size, width, height))
+}
+
+function normalizeRect(x0: number, y0: number, x1: number, y1: number) {
+  const left = Math.min(x0, x1)
+  const right = Math.max(x0, x1)
+  const top = Math.min(y0, y1)
+  const bottom = Math.max(y0, y1)
+  return { left, right, top, bottom }
+}
+
+/** Axis-aligned rectangle outline (1 px). */
+export function strokeRect(
+  pixels: Uint8ClampedArray,
+  x0: number,
+  y0: number,
+  x1: number,
+  y1: number,
+  rgb: readonly [number, number, number],
+  width = PIXEL_CANVAS_SIZE,
+  height = PIXEL_CANVAS_SIZE,
+) {
+  const { left, right, top, bottom } = normalizeRect(x0, y0, x1, y1)
+  for (let x = left; x <= right; x += 1) {
+    setPixel(pixels, x, top, rgb, width, height)
+    setPixel(pixels, x, bottom, rgb, width, height)
+  }
+  for (let y = top; y <= bottom; y += 1) {
+    setPixel(pixels, left, y, rgb, width, height)
+    setPixel(pixels, right, y, rgb, width, height)
+  }
+}
+
+export function fillRect(
+  pixels: Uint8ClampedArray,
+  x0: number,
+  y0: number,
+  x1: number,
+  y1: number,
+  rgb: readonly [number, number, number],
+  width = PIXEL_CANVAS_SIZE,
+  height = PIXEL_CANVAS_SIZE,
+) {
+  const { left, right, top, bottom } = normalizeRect(x0, y0, x1, y1)
+  for (let y = top; y <= bottom; y += 1) {
+    for (let x = left; x <= right; x += 1) {
+      setPixel(pixels, x, y, rgb, width, height)
+    }
+  }
+}
+
+/** Ellipse via bounding-box test (filled or 1 px ring). */
+export function paintEllipse(
+  pixels: Uint8ClampedArray,
+  x0: number,
+  y0: number,
+  x1: number,
+  y1: number,
+  rgb: readonly [number, number, number],
+  filled: boolean,
+  width = PIXEL_CANVAS_SIZE,
+  height = PIXEL_CANVAS_SIZE,
+) {
+  const { left, right, top, bottom } = normalizeRect(x0, y0, x1, y1)
+  const rw = right - left
+  const rh = bottom - top
+  if (rw === 0 && rh === 0) {
+    setPixel(pixels, left, top, rgb, width, height)
+    return
+  }
+  if (rw === 0 || rh === 0) {
+    strokeBrushLine(pixels, left, top, right, bottom, rgb, 1, width, height)
+    return
+  }
+  const rx = rw / 2
+  const ry = rh / 2
+  const cx = left + rx
+  const cy = top + ry
+  const rx2 = rx * rx
+  const ry2 = ry * ry
+  const outer = 1.02
+  const inner = filled ? -1 : Math.max(0, 1 - 1.35 / Math.max(rx, ry))
+  for (let y = top; y <= bottom; y += 1) {
+    for (let x = left; x <= right; x += 1) {
+      const v = ((x - cx) * (x - cx)) / rx2 + ((y - cy) * (y - cy)) / ry2
+      if (filled) {
+        if (v <= outer) setPixel(pixels, x, y, rgb, width, height)
+      } else if (v <= outer && v >= inner) {
+        setPixel(pixels, x, y, rgb, width, height)
+      }
+    }
+  }
+}
+
+/**
+ * Contiguous 4-connected flood fill. No-op if target equals fill color.
+ * Caps visits at width*height.
+ */
+export function floodFill(
+  pixels: Uint8ClampedArray,
+  startX: number,
+  startY: number,
+  rgb: readonly [number, number, number],
+  width = PIXEL_CANVAS_SIZE,
+  height = PIXEL_CANVAS_SIZE,
+) {
+  const target = getPixelRgb(pixels, startX, startY, width, height)
+  if (!target || rgbEqual(target, rgb)) return 0
+  const stack: number[] = [startX, startY]
+  let painted = 0
+  const max = width * height
+  while (stack.length > 0 && painted < max) {
+    const y = stack.pop()
+    const x = stack.pop()
+    if (x === undefined || y === undefined) break
+    if (!inCanvas(x, y, width, height)) continue
+    const current = getPixelRgb(pixels, x, y, width, height)
+    if (!current || !rgbEqual(current, target)) continue
+    setPixel(pixels, x, y, rgb, width, height)
+    painted += 1
+    stack.push(x + 1, y, x - 1, y, x, y + 1, x, y - 1)
+  }
+  return painted
+}
+
+/** Constrain shape end so width === height (square / circle bounds). */
+export function constrainSquareEnd(x0: number, y0: number, x1: number, y1: number) {
+  const dx = x1 - x0
+  const dy = y1 - y0
+  const side = Math.max(Math.abs(dx), Math.abs(dy))
+  return {
+    x: x0 + (dx < 0 ? -side : side),
+    y: y0 + (dy < 0 ? -side : side),
+  }
+}
+
+export function normalizePixelRect(x0: number, y0: number, x1: number, y1: number): PixelRect {
+  const left = Math.min(x0, x1)
+  const right = Math.max(x0, x1)
+  const top = Math.min(y0, y1)
+  const bottom = Math.max(y0, y1)
+  return { x: left, y: top, width: right - left + 1, height: bottom - top + 1 }
+}
+
+export function pointInPixelRect(x: number, y: number, rect: PixelRect) {
+  return x >= rect.x && y >= rect.y && x < rect.x + rect.width && y < rect.y + rect.height
+}
+
+export function extractRect(
+  pixels: Uint8ClampedArray,
+  rect: PixelRect,
+  canvasWidth: number,
+  canvasHeight: number,
+): PixelClipboard {
+  const data = new Uint8ClampedArray(rect.width * rect.height * 4)
+  for (let row = 0; row < rect.height; row += 1) {
+    for (let col = 0; col < rect.width; col += 1) {
+      const sx = rect.x + col
+      const sy = rect.y + row
+      const dst = (row * rect.width + col) * 4
+      if (!inCanvas(sx, sy, canvasWidth, canvasHeight)) {
+        const [r, g, b] = hexToRgb(PIXEL_PAPER)
+        data[dst] = r
+        data[dst + 1] = g
+        data[dst + 2] = b
+        data[dst + 3] = 255
+        continue
+      }
+      const src = (sy * canvasWidth + sx) * 4
+      data[dst] = pixels[src]
+      data[dst + 1] = pixels[src + 1]
+      data[dst + 2] = pixels[src + 2]
+      data[dst + 3] = 255
+    }
+  }
+  return { width: rect.width, height: rect.height, data }
+}
+
+export function blitRect(
+  pixels: Uint8ClampedArray,
+  clip: PixelClipboard,
+  destX: number,
+  destY: number,
+  canvasWidth: number,
+  canvasHeight: number,
+) {
+  for (let row = 0; row < clip.height; row += 1) {
+    for (let col = 0; col < clip.width; col += 1) {
+      const x = destX + col
+      const y = destY + row
+      if (!inCanvas(x, y, canvasWidth, canvasHeight)) continue
+      const src = (row * clip.width + col) * 4
+      const dst = (y * canvasWidth + x) * 4
+      pixels[dst] = clip.data[src]
+      pixels[dst + 1] = clip.data[src + 1]
+      pixels[dst + 2] = clip.data[src + 2]
+      pixels[dst + 3] = 255
+    }
+  }
+}
+
+export function clearRectToPaper(
+  pixels: Uint8ClampedArray,
+  rect: PixelRect,
+  canvasWidth: number,
+  canvasHeight: number,
+) {
+  const rgb = hexToRgb(PIXEL_PAPER)
+  fillRect(
+    pixels,
+    rect.x,
+    rect.y,
+    rect.x + rect.width - 1,
+    rect.y + rect.height - 1,
+    rgb,
+    canvasWidth,
+    canvasHeight,
+  )
+}
+
+export function clearCanvasToPaper(pixels: Uint8ClampedArray) {
+  fillPaper(pixels)
+}
+
+export function flipRectHorizontal(
+  pixels: Uint8ClampedArray,
+  rect: PixelRect,
+  canvasWidth: number,
+  canvasHeight: number,
+) {
+  const clip = extractRect(pixels, rect, canvasWidth, canvasHeight)
+  for (let row = 0; row < clip.height; row += 1) {
+    for (let col = 0; col < Math.floor(clip.width / 2); col += 1) {
+      const a = (row * clip.width + col) * 4
+      const b = (row * clip.width + (clip.width - 1 - col)) * 4
+      for (let k = 0; k < 4; k += 1) {
+        const tmp = clip.data[a + k]
+        clip.data[a + k] = clip.data[b + k]
+        clip.data[b + k] = tmp
+      }
+    }
+  }
+  blitRect(pixels, clip, rect.x, rect.y, canvasWidth, canvasHeight)
+}
+
+export function flipRectVertical(
+  pixels: Uint8ClampedArray,
+  rect: PixelRect,
+  canvasWidth: number,
+  canvasHeight: number,
+) {
+  const clip = extractRect(pixels, rect, canvasWidth, canvasHeight)
+  for (let row = 0; row < Math.floor(clip.height / 2); row += 1) {
+    for (let col = 0; col < clip.width; col += 1) {
+      const a = (row * clip.width + col) * 4
+      const b = ((clip.height - 1 - row) * clip.width + col) * 4
+      for (let k = 0; k < 4; k += 1) {
+        const tmp = clip.data[a + k]
+        clip.data[a + k] = clip.data[b + k]
+        clip.data[b + k] = tmp
+      }
+    }
+  }
+  blitRect(pixels, clip, rect.x, rect.y, canvasWidth, canvasHeight)
+}
+
+/** Clockwise 90°. Returns new rect origin/size (width/height swapped). Clipped when blitting. */
+export function rotateRect90Cw(
+  pixels: Uint8ClampedArray,
+  rect: PixelRect,
+  canvasWidth: number,
+  canvasHeight: number,
+): PixelRect {
+  const src = extractRect(pixels, rect, canvasWidth, canvasHeight)
+  clearRectToPaper(pixels, rect, canvasWidth, canvasHeight)
+  const rotated: PixelClipboard = {
+    width: src.height,
+    height: src.width,
+    data: new Uint8ClampedArray(src.width * src.height * 4),
+  }
+  for (let row = 0; row < src.height; row += 1) {
+    for (let col = 0; col < src.width; col += 1) {
+      const s = (row * src.width + col) * 4
+      const dx = src.height - 1 - row
+      const dy = col
+      const d = (dy * rotated.width + dx) * 4
+      rotated.data[d] = src.data[s]
+      rotated.data[d + 1] = src.data[s + 1]
+      rotated.data[d + 2] = src.data[s + 2]
+      rotated.data[d + 3] = 255
+    }
+  }
+  blitRect(pixels, rotated, rect.x, rect.y, canvasWidth, canvasHeight)
+  return { x: rect.x, y: rect.y, width: rotated.width, height: rotated.height }
+}
+
+export function flipCanvasHorizontal(pixels: Uint8ClampedArray, canvasWidth: number, canvasHeight: number) {
+  flipRectHorizontal(pixels, { x: 0, y: 0, width: canvasWidth, height: canvasHeight }, canvasWidth, canvasHeight)
+}
+
+export function flipCanvasVertical(pixels: Uint8ClampedArray, canvasWidth: number, canvasHeight: number) {
+  flipRectVertical(pixels, { x: 0, y: 0, width: canvasWidth, height: canvasHeight }, canvasWidth, canvasHeight)
+}
+
+/** Full-canvas 90° CW — only valid when width === height (document size is fixed). */
+export function rotateCanvas90Cw(pixels: Uint8ClampedArray, size: number) {
+  rotateRect90Cw(pixels, { x: 0, y: 0, width: size, height: size }, size, size)
+}
+
+export function symmetryPoints(
+  x: number,
+  y: number,
+  canvasWidth: number,
+  canvasHeight: number,
+  mode: PixelSymmetry,
+): Array<{ x: number; y: number }> {
+  if (mode === "off") return [{ x, y }]
+  const mx = canvasWidth - 1 - x
+  const my = canvasHeight - 1 - y
+  const key = (px: number, py: number) => `${px},${py}`
+  const seen = new Set<string>()
+  const out: Array<{ x: number; y: number }> = []
+  const add = (px: number, py: number) => {
+    if (!inCanvas(px, py, canvasWidth, canvasHeight)) return
+    const id = key(px, py)
+    if (seen.has(id)) return
+    seen.add(id)
+    out.push({ x: px, y: py })
+  }
+  add(x, y)
+  if (mode === "x" || mode === "xy") add(mx, y)
+  if (mode === "y" || mode === "xy") add(x, my)
+  if (mode === "xy") add(mx, my)
+  return out
+}
+
+export function strokeBrushLineSymmetric(
+  pixels: Uint8ClampedArray,
+  x0: number,
+  y0: number,
+  x1: number,
+  y1: number,
+  rgb: readonly [number, number, number],
+  size: number,
+  canvasWidth: number,
+  canvasHeight: number,
+  mode: PixelSymmetry,
+) {
+  walkLine(x0, y0, x1, y1, (x, y) => {
+    for (const point of symmetryPoints(x, y, canvasWidth, canvasHeight, mode)) {
+      stampBrush(pixels, point.x, point.y, rgb, size, canvasWidth, canvasHeight)
+    }
+  })
+}
+
+export function replaceRgbInPixels(
+  pixels: Uint8ClampedArray,
+  from: readonly [number, number, number],
+  to: readonly [number, number, number],
+  rect?: PixelRect,
+  canvasWidth = PIXEL_CANVAS_SIZE,
+  canvasHeight = PIXEL_CANVAS_SIZE,
+) {
+  const left = rect?.x ?? 0
+  const top = rect?.y ?? 0
+  const right = rect ? rect.x + rect.width - 1 : canvasWidth - 1
+  const bottom = rect ? rect.y + rect.height - 1 : canvasHeight - 1
+  let count = 0
+  for (let y = top; y <= bottom; y += 1) {
+    for (let x = left; x <= right; x += 1) {
+      if (!inCanvas(x, y, canvasWidth, canvasHeight)) continue
+      const i = (y * canvasWidth + x) * 4
+      if (pixels[i] === from[0] && pixels[i + 1] === from[1] && pixels[i + 2] === from[2]) {
+        pixels[i] = to[0]
+        pixels[i + 1] = to[1]
+        pixels[i + 2] = to[2]
+        pixels[i + 3] = 255
+        count += 1
+      }
+    }
+  }
+  return count
+}
+
+/**
+ * Remove a document color (not Paper): paint matching pixels to Paper and drop swatch from palette.
+ * Caller should clear undo history because index snapshots may be stale.
+ */
+export function removeDocumentColor(
+  pixels: Uint8ClampedArray,
+  palette: readonly string[],
+  hexToRemove: string,
+  canvasWidth: number,
+  canvasHeight: number,
+): { palette: string[]; replaced: number } | { error: "paper" | "missing" } {
+  const normalized = normalizePixelHex(hexToRemove)
+  if (!normalized) return { error: "missing" }
+  if (normalized === PIXEL_PAPER) return { error: "paper" }
+  const index = paletteIndexOf(palette, normalized)
+  if (index < 1) return { error: "missing" }
+  const from = hexToRgb(normalized)
+  const replaced = replaceRgbInPixels(
+    pixels,
+    from,
+    hexToRgb(PIXEL_PAPER),
+    undefined,
+    canvasWidth,
+    canvasHeight,
+  )
+  const next = palette.filter((_, i) => i !== index).map((color) => normalizePixelHex(color) ?? PIXEL_PAPER)
+  if (next[0] !== PIXEL_PAPER) next[0] = PIXEL_PAPER
+  return { palette: next, replaced }
 }
 
 export function clientToCell(args: {

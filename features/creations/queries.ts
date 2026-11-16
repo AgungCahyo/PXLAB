@@ -31,6 +31,7 @@ export type CreationRow = {
   content: CreationContent
   cover_url: string | null
   status: "draft" | "published" | "hidden"
+  allow_png_download: boolean
   forked_from: string | null
   created_at: string
   updated_at: string
@@ -52,7 +53,7 @@ export type CreationCard = {
 }
 
 const CREATION_COLUMNS =
-  "id, user_id, title, caption, tags, color_usage, type, category, content, cover_url, status, forked_from, created_at, updated_at, published_at"
+  "id, user_id, title, caption, tags, color_usage, type, category, content, cover_url, status, allow_png_download, forked_from, created_at, updated_at, published_at"
 const CARD_COLUMNS =
   "id, title, caption, tags, type, category, status, published_at, updated_at, user_id, cover_url"
 
@@ -189,6 +190,7 @@ export const getPublishedCreation = cache(async function getPublishedCreation(
     tags: Array.isArray(row.tags) ? row.tags : [],
     color_usage: parseColorUsage(row.color_usage),
     category: row.category ?? null,
+    allow_png_download: Boolean(row.allow_png_download),
     author: authorOf(row),
     source,
   }
@@ -215,6 +217,7 @@ export async function getOwnedCreation(id: string): Promise<CreationRow | null> 
     tags: Array.isArray(row.tags) ? row.tags : [],
     color_usage: parseColorUsage(row.color_usage),
     category: row.category ?? null,
+    allow_png_download: Boolean(row.allow_png_download),
   }
 }
 

@@ -33,6 +33,7 @@ import {
   emptyCreationContent,
   parseCreationContent,
   pixelContentSchema,
+  updateAllowPngDownloadSchema,
   updateCreationSchema,
   type CreationContent,
   type PixelContent,
@@ -478,6 +479,41 @@ export async function deleteCreationAction(formData: FormData) {
   const profile = await getCurrentProfile()
   revalidateCreation(lang, existing.id, profile?.username)
   redirect(href(lang, "/dashboard"))
+}
+
+export async function updateAllowPngDownloadAction(
+  _prev: CreationActionState,
+  formData: FormData,
+): Promise<CreationActionState> {
+  const lang = langOf(formData.get("lang"))
+  const parsed = updateAllowPngDownloadSchema.safeParse({
+    id: formData.get("id"),
+    allow_png_download: formData.get("allow_png_download"),
+  })
+  if (!parsed.success) return { error: "invalid_input" }
+
+  const userId = await getSessionUserId()
+  if (!userId) return { error: "not_authenticated" }
+
+  const existing = await getOwnedCreation(parsed.data.id)
+  if (!existing) return { error: "not_found" }
+  if (!canMutateCreation(userId, existing.user_id)) return { error: "forbidden" }
+  if (existing.type !== "pixel") return { error: "invalid_input" }
+
+  const supabase = await createServerSupabase()
+  if (!supabase) return { error: "not_configured" }
+
+  const { error } = await supabase
+    .from("creations")
+    .update({ allow_png_download: parsed.data.allow_png_download })
+    .eq("id", existing.id)
+    .eq("user_id", userId)
+
+  if (error) return { error: "invalid_input" }
+
+  const profile = await getCurrentProfile()
+  revalidateCreation(lang, existing.id, profile?.username)
+  return { ok: true, published: existing.status === "published" }
 }
 
 export async function forkCreationAction(

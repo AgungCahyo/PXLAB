@@ -118,3 +118,34 @@ Sumber: `ARTWORK-METADATA-EXPLORE-AUDIT.md`. **Jangan mulai tanpa persetujuan ek
 Keputusan produk terkunci: lihat tabel di `ARTWORK-METADATA-EXPLORE-AUDIT.md`.
 
 Di luar antrian ini tetap: trending, ranking, popularitas di kartu, search global baru, follower, masonry, ubah format RLE/PNG.
+
+---
+
+## 7. Antrian terpisah — Fitur desain Pixel Playground (belum disetujui)
+
+Sumber: `PIXEL-PLAYGROUND-DESIGN-FEATURES-AUDIT.md`. **Bukan** polish Simpan/Terbit. **Jangan mulai tanpa persetujuan eksplisit.** Orthogonal terhadap M1–M7.
+
+| Gelombang | Isi ringkas | Format |
+|---|---|---|
+| D1 | Eyedropper, fill, shapes, brush size, shortcuts, grid toggle, zoom % | Tetap `PixelSource` v1 — **kode** (17 Nov 2026) |
+| D2 | Selection rect, move/copy/paste, flip/rotate, clear | Bake ke buffer v1 — **kode** (17 Nov 2026) |
+| D3 | Symmetry, palette remap/hapus, replace-color | v1 + clear history on remove — **kode** (17 Nov 2026) |
+| D4 | Reference overlay (client-only), guides | Tidak di RLE kecuali diputuskan nanti |
+| D5 | Layers (+ flatten PNG / `color_usage`); animation terpisah setelahnya | Butuh source v2 |
+
+Detail prioritas, manfaat kreatif, dan kriteria keluar: dokumen audit di atas.
+
+---
+
+## 8. Antrian terpisah — Artwork download permission
+
+Sumber: `ARTWORK-DOWNLOAD-PERMISSION-AUDIT.md`. Keputusan produk §7 terkunci. Orthogonal terhadap M* dan D*. **Jangan gabung DL1 + DL2.**
+
+| Irisan | Prioritas | Isi |
+|---|---|---|
+| DL1 | P1 | Migrasi + helper + `GET /api/pixel-download/[id]` (`no-store`) + uji — **kode** (17 Nov 2026); jalankan migrasi `20261117005000_…` |
+| DL2 | P1 | Menu Lainnya detail + pintasan Playground; Download; toggle izin; copy ID/EN — **kode** (17 Nov 2026) |
+| DL3 | P2 | Evaluasi Storage (**Opsi A** terkunci) + `logPixelDownload` di route — **selesai** (17 Nov 2026); tanpa migrasi Storage |
+| DL4 | — | Evaluasi unduh source/RLE vs fork — **belum disetujui** |
+
+Di luar antrian: lisensi komersial, marketplace, DRM / jaminan anti–Save As, ubah RLE/PNG pipeline. Melihat · download PNG · fork tidak saling mengunci.

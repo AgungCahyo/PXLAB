@@ -6,7 +6,7 @@
 
 **Sumber kebenaran:** kode dan migrasi aktual. Dokumen lain yang berbeda dengan kode dianggap ketinggalan.
 
-**Terkait:** `REDESIGN-BLUEPRINT.md` (hierarki halaman), `IMPLEMENTATION-ROADMAP.md` (irisan kerja), `COMPREHENSIVE-UX-AUDIT.md` (P1-8 / P2-13 Jelajah), `PIXEL-CANVAS-SPEC.md` / `lib/pixel.ts` (RLE).
+**Terkait:** `REDESIGN-BLUEPRINT.md` (hierarki halaman), `IMPLEMENTATION-ROADMAP.md` (irisan kerja), `COMPREHENSIVE-UX-AUDIT.md` (P1-8 / P2-13 Jelajah), `PIXEL-CANVAS-SPEC.md` / `lib/pixel.ts` (RLE), `PIXEL-PLAYGROUND-DESIGN-FEATURES-AUDIT.md` (fitur desain studio — orthogonal; bukan metadata/Explore).
 
 ### Keputusan produk terkunci (17 Nov 2026)
 

@@ -3,8 +3,10 @@
 import { useEffect, useRef, useState } from "react"
 import { useFormStatus } from "react-dom"
 import { useRouter } from "next/navigation"
-import { PixelBoard, type PixelBoardHandle } from "@/components/canvas/PixelBoard"
+import { PixelBoard, type PixelBoardHandle, type Tool } from "@/components/canvas/PixelBoard"
 import { ColorPicker } from "@/components/creations/ColorPicker"
+import { CreationMoreMenu } from "@/components/creations/CreationMoreMenu"
+import { DocumentPaletteDialog } from "@/components/creations/DocumentPaletteDialog"
 import { CreationTagInput } from "@/components/creations/CreationTagInput"
 import { DeleteCreationCopy } from "@/components/creations/DeleteCreationCopy"
 import { PixelArt } from "@/components/creations/PixelArt"
@@ -30,7 +32,16 @@ import {
 import { displayTitle, isUnnamedTitle, titleForStorage } from "@/lib/creations"
 import { copy } from "@/lib/copy"
 import { href, type Lang } from "@/lib/i18n"
-import { PIXEL_INK, PIXEL_PALETTE, PIXEL_PAPER, type PixelSourceV1 } from "@/lib/pixel"
+import {
+  PIXEL_BRUSH_SIZES,
+  PIXEL_INK,
+  PIXEL_PALETTE,
+  PIXEL_PAPER,
+  type PixelBrushSize,
+  type PixelSourceV1,
+  type PixelSymmetry,
+  type PixelZoom,
+} from "@/lib/pixel"
 import {
   CREATION_CAPTION_MAX,
   CREATION_TITLE_MAX,
@@ -49,7 +60,6 @@ function PlaygroundDeleteSubmit({ lang }: { lang: Lang }) {
   )
 }
 
-type Tool = "pencil" | "eraser" | "pan"
 type SaveStatus = "saved" | "saving" | "unsaved"
 
 /** Debounce browser-local pixel draft writes only — never hits the database. */
@@ -91,6 +101,14 @@ export function PlaygroundForm({
   const [tags, setTags] = useState<string[]>(creation.tags ?? [])
   const [statusPublished, setStatusPublished] = useState(creation.status === "published")
   const [tool, setTool] = useState<Tool>("pencil")
+  const [brushSize, setBrushSize] = useState<PixelBrushSize>(1)
+  const [gridVisible, setGridVisible] = useState(true)
+  const [zoom, setZoom] = useState<PixelZoom>("fit")
+  const [hasSelection, setHasSelection] = useState(false)
+  const [rotateHint, setRotateHint] = useState(false)
+  const [symmetry, setSymmetry] = useState<PixelSymmetry>("off")
+  const [paletteManageOpen, setPaletteManageOpen] = useState(false)
+  const [paletteFullAlert, setPaletteFullAlert] = useState(false)
   const serverPalette = initialSource?.palette?.length
     ? [...initialSource.palette]
     : header.success
@@ -490,14 +508,29 @@ export function PlaygroundForm({
         : copy.pixelSavedJustNow[lang]
   const saveButtonLabel = published ? copy.createSaveChanges[lang] : copy.createSaveDraft[lang]
 
-  const toolButton = (value: Tool, icon: "pencil" | "eraser" | "pan", label: string) => (
+  const zoomLabel = zoom === "fit" ? copy.pixelFit[lang] : `${Math.round(Number(zoom) * 10) / 10}×`
+
+  const toolButton = (
+    value: Tool,
+    icon:
+      | "pencil"
+      | "eraser"
+      | "pan"
+      | "eyedropper"
+      | "fill"
+      | "line"
+      | "rect"
+      | "ellipse"
+      | "select",
+    label: string,
+  ) => (
     <button
       type="button"
       aria-label={label}
       aria-pressed={tool === value}
       onClick={() => setTool(value)}
       className={cn(
-        "inline-flex h-11 w-11 items-center justify-center border-[3px]",
+        "inline-flex h-11 w-11 shrink-0 items-center justify-center border-[3px]",
         tool === value ? "border-fg bg-brick text-white" : "border-earth bg-card text-fg",
       )}
     >
@@ -549,6 +582,8 @@ export function PlaygroundForm({
             <span>
               {width} × {height}
             </span>
+            <span aria-hidden="true">·</span>
+            <span>{zoomLabel}</span>
           </p>
         </div>
         <div className="flex items-center gap-1.5">
@@ -591,6 +626,11 @@ export function PlaygroundForm({
           <Alert tone="error">{copy.errors[errorState.error][lang]}</Alert>
         </div>
       ) : null}
+      {paletteFullAlert ? (
+        <div className="px-3 pt-2">
+          <Alert tone="error">{copy.pixelPaletteFullStroke[lang]}</Alert>
+        </div>
+      ) : null}
 
       <div className="flex min-h-0 flex-1 flex-col px-2 py-2 sm:px-3">
         {preview && previewUrl ? (
@@ -613,9 +653,18 @@ export function PlaygroundForm({
             initialSource={boardSource}
             tool={tool}
             color={color}
+            brushSize={brushSize}
+            gridVisible={gridVisible}
+            symmetry={symmetry}
             onToolChange={setTool}
             onColorChange={setColor}
+            onBrushSizeChange={setBrushSize}
+            onGridVisibleChange={setGridVisible}
+            onSymmetryChange={setSymmetry}
+            onZoomChange={setZoom}
+            onSelectionChange={setHasSelection}
             onPaletteChange={setDocumentPalette}
+            onPaletteFull={() => setPaletteFullAlert(true)}
             onStrokeEnd={scheduleLocalSourceDraft}
             onHistoryChange={setHistory}
             className={preview ? "hidden" : "min-h-0 flex-1"}
@@ -626,36 +675,92 @@ export function PlaygroundForm({
       </div>
 
       <div className="playground-toolbar shrink-0 border-t-[3px] border-earth bg-card px-2 pt-2 sm:px-3">
-        <div className="flex items-center justify-center gap-2">
-          {toolButton("pencil", "pencil", copy.pixelPencil[lang])}
-          {toolButton("eraser", "eraser", copy.pixelEraser[lang])}
-          {toolButton("pan", "pan", copy.pixelPan[lang])}
-          <button
-            type="button"
-            aria-label={copy.pixelUndo[lang]}
-            disabled={!history.canUndo}
-            onClick={() => boardRef.current?.undo()}
-            className="inline-flex h-11 w-11 items-center justify-center border-[3px] border-earth bg-card text-fg disabled:opacity-40"
-          >
-            <PixelIcon name="undo" />
-          </button>
-          <button
-            type="button"
-            aria-label={copy.pixelRedo[lang]}
-            disabled={!history.canRedo}
-            onClick={() => boardRef.current?.redo()}
-            className="inline-flex h-11 w-11 items-center justify-center border-[3px] border-earth bg-card text-fg disabled:opacity-40"
-          >
-            <PixelIcon name="redo" />
-          </button>
-          <button
-            type="button"
-            aria-label={copy.pixelMore[lang]}
-            onClick={() => setMoreOpen(true)}
+        <div className="flex items-center gap-2">
+          <div className="flex min-w-0 flex-1 items-center gap-1.5 overflow-x-auto pb-1">
+            {toolButton("pencil", "pencil", copy.pixelPencil[lang])}
+            {toolButton("eraser", "eraser", copy.pixelEraser[lang])}
+            {toolButton("select", "select", copy.pixelSelect[lang])}
+            {toolButton("fill", "fill", copy.pixelFill[lang])}
+            {toolButton("eyedropper", "eyedropper", copy.pixelEyedropper[lang])}
+            {toolButton("line", "line", copy.pixelLine[lang])}
+            {toolButton("rect", "rect", copy.pixelRect[lang])}
+            {toolButton("ellipse", "ellipse", copy.pixelEllipse[lang])}
+            {toolButton("pan", "pan", copy.pixelPan[lang])}
+          </div>
+          <div className="flex shrink-0 items-center gap-1.5">
+            <label className="sr-only" htmlFor="playground-brush">
+              {copy.pixelBrushSize[lang]}
+            </label>
+            <select
+              id="playground-brush"
+              aria-label={copy.pixelBrushSize[lang]}
+              value={brushSize}
+              onChange={(event) => setBrushSize(Number(event.target.value) as PixelBrushSize)}
+              className="h-11 border-[3px] border-earth bg-card px-2 text-[13px] font-medium text-fg"
+            >
+              {PIXEL_BRUSH_SIZES.map((size) => (
+                <option key={size} value={size}>
+                  {size}×
+                </option>
+              ))}
+            </select>
+            <label className="sr-only" htmlFor="playground-symmetry">
+              {copy.pixelSymmetry[lang]}
+            </label>
+            <select
+              id="playground-symmetry"
+              aria-label={copy.pixelSymmetry[lang]}
+              value={symmetry}
+              onChange={(event) => setSymmetry(event.target.value as PixelSymmetry)}
+              className="h-11 max-w-[7.5rem] border-[3px] border-earth bg-card px-2 text-[13px] font-medium text-fg"
+            >
+              <option value="off">{copy.pixelSymmetryOff[lang]}</option>
+              <option value="x">{copy.pixelSymmetryX[lang]}</option>
+              <option value="y">{copy.pixelSymmetryY[lang]}</option>
+              <option value="xy">{copy.pixelSymmetryXY[lang]}</option>
+            </select>
+            <button
+              type="button"
+              aria-label={copy.pixelGridToggle[lang]}
+              aria-pressed={gridVisible}
+              onClick={() => setGridVisible((value) => !value)}
+              className={cn(
+                "inline-flex h-11 w-11 items-center justify-center border-[3px]",
+                gridVisible ? "border-fg bg-soft text-fg" : "border-earth bg-card text-fg",
+              )}
+            >
+              <PixelIcon name="grid" />
+            </button>
+            <button
+              type="button"
+              aria-label={copy.pixelUndo[lang]}
+              disabled={!history.canUndo}
+              onClick={() => boardRef.current?.undo()}
+              className="inline-flex h-11 w-11 items-center justify-center border-[3px] border-earth bg-card text-fg disabled:opacity-40"
+            >
+              <PixelIcon name="undo" />
+            </button>
+            <button
+              type="button"
+              aria-label={copy.pixelRedo[lang]}
+              disabled={!history.canRedo}
+              onClick={() => boardRef.current?.redo()}
+              className="inline-flex h-11 w-11 items-center justify-center border-[3px] border-earth bg-card text-fg disabled:opacity-40"
+            >
+              <PixelIcon name="redo" />
+            </button>
+            <button
+              type="button"
+              aria-label={copy.pixelMore[lang]}
+            onClick={() => {
+              setRotateHint(false)
+              setMoreOpen(true)
+            }}
             className="inline-flex h-11 w-11 items-center justify-center border-[3px] border-earth bg-card text-fg"
           >
             <PixelIcon name="more" />
           </button>
+          </div>
         </div>
         <div className="mt-2 flex items-center gap-2">
           <div
@@ -687,7 +792,10 @@ export function PlaygroundForm({
           <button
             type="button"
             aria-label={copy.pixelPaletteMore[lang]}
-            onClick={() => setPaletteOpen(true)}
+            onClick={() => {
+              setPaletteFullAlert(false)
+              setPaletteOpen(true)
+            }}
             className="inline-flex h-11 w-11 shrink-0 items-center justify-center border-[3px] border-earth bg-card"
           >
             <PixelIcon name="palette" />
@@ -706,6 +814,75 @@ export function PlaygroundForm({
             }}
           >
             {copy.createDetailsMenu[lang]}
+          </Button>
+          <CreationMoreMenu
+            lang={lang}
+            creationId={creation.id}
+            ownerId={creation.user_id}
+            viewerId={creation.user_id}
+            status={statusPublished ? "published" : "draft"}
+            allowPngDownload={creation.allow_png_download}
+            variant="embedded"
+          />
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => {
+              setMoreOpen(false)
+              setPaletteManageOpen(true)
+            }}
+          >
+            {copy.pixelPaletteManage[lang]}
+          </Button>
+          <p className="text-[12px] font-medium uppercase tracking-wide text-muted">
+            {hasSelection ? copy.pixelSelect[lang] : copy.pixelFit[lang]}
+          </p>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => {
+              boardRef.current?.flipHorizontal()
+              setMoreOpen(false)
+            }}
+          >
+            {copy.pixelFlipH[lang]}
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => {
+              boardRef.current?.flipVertical()
+              setMoreOpen(false)
+            }}
+          >
+            {copy.pixelFlipV[lang]}
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => {
+              const ok = boardRef.current?.rotate90Cw() ?? false
+              if (!ok) setRotateHint(true)
+              else {
+                setRotateHint(false)
+                setMoreOpen(false)
+              }
+            }}
+          >
+            {copy.pixelRotate90[lang]}
+          </Button>
+          {rotateHint ? (
+            <p className="text-[13px] text-brick">{copy.pixelRotateNeedSquare[lang]}</p>
+          ) : null}
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => {
+              boardRef.current?.clearCanvas()
+              setMoreOpen(false)
+            }}
+          >
+            {copy.pixelClearCanvas[lang]}
           </Button>
           <Button
             type="button"
@@ -771,8 +948,33 @@ export function PlaygroundForm({
         value={color}
         documentPalette={documentPalette}
         onSelect={(hex) => {
+          setPaletteFullAlert(false)
           setColor(hex)
           if (tool === "eraser") setTool("pencil")
+        }}
+      />
+
+      <DocumentPaletteDialog
+        lang={lang}
+        open={paletteManageOpen}
+        onClose={() => setPaletteManageOpen(false)}
+        palette={documentPalette}
+        activeColor={color}
+        onSelect={(hex) => {
+          setPaletteFullAlert(false)
+          setColor(hex)
+          if (tool === "eraser") setTool("pencil")
+        }}
+        onReplace={(fromHex, toHex) => {
+          boardRef.current?.replaceColor(fromHex, toHex)
+          setColor(toHex)
+          setPaletteFullAlert(false)
+        }}
+        onRemove={(hex) => {
+          boardRef.current?.removeColor(hex)
+          setDocumentPalette(boardRef.current?.getPalette() ?? documentPalette)
+          if (color === hex) setColor(PIXEL_INK)
+          setPaletteFullAlert(false)
         }}
       />
 

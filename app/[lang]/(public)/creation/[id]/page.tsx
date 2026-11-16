@@ -5,6 +5,7 @@ import { connection } from "next/server"
 import { Suspense } from "react"
 import { CreationBody } from "@/components/creations/CreationBody"
 import { CreationColorPalette } from "@/components/creations/CreationColorPalette"
+import { CreationMoreMenu } from "@/components/creations/CreationMoreMenu"
 import { CreationTags } from "@/components/creations/CreationTags"
 import { ConversationSkeleton } from "@/components/creations/PageSkeletons"
 import { CreationCommunity, CreationEngagement } from "@/components/community/CreationCommunity"
@@ -128,6 +129,16 @@ export default async function CreationDetailPage({
           member={member}
         />
       </div>
+      {isPixel ? (
+        <CreationMoreMenu
+          lang={lang}
+          creationId={creation.id}
+          ownerId={creation.user_id}
+          viewerId={profile?.id ?? null}
+          status={creation.status}
+          allowPngDownload={creation.allow_png_download}
+        />
+      ) : null}
     </>
   )
 

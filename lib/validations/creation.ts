@@ -49,6 +49,11 @@ export const creationCaptionSchema = z.preprocess(
 )
 export const creationIdSchema = z.uuid()
 
+export const updateAllowPngDownloadSchema = z.object({
+  id: creationIdSchema,
+  allow_png_download: z.enum(["true", "false"]).transform((value) => value === "true"),
+})
+
 function tagsFromUnknown(value: unknown): string[] {
   if (Array.isArray(value)) return value.map(String)
   if (typeof value !== "string") return []

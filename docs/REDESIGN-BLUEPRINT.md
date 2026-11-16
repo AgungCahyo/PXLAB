@@ -71,12 +71,14 @@ Judul tidak dikirim sebagai “Tanpa judul”. Draf baru boleh tanpa judul tersi
 
 Tujuan: menggambar, menyimpan, meninjau, menerbitkan.
 
+**Fitur desain di luar MVP toolset** (eyedropper, fill, shapes, selection, layers, …): lihat antrian terpisah `PIXEL-PLAYGROUND-DESIGN-FEATURES-AUDIT.md` (gelombang D1–D5). Jangan dicampur dengan irisan chrome halaman ini.
+
 Yang tetap:
 
 - Kanvas penuh di bawah header situs.
 - Tab bawah dan footer disembunyikan.
 - Pensil, penghapus, geser, undo, redo, palet, pratinjau.
-- Autosave, kembali yang menyimpan dulu, peringatan menutup tab, peringatan offline lalu coba lagi saat online.
+- Persistensi Studio: explicit-save (+ draft lokal browser); kembali dengan peringatan jika belum tersimpan; peringatan menutup tab; offline tanpa autosave server. (Detail: audit metadata #8.)
 - Hapus hanya dari dialog, dengan konfirmasi.
 - Lepas-terbit tidak menghapus source.
 
@@ -119,11 +121,13 @@ Susunan baru, tanpa mengubah aturan percakapan:
 5. Hashtag opsional (max 5), tautan siap ke filter Jelajah.
 6. Color Palette + Color Usage Bar (pixel; dari snapshot RLE, bukan analisis PNG).
 7. Apresiasi dan bagikan. Teks tetap mendampingi ikon.
-8. Percakapan di bawahnya: jumlah, kosong, muat yang lebih lama, catatan, balasan satu tingkat, komposer yang tertutup sampai dibuka. Fork tetap untuk bukan-pemilik. Laporkan tetap ada.
+8. Menu **Lainnya (⋯)** di detail (baru): **Download** PNG bila diizinkan; pemilik selalu melihat Download + pengaturan izin unduh. Bukan cluster apresiasi.
+9. Percakapan di bawahnya: jumlah, kosong, muat yang lebih lama, catatan, balasan satu tingkat, komposer yang tertutup sampai dibuka. Fork tetap untuk bukan-pemilik. Laporkan tetap ada.
 
 Jangan mengubah: apresiasi bukan komentar, balasan tidak bersarang lebih dari satu, komposer tidak menggantikan karya.
 
-Rincian caption, hashtag, dan palet warna: `ARTWORK-METADATA-EXPLORE-AUDIT.md` (belum diimplementasikan).
+Rincian caption, hashtag, dan palet warna: `ARTWORK-METADATA-EXPLORE-AUDIT.md`.  
+Izin unduh PNG (default OFF, ditegakkan server): `ARTWORK-DOWNLOAD-PERMISSION-AUDIT.md` — **belum diimplementasikan**.
 
 ### Profil `/u/[username]`
 
@@ -318,3 +322,21 @@ Ringkas:
 | Skema | Jangan ubah RLE/PNG/RLS source; jangan reuse `content` pixel untuk caption/tags |
 
 Tidak ada izin implementasi di dokumen ini. Irisan M1–M7 ada di audit dan di `IMPLEMENTATION-ROADMAP.md`.
+
+---
+
+## 10. Unduh karya (izin kreator — blueprint terkunci; belum diimplementasikan)
+
+Spesifikasi: **`docs/ARTWORK-DOWNLOAD-PERMISSION-AUDIT.md`**. Irisan **DL1–DL4** di `IMPLEMENTATION-ROADMAP.md`. **DL1–DL3 selesai** (Storage tetap Opsi A + logging unduh). **DL4** menunggu persetujuan.
+
+| Keputusan | Isi terkunci |
+|---|---|
+| Default | Izin unduh orang lain **OFF** |
+| Siapa | Pemilik selalu (termasuk draf); **tamu & anggota** jika flag ON + published |
+| Format tahap 1 | PNG `cover.png`, dimensi asli; bukan source RLE |
+| UI | Download di Lainnya detail; pintasan Lainnya Playground; toggle “Allow others to download this artwork” |
+| Cache | Endpoint unduh **`no-store`**; **tidak** purge cache cover saat izin dicabut |
+| Posisi | Fasilitas unduh **resmi** THE COMMONS — bukan DRM / jaminan hak cipta; Download OFF ≠ mencegah Save As |
+| Pemisahan | Melihat karya · download PNG · fork **tidak saling mengunci** |
+
+Operator: jalankan migrasi `allow_png_download` di Supabase sebelum mengandalkan unduh di lingkungan hidup. DL4 (source/RLE) menunggu persetujuan.

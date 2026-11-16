@@ -72,6 +72,95 @@ const icons = {
       <rect x="9" y="10" width="2" height="2" />
     </>
   ),
+  eyedropper: (
+    <>
+      <rect x="10" y="2" width="4" height="4" />
+      <rect x="8" y="4" width="4" height="4" />
+      <rect x="6" y="6" width="4" height="4" />
+      <rect x="3" y="10" width="4" height="4" />
+      <rect x="2" y="12" width="2" height="2" />
+    </>
+  ),
+  fill: (
+    <>
+      <rect x="3" y="2" width="2" height="8" />
+      <rect x="5" y="8" width="8" height="2" />
+      <rect x="4" y="10" width="10" height="4" />
+    </>
+  ),
+  line: (
+    <>
+      <rect x="2" y="12" width="2" height="2" />
+      <rect x="4" y="10" width="2" height="2" />
+      <rect x="6" y="8" width="2" height="2" />
+      <rect x="8" y="6" width="2" height="2" />
+      <rect x="10" y="4" width="2" height="2" />
+      <rect x="12" y="2" width="2" height="2" />
+    </>
+  ),
+  rect: (
+    <>
+      <rect x="3" y="3" width="10" height="2" />
+      <rect x="3" y="11" width="10" height="2" />
+      <rect x="3" y="5" width="2" height="6" />
+      <rect x="11" y="5" width="2" height="6" />
+    </>
+  ),
+  ellipse: (
+    <>
+      <rect x="5" y="2" width="6" height="2" />
+      <rect x="3" y="4" width="2" height="2" />
+      <rect x="11" y="4" width="2" height="2" />
+      <rect x="2" y="6" width="2" height="4" />
+      <rect x="12" y="6" width="2" height="4" />
+      <rect x="3" y="10" width="2" height="2" />
+      <rect x="11" y="10" width="2" height="2" />
+      <rect x="5" y="12" width="6" height="2" />
+    </>
+  ),
+  brush: (
+    <>
+      <rect x="6" y="2" width="4" height="6" />
+      <rect x="5" y="8" width="6" height="2" />
+      <rect x="4" y="10" width="8" height="4" />
+    </>
+  ),
+  select: (
+    <>
+      <rect x="2" y="2" width="4" height="2" />
+      <rect x="10" y="2" width="4" height="2" />
+      <rect x="2" y="2" width="2" height="4" />
+      <rect x="12" y="2" width="2" height="4" />
+      <rect x="2" y="10" width="2" height="4" />
+      <rect x="12" y="10" width="2" height="4" />
+      <rect x="2" y="12" width="4" height="2" />
+      <rect x="10" y="12" width="4" height="2" />
+    </>
+  ),
+  flip: (
+    <>
+      <rect x="2" y="3" width="5" height="10" />
+      <rect x="9" y="3" width="5" height="10" />
+      <rect x="7" y="7" width="2" height="2" />
+    </>
+  ),
+  rotate: (
+    <>
+      <rect x="4" y="2" width="8" height="2" />
+      <rect x="10" y="4" width="2" height="6" />
+      <rect x="4" y="8" width="6" height="2" />
+      <rect x="4" y="4" width="2" height="2" />
+      <rect x="2" y="11" width="4" height="2" />
+    </>
+  ),
+  clear: (
+    <>
+      <rect x="3" y="3" width="10" height="10" />
+      <rect x="5" y="5" width="6" height="6" fill="var(--bg)" />
+      <rect x="2" y="2" width="2" height="2" />
+      <rect x="12" y="12" width="2" height="2" />
+    </>
+  ),
   undo: (
     <>
       <rect x="3" y="7" width="10" height="2" />
@@ -134,6 +223,17 @@ const icons = {
       <rect x="12" y="2" width="2" height="6" />
       <rect x="8" y="6" width="2" height="2" />
       <rect x="10" y="4" width="2" height="2" />
+    </>
+  ),
+  download: (
+    <>
+      <rect x="7" y="2" width="2" height="7" />
+      <rect x="4" y="7" width="2" height="2" />
+      <rect x="10" y="7" width="2" height="2" />
+      <rect x="5" y="8" width="6" height="2" />
+      <rect x="3" y="11" width="10" height="2" />
+      <rect x="3" y="13" width="2" height="1" />
+      <rect x="11" y="13" width="2" height="1" />
     </>
   ),
   user: (
