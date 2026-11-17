@@ -61,6 +61,83 @@ const icons = {
       <rect x="7" y="7" width="2" height="2" />
     </>
   ),
+  eyeOff: (
+    <>
+      <rect x="2" y="6" width="12" height="4" />
+      <rect x="4" y="5" width="8" height="6" />
+      <rect x="6" y="6" width="4" height="4" fill="var(--bg)" />
+      <rect x="3" y="3" width="2" height="2" />
+      <rect x="5" y="5" width="2" height="2" />
+      <rect x="9" y="9" width="2" height="2" />
+      <rect x="11" y="11" width="2" height="2" />
+    </>
+  ),
+  lock: (
+    <>
+      <rect x="5" y="2" width="6" height="2" />
+      <rect x="5" y="2" width="2" height="5" />
+      <rect x="9" y="2" width="2" height="5" />
+      <rect x="3" y="7" width="10" height="7" />
+      <rect x="7" y="9" width="2" height="3" fill="var(--bg)" />
+    </>
+  ),
+  unlock: (
+    <>
+      <rect x="5" y="1" width="6" height="2" />
+      <rect x="5" y="1" width="2" height="4" />
+      <rect x="9" y="1" width="2" height="2" />
+      <rect x="3" y="7" width="10" height="7" />
+      <rect x="7" y="9" width="2" height="3" fill="var(--bg)" />
+    </>
+  ),
+  plus: (
+    <>
+      <rect x="7" y="2" width="2" height="12" />
+      <rect x="2" y="7" width="12" height="2" />
+    </>
+  ),
+  trash: (
+    <>
+      <rect x="5" y="2" width="6" height="2" />
+      <rect x="3" y="4" width="10" height="2" />
+      <rect x="4" y="6" width="8" height="8" />
+      <rect x="6" y="7" width="1" height="5" fill="var(--bg)" />
+      <rect x="9" y="7" width="1" height="5" fill="var(--bg)" />
+    </>
+  ),
+  duplicate: (
+    <>
+      <rect x="3" y="5" width="8" height="9" />
+      <rect x="5" y="2" width="8" height="9" fill="var(--bg)" />
+      <rect x="5" y="2" width="8" height="9" />
+      <rect x="7" y="4" width="4" height="5" fill="var(--bg)" />
+    </>
+  ),
+  grip: (
+    <>
+      <rect x="4" y="3" width="2" height="2" />
+      <rect x="10" y="3" width="2" height="2" />
+      <rect x="4" y="7" width="2" height="2" />
+      <rect x="10" y="7" width="2" height="2" />
+      <rect x="4" y="11" width="2" height="2" />
+      <rect x="10" y="11" width="2" height="2" />
+    </>
+  ),
+  merge: (
+    <>
+      <rect x="3" y="2" width="10" height="3" />
+      <rect x="5" y="6" width="6" height="2" />
+      <rect x="3" y="9" width="10" height="5" />
+      <rect x="7" y="5" width="2" height="5" />
+    </>
+  ),
+  layers: (
+    <>
+      <rect x="2" y="10" width="12" height="3" />
+      <rect x="3" y="7" width="10" height="3" />
+      <rect x="4" y="4" width="8" height="3" />
+    </>
+  ),
   publish: (
     <>
       <rect x="7" y="2" width="2" height="8" />
@@ -159,6 +236,92 @@ const icons = {
       <rect x="12" y="10" width="2" height="4" />
       <rect x="2" y="12" width="4" height="2" />
       <rect x="10" y="12" width="4" height="2" />
+    </>
+  ),
+  square: (
+    <>
+      <rect x="3" y="3" width="10" height="10" />
+    </>
+  ),
+  circle: (
+    <>
+      <rect x="5" y="2" width="6" height="2" />
+      <rect x="3" y="4" width="2" height="2" />
+      <rect x="11" y="4" width="2" height="2" />
+      <rect x="2" y="6" width="2" height="4" />
+      <rect x="12" y="6" width="2" height="4" />
+      <rect x="3" y="10" width="2" height="2" />
+      <rect x="11" y="10" width="2" height="2" />
+      <rect x="5" y="12" width="6" height="2" />
+      <rect x="5" y="5" width="6" height="6" />
+    </>
+  ),
+  polygon: (
+    <>
+      <rect x="7" y="2" width="2" height="2" />
+      <rect x="5" y="4" width="6" height="2" />
+      <rect x="3" y="6" width="2" height="2" />
+      <rect x="11" y="6" width="2" height="2" />
+      <rect x="2" y="8" width="2" height="4" />
+      <rect x="12" y="8" width="2" height="4" />
+      <rect x="4" y="12" width="8" height="2" />
+    </>
+  ),
+  bezier: (
+    <>
+      <rect x="2" y="12" width="2" height="2" />
+      <rect x="3" y="10" width="2" height="2" />
+      <rect x="5" y="8" width="2" height="2" />
+      <rect x="8" y="6" width="2" height="2" />
+      <rect x="11" y="4" width="2" height="2" />
+      <rect x="12" y="2" width="2" height="2" />
+      <rect x="2" y="2" width="2" height="2" />
+      <rect x="12" y="12" width="2" height="2" />
+    </>
+  ),
+  text: (
+    <>
+      <rect x="3" y="2" width="10" height="2" />
+      <rect x="7" y="2" width="2" height="12" />
+      <rect x="5" y="12" width="6" height="2" />
+    </>
+  ),
+  gradient: (
+    <>
+      <rect x="2" y="3" width="3" height="10" />
+      <rect x="5" y="4" width="3" height="8" />
+      <rect x="8" y="5" width="3" height="6" />
+      <rect x="11" y="6" width="3" height="4" />
+    </>
+  ),
+  wand: (
+    <>
+      <rect x="10" y="2" width="2" height="2" />
+      <rect x="8" y="4" width="2" height="2" />
+      <rect x="6" y="6" width="2" height="2" />
+      <rect x="3" y="9" width="4" height="4" />
+      <rect x="12" y="3" width="2" height="2" />
+      <rect x="2" y="2" width="2" height="2" />
+    </>
+  ),
+  colorSelect: (
+    <>
+      <rect x="2" y="2" width="5" height="5" />
+      <rect x="9" y="2" width="5" height="5" />
+      <rect x="2" y="9" width="5" height="5" />
+      <rect x="10" y="10" width="2" height="2" />
+      <rect x="12" y="12" width="2" height="2" />
+    </>
+  ),
+  lasso: (
+    <>
+      <rect x="5" y="2" width="6" height="2" />
+      <rect x="3" y="4" width="2" height="2" />
+      <rect x="11" y="4" width="2" height="4" />
+      <rect x="2" y="6" width="2" height="4" />
+      <rect x="4" y="10" width="4" height="2" />
+      <rect x="8" y="11" width="2" height="2" />
+      <rect x="10" y="12" width="3" height="2" />
     </>
   ),
   flip: (

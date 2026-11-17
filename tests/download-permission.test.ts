@@ -132,8 +132,8 @@ describe("download UI (DL2)", () => {
     expect(menu).toMatch(/updateAllowPngDownloadAction/)
     expect(menu).toMatch(/api\/pixel-download/)
     expect(menu).toMatch(/getNativePng/)
-    expect(menu).toMatch(/scalePngNearest/)
-    expect(menu).toMatch(/downloadScaleOptions/)
+    expect(menu).toMatch(/exportPngForDownloadClient/)
+    expect(menu).toMatch(/downloadExportOptions/)
     expect(menu).toMatch(/allowPngDownload/)
     expect(playground).toMatch(/CreationMoreMenu/)
     expect(playground).toMatch(/variant="embedded"/)
@@ -150,11 +150,12 @@ describe("download UI (DL2)", () => {
 describe("download scale helper (DL-scale)", () => {
   const scaleHelper = readFileSync(path.join(root, "lib/pixel-png-scale.ts"), "utf8")
 
-  it("keeps scaling download-only with nearest neighbor and a 512 cap", () => {
-    expect(scaleHelper).toMatch(/PIXEL_CANVAS_MAX/)
+  it("keeps scaling download-only with nearest neighbor and a separate export cap", () => {
+    expect(scaleHelper).toMatch(/PIXEL_EXPORT_EDGE_MAX/)
     expect(scaleHelper).toMatch(/scaleRgbaNearest/)
-    expect(scaleHelper).toMatch(/downloadScaleOptions/)
-    expect(scaleHelper).toMatch(/scalePngNearest/)
+    expect(scaleHelper).toMatch(/letterboxRgbaNearest/)
+    expect(scaleHelper).toMatch(/downloadExportOptions/)
+    expect(scaleHelper).toMatch(/exportPngForDownload/)
     expect(scaleHelper).not.toMatch(/imageSmoothingEnabled/)
     expect(scaleHelper).not.toMatch(/source\.json|from\("creations"\)/)
   })

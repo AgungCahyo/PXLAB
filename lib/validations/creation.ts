@@ -1,5 +1,5 @@
 import { z } from "zod"
-import { normalizeCreationTag } from "@/lib/creations"
+import { isUnnamedTitle, normalizeCreationTag } from "@/lib/creations"
 import {
   PIXEL_CANVAS_MAX,
   PIXEL_CANVAS_MIN,
@@ -9,9 +9,12 @@ import {
   PIXEL_PAPER,
   PIXEL_SOURCE_ENCODING,
   PIXEL_SOURCE_VERSION,
+  PIXEL_SOURCE_VERSION_V2,
+  PIXEL_STAGE_GROUNDS,
   isPixelCanvasSize,
   isPixelHexColor,
   normalizePixelHex,
+  type PixelStageGround,
 } from "@/lib/pixel"
 import {
   CREATION_CAPTION_MAX,
@@ -167,12 +170,13 @@ const pixelSide = z.number().int().min(PIXEL_CANVAS_MIN).max(PIXEL_CANVAS_MAX)
 
 export const pixelContentSchema = z
   .object({
-    version: z.literal(PIXEL_SOURCE_VERSION),
+    version: z.union([z.literal(PIXEL_SOURCE_VERSION), z.literal(PIXEL_SOURCE_VERSION_V2)]),
     width: pixelSide,
     height: pixelSide,
     palette: z.array(z.string()).min(1).max(PIXEL_DOCUMENT_PALETTE_MAX),
     encoding: z.literal(PIXEL_SOURCE_ENCODING),
     source_path: z.string().max(200),
+    stage_ground: z.enum(PIXEL_STAGE_GROUNDS).optional(),
   })
   .strict()
   .superRefine((value, ctx) => {
@@ -197,7 +201,7 @@ export type CreationContent = TextContent | IdeaContent | StoryContent | VisualC
 
 export function emptyCreationContent(
   type: CreationType,
-  size?: { width: number; height: number },
+  size?: { width: number; height: number; stage_ground?: PixelStageGround },
 ): CreationContent {
   switch (type) {
     case "pixel": {
@@ -205,12 +209,13 @@ export function emptyCreationContent(
       const width = size?.width ?? fallback.width
       const height = size?.height ?? fallback.height
       return {
-        version: PIXEL_SOURCE_VERSION,
+        version: PIXEL_SOURCE_VERSION_V2,
         width,
         height,
         palette: [...PIXEL_PALETTE],
         encoding: PIXEL_SOURCE_ENCODING,
         source_path: "",
+        ...(size?.stage_ground ? { stage_ground: size.stage_ground } : {}),
       }
     }
     case "text":
@@ -265,10 +270,11 @@ export function parseCreationContent(
 }
 
 export const createDraftSchema = z.object({
-  title: creationTitleSchema,
+  title: creationTitleSchema.refine((value) => !isUnnamedTitle(value), { message: "title_required" }),
   type: creationTypeSchema,
   width: pixelSide.optional(),
   height: pixelSide.optional(),
+  stage_ground: z.enum(PIXEL_STAGE_GROUNDS).optional(),
 })
 
 export const updateCreationSchema = z.object({

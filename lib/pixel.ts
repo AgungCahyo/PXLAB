@@ -1,11 +1,19 @@
 /** Shared pixel math for the Playground and the local Space prototype. */
+import { glyphRows, PIXEL_FONT_H, PIXEL_FONT_LEADING, PIXEL_FONT_TRACK, PIXEL_FONT_W } from "@/lib/pixel-font"
 import { PIXEL_SOURCE_MAX_BYTES } from "@/lib/site"
 
-/** Prototype / max side. Playground documents use their own width × height. */
+/** Prototype / classic square reference. Playground documents use their own width × height. */
 export const PIXEL_CANVAS_SIZE = 512
 export const PIXEL_CANVAS_MIN = 8
-export const PIXEL_CANVAS_MAX = 512
-export const PIXEL_CANVAS_AREA_MAX = PIXEL_CANVAS_MAX * PIXEL_CANVAS_MAX
+/** Max length of one side (allows wide/tall custom; not a square 1024²). */
+export const PIXEL_CANVAS_MAX = 1024
+/**
+ * Max pixel count (512²). Independent of PIXEL_CANVAS_MAX so landscape/portrait
+ * can use a longer side without raising RAM/payload envelope.
+ */
+export const PIXEL_CANVAS_AREA_MAX = 512 * 512
+/** Max edge for client PNG download only (not editor / stored cover). */
+export const PIXEL_EXPORT_EDGE_MAX = 2560
 export const PIXEL_TILE_SIZE = 32
 export const PIXEL_PAPER = "#FFFDF7"
 export const PIXEL_INK = "#20202A"
@@ -13,37 +21,93 @@ export const PIXEL_GRID_MIN_ZOOM = 8
 export const PIXEL_ZOOM_STEPS = [1, 2, 4, 8, 12, 16, 24, 32, 48] as const
 export const PIXEL_ZOOM_PINCH_MIN = 0.25
 export const PIXEL_ZOOM_PINCH_MAX = 48
-/** Discrete brush diameters for pencil / eraser (odd sizes stay centered). */
+/** Common brush diameters for `[` / `]` shortcuts (odd sizes stay centered). */
 export const PIXEL_BRUSH_SIZES = [1, 2, 3, 4, 6, 8] as const
-export type PixelBrushSize = (typeof PIXEL_BRUSH_SIZES)[number]
+/** Stroke / brush width range for SizeSlider and shape tools. */
+export const PIXEL_STROKE_MIN = 1
+export const PIXEL_STROKE_MAX = 16
+/** Brush / stroke width (integer 1–16). */
+export type PixelBrushSize = number
+export type PixelStrokeWidth = number
+
+export function clampStrokeWidth(size: number): number {
+  return Math.max(PIXEL_STROKE_MIN, Math.min(PIXEL_STROKE_MAX, Math.round(size)))
+}
+
+/** Step through PIXEL_BRUSH_SIZES; intermediate sizes snap to nearest common step. */
+export function stepBrushSize(current: number, direction: -1 | 1): number {
+  const sizes = PIXEL_BRUSH_SIZES as readonly number[]
+  const exact = sizes.indexOf(clampStrokeWidth(current))
+  if (exact >= 0) {
+    return sizes[Math.max(0, Math.min(sizes.length - 1, exact + direction))] ?? sizes[0]
+  }
+  if (direction < 0) {
+    const prev = [...sizes].reverse().find((size) => size < current)
+    return prev ?? sizes[0]
+  }
+  const next = sizes.find((size) => size > current)
+  return next ?? sizes[sizes.length - 1]
+}
+
+/** Cubic Bezier anchor with absolute handle positions. */
+export type BezierAnchor = {
+  x: number
+  y: number
+  /** Incoming control (toward previous segment). */
+  hiX: number
+  hiY: number
+  /** Outgoing control (toward next segment). */
+  hoX: number
+  hoY: number
+}
 export type PixelZoomStep = (typeof PIXEL_ZOOM_STEPS)[number]
 export type PixelZoom = "fit" | number
 
 /** Studio drawing tools (pan is navigation). */
 export type PixelDrawTool =
   | "pencil"
+  | "circle"
   | "eraser"
   | "pan"
   | "eyedropper"
   | "fill"
+  | "polygon"
   | "line"
   | "rect"
   | "ellipse"
+  | "bezier"
+  | "text"
+  | "gradient"
   | "select"
+  | "selectContiguous"
+  | "selectColor"
+  | "lasso"
+
+export type PixelBrushShape = "square" | "circle"
 
 export type PixelRect = { x: number; y: number; width: number; height: number }
+/** Box selection, optionally with a 1-bit mask the size of the box. */
+export type PixelSelection = PixelRect & { mask?: Uint8Array }
 
 export type PixelClipboard = {
   width: number
   height: number
   /** RGBA length width*height*4 */
   data: Uint8ClampedArray
+  mask?: Uint8Array
 }
+
+export type PixelPoint = { x: number; y: number }
 
 /** Mirror axes while drawing (X = left-right, Y = top-bottom). */
 export type PixelSymmetry = "off" | "x" | "y" | "xy"
 
-export const PIXEL_SIZE_PRESETS = [
+/** Stage desk behind Paper pixels. `ink` also seeds index 1 (PIXEL_INK) on new drafts. */
+export const PIXEL_STAGE_GROUNDS = ["checker", "paper", "ink"] as const
+export type PixelStageGround = (typeof PIXEL_STAGE_GROUNDS)[number]
+
+/** Square sizes that map 1:1 to Explore `CREATION_CATEGORIES` (DB check constraint). */
+export const PIXEL_SQUARE_PRESETS = [
   { id: "icon", width: 16, height: 16 },
   { id: "small", width: 32, height: 32 },
   { id: "sprite", width: 64, height: 64 },
@@ -51,7 +115,21 @@ export const PIXEL_SIZE_PRESETS = [
   { id: "large", width: 256, height: 256 },
   { id: "poster", width: 512, height: 512 },
 ] as const
+
+/**
+ * 16:9 / portrait wallpaper bases (area ≤ PIXEL_CANVAS_AREA_MAX).
+ * Stored category is `custom` — no DB migration in stage 5.
+ */
+export const PIXEL_ASPECT_PRESETS = [
+  { id: "wide", width: 480, height: 270 },
+  { id: "wideHd", width: 640, height: 360 },
+  { id: "tall", width: 270, height: 480 },
+  { id: "tallHd", width: 360, height: 640 },
+] as const
+
+export const PIXEL_SIZE_PRESETS = [...PIXEL_SQUARE_PRESETS, ...PIXEL_ASPECT_PRESETS] as const
 export type PixelSizePresetId = (typeof PIXEL_SIZE_PRESETS)[number]["id"]
+export type PixelSquarePresetId = (typeof PIXEL_SQUARE_PRESETS)[number]["id"]
 export const PIXEL_DEFAULT_PRESET: PixelSizePresetId = "sprite"
 
 /** User-facing canvas size label, e.g. `16×16`. */
@@ -67,12 +145,12 @@ export function isPixelCanvasSize(width: number, height: number) {
   return isPixelCanvasDimension(width) && isPixelCanvasDimension(height) && width * height <= PIXEL_CANVAS_AREA_MAX
 }
 
-/** Map canvas size to Explore size category. */
+/** Map canvas size to Explore size category (square presets only; aspect → custom). */
 export function pixelSizeCategory(
   width: number,
   height: number,
-): (typeof PIXEL_SIZE_PRESETS)[number]["id"] | "custom" {
-  const preset = PIXEL_SIZE_PRESETS.find((item) => item.width === width && item.height === height)
+): PixelSquarePresetId | "custom" {
+  const preset = PIXEL_SQUARE_PRESETS.find((item) => item.width === width && item.height === height)
   return preset?.id ?? "custom"
 }
 
@@ -93,8 +171,12 @@ export type PixelSwatch = (typeof PIXEL_SWATCHES)[number]
 /** Index 0 is always Paper (empty / eraser). Seed for new works; not an allowlist. */
 export const PIXEL_PALETTE = [PIXEL_PAPER, ...PIXEL_SWATCHES] as const
 export type PixelPaletteColor = (typeof PIXEL_PALETTE)[number]
+/** Legacy single-layer source documents. */
 export const PIXEL_SOURCE_VERSION = 1
+/** Multi-layer source documents. */
+export const PIXEL_SOURCE_VERSION_V2 = 2
 export const PIXEL_SOURCE_ENCODING = "rle-index" as const
+export const PIXEL_LAYER_MAX = 8
 export const PIXEL_DOCUMENT_PALETTE_MAX = 64
 export const PIXEL_RECENT_MAX = 12
 export const PIXEL_FAVORITE_MAX = 24
@@ -136,8 +218,10 @@ export function setPixel(
   rgb: readonly [number, number, number],
   width = PIXEL_CANVAS_SIZE,
   height = PIXEL_CANVAS_SIZE,
+  clip?: PixelSelection | null,
 ) {
   if (!inCanvas(x, y, width, height)) return
+  if (clip && !pointInSelection(x, y, clip)) return
   const i = (y * width + x) * 4
   pixels[i] = rgb[0]
   pixels[i + 1] = rgb[1]
@@ -164,7 +248,7 @@ export function rgbEqual(
   return a[0] === b[0] && a[1] === b[1] && a[2] === b[2]
 }
 
-/** Disk brush (size 1 = single pixel). Radius uses floor((size-1)/2) Chebyshev for odd; Euclidean for even. */
+/** Brush stamp (size 1 = single pixel). Square uses Chebyshev; circle uses Euclidean. */
 export function stampBrush(
   pixels: Uint8ClampedArray,
   cx: number,
@@ -173,10 +257,12 @@ export function stampBrush(
   size: number,
   width = PIXEL_CANVAS_SIZE,
   height = PIXEL_CANVAS_SIZE,
+  shape: PixelBrushShape = "circle",
+  clip?: PixelSelection | null,
 ) {
-  const brush = Math.max(1, Math.min(8, Math.round(size)))
+  const brush = Math.max(PIXEL_STROKE_MIN, Math.min(PIXEL_STROKE_MAX, Math.round(size)))
   if (brush === 1) {
-    setPixel(pixels, cx, cy, rgb, width, height)
+    setPixel(pixels, cx, cy, rgb, width, height, clip)
     return
   }
   const r = (brush - 1) / 2
@@ -189,7 +275,11 @@ export function stampBrush(
     for (let x = minX; x <= maxX; x += 1) {
       const dx = x - cx
       const dy = y - cy
-      if (dx * dx + dy * dy <= r2 + 0.25) setPixel(pixels, x, y, rgb, width, height)
+      const hit =
+        shape === "square"
+          ? Math.max(Math.abs(dx), Math.abs(dy)) <= r + 1e-6
+          : dx * dx + dy * dy <= r2 + 0.25
+      if (hit) setPixel(pixels, x, y, rgb, width, height, clip)
     }
   }
 }
@@ -235,8 +325,10 @@ export function strokeBrushLine(
   size: number,
   width = PIXEL_CANVAS_SIZE,
   height = PIXEL_CANVAS_SIZE,
+  shape: PixelBrushShape = "circle",
+  clip?: PixelSelection | null,
 ) {
-  walkLine(x0, y0, x1, y1, (x, y) => stampBrush(pixels, x, y, rgb, size, width, height))
+  walkLine(x0, y0, x1, y1, (x, y) => stampBrush(pixels, x, y, rgb, size, width, height, shape, clip))
 }
 
 function normalizeRect(x0: number, y0: number, x1: number, y1: number) {
@@ -258,15 +350,28 @@ export function strokeRect(
   width = PIXEL_CANVAS_SIZE,
   height = PIXEL_CANVAS_SIZE,
 ) {
+  strokeRectBrush(pixels, x0, y0, x1, y1, rgb, 1, width, height, "square")
+}
+
+/** Axis-aligned rectangle outline with brush width. */
+export function strokeRectBrush(
+  pixels: Uint8ClampedArray,
+  x0: number,
+  y0: number,
+  x1: number,
+  y1: number,
+  rgb: readonly [number, number, number],
+  size: number,
+  width = PIXEL_CANVAS_SIZE,
+  height = PIXEL_CANVAS_SIZE,
+  shape: PixelBrushShape = "square",
+  clip?: PixelSelection | null,
+) {
   const { left, right, top, bottom } = normalizeRect(x0, y0, x1, y1)
-  for (let x = left; x <= right; x += 1) {
-    setPixel(pixels, x, top, rgb, width, height)
-    setPixel(pixels, x, bottom, rgb, width, height)
-  }
-  for (let y = top; y <= bottom; y += 1) {
-    setPixel(pixels, left, y, rgb, width, height)
-    setPixel(pixels, right, y, rgb, width, height)
-  }
+  strokeBrushLine(pixels, left, top, right, top, rgb, size, width, height, shape, clip)
+  strokeBrushLine(pixels, right, top, right, bottom, rgb, size, width, height, shape, clip)
+  strokeBrushLine(pixels, right, bottom, left, bottom, rgb, size, width, height, shape, clip)
+  strokeBrushLine(pixels, left, bottom, left, top, rgb, size, width, height, shape, clip)
 }
 
 export function fillRect(
@@ -278,16 +383,17 @@ export function fillRect(
   rgb: readonly [number, number, number],
   width = PIXEL_CANVAS_SIZE,
   height = PIXEL_CANVAS_SIZE,
+  clip?: PixelSelection | null,
 ) {
   const { left, right, top, bottom } = normalizeRect(x0, y0, x1, y1)
   for (let y = top; y <= bottom; y += 1) {
     for (let x = left; x <= right; x += 1) {
-      setPixel(pixels, x, y, rgb, width, height)
+      setPixel(pixels, x, y, rgb, width, height, clip)
     }
   }
 }
 
-/** Ellipse via bounding-box test (filled or 1 px ring). */
+/** Ellipse via bounding-box test (filled or stroked ring). */
 export function paintEllipse(
   pixels: Uint8ClampedArray,
   x0: number,
@@ -298,16 +404,18 @@ export function paintEllipse(
   filled: boolean,
   width = PIXEL_CANVAS_SIZE,
   height = PIXEL_CANVAS_SIZE,
+  strokeWidth = 1,
+  clip?: PixelSelection | null,
 ) {
   const { left, right, top, bottom } = normalizeRect(x0, y0, x1, y1)
   const rw = right - left
   const rh = bottom - top
   if (rw === 0 && rh === 0) {
-    setPixel(pixels, left, top, rgb, width, height)
+    stampBrush(pixels, left, top, rgb, filled ? 1 : strokeWidth, width, height, "circle", clip)
     return
   }
   if (rw === 0 || rh === 0) {
-    strokeBrushLine(pixels, left, top, right, bottom, rgb, 1, width, height)
+    strokeBrushLine(pixels, left, top, right, bottom, rgb, filled ? 1 : strokeWidth, width, height, "circle", clip)
     return
   }
   const rx = rw / 2
@@ -317,14 +425,15 @@ export function paintEllipse(
   const rx2 = rx * rx
   const ry2 = ry * ry
   const outer = 1.02
-  const inner = filled ? -1 : Math.max(0, 1 - 1.35 / Math.max(rx, ry))
+  const stroke = Math.max(PIXEL_STROKE_MIN, Math.round(strokeWidth))
+  const shrink = filled ? -1 : Math.max(0.15, 1 - (stroke * 0.85) / Math.max(rx, ry, 1))
   for (let y = top; y <= bottom; y += 1) {
     for (let x = left; x <= right; x += 1) {
       const v = ((x - cx) * (x - cx)) / rx2 + ((y - cy) * (y - cy)) / ry2
       if (filled) {
-        if (v <= outer) setPixel(pixels, x, y, rgb, width, height)
-      } else if (v <= outer && v >= inner) {
-        setPixel(pixels, x, y, rgb, width, height)
+        if (v <= outer) setPixel(pixels, x, y, rgb, width, height, clip)
+      } else if (v <= outer && v >= shrink) {
+        setPixel(pixels, x, y, rgb, width, height, clip)
       }
     }
   }
@@ -341,7 +450,9 @@ export function floodFill(
   rgb: readonly [number, number, number],
   width = PIXEL_CANVAS_SIZE,
   height = PIXEL_CANVAS_SIZE,
+  clip?: PixelSelection | null,
 ) {
+  if (clip && !pointInSelection(startX, startY, clip)) return 0
   const target = getPixelRgb(pixels, startX, startY, width, height)
   if (!target || rgbEqual(target, rgb)) return 0
   const stack: number[] = [startX, startY]
@@ -352,13 +463,542 @@ export function floodFill(
     const x = stack.pop()
     if (x === undefined || y === undefined) break
     if (!inCanvas(x, y, width, height)) continue
+    if (clip && !pointInSelection(x, y, clip)) continue
     const current = getPixelRgb(pixels, x, y, width, height)
     if (!current || !rgbEqual(current, target)) continue
-    setPixel(pixels, x, y, rgb, width, height)
+    setPixel(pixels, x, y, rgb, width, height, clip)
     painted += 1
     stack.push(x + 1, y, x - 1, y, x, y + 1, x, y - 1)
   }
   return painted
+}
+
+export function fillPolygon(
+  pixels: Uint8ClampedArray,
+  points: PixelPoint[],
+  rgb: readonly [number, number, number],
+  width: number,
+  height: number,
+  clip?: PixelSelection | null,
+) {
+  if (points.length < 3) return 0
+  let minY = height
+  let maxY = -1
+  for (const point of points) {
+    minY = Math.min(minY, point.y)
+    maxY = Math.max(maxY, point.y)
+  }
+  minY = Math.max(0, minY)
+  maxY = Math.min(height - 1, maxY)
+  let painted = 0
+  const count = points.length
+  for (let y = minY; y <= maxY; y += 1) {
+    const xs: number[] = []
+    for (let i = 0; i < count; i += 1) {
+      const a = points[i]
+      const b = points[(i + 1) % count]
+      if ((a.y <= y && b.y > y) || (b.y <= y && a.y > y)) {
+        xs.push(a.x + ((y - a.y) * (b.x - a.x)) / (b.y - a.y))
+      }
+    }
+    xs.sort((left, right) => left - right)
+    for (let i = 0; i + 1 < xs.length; i += 2) {
+      const left = Math.max(0, Math.ceil(xs[i]))
+      const right = Math.min(width - 1, Math.floor(xs[i + 1]))
+      for (let x = left; x <= right; x += 1) {
+        if (clip && !pointInSelection(x, y, clip)) continue
+        setPixel(pixels, x, y, rgb, width, height, clip)
+        painted += 1
+      }
+    }
+  }
+  return painted
+}
+
+/** Stroke or fill a polyline / closed polygon with brush width. */
+export function rasterizePolygon(
+  pixels: Uint8ClampedArray,
+  points: PixelPoint[],
+  rgb: readonly [number, number, number],
+  width: number,
+  height: number,
+  opts: {
+    mode: "stroke" | "fill"
+    size?: number
+    closed?: boolean
+    shape?: PixelBrushShape
+    clip?: PixelSelection | null
+  },
+) {
+  if (points.length === 0) return
+  const closed = Boolean(opts.closed || opts.mode === "fill")
+  const size = opts.size ?? 1
+  const shape = opts.shape ?? "circle"
+  const clip = opts.clip
+  if (opts.mode === "fill") {
+    if (points.length >= 3) fillPolygon(pixels, points, rgb, width, height, clip)
+    return
+  }
+  if (points.length === 1) {
+    stampBrush(pixels, points[0].x, points[0].y, rgb, size, width, height, shape, clip)
+    return
+  }
+  const count = closed ? points.length : points.length - 1
+  for (let i = 0; i < count; i += 1) {
+    const a = points[i]
+    const b = points[(i + 1) % points.length]
+    strokeBrushLine(pixels, a.x, a.y, b.x, b.y, rgb, size, width, height, shape, clip)
+  }
+}
+
+export function strokeQuadraticBezier(
+  pixels: Uint8ClampedArray,
+  p0: PixelPoint,
+  control: PixelPoint,
+  p1: PixelPoint,
+  rgb: readonly [number, number, number],
+  size: number,
+  width: number,
+  height: number,
+  shape: PixelBrushShape = "circle",
+) {
+  const span =
+    Math.hypot(p1.x - p0.x, p1.y - p0.y) + Math.hypot(control.x - p0.x, control.y - p0.y)
+  const steps = Math.max(8, Math.ceil(span * 2))
+  let prev = p0
+  for (let i = 1; i <= steps; i += 1) {
+    const t = i / steps
+    const rest = 1 - t
+    const x = Math.round(rest * rest * p0.x + 2 * rest * t * control.x + t * t * p1.x)
+    const y = Math.round(rest * rest * p0.y + 2 * rest * t * control.y + t * t * p1.y)
+    strokeBrushLine(pixels, prev.x, prev.y, x, y, rgb, size, width, height, shape)
+    prev = { x, y }
+  }
+}
+
+export function sampleCubicBezier(
+  p0: PixelPoint,
+  c1: PixelPoint,
+  c2: PixelPoint,
+  p1: PixelPoint,
+): PixelPoint[] {
+  const span =
+    Math.hypot(c1.x - p0.x, c1.y - p0.y) +
+    Math.hypot(c2.x - c1.x, c2.y - c1.y) +
+    Math.hypot(p1.x - c2.x, p1.y - c2.y)
+  const steps = Math.max(8, Math.ceil(span * 2))
+  const points: PixelPoint[] = [{ x: p0.x, y: p0.y }]
+  for (let i = 1; i <= steps; i += 1) {
+    const t = i / steps
+    const u = 1 - t
+    const x = Math.round(
+      u * u * u * p0.x + 3 * u * u * t * c1.x + 3 * u * t * t * c2.x + t * t * t * p1.x,
+    )
+    const y = Math.round(
+      u * u * u * p0.y + 3 * u * u * t * c1.y + 3 * u * t * t * c2.y + t * t * t * p1.y,
+    )
+    const last = points[points.length - 1]
+    if (!last || last.x !== x || last.y !== y) points.push({ x, y })
+  }
+  return points
+}
+
+export function strokeCubicBezier(
+  pixels: Uint8ClampedArray,
+  p0: PixelPoint,
+  c1: PixelPoint,
+  c2: PixelPoint,
+  p1: PixelPoint,
+  rgb: readonly [number, number, number],
+  size: number,
+  width: number,
+  height: number,
+  shape: PixelBrushShape = "circle",
+  clip?: PixelSelection | null,
+) {
+  const samples = sampleCubicBezier(p0, c1, c2, p1)
+  for (let i = 1; i < samples.length; i += 1) {
+    strokeBrushLine(
+      pixels,
+      samples[i - 1].x,
+      samples[i - 1].y,
+      samples[i].x,
+      samples[i].y,
+      rgb,
+      size,
+      width,
+      height,
+      shape,
+      clip,
+    )
+  }
+}
+
+export function sampleCubicPath(anchors: BezierAnchor[], closed: boolean): PixelPoint[] {
+  if (anchors.length === 0) return []
+  if (anchors.length === 1) return [{ x: anchors[0].x, y: anchors[0].y }]
+  const out: PixelPoint[] = []
+  const count = closed ? anchors.length : anchors.length - 1
+  for (let i = 0; i < count; i += 1) {
+    const a = anchors[i]
+    const b = anchors[(i + 1) % anchors.length]
+    const samples = sampleCubicBezier(
+      { x: a.x, y: a.y },
+      { x: a.hoX, y: a.hoY },
+      { x: b.hiX, y: b.hiY },
+      { x: b.x, y: b.y },
+    )
+    for (let s = out.length === 0 ? 0 : 1; s < samples.length; s += 1) {
+      const point = samples[s]
+      const last = out[out.length - 1]
+      if (!last || last.x !== point.x || last.y !== point.y) out.push(point)
+    }
+  }
+  return out
+}
+
+export function rasterizeCubicPath(
+  pixels: Uint8ClampedArray,
+  anchors: BezierAnchor[],
+  rgb: readonly [number, number, number],
+  width: number,
+  height: number,
+  opts: {
+    mode: "stroke" | "fill"
+    size?: number
+    closed?: boolean
+    shape?: PixelBrushShape
+    clip?: PixelSelection | null
+  },
+) {
+  if (anchors.length === 0) return
+  const closed = Boolean(opts.closed || opts.mode === "fill")
+  const size = opts.size ?? 1
+  const shape = opts.shape ?? "circle"
+  const clip = opts.clip
+  if (opts.mode === "fill") {
+    const samples = sampleCubicPath(anchors, true)
+    if (samples.length >= 3) fillPolygon(pixels, samples, rgb, width, height, clip)
+    return
+  }
+  if (anchors.length === 1) {
+    stampBrush(pixels, anchors[0].x, anchors[0].y, rgb, size, width, height, shape, clip)
+    return
+  }
+  const count = closed ? anchors.length : anchors.length - 1
+  for (let i = 0; i < count; i += 1) {
+    const a = anchors[i]
+    const b = anchors[(i + 1) % anchors.length]
+    strokeCubicBezier(
+      pixels,
+      { x: a.x, y: a.y },
+      { x: a.hoX, y: a.hoY },
+      { x: b.hiX, y: b.hiY },
+      { x: b.x, y: b.y },
+      rgb,
+      size,
+      width,
+      height,
+      shape,
+      clip,
+    )
+  }
+}
+
+export function createBezierAnchor(x: number, y: number): BezierAnchor {
+  return { x, y, hiX: x, hiY: y, hoX: x, hoY: y }
+}
+
+export function fillLinearGradient(
+  pixels: Uint8ClampedArray,
+  x0: number,
+  y0: number,
+  x1: number,
+  y1: number,
+  stops: Array<readonly [number, number, number]>,
+  width: number,
+  height: number,
+  rect?: PixelSelection,
+) {
+  if (stops.length < 1) return
+  const dx = x1 - x0
+  const dy = y1 - y0
+  const len2 = dx * dx + dy * dy
+  const last = stops.length - 1
+  const left = rect?.x ?? 0
+  const top = rect?.y ?? 0
+  const right = rect ? rect.x + rect.width - 1 : width - 1
+  const bottom = rect ? rect.y + rect.height - 1 : height - 1
+  for (let y = top; y <= bottom; y += 1) {
+    for (let x = left; x <= right; x += 1) {
+      if (!inCanvas(x, y, width, height)) continue
+      if (rect?.mask) {
+        const mx = x - left
+        const my = y - top
+        if (rect.mask[my * rect.width + mx] !== 1) continue
+      }
+      const t = len2 === 0 ? 0 : Math.min(1, Math.max(0, ((x - x0) * dx + (y - y0) * dy) / len2))
+      const rgb = stops[Math.round(t * last)] ?? stops[0]
+      setPixel(pixels, x, y, rgb, width, height)
+    }
+  }
+}
+
+export function wrapPixelText(text: string, maxWidth: number): string[] {
+  const limit = Math.max(PIXEL_FONT_W, maxWidth)
+  const lines: string[] = []
+  for (const paragraph of text.replace(/\r/g, "").split("\n")) {
+    if (paragraph.length === 0) {
+      lines.push("")
+      continue
+    }
+    let line = ""
+    let width = 0
+    for (const char of paragraph) {
+      const advance = PIXEL_FONT_W + (line ? PIXEL_FONT_TRACK : 0)
+      if (line && width + advance > limit) {
+        lines.push(line)
+        line = char
+        width = PIXEL_FONT_W
+      } else {
+        line += char
+        width += advance
+      }
+    }
+    lines.push(line)
+  }
+  return lines.length > 0 ? lines : [""]
+}
+
+export function pixelTextNaturalSize(lines: readonly string[]) {
+  let width = 0
+  for (const line of lines) {
+    if (line.length === 0) continue
+    width = Math.max(width, line.length * PIXEL_FONT_W + (line.length - 1) * PIXEL_FONT_TRACK)
+  }
+  const height =
+    lines.length === 0 ? PIXEL_FONT_H : lines.length * PIXEL_FONT_H + (lines.length - 1) * PIXEL_FONT_LEADING
+  return { width: Math.max(1, width), height: Math.max(PIXEL_FONT_H, height) }
+}
+
+/**
+ * Measure a text box that hugs the glyph grid.
+ * - Point Text: omit `wrapWidthPx` — no automatic wrapping.
+ * - Paragraph Text: pass width in pixels — wrap at that width; height follows content.
+ * - `trim` only for commit/paste; keep mid-edit trailing spaces when false.
+ */
+export function measurePixelTextBox(
+  text: string,
+  scale = 1,
+  wrapWidthPx?: number,
+  opts?: { trim?: boolean },
+) {
+  const raw = text.replace(/\r/g, "")
+  const cleaned = opts?.trim === false ? raw : raw.trim()
+  const step = Math.max(1, Math.round(scale))
+  const wrapAt =
+    wrapWidthPx === undefined
+      ? Number.POSITIVE_INFINITY
+      : Math.max(PIXEL_FONT_W, Math.floor(wrapWidthPx / step))
+  const lines = wrapPixelText(cleaned.length > 0 ? cleaned : " ", wrapAt)
+  const natural = pixelTextNaturalSize(lines)
+  return {
+    text: cleaned,
+    width: Math.max(PIXEL_FONT_W * step, natural.width * step),
+    height: Math.max(PIXEL_FONT_H * step, natural.height * step),
+  }
+}
+
+function paintGlyph(
+  plot: (x: number, y: number) => void,
+  originX: number,
+  originY: number,
+  char: string,
+) {
+  const rows = glyphRows(char)
+  for (let row = 0; row < PIXEL_FONT_H; row += 1) {
+    const bits = rows[row] ?? 0
+    for (let col = 0; col < PIXEL_FONT_W; col += 1) {
+      if (bits & (1 << (PIXEL_FONT_W - 1 - col))) plot(originX + col, originY + row)
+    }
+  }
+}
+
+export function stampText(
+  pixels: Uint8ClampedArray,
+  originX: number,
+  originY: number,
+  text: string,
+  rgb: readonly [number, number, number],
+  width: number,
+  height: number,
+  box?: { width: number; height?: number; scale?: number; wrap?: boolean },
+) {
+  const source = text.replace(/\r/g, "").trim()
+  if (!source) return
+  const scale = Math.max(1, Math.round(box?.scale ?? 1))
+  const shouldWrap = Boolean(box?.wrap)
+  const wrapAt = shouldWrap
+    ? Math.max(PIXEL_FONT_W, Math.floor((box?.width ?? width) / scale))
+    : Number.POSITIVE_INFINITY
+  const lines = wrapPixelText(source, wrapAt)
+  // Never clip by box height — Paragraph Text grows with content; Point hugs content.
+  const plot = (x: number, y: number) => {
+    for (let sy = 0; sy < scale; sy += 1) {
+      for (let sx = 0; sx < scale; sx += 1) {
+        setPixel(pixels, originX + x * scale + sx, originY + y * scale + sy, rgb, width, height)
+      }
+    }
+  }
+  let y = 0
+  for (const line of lines) {
+    let x = 0
+    for (const char of line) {
+      paintGlyph(plot, x, y, char)
+      x += PIXEL_FONT_W + PIXEL_FONT_TRACK
+    }
+    y += PIXEL_FONT_H + PIXEL_FONT_LEADING
+  }
+}
+
+export type SelectionCombineMode = "replace" | "union" | "subtract" | "intersect"
+
+/** Expand a selection into a full-canvas 0/1 mask. */
+export function selectionToFullMask(
+  selection: PixelSelection,
+  width: number,
+  height: number,
+): Uint8Array {
+  const full = new Uint8Array(width * height)
+  for (let row = 0; row < selection.height; row += 1) {
+    for (let col = 0; col < selection.width; col += 1) {
+      const x = selection.x + col
+      const y = selection.y + row
+      if (!inCanvas(x, y, width, height)) continue
+      if (selection.mask && selection.mask[row * selection.width + col] !== 1) continue
+      full[y * width + x] = 1
+    }
+  }
+  return full
+}
+
+export function combineSelections(
+  current: PixelSelection | null,
+  next: PixelSelection,
+  mode: SelectionCombineMode,
+  width: number,
+  height: number,
+): PixelSelection | null {
+  if (!current || mode === "replace") return next
+  const a = selectionToFullMask(current, width, height)
+  const b = selectionToFullMask(next, width, height)
+  const out = new Uint8Array(width * height)
+  for (let i = 0; i < out.length; i += 1) {
+    const left = a[i] === 1
+    const right = b[i] === 1
+    if (mode === "union") out[i] = left || right ? 1 : 0
+    else if (mode === "subtract") out[i] = left && !right ? 1 : 0
+    else out[i] = left && right ? 1 : 0
+  }
+  return compactSelection(out, width, height)
+}
+
+export function selectionCombineModeFromModifiers(
+  shiftKey: boolean,
+  altKey: boolean,
+): SelectionCombineMode {
+  if (shiftKey && altKey) return "intersect"
+  if (altKey) return "subtract"
+  if (shiftKey) return "union"
+  return "replace"
+}
+
+export function compactSelection(full: Uint8Array, width: number, height: number): PixelSelection | null {
+  let minX = width
+  let minY = height
+  let maxX = -1
+  let maxY = -1
+  for (let y = 0; y < height; y += 1) {
+    for (let x = 0; x < width; x += 1) {
+      if (!full[y * width + x]) continue
+      minX = Math.min(minX, x)
+      maxX = Math.max(maxX, x)
+      minY = Math.min(minY, y)
+      maxY = Math.max(maxY, y)
+    }
+  }
+  if (maxX < 0) return null
+  const boxW = maxX - minX + 1
+  const boxH = maxY - minY + 1
+  const mask = new Uint8Array(boxW * boxH)
+  let holes = false
+  for (let row = 0; row < boxH; row += 1) {
+    for (let col = 0; col < boxW; col += 1) {
+      const bit = full[(minY + row) * width + (minX + col)]
+      mask[row * boxW + col] = bit
+      if (!bit) holes = true
+    }
+  }
+  return { x: minX, y: minY, width: boxW, height: boxH, mask: holes ? mask : undefined }
+}
+
+export function selectionFromFlood(
+  pixels: Uint8ClampedArray,
+  startX: number,
+  startY: number,
+  width: number,
+  height: number,
+): PixelSelection | null {
+  const target = getPixelRgb(pixels, startX, startY, width, height)
+  if (!target) return null
+  const full = new Uint8Array(width * height)
+  const stack = [startX, startY]
+  while (stack.length > 0) {
+    const y = stack.pop()
+    const x = stack.pop()
+    if (x === undefined || y === undefined || !inCanvas(x, y, width, height)) continue
+    const index = y * width + x
+    if (full[index]) continue
+    const current = getPixelRgb(pixels, x, y, width, height)
+    if (!current || !rgbEqual(current, target)) continue
+    full[index] = 1
+    stack.push(x + 1, y, x - 1, y, x, y + 1, x, y - 1)
+  }
+  return compactSelection(full, width, height)
+}
+
+export function selectionFromColor(
+  pixels: Uint8ClampedArray,
+  startX: number,
+  startY: number,
+  width: number,
+  height: number,
+): PixelSelection | null {
+  const target = getPixelRgb(pixels, startX, startY, width, height)
+  if (!target) return null
+  const full = new Uint8Array(width * height)
+  for (let y = 0; y < height; y += 1) {
+    for (let x = 0; x < width; x += 1) {
+      const current = getPixelRgb(pixels, x, y, width, height)
+      if (current && rgbEqual(current, target)) full[y * width + x] = 1
+    }
+  }
+  return compactSelection(full, width, height)
+}
+
+export function selectionFromPolygon(
+  points: PixelPoint[],
+  width: number,
+  height: number,
+): PixelSelection | null {
+  if (points.length < 3) return null
+  const dummy = new Uint8ClampedArray(width * height * 4)
+  fillPolygon(dummy, points, [1, 0, 0], width, height)
+  const full = new Uint8Array(width * height)
+  for (let i = 0; i < full.length; i += 1) {
+    if (dummy[i * 4] === 1) full[i] = 1
+  }
+  return compactSelection(full, width, height)
 }
 
 /** Constrain shape end so width === height (square / circle bounds). */
@@ -384,9 +1024,51 @@ export function pointInPixelRect(x: number, y: number, rect: PixelRect) {
   return x >= rect.x && y >= rect.y && x < rect.x + rect.width && y < rect.y + rect.height
 }
 
+export function pointInSelection(x: number, y: number, selection: PixelSelection) {
+  if (!pointInPixelRect(x, y, selection)) return false
+  if (!selection.mask) return true
+  const col = x - selection.x
+  const row = y - selection.y
+  return selection.mask[row * selection.width + col] === 1
+}
+
+/** Nearest-neighbor scale of clipboard pixels (+ mask). */
+export function scaleClipboard(
+  clip: PixelClipboard,
+  nextWidth: number,
+  nextHeight: number,
+): PixelClipboard {
+  const width = Math.max(1, Math.round(nextWidth))
+  const height = Math.max(1, Math.round(nextHeight))
+  if (width === clip.width && height === clip.height) {
+    return {
+      width,
+      height,
+      data: new Uint8ClampedArray(clip.data),
+      mask: clip.mask ? new Uint8Array(clip.mask) : undefined,
+    }
+  }
+  const data = new Uint8ClampedArray(width * height * 4)
+  const mask = clip.mask ? new Uint8Array(width * height) : undefined
+  for (let y = 0; y < height; y += 1) {
+    const sy = Math.min(clip.height - 1, Math.floor(((y + 0.5) * clip.height) / height))
+    for (let x = 0; x < width; x += 1) {
+      const sx = Math.min(clip.width - 1, Math.floor(((x + 0.5) * clip.width) / width))
+      const src = (sy * clip.width + sx) * 4
+      const dst = (y * width + x) * 4
+      data[dst] = clip.data[src]
+      data[dst + 1] = clip.data[src + 1]
+      data[dst + 2] = clip.data[src + 2]
+      data[dst + 3] = clip.data[src + 3]
+      if (mask && clip.mask) mask[y * width + x] = clip.mask[sy * clip.width + sx]
+    }
+  }
+  return { width, height, data, mask }
+}
+
 export function extractRect(
   pixels: Uint8ClampedArray,
-  rect: PixelRect,
+  rect: PixelSelection,
   canvasWidth: number,
   canvasHeight: number,
 ): PixelClipboard {
@@ -411,7 +1093,12 @@ export function extractRect(
       data[dst + 3] = 255
     }
   }
-  return { width: rect.width, height: rect.height, data }
+  return {
+    width: rect.width,
+    height: rect.height,
+    data,
+    mask: rect.mask ? new Uint8Array(rect.mask) : undefined,
+  }
 }
 
 export function blitRect(
@@ -424,6 +1111,7 @@ export function blitRect(
 ) {
   for (let row = 0; row < clip.height; row += 1) {
     for (let col = 0; col < clip.width; col += 1) {
+      if (clip.mask && clip.mask[row * clip.width + col] !== 1) continue
       const x = destX + col
       const y = destY + row
       if (!inCanvas(x, y, canvasWidth, canvasHeight)) continue
@@ -439,43 +1127,62 @@ export function blitRect(
 
 export function clearRectToPaper(
   pixels: Uint8ClampedArray,
-  rect: PixelRect,
+  rect: PixelSelection,
   canvasWidth: number,
   canvasHeight: number,
 ) {
   const rgb = hexToRgb(PIXEL_PAPER)
-  fillRect(
-    pixels,
-    rect.x,
-    rect.y,
-    rect.x + rect.width - 1,
-    rect.y + rect.height - 1,
-    rgb,
-    canvasWidth,
-    canvasHeight,
-  )
+  if (!rect.mask) {
+    fillRect(
+      pixels,
+      rect.x,
+      rect.y,
+      rect.x + rect.width - 1,
+      rect.y + rect.height - 1,
+      rgb,
+      canvasWidth,
+      canvasHeight,
+    )
+    return
+  }
+  for (let row = 0; row < rect.height; row += 1) {
+    for (let col = 0; col < rect.width; col += 1) {
+      if (rect.mask[row * rect.width + col] !== 1) continue
+      setPixel(pixels, rect.x + col, rect.y + row, rgb, canvasWidth, canvasHeight)
+    }
+  }
 }
 
 export function clearCanvasToPaper(pixels: Uint8ClampedArray) {
   fillPaper(pixels)
 }
 
+function swapClipCells(clip: PixelClipboard, aIndex: number, bIndex: number) {
+  const a = aIndex * 4
+  const b = bIndex * 4
+  for (let k = 0; k < 4; k += 1) {
+    const tmp = clip.data[a + k]
+    clip.data[a + k] = clip.data[b + k]
+    clip.data[b + k] = tmp
+  }
+  if (clip.mask) {
+    const bit = clip.mask[aIndex]
+    clip.mask[aIndex] = clip.mask[bIndex]
+    clip.mask[bIndex] = bit
+  }
+}
+
 export function flipRectHorizontal(
   pixels: Uint8ClampedArray,
-  rect: PixelRect,
+  rect: PixelSelection,
   canvasWidth: number,
   canvasHeight: number,
 ) {
   const clip = extractRect(pixels, rect, canvasWidth, canvasHeight)
+  clearRectToPaper(pixels, rect, canvasWidth, canvasHeight)
   for (let row = 0; row < clip.height; row += 1) {
     for (let col = 0; col < Math.floor(clip.width / 2); col += 1) {
-      const a = (row * clip.width + col) * 4
-      const b = (row * clip.width + (clip.width - 1 - col)) * 4
-      for (let k = 0; k < 4; k += 1) {
-        const tmp = clip.data[a + k]
-        clip.data[a + k] = clip.data[b + k]
-        clip.data[b + k] = tmp
-      }
+      swapClipCells(clip, row * clip.width + col, row * clip.width + (clip.width - 1 - col))
     }
   }
   blitRect(pixels, clip, rect.x, rect.y, canvasWidth, canvasHeight)
@@ -483,38 +1190,125 @@ export function flipRectHorizontal(
 
 export function flipRectVertical(
   pixels: Uint8ClampedArray,
-  rect: PixelRect,
+  rect: PixelSelection,
   canvasWidth: number,
   canvasHeight: number,
 ) {
   const clip = extractRect(pixels, rect, canvasWidth, canvasHeight)
+  clearRectToPaper(pixels, rect, canvasWidth, canvasHeight)
   for (let row = 0; row < Math.floor(clip.height / 2); row += 1) {
     for (let col = 0; col < clip.width; col += 1) {
-      const a = (row * clip.width + col) * 4
-      const b = ((clip.height - 1 - row) * clip.width + col) * 4
-      for (let k = 0; k < 4; k += 1) {
-        const tmp = clip.data[a + k]
-        clip.data[a + k] = clip.data[b + k]
-        clip.data[b + k] = tmp
-      }
+      swapClipCells(clip, row * clip.width + col, (clip.height - 1 - row) * clip.width + col)
     }
   }
   blitRect(pixels, clip, rect.x, rect.y, canvasWidth, canvasHeight)
 }
 
+/**
+ * Nearest-neighbor rotate of a clipboard around its bbox center.
+ * Destination expands to fit; pixels outside the source sample are paper (mask 0).
+ */
+export function rotateClipboardNearest(clip: PixelClipboard, degrees: number): PixelClipboard {
+  let angle = degrees % 360
+  if (angle < 0) angle += 360
+  if (Math.abs(angle) < 1e-9 || Math.abs(angle - 360) < 1e-9) {
+    return {
+      width: clip.width,
+      height: clip.height,
+      data: new Uint8ClampedArray(clip.data),
+      mask: clip.mask ? new Uint8Array(clip.mask) : undefined,
+    }
+  }
+
+  const rad = (angle * Math.PI) / 180
+  const cos = Math.cos(rad)
+  const sin = Math.sin(rad)
+  const srcCx = (clip.width - 1) / 2
+  const srcCy = (clip.height - 1) / 2
+
+  const corners = [
+    { x: 0, y: 0 },
+    { x: clip.width - 1, y: 0 },
+    { x: 0, y: clip.height - 1 },
+    { x: clip.width - 1, y: clip.height - 1 },
+  ]
+  let minX = Infinity
+  let minY = Infinity
+  let maxX = -Infinity
+  let maxY = -Infinity
+  for (const corner of corners) {
+    const dx = corner.x - srcCx
+    const dy = corner.y - srcCy
+    const rx = dx * cos - dy * sin
+    const ry = dx * sin + dy * cos
+    minX = Math.min(minX, rx)
+    minY = Math.min(minY, ry)
+    maxX = Math.max(maxX, rx)
+    maxY = Math.max(maxY, ry)
+  }
+  const outW = Math.max(1, Math.ceil(maxX - minX + 1))
+  const outH = Math.max(1, Math.ceil(maxY - minY + 1))
+  const dstCx = (outW - 1) / 2
+  const dstCy = (outH - 1) / 2
+  const [pr, pg, pb] = hexToRgb(PIXEL_PAPER)
+  const out: PixelClipboard = {
+    width: outW,
+    height: outH,
+    data: new Uint8ClampedArray(outW * outH * 4),
+    mask: clip.mask ? new Uint8Array(outW * outH) : undefined,
+  }
+  for (let i = 0; i < outW * outH; i += 1) {
+    const p = i * 4
+    out.data[p] = pr
+    out.data[p + 1] = pg
+    out.data[p + 2] = pb
+    out.data[p + 3] = 255
+  }
+
+  const invCos = cos
+  const invSin = -sin
+  for (let y = 0; y < outH; y += 1) {
+    for (let x = 0; x < outW; x += 1) {
+      const dx = x - dstCx
+      const dy = y - dstCy
+      const sx = Math.round(dx * invCos - dy * invSin + srcCx)
+      const sy = Math.round(dx * invSin + dy * invCos + srcCy)
+      const di = y * outW + x
+      const dp = di * 4
+      if (sx < 0 || sy < 0 || sx >= clip.width || sy >= clip.height) {
+        if (out.mask) out.mask[di] = 0
+        continue
+      }
+      const si = sy * clip.width + sx
+      if (clip.mask && clip.mask[si] !== 1) {
+        if (out.mask) out.mask[di] = 0
+        continue
+      }
+      const sp = si * 4
+      out.data[dp] = clip.data[sp]!
+      out.data[dp + 1] = clip.data[sp + 1]!
+      out.data[dp + 2] = clip.data[sp + 2]!
+      out.data[dp + 3] = 255
+      if (out.mask) out.mask[di] = 1
+    }
+  }
+  return out
+}
+
 /** Clockwise 90°. Returns new rect origin/size (width/height swapped). Clipped when blitting. */
 export function rotateRect90Cw(
   pixels: Uint8ClampedArray,
-  rect: PixelRect,
+  rect: PixelSelection,
   canvasWidth: number,
   canvasHeight: number,
-): PixelRect {
+): PixelSelection {
   const src = extractRect(pixels, rect, canvasWidth, canvasHeight)
   clearRectToPaper(pixels, rect, canvasWidth, canvasHeight)
   const rotated: PixelClipboard = {
     width: src.height,
     height: src.width,
     data: new Uint8ClampedArray(src.width * src.height * 4),
+    mask: src.mask ? new Uint8Array(src.width * src.height) : undefined,
   }
   for (let row = 0; row < src.height; row += 1) {
     for (let col = 0; col < src.width; col += 1) {
@@ -526,10 +1320,19 @@ export function rotateRect90Cw(
       rotated.data[d + 1] = src.data[s + 1]
       rotated.data[d + 2] = src.data[s + 2]
       rotated.data[d + 3] = 255
+      if (src.mask && rotated.mask) {
+        rotated.mask[dy * rotated.width + dx] = src.mask[row * src.width + col]
+      }
     }
   }
   blitRect(pixels, rotated, rect.x, rect.y, canvasWidth, canvasHeight)
-  return { x: rect.x, y: rect.y, width: rotated.width, height: rotated.height }
+  return {
+    x: rect.x,
+    y: rect.y,
+    width: rotated.width,
+    height: rotated.height,
+    mask: rotated.mask,
+  }
 }
 
 export function flipCanvasHorizontal(pixels: Uint8ClampedArray, canvasWidth: number, canvasHeight: number) {
@@ -583,10 +1386,12 @@ export function strokeBrushLineSymmetric(
   canvasWidth: number,
   canvasHeight: number,
   mode: PixelSymmetry,
+  shape: PixelBrushShape = "circle",
+  clip?: PixelSelection | null,
 ) {
   walkLine(x0, y0, x1, y1, (x, y) => {
     for (const point of symmetryPoints(x, y, canvasWidth, canvasHeight, mode)) {
-      stampBrush(pixels, point.x, point.y, rgb, size, canvasWidth, canvasHeight)
+      stampBrush(pixels, point.x, point.y, rgb, size, canvasWidth, canvasHeight, shape, clip)
     }
   })
 }
@@ -595,7 +1400,7 @@ export function replaceRgbInPixels(
   pixels: Uint8ClampedArray,
   from: readonly [number, number, number],
   to: readonly [number, number, number],
-  rect?: PixelRect,
+  rect?: PixelSelection | PixelRect | null,
   canvasWidth = PIXEL_CANVAS_SIZE,
   canvasHeight = PIXEL_CANVAS_SIZE,
 ) {
@@ -603,10 +1408,16 @@ export function replaceRgbInPixels(
   const top = rect?.y ?? 0
   const right = rect ? rect.x + rect.width - 1 : canvasWidth - 1
   const bottom = rect ? rect.y + rect.height - 1 : canvasHeight - 1
+  const mask = rect && "mask" in rect ? rect.mask : undefined
   let count = 0
   for (let y = top; y <= bottom; y += 1) {
     for (let x = left; x <= right; x += 1) {
       if (!inCanvas(x, y, canvasWidth, canvasHeight)) continue
+      if (mask) {
+        const mx = x - left
+        const my = y - top
+        if (mask[my * rect!.width + mx] !== 1) continue
+      }
       const i = (y * canvasWidth + x) * 4
       if (pixels[i] === from[0] && pixels[i + 1] === from[1] && pixels[i + 2] === from[2]) {
         pixels[i] = to[0]
@@ -664,6 +1475,58 @@ export function clientToCell(args: {
   return { x, y }
 }
 
+/**
+ * Device-pixel transform used by the view canvas draw path.
+ * Must stay identical to PixelBoard `draw()` setTransform inputs.
+ */
+export function viewDeviceTransform(originX: number, originY: number, scale: number, dpr = 1) {
+  const ratio = Math.max(1e-6, dpr)
+  return {
+    deviceScale: Math.max(1, Math.round(scale * ratio)),
+    translateX: Math.round(originX * ratio),
+    translateY: Math.round(originY * ratio),
+  }
+}
+
+/**
+ * Map a pointer into artwork cells using the same space as the view buffer.
+ *
+ * Important on mobile: CSS size from getBoundingClientRect and the canvas
+ * backing store can disagree with `devicePixelRatio` (fractional DPR, browser
+ * zoom, subpixel layout). Mapping through buffer pixels avoids that drift.
+ */
+export function pointerToCell(args: {
+  clientX: number
+  clientY: number
+  rectLeft: number
+  rectTop: number
+  rectWidth: number
+  rectHeight: number
+  bufferWidth: number
+  bufferHeight: number
+  originX: number
+  originY: number
+  scale: number
+  dpr?: number
+}) {
+  if (args.rectWidth <= 0 || args.rectHeight <= 0 || args.bufferWidth <= 0 || args.bufferHeight <= 0) {
+    return { x: -1, y: -1 }
+  }
+  const dpr = args.dpr ?? 1
+  const bufferX = ((args.clientX - args.rectLeft) / args.rectWidth) * args.bufferWidth
+  const bufferY = ((args.clientY - args.rectTop) / args.rectHeight) * args.bufferHeight
+  const { deviceScale, translateX, translateY } = viewDeviceTransform(
+    args.originX,
+    args.originY,
+    args.scale,
+    dpr,
+  )
+  return {
+    x: Math.floor((bufferX - translateX) / deviceScale),
+    y: Math.floor((bufferY - translateY) / deviceScale),
+  }
+}
+
 export function fitScale(
   viewWidth: number,
   viewHeight: number,
@@ -674,6 +1537,24 @@ export function fitScale(
   const availW = Math.max(1, viewWidth - padding * 2)
   const availH = Math.max(1, viewHeight - padding * 2)
   return Math.min(availW / canvasWidth, availH / canvasHeight)
+}
+
+/**
+ * Snap CSS scale so device pixels per artwork cell are an integer ≥ 1.
+ * Keeps hit-testing in CSS space: returned value is deviceScale / dpr.
+ */
+export function snapCssScaleToDevicePixels(cssScale: number, dpr = 1): number {
+  const ratio = Math.max(1e-6, dpr)
+  const device = Math.max(1, Math.floor(cssScale * ratio))
+  return device / ratio
+}
+
+export function snapOriginToDevicePixels(originX: number, originY: number, dpr = 1) {
+  const ratio = Math.max(1e-6, dpr)
+  return {
+    originX: Math.round(originX * ratio) / ratio,
+    originY: Math.round(originY * ratio) / ratio,
+  }
 }
 
 export function fitOrigin(
@@ -695,8 +1576,11 @@ export function resolveScale(
   viewHeight: number,
   canvasWidth = PIXEL_CANVAS_SIZE,
   canvasHeight = PIXEL_CANVAS_SIZE,
+  dpr = 1,
 ) {
-  return zoom === "fit" ? fitScale(viewWidth, viewHeight, canvasWidth, canvasHeight) : zoom
+  const raw =
+    zoom === "fit" ? fitScale(viewWidth, viewHeight, canvasWidth, canvasHeight) : zoom
+  return snapCssScaleToDevicePixels(raw, dpr)
 }
 
 export function stepZoom(current: PixelZoom, direction: 1 | -1, fit: number): PixelZoom {
@@ -761,17 +1645,31 @@ export function ensurePaletteColor(
   return { palette: [...palette, normalized], index: palette.length }
 }
 
+/** Pack RGB into a single key for O(1) palette lookup. */
+export function rgb24Key(r: number, g: number, b: number) {
+  return ((r & 255) << 16) | ((g & 255) << 8) | (b & 255)
+}
+
+/** First-wins map from packed RGB → palette index. Rebuild when palette changes. */
+export function buildPaletteRgbIndex(palette: readonly string[]): Map<number, number> {
+  const map = new Map<number, number>()
+  for (let i = 0; i < palette.length; i += 1) {
+    const [r, g, b] = hexToRgb(palette[i] ?? PIXEL_PAPER)
+    const key = rgb24Key(r, g, b)
+    if (!map.has(key)) map.set(key, i)
+  }
+  return map
+}
+
 export function rgbToPaletteIndex(
   r: number,
   g: number,
   b: number,
   palette: readonly string[] = PIXEL_PALETTE,
+  indexMap?: Map<number, number>,
 ) {
-  for (let i = 0; i < palette.length; i += 1) {
-    const [pr, pg, pb] = hexToRgb(palette[i])
-    if (pr === r && pg === g && pb === b) return i
-  }
-  return 0
+  const map = indexMap ?? buildPaletteRgbIndex(palette)
+  return map.get(rgb24Key(r, g, b)) ?? 0
 }
 
 export function rgbaToIndices(
@@ -779,13 +1677,15 @@ export function rgbaToIndices(
   width = PIXEL_CANVAS_SIZE,
   height = PIXEL_CANVAS_SIZE,
   palette: readonly string[] = PIXEL_PALETTE,
+  indexMap?: Map<number, number>,
 ) {
   const count = width * height
   const out = new Uint8Array(count)
   const limit = Math.min(count, Math.floor(pixels.length / 4))
+  const map = indexMap ?? buildPaletteRgbIndex(palette)
   for (let i = 0; i < limit; i += 1) {
     const p = i * 4
-    out[i] = rgbToPaletteIndex(pixels[p], pixels[p + 1], pixels[p + 2], palette)
+    out[i] = map.get(rgb24Key(pixels[p]!, pixels[p + 1]!, pixels[p + 2]!)) ?? 0
   }
   return out
 }
@@ -858,54 +1758,206 @@ export type PixelSourceV1 = {
   runs: number[]
 }
 
+export type PixelLayerV2 = {
+  id: string
+  name: string
+  visible: boolean
+  locked: boolean
+  runs: number[]
+}
+
+export type PixelSourceV2 = {
+  version: typeof PIXEL_SOURCE_VERSION_V2
+  width: number
+  height: number
+  palette: string[]
+  encoding: typeof PIXEL_SOURCE_ENCODING
+  layers: PixelLayerV2[]
+}
+
+export type PixelSource = PixelSourceV1 | PixelSourceV2
+
+export type PixelLayerRuntime = {
+  id: string
+  name: string
+  visible: boolean
+  locked: boolean
+  indices: Uint8Array
+}
+
 export type PixelSourceError =
   | "unsupported_version"
   | "invalid_source"
   | "payload_too_large"
   | "integrity"
 
-export function parsePixelSource(input: unknown): { ok: true; data: PixelSourceV1; indices: Uint8Array } | { ok: false; error: PixelSourceError } {
-  if (!input || typeof input !== "object") return { ok: false, error: "invalid_source" }
-  const value = input as Record<string, unknown>
-  if (value.version !== PIXEL_SOURCE_VERSION) return { ok: false, error: "unsupported_version" }
-  if (typeof value.width !== "number" || typeof value.height !== "number") {
-    return { ok: false, error: "invalid_source" }
-  }
-  if (!isPixelCanvasSize(value.width, value.height)) {
-    return { ok: false, error: "invalid_source" }
-  }
-  if (value.encoding !== PIXEL_SOURCE_ENCODING) return { ok: false, error: "invalid_source" }
-  if (!Array.isArray(value.palette) || value.palette.length < 1 || value.palette.length > PIXEL_DOCUMENT_PALETTE_MAX) {
-    return { ok: false, error: "invalid_source" }
-  }
+export type ParsedPixelSource = {
+  ok: true
+  data: PixelSource
+  /** Flattened composite indices (paper where empty). */
+  indices: Uint8Array
+  layers: PixelLayerRuntime[]
+}
+
+function parseSharedPalette(value: unknown): string[] | null {
+  if (!Array.isArray(value) || value.length < 1 || value.length > PIXEL_DOCUMENT_PALETTE_MAX) return null
   const palette: string[] = []
-  for (const color of value.palette) {
-    if (typeof color !== "string") return { ok: false, error: "invalid_source" }
+  for (const color of value) {
+    if (typeof color !== "string") return null
     const hex = normalizePixelHex(color)
-    if (!hex) return { ok: false, error: "invalid_source" }
+    if (!hex) return null
     palette.push(hex)
   }
-  if (palette[0] !== PIXEL_PAPER) return { ok: false, error: "invalid_source" }
-  if (!Array.isArray(value.runs) || !value.runs.every((item) => Number.isInteger(item))) {
-    return { ok: false, error: "invalid_source" }
+  if (palette[0] !== PIXEL_PAPER) return null
+  return palette
+}
+
+export function createLayerId() {
+  return `layer_${Math.random().toString(36).slice(2, 10)}`
+}
+
+export function createEmptyLayer(
+  width: number,
+  height: number,
+  name = "Layer 1",
+): PixelLayerRuntime {
+  return {
+    id: createLayerId(),
+    name,
+    visible: true,
+    locked: false,
+    indices: emptyPixelIndices(width, height),
   }
+}
 
-  const data: PixelSourceV1 = {
-    version: PIXEL_SOURCE_VERSION,
-    width: value.width,
-    height: value.height,
-    palette,
-    encoding: PIXEL_SOURCE_ENCODING,
-    runs: value.runs as number[],
+/**
+ * Composite layers bottom→top into RGBA.
+ * Bottom layer: index 0 = paper. Upper layers: index 0 = transparent.
+ */
+export function compositeLayersToRgba(
+  layers: readonly PixelLayerRuntime[],
+  pixels: Uint8ClampedArray,
+  palette: readonly string[],
+  width: number,
+  height: number,
+) {
+  fillPaper(pixels)
+  const cellCount = width * height
+  for (let layerIndex = 0; layerIndex < layers.length; layerIndex += 1) {
+    const layer = layers[layerIndex]
+    if (!layer.visible) continue
+    const transparentZero = layerIndex > 0
+    for (let i = 0; i < cellCount; i += 1) {
+      const index = layer.indices[i] ?? 0
+      if (transparentZero && index === 0) continue
+      const color = palette[index] ?? PIXEL_PAPER
+      const [r, g, b] = hexToRgb(color)
+      const p = i * 4
+      pixels[p] = r
+      pixels[p + 1] = g
+      pixels[p + 2] = b
+      pixels[p + 3] = 255
+    }
   }
+}
 
-  const encoded = JSON.stringify(data)
-  if (encoded.length > PIXEL_SOURCE_MAX_BYTES) return { ok: false, error: "payload_too_large" }
+/** Flatten visible layers to palette indices (paper where empty). */
+export function flattenLayersToIndices(
+  layers: readonly PixelLayerRuntime[],
+  width: number,
+  height: number,
+): Uint8Array {
+  const out = emptyPixelIndices(width, height)
+  const cellCount = width * height
+  for (let layerIndex = 0; layerIndex < layers.length; layerIndex += 1) {
+    const layer = layers[layerIndex]
+    if (!layer.visible) continue
+    const transparentZero = layerIndex > 0
+    for (let i = 0; i < cellCount; i += 1) {
+      const index = layer.indices[i] ?? 0
+      if (transparentZero && index === 0) continue
+      out[i] = index
+    }
+  }
+  return out
+}
 
-  const expected = data.width * data.height
-  const indices = decodeRle(data.runs, expected, data.palette.length)
-  if (!indices) return { ok: false, error: "integrity" }
-  return { ok: true, data, indices }
+/** Merge `upper` onto `lower` (upper 0 = transparent). Returns new indices. */
+export function mergeLayerIndices(
+  lower: Uint8Array,
+  upper: Uint8Array,
+  upperIsTransparentZero = true,
+): Uint8Array {
+  const length = Math.min(lower.length, upper.length)
+  const out = new Uint8Array(lower)
+  for (let i = 0; i < length; i += 1) {
+    const index = upper[i] ?? 0
+    if (upperIsTransparentZero && index === 0) continue
+    out[i] = index
+  }
+  return out
+}
+
+/**
+ * Nearest-neighbor layer thumbnail as PNG data URL.
+ * Upper layers treat index 0 as transparent over a checker; bottom uses paper.
+ */
+export function layerThumbnailDataUrl(
+  indices: Uint8Array,
+  width: number,
+  height: number,
+  palette: readonly string[],
+  opts?: { size?: number; transparentZero?: boolean },
+): string | null {
+  if (typeof document === "undefined") return null
+  const size = Math.max(8, Math.min(64, opts?.size ?? 32))
+  const transparentZero = opts?.transparentZero === true
+  const canvas = document.createElement("canvas")
+  canvas.width = size
+  canvas.height = size
+  const ctx = canvas.getContext("2d")
+  if (!ctx) return null
+  ctx.imageSmoothingEnabled = false
+  const light = "#E8E4D8"
+  const dark = "#D4CFC0"
+  const cell = 4
+  for (let y = 0; y < size; y += cell) {
+    for (let x = 0; x < size; x += cell) {
+      ctx.fillStyle = ((x / cell) + (y / cell)) % 2 === 0 ? light : dark
+      ctx.fillRect(x, y, cell, cell)
+    }
+  }
+  if (!transparentZero) {
+    ctx.fillStyle = PIXEL_PAPER
+    ctx.fillRect(0, 0, size, size)
+  }
+  for (let dy = 0; dy < size; dy += 1) {
+    const sy = Math.min(height - 1, Math.floor((dy * height) / size))
+    for (let dx = 0; dx < size; dx += 1) {
+      const sx = Math.min(width - 1, Math.floor((dx * width) / size))
+      const index = indices[sy * width + sx] ?? 0
+      if (transparentZero && index === 0) continue
+      ctx.fillStyle = palette[index] ?? PIXEL_PAPER
+      ctx.fillRect(dx, dy, 1, 1)
+    }
+  }
+  try {
+    return canvas.toDataURL("image/png")
+  } catch {
+    return null
+  }
+}
+
+export function layersFromSourceV1(indices: Uint8Array, name = "Layer 1"): PixelLayerRuntime[] {
+  return [
+    {
+      id: createLayerId(),
+      name,
+      visible: true,
+      locked: false,
+      indices: new Uint8Array(indices),
+    },
+  ]
 }
 
 export function buildPixelSource(
@@ -924,8 +1976,138 @@ export function buildPixelSource(
   }
 }
 
+export function buildPixelSourceV2(
+  layers: readonly PixelLayerRuntime[],
+  width: number,
+  height: number,
+  palette: readonly string[] = PIXEL_PALETTE,
+): PixelSourceV2 {
+  const safe = layers.slice(0, PIXEL_LAYER_MAX)
+  const list =
+    safe.length > 0
+      ? safe
+      : [createEmptyLayer(width, height, "Layer 1")]
+  return {
+    version: PIXEL_SOURCE_VERSION_V2,
+    width,
+    height,
+    palette: palette.map((color) => normalizePixelHex(color) ?? PIXEL_PAPER),
+    encoding: PIXEL_SOURCE_ENCODING,
+    layers: list.map((layer, index) => ({
+      id: layer.id || createLayerId(),
+      name: layer.name || `Layer ${index + 1}`,
+      visible: layer.visible !== false,
+      locked: Boolean(layer.locked),
+      runs: encodeRle(layer.indices),
+    })),
+  }
+}
+
+export function parsePixelSource(
+  input: unknown,
+): ParsedPixelSource | { ok: false; error: PixelSourceError } {
+  if (!input || typeof input !== "object") return { ok: false, error: "invalid_source" }
+  const value = input as Record<string, unknown>
+  const version = value.version
+  if (version !== PIXEL_SOURCE_VERSION && version !== PIXEL_SOURCE_VERSION_V2) {
+    return { ok: false, error: "unsupported_version" }
+  }
+  if (typeof value.width !== "number" || typeof value.height !== "number") {
+    return { ok: false, error: "invalid_source" }
+  }
+  if (!isPixelCanvasSize(value.width, value.height)) {
+    return { ok: false, error: "invalid_source" }
+  }
+  if (value.encoding !== PIXEL_SOURCE_ENCODING) return { ok: false, error: "invalid_source" }
+  const palette = parseSharedPalette(value.palette)
+  if (!palette) return { ok: false, error: "invalid_source" }
+  const expected = value.width * value.height
+
+  if (version === PIXEL_SOURCE_VERSION) {
+    if (!Array.isArray(value.runs) || !value.runs.every((item) => Number.isInteger(item))) {
+      return { ok: false, error: "invalid_source" }
+    }
+    const data: PixelSourceV1 = {
+      version: PIXEL_SOURCE_VERSION,
+      width: value.width,
+      height: value.height,
+      palette,
+      encoding: PIXEL_SOURCE_ENCODING,
+      runs: value.runs as number[],
+    }
+    const encoded = JSON.stringify(data)
+    if (encoded.length > PIXEL_SOURCE_MAX_BYTES) return { ok: false, error: "payload_too_large" }
+    const indices = decodeRle(data.runs, expected, data.palette.length)
+    if (!indices) return { ok: false, error: "integrity" }
+    const layers = layersFromSourceV1(indices)
+    return { ok: true, data, indices, layers }
+  }
+
+  if (!Array.isArray(value.layers) || value.layers.length < 1 || value.layers.length > PIXEL_LAYER_MAX) {
+    return { ok: false, error: "invalid_source" }
+  }
+  const layers: PixelLayerRuntime[] = []
+  const stored: PixelLayerV2[] = []
+  for (let i = 0; i < value.layers.length; i += 1) {
+    const raw = value.layers[i]
+    if (!raw || typeof raw !== "object") return { ok: false, error: "invalid_source" }
+    const row = raw as Record<string, unknown>
+    if (typeof row.id !== "string" || typeof row.name !== "string") return { ok: false, error: "invalid_source" }
+    if (typeof row.visible !== "boolean" || typeof row.locked !== "boolean") {
+      return { ok: false, error: "invalid_source" }
+    }
+    if (!Array.isArray(row.runs) || !row.runs.every((item) => Number.isInteger(item))) {
+      return { ok: false, error: "invalid_source" }
+    }
+    const indices = decodeRle(row.runs as number[], expected, palette.length)
+    if (!indices) return { ok: false, error: "integrity" }
+    const layer: PixelLayerV2 = {
+      id: row.id,
+      name: row.name,
+      visible: row.visible,
+      locked: row.locked,
+      runs: row.runs as number[],
+    }
+    stored.push(layer)
+    layers.push({
+      id: layer.id,
+      name: layer.name,
+      visible: layer.visible,
+      locked: layer.locked,
+      indices,
+    })
+  }
+
+  const data: PixelSourceV2 = {
+    version: PIXEL_SOURCE_VERSION_V2,
+    width: value.width,
+    height: value.height,
+    palette,
+    encoding: PIXEL_SOURCE_ENCODING,
+    layers: stored,
+  }
+  const encoded = JSON.stringify(data)
+  if (encoded.length > PIXEL_SOURCE_MAX_BYTES) return { ok: false, error: "payload_too_large" }
+  return {
+    ok: true,
+    data,
+    indices: flattenLayersToIndices(layers, value.width, value.height),
+    layers,
+  }
+}
+
 export function emptyPixelIndices(width = PIXEL_CANVAS_SIZE, height = PIXEL_CANVAS_SIZE) {
   return new Uint8Array(width * height)
+}
+
+export function filledPixelIndices(
+  index: number,
+  width = PIXEL_CANVAS_SIZE,
+  height = PIXEL_CANVAS_SIZE,
+) {
+  const cells = new Uint8Array(width * height)
+  if (index !== 0) cells.fill(index)
+  return cells
 }
 
 /** Ink usage entry derived from RLE (Paper/index 0 never included). */
@@ -934,20 +2116,41 @@ export type ColorUsageEntry = {
   count: number
 }
 
-/**
- * Histogram from RLE runs without expanding to a full bitmap.
- * Excludes palette index 0 (Paper / empty). Sorted by count descending.
- */
-export function colorUsageFromSource(source: Pick<PixelSourceV1, "palette" | "runs">): ColorUsageEntry[] {
-  const counts = new Map<number, number>()
-  const runs = source.runs
+function accumulateRunsUsage(
+  runs: number[],
+  paletteLength: number,
+  counts: Map<number, number>,
+) {
   for (let i = 0; i + 1 < runs.length; i += 2) {
     const index = runs[i]
     const count = runs[i + 1]
     if (!Number.isInteger(index) || !Number.isInteger(count) || count < 1) continue
     if (index === 0) continue
-    if (index < 0 || index >= source.palette.length) continue
+    if (index < 0 || index >= paletteLength) continue
     counts.set(index, (counts.get(index) ?? 0) + count)
+  }
+}
+
+/**
+ * Histogram from RLE runs without expanding to a full bitmap.
+ * Excludes palette index 0 (Paper / empty). Sorted by count descending.
+ * For v2, uses flattened visible composite indices.
+ */
+export function colorUsageFromSource(
+  source: Pick<PixelSourceV1, "palette" | "runs"> | PixelSource,
+): ColorUsageEntry[] {
+  const counts = new Map<number, number>()
+  if ("layers" in source && Array.isArray(source.layers)) {
+    const parsed = parsePixelSource(source)
+    if (parsed.ok) {
+      for (let i = 0; i < parsed.indices.length; i += 1) {
+        const index = parsed.indices[i]!
+        if (index === 0) continue
+        counts.set(index, (counts.get(index) ?? 0) + 1)
+      }
+    }
+  } else if ("runs" in source && Array.isArray(source.runs)) {
+    accumulateRunsUsage(source.runs, source.palette.length, counts)
   }
 
   const entries: ColorUsageEntry[] = []

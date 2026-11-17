@@ -1,11 +1,20 @@
 "use client"
 
-import { forwardRef, useCallback, useEffect, useId, useImperativeHandle, useLayoutEffect, useRef, useState } from "react"
+import {
+  forwardRef,
+  useCallback,
+  useEffect,
+  useId,
+  useImperativeHandle,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+} from "react"
 import { Button } from "@/components/ui/Button"
 import { copy } from "@/lib/copy"
 import type { Lang } from "@/lib/i18n"
 import {
-  PIXEL_BRUSH_SIZES,
   PIXEL_CANVAS_SIZE,
   PIXEL_GRID_MIN_ZOOM,
   PIXEL_INK,
@@ -15,16 +24,28 @@ import {
   PIXEL_ZOOM_PINCH_MAX,
   PIXEL_ZOOM_PINCH_MIN,
   blitRect,
-  buildPixelSource,
+  buildPaletteRgbIndex,
+  buildPixelSourceV2,
+  clampStrokeWidth,
   clearCanvasToPaper,
   clearRectToPaper,
-  clientToCell,
+  pointerToCell,
+  compositeLayersToRgba,
+  viewDeviceTransform,
+  createBezierAnchor,
+  createEmptyLayer,
+  createLayerId,
+  inCanvas,
+  layerThumbnailDataUrl,
+  mergeLayerIndices,
   constrainSquareEnd,
   ensurePaletteColor,
   extractRect,
+  fillLinearGradient,
   fillPaper,
   fillRect,
   fitOrigin,
+  flattenLayersToIndices,
   flipCanvasHorizontal,
   flipCanvasVertical,
   flipRectHorizontal,
@@ -37,27 +58,49 @@ import {
   normalizePixelRect,
   paintEllipse,
   parsePixelSource,
+  measurePixelTextBox,
+  PIXEL_LAYER_MAX,
   pointInPixelRect,
+  pointInSelection,
+  rasterizeCubicPath,
+  rasterizePolygon,
   resolveScale,
   rgbaToIndices,
   rgbToHex,
   removeDocumentColor,
   replaceRgbInPixels,
   rotateCanvas90Cw,
+  rotateClipboardNearest,
   rotateRect90Cw,
+  combineSelections,
+  scaleClipboard,
+  selectionCombineModeFromModifiers,
+  selectionFromColor,
+  selectionFromFlood,
+  selectionFromPolygon,
+  type SelectionCombineMode,
+  snapCssScaleToDevicePixels,
+  snapOriginToDevicePixels,
+  stampText as stampTextBitmap,
+  stepBrushSize,
   stepZoom,
   strokeBrushLine,
   strokeBrushLineSymmetric,
-  strokeRect,
+  strokeRectBrush,
   zoomToward,
+  type BezierAnchor,
   type PixelBrushSize,
   type PixelClipboard,
   type PixelDrawTool,
+  type PixelLayerRuntime,
+  type PixelPoint,
   type PixelRect,
-  type PixelSourceV1,
+  type PixelSelection,
+  type PixelSource,
   type PixelSymmetry,
   type PixelZoom,
 } from "@/lib/pixel"
+import { PIXEL_FONT_H, PIXEL_FONT_LEADING, PIXEL_FONT_W } from "@/lib/pixel-font"
 import { cn } from "@/lib/utils"
 
 export type Tool = PixelDrawTool
@@ -65,32 +108,115 @@ export type Tool = PixelDrawTool
 type Camera = { originX: number; originY: number; scale: number }
 
 const HISTORY_LIMIT = 32
-const SHAPE_TOOLS = new Set<Tool>(["line", "rect", "ellipse"])
+const SHAPE_TOOLS = new Set<Tool>(["line", "rect", "ellipse", "gradient"])
+const DRAFT_SHAPE_TOOLS = new Set<Tool>(["rect", "ellipse"])
+const SELECT_TOOLS = new Set<Tool>(["select", "selectContiguous", "selectColor", "lasso"])
+const PATH_CLOSE_DIST = 1.5
+const HANDLE_HIT = 1.75
+
+export type ShapeDraft =
+  | {
+      kind: "rect" | "ellipse"
+      x0: number
+      y0: number
+      x1: number
+      y1: number
+      filled: boolean
+      strokeWidth: number
+    }
+  | {
+      kind: "bezier"
+      anchors: BezierAnchor[]
+      closed: boolean
+      mode: "stroke" | "fill"
+      strokeWidth: number
+      selected: number
+    }
+  | {
+      kind: "polygon"
+      points: PixelPoint[]
+      closed: boolean
+      mode: "stroke" | "fill"
+      strokeWidth: number
+      selected: number
+    }
+
+export type ShapeDraftInfo = {
+  active: boolean
+  kind: ShapeDraft["kind"] | null
+  filled: boolean
+  mode: "stroke" | "fill"
+  strokeWidth: number
+  width: number
+  height: number
+}
+/** Paragraph Text: only left/right change wrap width. Height always follows content. */
+const PARAGRAPH_HANDLES = [
+  { id: "e", cursor: "ew-resize", style: { right: -5, top: "50%", marginTop: -6 } },
+  { id: "w", cursor: "ew-resize", style: { left: -5, top: "50%", marginTop: -6 } },
+] as const
+type TextHandle = (typeof PARAGRAPH_HANDLES)[number]["id"]
+/** Point Text = click; Paragraph Text = click-drag (Photoshop model). */
+type TextMode = "point" | "paragraph"
+type TextFrame = {
+  id: string
+  x: number
+  y: number
+  width: number
+  height: number
+  text: string
+  mode: TextMode
+}
+type PlacedText = TextFrame & { color: string; scale: number }
 
 /** Session clipboard shared across Playground remounts in the same tab. */
 let sessionClipboard: PixelClipboard | null = null
 
-function createImage(source: PixelSourceV1 | null, width: number, height: number) {
-  const image = new ImageData(width, height)
-  if (source) {
-    const parsed = parsePixelSource(source)
-    if (parsed.ok) {
-      indicesToRgba(parsed.indices, image.data, parsed.data.palette)
-      return image
-    }
-  }
-  fillPaper(image.data)
-  return image
+export type PixelLayerInfo = {
+  id: string
+  name: string
+  visible: boolean
+  locked: boolean
+  active: boolean
 }
 
-function paletteFromSource(source: PixelSourceV1 | null) {
+type LayerHistoryFrame = {
+  layers: Array<{
+    id: string
+    name: string
+    visible: boolean
+    locked: boolean
+    indices: Uint8Array
+  }>
+  active: number
+}
+
+function cloneLayers(layers: PixelLayerRuntime[]): PixelLayerRuntime[] {
+  return layers.map((layer) => ({
+    id: layer.id,
+    name: layer.name,
+    visible: layer.visible,
+    locked: layer.locked,
+    indices: new Uint8Array(layer.indices),
+  }))
+}
+
+function layersFromInitialSource(source: PixelSource | null, width: number, height: number) {
+  if (source) {
+    const parsed = parsePixelSource(source)
+    if (parsed.ok) return cloneLayers(parsed.layers)
+  }
+  return [createEmptyLayer(width, height, "Layer 1")]
+}
+
+function paletteFromSource(source: PixelSource | null) {
   if (!source) return [...PIXEL_PALETTE]
   const parsed = parsePixelSource(source)
   return parsed.ok ? [...parsed.data.palette] : [...PIXEL_PALETTE]
 }
 
 export type PixelBoardHandle = {
-  exportSource: () => PixelSourceV1
+  exportSource: () => PixelSource
   exportPng: () => Promise<Blob>
   undo: () => void
   redo: () => void
@@ -101,13 +227,48 @@ export type PixelBoardHandle = {
   flipHorizontal: () => void
   flipVertical: () => void
   rotate90Cw: () => boolean
+  rotateSelection: (degrees: number) => boolean
   selectAll: () => void
   clearSelection: () => void
   hasSelection: () => boolean
+  copySelection: () => boolean
+  cutSelection: () => boolean
+  pasteClipboard: () => boolean
+  deleteSelection: () => boolean
+  hasClipboard: () => boolean
+  stampText: (
+    x: number,
+    y: number,
+    text: string,
+    box?: { width: number; height?: number; scale?: number; wrap?: boolean },
+  ) => void
   replaceColor: (fromHex: string, toHex: string) => number
   removeColor: (hex: string) => { ok: true; replaced: number } | { ok: false; error: "paper" | "missing" }
   clearHistory: () => void
   getPalette: () => string[]
+  getLayers: () => PixelLayerInfo[]
+  addLayer: () => boolean
+  deleteLayer: (id: string) => boolean
+  duplicateLayer: (id: string) => boolean
+  mergeDown: (id: string) => boolean
+  mergeVisible: () => boolean
+  reorderLayer: (id: string, direction: 1 | -1) => boolean
+  moveLayer: (id: string, toIndex: number) => boolean
+  setActiveLayer: (id: string) => boolean
+  setLayerVisible: (id: string, visible: boolean) => boolean
+  setLayerLocked: (id: string, locked: boolean) => boolean
+  renameLayer: (id: string, name: string) => boolean
+  getLayerThumbnail: (id: string, size?: number) => string | null
+  applyShapeDraft: () => boolean
+  cancelShapeDraft: () => void
+  updateShapeDraft: (patch: {
+    filled?: boolean
+    mode?: "stroke" | "fill"
+    strokeWidth?: number
+    width?: number
+    height?: number
+  }) => void
+  getShapeDraft: () => ShapeDraftInfo
 }
 
 export type PixelBoardProps = {
@@ -115,7 +276,7 @@ export type PixelBoardProps = {
   variant?: "prototype" | "studio"
   width?: number
   height?: number
-  initialSource?: PixelSourceV1 | null
+  initialSource?: PixelSource | null
   tool?: Tool
   color?: string
   brushSize?: PixelBrushSize
@@ -131,7 +292,14 @@ export type PixelBoardProps = {
   onStrokeEnd?: () => void
   onHistoryChange?: (state: { canUndo: boolean; canRedo: boolean }) => void
   onSelectionChange?: (hasSelection: boolean) => void
+  onClipboardChange?: (hasClipboard: boolean) => void
+  onLayersChange?: (layers: PixelLayerInfo[]) => void
+  onEditFeedback?: (kind: "copied" | "cut" | "pasted" | "clipboard-empty") => void
+  onShapeDraftChange?: (info: ShapeDraftInfo) => void
   onPaletteFull?: () => void
+  /** Right-click or touch long-press on the view canvas. */
+  onCanvasMenu?: (info: { clientX: number; clientY: number }) => void
+  onHoverCell?: (cell: { x: number; y: number } | null) => void
   chrome?: boolean
   className?: string
 }
@@ -158,7 +326,13 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
     onStrokeEnd,
     onHistoryChange,
     onSelectionChange,
+    onClipboardChange,
+    onLayersChange,
+    onEditFeedback,
+    onShapeDraftChange,
     onPaletteFull,
+    onCanvasMenu,
+    onHoverCell,
     chrome,
     className,
   },
@@ -170,8 +344,24 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
   const viewRef = useRef<HTMLCanvasElement | null>(null)
   const bufferRef = useRef<HTMLCanvasElement | null>(null)
   const imageRef = useRef<ImageData | null>(null)
+  const compositeRef = useRef<ImageData | null>(null)
+  const layersRef = useRef<PixelLayerRuntime[]>(
+    layersFromInitialSource(initialSource, width, height),
+  )
+  const activeLayerIndexRef = useRef(0)
+  const selectRotateRef = useRef<{
+    origin: PixelSelection
+    floating: PixelClipboard
+    base: Uint8ClampedArray
+    centerX: number
+    centerY: number
+    startAngle: number
+    degrees: number
+  } | null>(null)
   const cameraRef = useRef<Camera>({ originX: 0, originY: 0, scale: 1 })
   const sizeRef = useRef({ width: 1, height: 1 })
+  const devicePixelSizeRef = useRef<{ width: number; height: number } | null>(null)
+  const pixelsDirtyRef = useRef(true)
   const zoomRef = useRef<PixelZoom>("fit")
   const toolRef = useRef<Tool>(toolProp ?? "pencil")
   const colorRef = useRef(colorProp ?? PIXEL_INK)
@@ -186,10 +376,51 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
   const shapeBaseRef = useRef<Uint8ClampedArray | null>(null)
   const shapeShiftRef = useRef(false)
   const shapeFillRef = useRef(false)
-  const selectionRef = useRef<PixelRect | null>(null)
+  const shapeDraftRef = useRef<ShapeDraft | null>(null)
+  const shapeDraftPreviewRef = useRef<{
+    image: ImageData
+    canvas: HTMLCanvasElement
+    ctx: CanvasRenderingContext2D
+  } | null>(null)
+  const shapePrefsRef = useRef<{ filled: boolean; mode: "stroke" | "fill" }>({
+    filled: false,
+    mode: "stroke",
+  })
+  const shapeDragRef = useRef<
+    | { type: "create-rect" | "create-ellipse"; start: PixelPoint }
+    | { type: "resize-rect"; corner: "nw" | "ne" | "sw" | "se"; origin: ShapeDraft & { kind: "rect" | "ellipse" } }
+    | { type: "move-anchor"; index: number }
+    | { type: "move-handle"; index: number; which: "hi" | "ho" }
+    | { type: "move-point"; index: number }
+    | { type: "create-bezier"; index: number; from: PixelPoint }
+    | null
+  >(null)
+  const selectionRef = useRef<PixelSelection | null>(null)
   const selectStartRef = useRef<{ x: number; y: number } | null>(null)
+  const selectMarqueeEndRef = useRef<PixelPoint | null>(null)
+  const selectCombineRef = useRef<SelectionCombineMode>("replace")
+  const selectResizeRef = useRef<{
+    corner: "nw" | "ne" | "sw" | "se"
+    origin: PixelSelection
+    floating: PixelClipboard
+    base: Uint8ClampedArray
+  } | null>(null)
+  const lassoRef = useRef<PixelPoint[] | null>(null)
+  const onShapeDraftChangeRef = useRef(onShapeDraftChange)
+  onShapeDraftChangeRef.current = onShapeDraftChange
+  const [textFrame, setTextFrame] = useState<TextFrame | null>(null)
+  const textFrameRef = useRef<TextFrame | null>(null)
+  const textOverlayRef = useRef<HTMLDivElement | null>(null)
+  const textAreaRef = useRef<HTMLTextAreaElement | null>(null)
+  const textResizeRef = useRef<{ handle: TextHandle; x: number; y: number; width: number; height: number } | null>(
+    null,
+  )
+  const textMoveRef = useRef<{ grabX: number; grabY: number } | null>(null)
+  const textCreateRef = useRef<{ start: PixelPoint; end: PixelPoint } | null>(null)
+  const placedTextsRef = useRef<PlacedText[]>([])
+  const textIdRef = useRef(0)
   const moveRef = useRef<{
-    origin: PixelRect
+    origin: PixelSelection
     grabX: number
     grabY: number
     floating: PixelClipboard
@@ -197,14 +428,24 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
   } | null>(null)
   const onSelectionChangeRef = useRef(onSelectionChange)
   onSelectionChangeRef.current = onSelectionChange
+  const onClipboardChangeRef = useRef(onClipboardChange)
+  onClipboardChangeRef.current = onClipboardChange
+  const onLayersChangeRef = useRef(onLayersChange)
+  onLayersChangeRef.current = onLayersChange
+  const onEditFeedbackRef = useRef(onEditFeedback)
+  onEditFeedbackRef.current = onEditFeedback
   const editActionRef = useRef({
-    copy: () => undefined as void,
-    cut: () => undefined as void,
-    paste: () => undefined as void,
-    delete: () => undefined as void,
+    copy: () => false as boolean,
+    cut: () => false as boolean,
+    paste: () => false as boolean,
+    delete: () => false as boolean,
   })
   /** Whether the current select gesture mutated pixels (move) vs marquee-only. */
   const selectMutatedRef = useRef(false)
+  const onCanvasMenuRef = useRef(onCanvasMenu)
+  onCanvasMenuRef.current = onCanvasMenu
+  const onHoverCellRef = useRef(onHoverCell)
+  onHoverCellRef.current = onHoverCell
   const drawRef = useRef<{ x: number; y: number } | null>(null)
   const panRef = useRef<{ x: number; y: number; originX: number; originY: number } | null>(null)
   const onZoomChangeRef = useRef(onZoomChange)
@@ -220,9 +461,8 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
   } | null>(null)
   const rafRef = useRef<number>(0)
   const observerRef = useRef<ResizeObserver | null>(null)
-  const undoRef = useRef<Uint8Array[]>([])
-  const redoRef = useRef<Uint8Array[]>([])
-  const initialSourceRef = useRef(initialSource)
+  const undoRef = useRef<LayerHistoryFrame[]>([])
+  const redoRef = useRef<LayerHistoryFrame[]>([])
   const canvasWidthRef = useRef(width)
   const canvasHeightRef = useRef(height)
   canvasWidthRef.current = width
@@ -230,6 +470,11 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
   const onPaletteChangeRef = useRef(onPaletteChange)
   onPaletteChangeRef.current = onPaletteChange
   const paletteRef = useRef<string[]>(paletteFromSource(initialSource))
+  const paletteIndexMapRef = useRef(buildPaletteRgbIndex(paletteRef.current))
+
+  const syncPaletteIndexMap = () => {
+    paletteIndexMapRef.current = buildPaletteRgbIndex(paletteRef.current)
+  }
 
   const adoptColor = useCallback((hex: string) => {
     const result = ensurePaletteColor(paletteRef.current, hex)
@@ -239,6 +484,7 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
     }
     if (result.palette.length !== paletteRef.current.length) {
       paletteRef.current = result.palette
+      syncPaletteIndexMap()
       onPaletteChangeRef.current?.(result.palette)
     }
     return true
@@ -260,16 +506,99 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
   const gridVisible = gridVisibleProp ?? internalGrid
   const symmetry = symmetryProp ?? internalSymmetry
   toolRef.current = tool
+  textFrameRef.current = textFrame
   colorRef.current = color
   brushRef.current = brushSize
   gridRef.current = gridVisible
   symmetryRef.current = symmetry
 
+  const emitLayers = () => {
+    const active = activeLayerIndexRef.current
+    onLayersChangeRef.current?.(
+      layersRef.current.map((layer, index) => ({
+        id: layer.id,
+        name: layer.name,
+        visible: layer.visible,
+        locked: layer.locked,
+        active: index === active,
+      })),
+    )
+  }
+
+  const syncActiveFromImage = () => {
+    const layers = layersRef.current
+    const active = layers[activeLayerIndexRef.current]
+    if (!active || !imageRef.current) return
+    active.indices = rgbaToIndices(
+      imageRef.current.data,
+      canvasWidthRef.current,
+      canvasHeightRef.current,
+      paletteRef.current,
+      paletteIndexMapRef.current,
+    )
+  }
+
+  const loadActiveIntoImage = () => {
+    const w = canvasWidthRef.current
+    const h = canvasHeightRef.current
+    const layers = layersRef.current
+    const active = layers[activeLayerIndexRef.current] ?? layers[0]
+    if (!imageRef.current || imageRef.current.width !== w || imageRef.current.height !== h) {
+      imageRef.current = new ImageData(w, h)
+    }
+    if (active) {
+      indicesToRgba(active.indices, imageRef.current.data, paletteRef.current)
+    } else {
+      fillPaper(imageRef.current.data)
+    }
+  }
+
   const image = () => {
     if (!imageRef.current) {
-      imageRef.current = createImage(initialSourceRef.current, canvasWidthRef.current, canvasHeightRef.current)
+      loadActiveIntoImage()
     }
-    return imageRef.current
+    return imageRef.current!
+  }
+
+  const activeLayerEditable = () => {
+    const layer = layersRef.current[activeLayerIndexRef.current]
+    return Boolean(layer && !layer.locked)
+  }
+
+  const snapshotHistory = (): LayerHistoryFrame => {
+    syncActiveFromImage()
+    return {
+      layers: cloneLayers(layersRef.current),
+      active: activeLayerIndexRef.current,
+    }
+  }
+
+  const applyHistoryFrame = (frame: LayerHistoryFrame) => {
+    layersRef.current = cloneLayers(frame.layers)
+    activeLayerIndexRef.current = Math.max(
+      0,
+      Math.min(frame.active, layersRef.current.length - 1),
+    )
+    loadActiveIntoImage()
+    emitLayers()
+    schedule()
+  }
+
+  const compositeImage = () => {
+    const w = canvasWidthRef.current
+    const h = canvasHeightRef.current
+    if (!compositeRef.current || compositeRef.current.width !== w || compositeRef.current.height !== h) {
+      compositeRef.current = new ImageData(w, h)
+    }
+    syncActiveFromImage()
+    compositeLayersToRgba(
+      layersRef.current,
+      compositeRef.current.data,
+      paletteRef.current,
+      w,
+      h,
+    )
+    return compositeRef.current
   }
 
   const paintColor = () => hexToRgb(toolRef.current === "eraser" ? PIXEL_PAPER : colorRef.current)
@@ -280,7 +609,7 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
     onZoomChangeRef.current?.(next)
   }
 
-  const schedule = () => {
+  const scheduleView = () => {
     if (rafRef.current) return
     rafRef.current = window.requestAnimationFrame(() => {
       rafRef.current = 0
@@ -288,26 +617,50 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
     })
   }
 
+  /** Mark pixels dirty and redraw (strokes, undo, palette bake). */
+  const schedule = () => {
+    pixelsDirtyRef.current = true
+    scheduleView()
+  }
+
+  const currentDpr = () => window.devicePixelRatio || 1
+
   const applyFit = () => {
     const { width: viewW, height: viewH } = sizeRef.current
-    const scale = resolveScale("fit", viewW, viewH, canvasWidthRef.current, canvasHeightRef.current)
+    const dpr = currentDpr()
+    const scale = resolveScale(
+      "fit",
+      viewW,
+      viewH,
+      canvasWidthRef.current,
+      canvasHeightRef.current,
+      dpr,
+    )
     const origin = fitOrigin(viewW, viewH, scale, canvasWidthRef.current, canvasHeightRef.current)
-    cameraRef.current = { scale, ...origin }
+    cameraRef.current = { scale, ...snapOriginToDevicePixels(origin.originX, origin.originY, dpr) }
   }
 
   const applyZoom = (next: PixelZoom, focusX?: number, focusY?: number) => {
     const { width: viewW, height: viewH } = sizeRef.current
     const prev = cameraRef.current
-    const nextScale = resolveScale(next, viewW, viewH, canvasWidthRef.current, canvasHeightRef.current)
+    const dpr = currentDpr()
+    const nextScale = resolveScale(
+      next,
+      viewW,
+      viewH,
+      canvasWidthRef.current,
+      canvasHeightRef.current,
+      dpr,
+    )
     emitZoom(next)
     if (next === "fit") {
       applyFit()
-      schedule()
+      scheduleView()
       return
     }
     const fx = focusX ?? viewW / 2
     const fy = focusY ?? viewH / 2
-    cameraRef.current = zoomToward({
+    const zoomed = zoomToward({
       originX: prev.originX,
       originY: prev.originY,
       scale: prev.scale,
@@ -315,7 +668,11 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
       focusX: fx,
       focusY: fy,
     })
-    schedule()
+    cameraRef.current = {
+      scale: nextScale,
+      ...snapOriginToDevicePixels(zoomed.originX, zoomed.originY, dpr),
+    }
+    scheduleView()
   }
 
   const draw = () => {
@@ -323,48 +680,59 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
     const buffer = bufferRef.current
     if (!view || !buffer) return
     const bufferCtx = buffer.getContext("2d")
-    const viewCtx = view.getContext("2d")
-    if (!bufferCtx || !viewCtx) return
+    if (!bufferCtx) return
 
     const canvasW = canvasWidthRef.current
     const canvasH = canvasHeightRef.current
     if (buffer.width !== canvasW || buffer.height !== canvasH) {
       buffer.width = canvasW
       buffer.height = canvasH
+      pixelsDirtyRef.current = true
     }
 
-    bufferCtx.putImageData(image(), 0, 0)
+    if (pixelsDirtyRef.current) {
+      bufferCtx.putImageData(compositeImage(), 0, 0)
+      pixelsDirtyRef.current = false
+    }
 
-    const dpr = window.devicePixelRatio || 1
+    const dpr = currentDpr()
     const { width: viewW, height: viewH } = sizeRef.current
-    const pixelW = Math.max(1, Math.floor(viewW * dpr))
-    const pixelH = Math.max(1, Math.floor(viewH * dpr))
+    const device = devicePixelSizeRef.current
+    const pixelW = device ? device.width : Math.max(1, Math.round(viewW * dpr))
+    const pixelH = device ? device.height : Math.max(1, Math.round(viewH * dpr))
     if (view.width !== pixelW || view.height !== pixelH) {
       view.width = pixelW
       view.height = pixelH
     }
 
+    const viewCtx = view.getContext("2d", { alpha: false })
+    if (!viewCtx) return
+
     const { originX, originY, scale } = cameraRef.current
+    const { deviceScale, translateX, translateY } = viewDeviceTransform(originX, originY, scale, dpr)
     viewCtx.setTransform(1, 0, 0, 1, 0, 0)
-    viewCtx.clearRect(0, 0, view.width, view.height)
     viewCtx.fillStyle = "#e8e4d8"
     viewCtx.fillRect(0, 0, view.width, view.height)
     viewCtx.imageSmoothingEnabled = false
-    viewCtx.setTransform(scale * dpr, 0, 0, scale * dpr, originX * dpr, originY * dpr)
+    viewCtx.setTransform(deviceScale, 0, 0, deviceScale, translateX, translateY)
     viewCtx.drawImage(buffer, 0, 0)
 
-    // Grid on: always visible (lighter below former auto threshold). Grid off: never.
+    // Grid: cull to visible cells; lighter below PIXEL_GRID_MIN_ZOOM.
     if (gridRef.current) {
+      const left = Math.max(0, Math.floor(-originX / scale))
+      const top = Math.max(0, Math.floor(-originY / scale))
+      const right = Math.min(canvasW, Math.ceil((viewW - originX) / scale))
+      const bottom = Math.min(canvasH, Math.ceil((viewH - originY) / scale))
       viewCtx.beginPath()
       viewCtx.strokeStyle = scale >= PIXEL_GRID_MIN_ZOOM ? "rgba(32, 32, 42, 0.18)" : "rgba(32, 32, 42, 0.08)"
       viewCtx.lineWidth = 1 / scale
-      for (let i = 0; i <= canvasW; i += 1) {
-        viewCtx.moveTo(i, 0)
-        viewCtx.lineTo(i, canvasH)
+      for (let i = left; i <= right; i += 1) {
+        viewCtx.moveTo(i, top)
+        viewCtx.lineTo(i, bottom)
       }
-      for (let i = 0; i <= canvasH; i += 1) {
-        viewCtx.moveTo(0, i)
-        viewCtx.lineTo(canvasW, i)
+      for (let i = top; i <= bottom; i += 1) {
+        viewCtx.moveTo(left, i)
+        viewCtx.lineTo(right, i)
       }
       viewCtx.stroke()
     }
@@ -372,6 +740,18 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
     const selection = selectionRef.current
     if (selection && selection.width > 0 && selection.height > 0) {
       viewCtx.save()
+      if (selection.mask) {
+        viewCtx.fillStyle = "rgba(89, 188, 235, 0.28)"
+        for (let i = 0; i < selection.mask.length; i += 1) {
+          if (selection.mask[i] !== 1) continue
+          viewCtx.fillRect(
+            selection.x + (i % selection.width),
+            selection.y + Math.floor(i / selection.width),
+            1,
+            1,
+          )
+        }
+      }
       viewCtx.strokeStyle = "rgba(40, 43, 53, 0.95)"
       viewCtx.lineWidth = 1 / scale
       viewCtx.setLineDash([2 / scale, 2 / scale])
@@ -379,19 +759,595 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
       viewCtx.strokeStyle = "rgba(255, 253, 247, 0.95)"
       viewCtx.lineDashOffset = 2 / scale
       viewCtx.strokeRect(selection.x, selection.y, selection.width, selection.height)
+      const hs = 3 / scale
+      viewCtx.setLineDash([])
+      viewCtx.fillStyle = "rgba(255, 253, 247, 0.95)"
+      viewCtx.strokeStyle = "rgba(40, 43, 53, 0.95)"
+      const corners = [
+        { x: selection.x, y: selection.y },
+        { x: selection.x + selection.width - 1, y: selection.y },
+        { x: selection.x, y: selection.y + selection.height - 1 },
+        { x: selection.x + selection.width - 1, y: selection.y + selection.height - 1 },
+      ]
+      for (const corner of corners) {
+        viewCtx.fillRect(corner.x + 0.5 - hs / 2, corner.y + 0.5 - hs / 2, hs, hs)
+        viewCtx.strokeRect(corner.x + 0.5 - hs / 2, corner.y + 0.5 - hs / 2, hs, hs)
+      }
+      // Free-rotate handle above bbox center.
+      const hx = selection.x + selection.width / 2
+      const hy = selection.y - Math.max(4, 8 / scale)
+      viewCtx.beginPath()
+      viewCtx.moveTo(selection.x + selection.width / 2, selection.y)
+      viewCtx.lineTo(hx, hy)
+      viewCtx.strokeStyle = "rgba(40, 43, 53, 0.95)"
+      viewCtx.lineWidth = 1 / scale
+      viewCtx.setLineDash([])
+      viewCtx.stroke()
+      viewCtx.beginPath()
+      viewCtx.arc(hx, hy, hs, 0, Math.PI * 2)
+      viewCtx.fillStyle = "rgba(89, 188, 235, 0.95)"
+      viewCtx.fill()
+      viewCtx.strokeStyle = "rgba(40, 43, 53, 0.95)"
+      viewCtx.stroke()
+      if (selectRotateRef.current) {
+        const deg = selectRotateRef.current.degrees
+        viewCtx.fillStyle = "rgba(40, 43, 53, 0.85)"
+        viewCtx.font = `${10 / scale}px sans-serif`
+        viewCtx.fillText(`${Math.round(deg)}°`, hx + hs, hy)
+      }
       viewCtx.restore()
+    }
+
+    if (
+      selectStartRef.current &&
+      selectMarqueeEndRef.current &&
+      selectCombineRef.current !== "replace"
+    ) {
+      const draft = normalizePixelRect(
+        selectStartRef.current.x,
+        selectStartRef.current.y,
+        selectMarqueeEndRef.current.x,
+        selectMarqueeEndRef.current.y,
+      )
+      viewCtx.save()
+      viewCtx.strokeStyle = "rgba(40, 43, 53, 0.95)"
+      viewCtx.lineWidth = 1 / scale
+      viewCtx.setLineDash([3 / scale, 2 / scale])
+      viewCtx.strokeRect(draft.x, draft.y, draft.width, draft.height)
+      viewCtx.strokeStyle = "rgba(89, 188, 235, 0.95)"
+      viewCtx.lineDashOffset = 2 / scale
+      viewCtx.strokeRect(draft.x, draft.y, draft.width, draft.height)
+      viewCtx.restore()
+    }
+
+    const lasso = lassoRef.current
+    if (lasso && lasso.length > 0) {
+      viewCtx.save()
+      viewCtx.strokeStyle = "rgba(40, 43, 53, 0.95)"
+      viewCtx.lineWidth = 1 / scale
+      viewCtx.setLineDash([2 / scale, 2 / scale])
+      viewCtx.beginPath()
+      viewCtx.moveTo(lasso[0].x + 0.5, lasso[0].y + 0.5)
+      for (let i = 1; i < lasso.length; i += 1) {
+        viewCtx.lineTo(lasso[i].x + 0.5, lasso[i].y + 0.5)
+      }
+      viewCtx.stroke()
+      viewCtx.strokeStyle = "rgba(255, 253, 247, 0.95)"
+      viewCtx.lineDashOffset = 2 / scale
+      viewCtx.stroke()
+      viewCtx.restore()
+    }
+
+    const creating = textCreateRef.current
+    if (creating) {
+      const rect = normalizePixelRect(creating.start.x, creating.start.y, creating.end.x, creating.end.y)
+      viewCtx.save()
+      viewCtx.strokeStyle = "rgba(40, 43, 53, 0.95)"
+      viewCtx.lineWidth = 1 / scale
+      viewCtx.setLineDash([2 / scale, 2 / scale])
+      viewCtx.strokeRect(rect.x, rect.y, rect.width, rect.height)
+      viewCtx.strokeStyle = "rgba(255, 253, 247, 0.95)"
+      viewCtx.lineDashOffset = 2 / scale
+      viewCtx.strokeRect(rect.x, rect.y, rect.width, rect.height)
+      viewCtx.restore()
+    }
+
+    const draft = shapeDraftRef.current
+    if (draft) {
+      const w = canvasWidthRef.current
+      const h = canvasHeightRef.current
+      let preview = shapeDraftPreviewRef.current
+      if (!preview || preview.image.width !== w || preview.image.height !== h) {
+        const canvas = document.createElement("canvas")
+        canvas.width = w
+        canvas.height = h
+        const ctx = canvas.getContext("2d")
+        if (ctx) {
+          preview = { image: new ImageData(w, h), canvas, ctx }
+          shapeDraftPreviewRef.current = preview
+        }
+      }
+      if (preview) {
+        preview.image.data.fill(0)
+        const rgb = hexToRgb(colorRef.current)
+        const pixels = preview.image.data
+        const clip = selectionRef.current
+        if (draft.kind === "rect") {
+          if (draft.filled) fillRect(pixels, draft.x0, draft.y0, draft.x1, draft.y1, rgb, w, h, clip)
+          else strokeRectBrush(pixels, draft.x0, draft.y0, draft.x1, draft.y1, rgb, draft.strokeWidth, w, h, "square", clip)
+        } else if (draft.kind === "ellipse") {
+          paintEllipse(pixels, draft.x0, draft.y0, draft.x1, draft.y1, rgb, draft.filled, w, h, draft.strokeWidth, clip)
+        } else if (draft.kind === "bezier" && draft.anchors.length > 0) {
+          rasterizeCubicPath(pixels, draft.anchors, rgb, w, h, {
+            mode: draft.mode,
+            size: draft.strokeWidth,
+            closed: draft.closed || draft.mode === "fill",
+            clip,
+          })
+        } else if (draft.kind === "polygon" && draft.points.length > 0) {
+          rasterizePolygon(pixels, draft.points, rgb, w, h, {
+            mode: draft.mode,
+            size: draft.strokeWidth,
+            closed: draft.closed || draft.mode === "fill",
+            clip,
+          })
+        }
+        preview.ctx.putImageData(preview.image, 0, 0)
+        viewCtx.save()
+        viewCtx.imageSmoothingEnabled = false
+        viewCtx.globalAlpha = 0.92
+        viewCtx.drawImage(preview.canvas, 0, 0)
+        viewCtx.restore()
+      }
+
+      viewCtx.save()
+      viewCtx.lineWidth = 1 / scale
+      viewCtx.setLineDash([])
+      if (draft.kind === "rect" || draft.kind === "ellipse") {
+        const bounds = normalizePixelRect(draft.x0, draft.y0, draft.x1, draft.y1)
+        const corners = [
+          { x: bounds.x, y: bounds.y },
+          { x: bounds.x + bounds.width - 1, y: bounds.y },
+          { x: bounds.x, y: bounds.y + bounds.height - 1 },
+          { x: bounds.x + bounds.width - 1, y: bounds.y + bounds.height - 1 },
+        ]
+        const hs = 3 / scale
+        viewCtx.fillStyle = "rgba(255, 253, 247, 0.95)"
+        viewCtx.strokeStyle = "rgba(40, 43, 53, 0.95)"
+        for (const corner of corners) {
+          viewCtx.fillRect(corner.x + 0.5 - hs / 2, corner.y + 0.5 - hs / 2, hs, hs)
+          viewCtx.strokeRect(corner.x + 0.5 - hs / 2, corner.y + 0.5 - hs / 2, hs, hs)
+        }
+        viewCtx.font = `${Math.max(10, 11 / Math.max(0.5, scale / 8))}px monospace`
+        viewCtx.fillStyle = "rgba(40, 43, 53, 0.9)"
+        viewCtx.fillText(`${bounds.width}×${bounds.height}`, bounds.x, Math.max(0, bounds.y - 2 / scale))
+      } else if (draft.kind === "bezier") {
+        const hs = 3 / scale
+        for (let i = 0; i < draft.anchors.length; i += 1) {
+          const anchor = draft.anchors[i]
+          viewCtx.strokeStyle = "rgba(89, 188, 235, 0.85)"
+          viewCtx.beginPath()
+          viewCtx.moveTo(anchor.hiX + 0.5, anchor.hiY + 0.5)
+          viewCtx.lineTo(anchor.x + 0.5, anchor.y + 0.5)
+          viewCtx.lineTo(anchor.hoX + 0.5, anchor.hoY + 0.5)
+          viewCtx.stroke()
+          const selected = i === draft.selected
+          viewCtx.fillStyle = selected ? "rgba(40, 43, 53, 0.95)" : "rgba(255, 253, 247, 0.95)"
+          viewCtx.strokeStyle = "rgba(40, 43, 53, 0.95)"
+          viewCtx.fillRect(anchor.x + 0.5 - hs / 2, anchor.y + 0.5 - hs / 2, hs, hs)
+          viewCtx.strokeRect(anchor.x + 0.5 - hs / 2, anchor.y + 0.5 - hs / 2, hs, hs)
+          viewCtx.beginPath()
+          viewCtx.arc(anchor.hiX + 0.5, anchor.hiY + 0.5, hs * 0.55, 0, Math.PI * 2)
+          viewCtx.fill()
+          viewCtx.stroke()
+          viewCtx.beginPath()
+          viewCtx.arc(anchor.hoX + 0.5, anchor.hoY + 0.5, hs * 0.55, 0, Math.PI * 2)
+          viewCtx.fill()
+          viewCtx.stroke()
+        }
+      } else if (draft.kind === "polygon") {
+        const hs = 3 / scale
+        for (let i = 0; i < draft.points.length; i += 1) {
+          const point = draft.points[i]
+          const selected = i === draft.selected
+          viewCtx.fillStyle = selected ? "rgba(40, 43, 53, 0.95)" : "rgba(255, 253, 247, 0.95)"
+          viewCtx.strokeStyle = "rgba(40, 43, 53, 0.95)"
+          viewCtx.fillRect(point.x + 0.5 - hs / 2, point.y + 0.5 - hs / 2, hs, hs)
+          viewCtx.strokeRect(point.x + 0.5 - hs / 2, point.y + 0.5 - hs / 2, hs, hs)
+        }
+      }
+      viewCtx.restore()
+    }
+
+    const overlay = textOverlayRef.current
+    const frame = textFrameRef.current
+    if (overlay && frame) {
+      overlay.style.transform = `translate(${originX + frame.x * scale}px, ${originY + frame.y * scale}px)`
+      overlay.style.width = `${Math.max(1, frame.width * scale)}px`
+      overlay.style.height = `${Math.max(1, frame.height * scale)}px`
     }
   }
 
   const emitSelection = () => {
     onSelectionChangeRef.current?.(selectionRef.current !== null)
-    schedule()
+    scheduleView()
   }
 
-  const setSelection = (next: PixelRect | null) => {
+  const setSelection = (next: PixelSelection | null) => {
     selectionRef.current = next
     emitSelection()
   }
+
+  const commitSelection = (next: PixelSelection | null) => {
+    const mode = selectCombineRef.current
+    if (!next) {
+      if (mode === "replace") setSelection(null)
+      return
+    }
+    setSelection(
+      combineSelections(
+        selectionRef.current,
+        next,
+        mode,
+        canvasWidthRef.current,
+        canvasHeightRef.current,
+      ),
+    )
+  }
+
+  const restorePathBase = () => {
+    const base = shapeBaseRef.current
+    if (!base) return
+    image().data.set(base)
+  }
+
+  const shapeDraftInfo = (draft: ShapeDraft | null): ShapeDraftInfo => {
+    if (!draft) {
+      const kind =
+        toolRef.current === "rect" ||
+        toolRef.current === "ellipse" ||
+        toolRef.current === "bezier" ||
+        toolRef.current === "polygon"
+          ? toolRef.current
+          : null
+      return {
+        active: false,
+        kind,
+        filled: shapePrefsRef.current.filled,
+        mode: shapePrefsRef.current.mode,
+        strokeWidth: clampStrokeWidth(brushRef.current),
+        width: 0,
+        height: 0,
+      }
+    }
+    if (draft.kind === "bezier" || draft.kind === "polygon") {
+      return {
+        active: true,
+        kind: draft.kind,
+        filled: draft.mode === "fill",
+        mode: draft.mode,
+        strokeWidth: draft.strokeWidth,
+        width: 0,
+        height: 0,
+      }
+    }
+    const bounds = normalizePixelRect(draft.x0, draft.y0, draft.x1, draft.y1)
+    return {
+      active: true,
+      kind: draft.kind,
+      filled: draft.filled,
+      mode: draft.filled ? "fill" : "stroke",
+      strokeWidth: draft.strokeWidth,
+      width: bounds.width,
+      height: bounds.height,
+    }
+  }
+
+  const emitShapeDraft = () => {
+    onShapeDraftChangeRef.current?.(shapeDraftInfo(shapeDraftRef.current))
+    scheduleView()
+  }
+
+  const setShapeDraft = (next: ShapeDraft | null) => {
+    shapeDraftRef.current = next
+    emitShapeDraft()
+  }
+
+  const clearPathDraft = (restore: boolean) => {
+    if (restore) restorePathBase()
+    lassoRef.current = null
+    shapeBaseRef.current = null
+    schedule()
+  }
+
+  const cancelShapeDraft = () => {
+    shapeDragRef.current = null
+    shapeStartRef.current = null
+    if (shapeDraftRef.current) setShapeDraft(null)
+  }
+
+  const applyShapeDraft = (): boolean => {
+    const draft = shapeDraftRef.current
+    if (!draft) return false
+    if (!activeLayerEditable()) return false
+    if (draft.kind === "bezier" && draft.anchors.length < 2) return false
+    if (draft.kind === "polygon") {
+      if (draft.mode === "fill" && draft.points.length < 3) return false
+      if (draft.mode === "stroke" && draft.points.length < 2) return false
+    }
+    if (!adoptColor(colorRef.current)) {
+      cancelShapeDraft()
+      return false
+    }
+    pushUndo()
+    const rgb = hexToRgb(colorRef.current)
+    const w = canvasWidthRef.current
+    const h = canvasHeightRef.current
+    const pixels = image().data
+    const clip = selectionRef.current
+    if (draft.kind === "rect") {
+      if (draft.filled) fillRect(pixels, draft.x0, draft.y0, draft.x1, draft.y1, rgb, w, h, clip)
+      else strokeRectBrush(pixels, draft.x0, draft.y0, draft.x1, draft.y1, rgb, draft.strokeWidth, w, h, "square", clip)
+    } else if (draft.kind === "ellipse") {
+      paintEllipse(pixels, draft.x0, draft.y0, draft.x1, draft.y1, rgb, draft.filled, w, h, draft.strokeWidth, clip)
+    } else if (draft.kind === "bezier") {
+      rasterizeCubicPath(pixels, draft.anchors, rgb, w, h, {
+        mode: draft.mode,
+        size: draft.strokeWidth,
+        closed: draft.closed || draft.mode === "fill",
+        clip,
+      })
+    } else if (draft.kind === "polygon") {
+      rasterizePolygon(pixels, draft.points, rgb, w, h, {
+        mode: draft.mode,
+        size: draft.strokeWidth,
+        closed: draft.closed || draft.mode === "fill",
+        clip,
+      })
+    }
+    shapeDragRef.current = null
+    setShapeDraft(null)
+    schedule()
+    onStrokeEnd?.()
+    return true
+  }
+
+  const updateShapeDraft = (patch: {
+    filled?: boolean
+    mode?: "stroke" | "fill"
+    strokeWidth?: number
+    width?: number
+    height?: number
+  }) => {
+    if (patch.filled !== undefined) shapePrefsRef.current.filled = patch.filled
+    if (patch.mode !== undefined) shapePrefsRef.current.mode = patch.mode
+    if (patch.filled === true) shapePrefsRef.current.mode = "fill"
+    if (patch.filled === false) shapePrefsRef.current.mode = "stroke"
+    const draft = shapeDraftRef.current
+    if (!draft) {
+      if (
+        (toolRef.current === "rect" || toolRef.current === "ellipse") &&
+        (patch.width !== undefined || patch.height !== undefined)
+      ) {
+        const width = Math.max(1, Math.round(patch.width ?? 1))
+        const height = Math.max(1, Math.round(patch.height ?? 1))
+        setShapeDraft({
+          kind: toolRef.current,
+          x0: 0,
+          y0: 0,
+          x1: Math.min(canvasWidthRef.current - 1, width - 1),
+          y1: Math.min(canvasHeightRef.current - 1, height - 1),
+          filled: shapePrefsRef.current.filled,
+          strokeWidth:
+            patch.strokeWidth !== undefined
+              ? clampStrokeWidth(patch.strokeWidth)
+              : clampStrokeWidth(brushRef.current),
+        })
+        return
+      }
+      onShapeDraftChangeRef.current?.({
+        active: false,
+        kind:
+          toolRef.current === "ellipse"
+            ? "ellipse"
+            : toolRef.current === "bezier"
+              ? "bezier"
+              : toolRef.current === "polygon"
+                ? "polygon"
+                : toolRef.current === "rect"
+                  ? "rect"
+                  : null,
+        filled: shapePrefsRef.current.filled,
+        mode: shapePrefsRef.current.mode,
+        strokeWidth: clampStrokeWidth(brushRef.current),
+        width: 0,
+        height: 0,
+      })
+      return
+    }
+    if (draft.kind === "bezier" || draft.kind === "polygon") {
+      const mode = patch.mode ?? (patch.filled === undefined ? draft.mode : patch.filled ? "fill" : "stroke")
+      const next: ShapeDraft = {
+        ...draft,
+        mode,
+        strokeWidth: patch.strokeWidth !== undefined ? clampStrokeWidth(patch.strokeWidth) : draft.strokeWidth,
+        closed: mode === "fill" || draft.closed,
+      }
+      setShapeDraft(next)
+      return
+    }
+    const bounds = normalizePixelRect(draft.x0, draft.y0, draft.x1, draft.y1)
+    let width = bounds.width
+    let height = bounds.height
+    if (patch.width !== undefined) width = Math.max(1, Math.round(patch.width))
+    if (patch.height !== undefined) height = Math.max(1, Math.round(patch.height))
+    const next: ShapeDraft = {
+      ...draft,
+      x0: bounds.x,
+      y0: bounds.y,
+      x1: Math.min(canvasWidthRef.current - 1, bounds.x + width - 1),
+      y1: Math.min(canvasHeightRef.current - 1, bounds.y + height - 1),
+      filled: patch.filled ?? draft.filled,
+      strokeWidth: patch.strokeWidth !== undefined ? clampStrokeWidth(patch.strokeWidth) : draft.strokeWidth,
+    }
+    setShapeDraft(next)
+  }
+
+  const applyShapeDraftRef = useRef(applyShapeDraft)
+  applyShapeDraftRef.current = applyShapeDraft
+  const cancelShapeDraftRef = useRef(cancelShapeDraft)
+  cancelShapeDraftRef.current = cancelShapeDraft
+  const setShapeDraftRef = useRef(setShapeDraft)
+  setShapeDraftRef.current = setShapeDraft
+  const updateShapeDraftRef = useRef(updateShapeDraft)
+  updateShapeDraftRef.current = updateShapeDraft
+
+  const cancelTextFrame = () => {
+    textFrameRef.current = null
+    textResizeRef.current = null
+    textMoveRef.current = null
+    textCreateRef.current = null
+    setTextFrame(null)
+  }
+
+  const commitTextFrame = () => {
+    const frame = textFrameRef.current
+    if (!frame) return
+    const scale = brushRef.current
+    const wrap = frame.mode === "paragraph"
+    const measured = measurePixelTextBox(frame.text, scale, wrap ? frame.width : undefined, {
+      trim: true,
+    })
+    cancelTextFrame()
+    if (!measured.text) return
+    if (!adoptColor(colorRef.current)) return
+    const canvasW = canvasWidthRef.current
+    const canvasH = canvasHeightRef.current
+    const width = wrap
+      ? Math.min(frame.width, canvasW - frame.x)
+      : Math.min(measured.width, canvasW - frame.x)
+    const height = Math.min(measured.height, canvasH - frame.y)
+    const color = colorRef.current
+    const placed: PlacedText = {
+      ...frame,
+      text: measured.text,
+      width,
+      height,
+      color,
+      scale,
+    }
+    placedTextsRef.current = [
+      ...placedTextsRef.current.filter((item) => item.id !== placed.id),
+      placed,
+    ]
+    runBufferOp(() => {
+      stampTextBitmap(image().data, placed.x, placed.y, placed.text, hexToRgb(color), canvasW, canvasH, {
+        width: placed.width,
+        scale,
+        wrap,
+      })
+    })
+  }
+  const commitTextFrameRef = useRef(commitTextFrame)
+  commitTextFrameRef.current = commitTextFrame
+
+  const finishTextCreate = (end: PixelPoint) => {
+    const draft = textCreateRef.current
+    textCreateRef.current = null
+    if (!draft) return
+    const scale = brushRef.current
+    const canvasW = canvasWidthRef.current
+    const canvasH = canvasHeightRef.current
+    const minW = PIXEL_FONT_W * scale
+    const minH = PIXEL_FONT_H * scale
+    const dragged = Math.hypot(end.x - draft.start.x, end.y - draft.start.y)
+    textIdRef.current += 1
+    const id = `text-${textIdRef.current}`
+    let next: TextFrame
+    if (dragged < 2) {
+      // Point Text — click once; box hugs glyphs as the user types.
+      next = {
+        id,
+        x: Math.max(0, Math.min(draft.start.x, canvasW - minW)),
+        y: Math.max(0, Math.min(draft.start.y, canvasH - minH)),
+        width: minW,
+        height: minH,
+        text: "",
+        mode: "point",
+      }
+    } else {
+      // Paragraph Text — drag sets wrap width; height is only a starting estimate.
+      const rect = normalizePixelRect(draft.start.x, draft.start.y, end.x, end.y)
+      const width = Math.max(minW, rect.width)
+      const fitted = measurePixelTextBox("", scale, width, { trim: false })
+      next = {
+        id,
+        x: Math.min(rect.x, canvasW - minW),
+        y: Math.min(rect.y, canvasH - minH),
+        width: Math.min(width, canvasW - Math.min(rect.x, canvasW - minW)),
+        height: Math.min(fitted.height, canvasH - Math.min(rect.y, canvasH - minH)),
+        text: "",
+        mode: "paragraph",
+      }
+    }
+    textFrameRef.current = next
+    setTextFrame(next)
+    scheduleView()
+  }
+
+  const beginEditPlacedText = (placed: PlacedText) => {
+    commitTextFrameRef.current()
+    placedTextsRef.current = placedTextsRef.current.filter((item) => item.id !== placed.id)
+    runBufferOp(() => {
+      clearRectToPaper(
+        image().data,
+        { x: placed.x, y: placed.y, width: placed.width, height: placed.height },
+        canvasWidthRef.current,
+        canvasHeightRef.current,
+      )
+    })
+    colorRef.current = placed.color
+    brushRef.current = placed.scale as PixelBrushSize
+    onColorChange?.(placed.color)
+    onBrushSizeChange?.(placed.scale as PixelBrushSize)
+    const next: TextFrame = {
+      id: placed.id,
+      x: placed.x,
+      y: placed.y,
+      width: placed.width,
+      height: placed.height,
+      text: placed.text,
+      mode: placed.mode,
+    }
+    textFrameRef.current = next
+    setTextFrame(next)
+  }
+  const beginEditPlacedTextRef = useRef(beginEditPlacedText)
+  beginEditPlacedTextRef.current = beginEditPlacedText
+
+  const placedTextAt = (cell: PixelPoint) => {
+    const list = placedTextsRef.current
+    for (let i = list.length - 1; i >= 0; i -= 1) {
+      if (pointInPixelRect(cell.x, cell.y, list[i])) return list[i]
+    }
+    return null
+  }
+  const finishTextCreateRef = useRef(finishTextCreate)
+  finishTextCreateRef.current = finishTextCreate
+
+  useEffect(() => {
+    if (tool !== "text") {
+      textCreateRef.current = null
+      commitTextFrameRef.current()
+    }
+    cancelShapeDraftRef.current()
+    clearPathDraft(true)
+  }, [tool])
+
+  const textOpen = textFrame !== null
+  useLayoutEffect(() => {
+    if (textOpen) textAreaRef.current?.focus()
+  }, [textOpen])
 
   const emitHistory = () => {
     onHistoryChange?.({
@@ -401,27 +1357,19 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
   }
 
   const pushUndo = () => {
-    undoRef.current.push(
-      rgbaToIndices(image().data, canvasWidthRef.current, canvasHeightRef.current, paletteRef.current),
-    )
+    undoRef.current.push(snapshotHistory())
     if (undoRef.current.length > HISTORY_LIMIT) undoRef.current.shift()
     redoRef.current = []
     setHistoryTick((value) => value + 1)
     emitHistory()
   }
 
-  const applyIndices = (indices: Uint8Array) => {
-    indicesToRgba(indices, image().data, paletteRef.current)
-    schedule()
-  }
-
   const undo = () => {
     const previous = undoRef.current.pop()
     if (!previous) return
-    redoRef.current.push(
-      rgbaToIndices(image().data, canvasWidthRef.current, canvasHeightRef.current, paletteRef.current),
-    )
-    applyIndices(previous)
+    redoRef.current.push(snapshotHistory())
+    placedTextsRef.current = []
+    applyHistoryFrame(previous)
     setHistoryTick((value) => value + 1)
     emitHistory()
     onStrokeEnd?.()
@@ -430,10 +1378,9 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
   const redo = () => {
     const next = redoRef.current.pop()
     if (!next) return
-    undoRef.current.push(
-      rgbaToIndices(image().data, canvasWidthRef.current, canvasHeightRef.current, paletteRef.current),
-    )
-    applyIndices(next)
+    undoRef.current.push(snapshotHistory())
+    placedTextsRef.current = []
+    applyHistoryFrame(next)
     setHistoryTick((value) => value + 1)
     emitHistory()
     onStrokeEnd?.()
@@ -451,40 +1398,58 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
     onStrokeEnd?.()
   }
 
+  const emitClipboard = () => {
+    onClipboardChangeRef.current?.(sessionClipboard !== null)
+  }
+
+  useEffect(() => {
+    emitClipboard()
+  }, [])
+
   const copySelection = () => {
     const selection = selectionRef.current
-    if (!selection) return
+    if (!selection) return false
     sessionClipboard = extractRect(
       image().data,
       selection,
       canvasWidthRef.current,
       canvasHeightRef.current,
     )
+    emitClipboard()
+    onEditFeedbackRef.current?.("copied")
+    return true
   }
 
   const deleteSelection = () => {
     const selection = selectionRef.current
-    if (!selection) return
+    if (!selection) return false
     runBufferOp(() => {
       clearRectToPaper(image().data, selection, canvasWidthRef.current, canvasHeightRef.current)
       setSelection(null)
     })
+    return true
   }
 
   const cutSelection = () => {
     const selection = selectionRef.current
-    if (!selection) return
+    if (!selection) return false
     sessionClipboard = extractRect(
       image().data,
       selection,
       canvasWidthRef.current,
       canvasHeightRef.current,
     )
+    emitClipboard()
     deleteSelection()
+    onEditFeedbackRef.current?.("cut")
+    return true
   }
 
   const pasteClipboard = () => {
-    if (!sessionClipboard) return
+    if (!sessionClipboard) {
+      onEditFeedbackRef.current?.("clipboard-empty")
+      return false
+    }
     const w = canvasWidthRef.current
     const h = canvasHeightRef.current
     const selection = selectionRef.current
@@ -497,8 +1462,11 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
         y: destY,
         width: sessionClipboard!.width,
         height: sessionClipboard!.height,
+        mask: sessionClipboard!.mask,
       })
     })
+    onEditFeedbackRef.current?.("pasted")
+    return true
   }
 
   editActionRef.current = {
@@ -508,14 +1476,52 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
     delete: deleteSelection,
   }
 
+  const layerInfoList = (): PixelLayerInfo[] => {
+    const active = activeLayerIndexRef.current
+    return layersRef.current.map((layer, index) => ({
+      id: layer.id,
+      name: layer.name,
+      visible: layer.visible,
+      locked: layer.locked,
+      active: index === active,
+    }))
+  }
+
+  const rotateSelectionByDegrees = (degrees: number) => {
+    const selection = selectionRef.current
+    if (!selection || !activeLayerEditable()) return false
+    const w = canvasWidthRef.current
+    const h = canvasHeightRef.current
+    runBufferOp(() => {
+      const floating = extractRect(image().data, selection, w, h)
+      clearRectToPaper(image().data, selection, w, h)
+      const rotated = rotateClipboardNearest(floating, degrees)
+      const cx = selection.x + (selection.width - 1) / 2
+      const cy = selection.y + (selection.height - 1) / 2
+      const destX = Math.round(cx - (rotated.width - 1) / 2)
+      const destY = Math.round(cy - (rotated.height - 1) / 2)
+      blitRect(image().data, rotated, destX, destY, w, h)
+      setSelection({
+        x: destX,
+        y: destY,
+        width: rotated.width,
+        height: rotated.height,
+        mask: rotated.mask,
+      })
+    })
+    return true
+  }
+
   useImperativeHandle(ref, () => ({
-    exportSource: () =>
-      buildPixelSource(
-        rgbaToIndices(image().data, canvasWidthRef.current, canvasHeightRef.current, paletteRef.current),
+    exportSource: () => {
+      syncActiveFromImage()
+      return buildPixelSourceV2(
+        layersRef.current,
         canvasWidthRef.current,
         canvasHeightRef.current,
         paletteRef.current,
-      ),
+      )
+    },
     exportPng: () => {
       const buffer = bufferRef.current
       if (!buffer) return Promise.reject(new Error("buffer"))
@@ -525,7 +1531,8 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
         buffer.width = canvasWidthRef.current
         buffer.height = canvasHeightRef.current
       }
-      ctx.putImageData(image(), 0, 0)
+      ctx.putImageData(compositeImage(), 0, 0)
+      pixelsDirtyRef.current = false
       return new Promise<Blob>((resolve, reject) => {
         buffer.toBlob((blob) => (blob ? resolve(blob) : reject(new Error("png"))), "image/png")
       })
@@ -539,12 +1546,16 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
         sizeRef.current.height,
         canvasWidthRef.current,
         canvasHeightRef.current,
+        currentDpr(),
       )
       applyZoomRef.current(stepZoom(zoomRef.current, direction, fit))
     },
     fit: () => applyZoomRef.current("fit"),
     getZoom: () => zoomRef.current,
     clearCanvas: () => {
+      placedTextsRef.current = []
+      cancelTextFrame()
+      cancelShapeDraftRef.current()
       runBufferOp(() => {
         clearCanvasToPaper(image().data)
         setSelection(null)
@@ -573,6 +1584,7 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
       const h = canvasHeightRef.current
       const selection = selectionRef.current
       if (selection) {
+        if (!activeLayerEditable()) return false
         runBufferOp(() => {
           const next = rotateRect90Cw(image().data, selection, w, h)
           setSelection(next)
@@ -580,22 +1592,252 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
         return true
       }
       if (w !== h) return false
+      if (!activeLayerEditable()) return false
       runBufferOp(() => rotateCanvas90Cw(image().data, w))
       return true
     },
+    rotateSelection: (degrees) => rotateSelectionByDegrees(degrees),
     selectAll: () => {
       setSelection({ x: 0, y: 0, width: canvasWidthRef.current, height: canvasHeightRef.current })
       chooseTool("select")
     },
     clearSelection: () => setSelection(null),
     hasSelection: () => selectionRef.current !== null,
+    copySelection,
+    cutSelection,
+    pasteClipboard,
+    deleteSelection,
+    hasClipboard: () => sessionClipboard !== null,
+    stampText: (x, y, text, box) => {
+      const next = text.replace(/\r/g, "")
+      if (!next.trim()) return
+      if (!adoptColor(colorRef.current)) return
+      runBufferOp(() => {
+        stampTextBitmap(
+          image().data,
+          x,
+          y,
+          next,
+          hexToRgb(colorRef.current),
+          canvasWidthRef.current,
+          canvasHeightRef.current,
+          box,
+        )
+      })
+    },
     clearHistory: () => {
       undoRef.current = []
       redoRef.current = []
+      placedTextsRef.current = []
       setHistoryTick((value) => value + 1)
       emitHistory()
     },
     getPalette: () => [...paletteRef.current],
+    getLayers: () => layerInfoList(),
+    addLayer: () => {
+      if (layersRef.current.length >= PIXEL_LAYER_MAX) return false
+      pushUndo()
+      syncActiveFromImage()
+      const nextIndex = layersRef.current.length + 1
+      layersRef.current.push(
+        createEmptyLayer(canvasWidthRef.current, canvasHeightRef.current, `Layer ${nextIndex}`),
+      )
+      activeLayerIndexRef.current = layersRef.current.length - 1
+      loadActiveIntoImage()
+      emitLayers()
+      schedule()
+      onStrokeEnd?.()
+      return true
+    },
+    deleteLayer: (id) => {
+      if (layersRef.current.length <= 1) return false
+      const index = layersRef.current.findIndex((layer) => layer.id === id)
+      if (index < 0) return false
+      pushUndo()
+      syncActiveFromImage()
+      layersRef.current.splice(index, 1)
+      if (activeLayerIndexRef.current >= layersRef.current.length) {
+        activeLayerIndexRef.current = layersRef.current.length - 1
+      } else if (activeLayerIndexRef.current > index) {
+        activeLayerIndexRef.current -= 1
+      }
+      loadActiveIntoImage()
+      emitLayers()
+      schedule()
+      onStrokeEnd?.()
+      return true
+    },
+    reorderLayer: (id, direction) => {
+      const index = layersRef.current.findIndex((layer) => layer.id === id)
+      if (index < 0) return false
+      const target = index + direction
+      if (target < 0 || target >= layersRef.current.length) return false
+      pushUndo()
+      syncActiveFromImage()
+      const [layer] = layersRef.current.splice(index, 1)
+      layersRef.current.splice(target, 0, layer)
+      if (activeLayerIndexRef.current === index) activeLayerIndexRef.current = target
+      else if (index < activeLayerIndexRef.current && target >= activeLayerIndexRef.current) {
+        activeLayerIndexRef.current -= 1
+      } else if (index > activeLayerIndexRef.current && target <= activeLayerIndexRef.current) {
+        activeLayerIndexRef.current += 1
+      }
+      loadActiveIntoImage()
+      emitLayers()
+      schedule()
+      onStrokeEnd?.()
+      return true
+    },
+    setActiveLayer: (id) => {
+      const index = layersRef.current.findIndex((layer) => layer.id === id)
+      if (index < 0 || index === activeLayerIndexRef.current) return false
+      syncActiveFromImage()
+      activeLayerIndexRef.current = index
+      loadActiveIntoImage()
+      emitLayers()
+      schedule()
+      return true
+    },
+    setLayerVisible: (id, visible) => {
+      const layer = layersRef.current.find((item) => item.id === id)
+      if (!layer || layer.visible === visible) return false
+      pushUndo()
+      syncActiveFromImage()
+      layer.visible = visible
+      emitLayers()
+      schedule()
+      onStrokeEnd?.()
+      return true
+    },
+    setLayerLocked: (id, locked) => {
+      const layer = layersRef.current.find((item) => item.id === id)
+      if (!layer || layer.locked === locked) return false
+      pushUndo()
+      syncActiveFromImage()
+      layer.locked = locked
+      emitLayers()
+      schedule()
+      onStrokeEnd?.()
+      return true
+    },
+    renameLayer: (id, name) => {
+      const layer = layersRef.current.find((item) => item.id === id)
+      const next = name.trim().slice(0, 32)
+      if (!layer || !next || layer.name === next) return false
+      pushUndo()
+      syncActiveFromImage()
+      layer.name = next
+      emitLayers()
+      onStrokeEnd?.()
+      return true
+    },
+    duplicateLayer: (id) => {
+      if (layersRef.current.length >= PIXEL_LAYER_MAX) return false
+      const index = layersRef.current.findIndex((layer) => layer.id === id)
+      if (index < 0) return false
+      pushUndo()
+      syncActiveFromImage()
+      const source = layersRef.current[index]!
+      const clone: PixelLayerRuntime = {
+        id: createLayerId(),
+        name: `${source.name} copy`.slice(0, 32),
+        visible: source.visible,
+        locked: false,
+        indices: new Uint8Array(source.indices),
+      }
+      layersRef.current.splice(index + 1, 0, clone)
+      activeLayerIndexRef.current = index + 1
+      loadActiveIntoImage()
+      emitLayers()
+      schedule()
+      onStrokeEnd?.()
+      return true
+    },
+    mergeDown: (id) => {
+      const index = layersRef.current.findIndex((layer) => layer.id === id)
+      if (index <= 0) return false
+      const upper = layersRef.current[index]!
+      const lower = layersRef.current[index - 1]!
+      if (lower.locked) return false
+      pushUndo()
+      syncActiveFromImage()
+      lower.indices = mergeLayerIndices(lower.indices, upper.indices, true)
+      layersRef.current.splice(index, 1)
+      activeLayerIndexRef.current = index - 1
+      loadActiveIntoImage()
+      emitLayers()
+      schedule()
+      onStrokeEnd?.()
+      return true
+    },
+    mergeVisible: () => {
+      syncActiveFromImage()
+      const layers = layersRef.current
+      const visible = layers.filter((layer) => layer.visible)
+      if (visible.length < 2) return false
+      if (visible.some((layer) => layer.locked)) return false
+      const w = canvasWidthRef.current
+      const h = canvasHeightRef.current
+      const firstVisible = layers.findIndex((layer) => layer.visible)
+      if (firstVisible < 0) return false
+      pushUndo()
+      const mergedIndices = flattenLayersToIndices(layers, w, h)
+      const hidden = layers.filter((layer) => !layer.visible)
+      const merged: PixelLayerRuntime = {
+        id: createLayerId(),
+        name: "Merged",
+        visible: true,
+        locked: false,
+        indices: mergedIndices,
+      }
+      const insertAt = Math.min(firstVisible, hidden.length)
+      const next = [...hidden]
+      next.splice(insertAt, 0, merged)
+      layersRef.current = next.slice(0, PIXEL_LAYER_MAX)
+      activeLayerIndexRef.current = Math.min(
+        insertAt,
+        layersRef.current.length - 1,
+      )
+      loadActiveIntoImage()
+      emitLayers()
+      schedule()
+      onStrokeEnd?.()
+      return true
+    },
+    moveLayer: (id, toIndex) => {
+      const index = layersRef.current.findIndex((layer) => layer.id === id)
+      if (index < 0) return false
+      const target = Math.max(0, Math.min(layersRef.current.length - 1, toIndex))
+      if (target === index) return false
+      pushUndo()
+      syncActiveFromImage()
+      const [layer] = layersRef.current.splice(index, 1)
+      layersRef.current.splice(target, 0, layer)
+      if (activeLayerIndexRef.current === index) activeLayerIndexRef.current = target
+      else if (index < activeLayerIndexRef.current && target >= activeLayerIndexRef.current) {
+        activeLayerIndexRef.current -= 1
+      } else if (index > activeLayerIndexRef.current && target <= activeLayerIndexRef.current) {
+        activeLayerIndexRef.current += 1
+      }
+      loadActiveIntoImage()
+      emitLayers()
+      schedule()
+      onStrokeEnd?.()
+      return true
+    },
+    getLayerThumbnail: (id, size = 32) => {
+      syncActiveFromImage()
+      const index = layersRef.current.findIndex((layer) => layer.id === id)
+      if (index < 0) return null
+      const layer = layersRef.current[index]!
+      return layerThumbnailDataUrl(
+        layer.indices,
+        canvasWidthRef.current,
+        canvasHeightRef.current,
+        paletteRef.current,
+        { size, transparentZero: index > 0 },
+      )
+    },
     replaceColor: (fromHex, toHex) => {
       const from = normalizePixelHex(fromHex)
       const to = normalizePixelHex(toHex)
@@ -627,6 +1869,7 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
       )
       if ("error" in result) return { ok: false, error: result.error }
       paletteRef.current = result.palette
+      syncPaletteIndexMap()
       onPaletteChangeRef.current?.(result.palette)
       undoRef.current = []
       redoRef.current = []
@@ -636,26 +1879,46 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
       onStrokeEnd?.()
       return { ok: true, replaced: result.replaced }
     },
+    applyShapeDraft: () => applyShapeDraftRef.current(),
+    cancelShapeDraft: () => cancelShapeDraftRef.current(),
+    updateShapeDraft: (patch) => updateShapeDraftRef.current(patch),
+    getShapeDraft: () => shapeDraftInfo(shapeDraftRef.current),
   }))
 
   useLayoutEffect(() => {
-    const node = wrapRef.current
+    // Observe the view canvas itself (event target), not the bordered wrap,
+    // so buffer size and hit-testing share one geometry source.
+    const node = viewRef.current ?? wrapRef.current
     if (!node) return
     const observer = new ResizeObserver((entries) => {
       const entry = entries[0]
       if (!entry) return
-      sizeRef.current = { width: entry.contentRect.width, height: entry.contentRect.height }
+      const dpr = currentDpr()
+      const deviceBox = entry.devicePixelContentBoxSize?.[0]
+      if (deviceBox) {
+        const pixelW = Math.max(1, Math.round(deviceBox.inlineSize))
+        const pixelH = Math.max(1, Math.round(deviceBox.blockSize))
+        devicePixelSizeRef.current = { width: pixelW, height: pixelH }
+        sizeRef.current = { width: pixelW / dpr, height: pixelH / dpr }
+      } else {
+        devicePixelSizeRef.current = null
+        sizeRef.current = { width: entry.contentRect.width, height: entry.contentRect.height }
+      }
       if (zoomRef.current === "fit") applyFit()
       scheduleRef.current()
     })
-    observer.observe(node)
+    try {
+      observer.observe(node, { box: "device-pixel-content-box" })
+    } catch {
+      observer.observe(node)
+    }
     observerRef.current = observer
     return () => observer.disconnect()
   }, [])
 
   useLayoutEffect(() => {
     applyZoomRef.current = applyZoom
-    scheduleRef.current = schedule
+    scheduleRef.current = scheduleView
   })
 
   useLayoutEffect(() => {
@@ -670,6 +1933,7 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
         sizeRef.current.height,
         canvasWidthRef.current,
         canvasHeightRef.current,
+        currentDpr(),
       )
       const next = stepZoom(zoomRef.current, direction, fit)
       const rect = view.getBoundingClientRect()
@@ -681,6 +1945,7 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
 
   useEffect(() => {
     onPaletteChangeRef.current?.(paletteRef.current)
+    emitLayers()
   }, [])
 
   useEffect(() => {
@@ -692,27 +1957,47 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
     if (!view) return { x: -1, y: -1 }
     const rect = view.getBoundingClientRect()
     const camera = cameraRef.current
-    return clientToCell({
+    const dpr = currentDpr()
+    // Prefer live buffer size; fall back to last observed device box.
+    const bufferWidth = view.width || devicePixelSizeRef.current?.width || Math.max(1, Math.round(rect.width * dpr))
+    const bufferHeight =
+      view.height || devicePixelSizeRef.current?.height || Math.max(1, Math.round(rect.height * dpr))
+    return pointerToCell({
       clientX: event.clientX,
       clientY: event.clientY,
-      left: rect.left,
-      top: rect.top,
+      rectLeft: rect.left,
+      rectTop: rect.top,
+      rectWidth: rect.width,
+      rectHeight: rect.height,
+      bufferWidth,
+      bufferHeight,
       originX: camera.originX,
       originY: camera.originY,
       scale: camera.scale,
+      dpr,
     })
   }
 
   const chooseTool = (next: Tool) => {
+    if (next !== toolRef.current) {
+      if (toolRef.current === "text") commitTextFrameRef.current()
+      if (shapeDraftRef.current) cancelShapeDraftRef.current()
+      clearPathDraft(true)
+    }
     toolRef.current = next
     if (onToolChange) onToolChange(next)
     else setInternalTool(next)
   }
 
   const chooseBrush = (next: PixelBrushSize) => {
-    brushRef.current = next
-    if (onBrushSizeChange) onBrushSizeChange(next)
-    else setInternalBrush(next)
+    const size = clampStrokeWidth(next)
+    brushRef.current = size
+    if (onBrushSizeChange) onBrushSizeChange(size)
+    else setInternalBrush(size)
+    const draft = shapeDraftRef.current
+    if (draft) {
+      setShapeDraft({ ...draft, strokeWidth: size })
+    }
   }
 
   const chooseColor = (next: string) => {
@@ -779,10 +2064,76 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
         return
       }
       if (event.key === "Escape") {
+        if (textFrameRef.current || textCreateRef.current) {
+          event.preventDefault()
+          cancelTextFrame()
+          return
+        }
+        if (shapeDraftRef.current) {
+          event.preventDefault()
+          cancelShapeDraftRef.current()
+          return
+        }
+        if (moveRef.current) {
+          event.preventDefault()
+          const origin = moveRef.current.origin
+          moveRef.current = null
+          selectMutatedRef.current = false
+          undoFnRef.current()
+          setSelection(origin)
+          return
+        }
+        if (selectResizeRef.current) {
+          event.preventDefault()
+          const origin = selectResizeRef.current.origin
+          selectResizeRef.current = null
+          selectMutatedRef.current = false
+          undoFnRef.current()
+          setSelection(origin)
+          return
+        }
+        if (selectRotateRef.current) {
+          event.preventDefault()
+          const origin = selectRotateRef.current.origin
+          selectRotateRef.current = null
+          selectMutatedRef.current = false
+          undoFnRef.current()
+          setSelection(origin)
+          return
+        }
         setSelection(null)
         return
       }
+      if (
+        selectionRef.current &&
+        (event.key === "ArrowLeft" ||
+          event.key === "ArrowRight" ||
+          event.key === "ArrowUp" ||
+          event.key === "ArrowDown")
+      ) {
+        event.preventDefault()
+        const step = event.shiftKey ? 10 : 1
+        const dx = event.key === "ArrowLeft" ? -step : event.key === "ArrowRight" ? step : 0
+        const dy = event.key === "ArrowUp" ? -step : event.key === "ArrowDown" ? step : 0
+        nudgeSelectionRef.current(dx, dy)
+        return
+      }
       if (event.key === "Delete" || event.key === "Backspace") {
+        const draft = shapeDraftRef.current
+        if (draft?.kind === "bezier" && draft.anchors.length > 2 && draft.selected >= 0) {
+          event.preventDefault()
+          const anchors = draft.anchors.filter((_, index) => index !== draft.selected)
+          const selected = Math.min(draft.selected, anchors.length - 1)
+          setShapeDraftRef.current({ ...draft, anchors, selected })
+          return
+        }
+        if (draft?.kind === "polygon" && draft.points.length > 2 && draft.selected >= 0) {
+          event.preventDefault()
+          const points = draft.points.filter((_, index) => index !== draft.selected)
+          const selected = Math.min(draft.selected, points.length - 1)
+          setShapeDraftRef.current({ ...draft, points, selected })
+          return
+        }
         if (selectionRef.current) {
           event.preventDefault()
           editActionRef.current.delete()
@@ -790,23 +2141,34 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
         return
       }
       const key = event.key.toLowerCase()
+      if (event.key === "Enter") {
+        if (shapeDraftRef.current) {
+          event.preventDefault()
+          applyShapeDraftRef.current()
+          return
+        }
+      }
       if (key === "b") chooseToolRef.current("pencil")
+      else if (key === "c") chooseToolRef.current("circle")
       else if (key === "e") chooseToolRef.current("eraser")
       else if (key === "h") chooseToolRef.current("pan")
       else if (key === "i") chooseToolRef.current("eyedropper")
       else if (key === "g") chooseToolRef.current("fill")
+      else if (key === "p") chooseToolRef.current("polygon")
       else if (key === "l") chooseToolRef.current("line")
       else if (key === "u") chooseToolRef.current("rect")
       else if (key === "o") chooseToolRef.current("ellipse")
+      else if (key === "q") chooseToolRef.current("bezier")
+      else if (key === "t") chooseToolRef.current("text")
+      else if (key === "n") chooseToolRef.current("gradient")
       else if (key === "v") chooseToolRef.current("select")
+      else if (key === "w") chooseToolRef.current("selectContiguous")
+      else if (key === "k") chooseToolRef.current("selectColor")
+      else if (key === "s") chooseToolRef.current("lasso")
       else if (key === "[") {
-        const idx = PIXEL_BRUSH_SIZES.indexOf(brushRef.current)
-        chooseBrushRef.current(PIXEL_BRUSH_SIZES[Math.max(0, idx - 1)] ?? 1)
+        chooseBrushRef.current(stepBrushSize(brushRef.current, -1))
       } else if (key === "]") {
-        const idx = PIXEL_BRUSH_SIZES.indexOf(brushRef.current)
-        chooseBrushRef.current(
-          PIXEL_BRUSH_SIZES[Math.min(PIXEL_BRUSH_SIZES.length - 1, idx + 1)] ?? 8,
-        )
+        chooseBrushRef.current(stepBrushSize(brushRef.current, 1))
       } else if (key === "'") {
         const next = !gridRef.current
         gridRef.current = next
@@ -833,6 +2195,7 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
     }
     const rgb = paintColor()
     const start = from ?? to
+    const shape = toolRef.current === "circle" ? "circle" : "square"
     strokeBrushLineSymmetric(
       image().data,
       start.x,
@@ -844,6 +2207,8 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
       canvasWidthRef.current,
       canvasHeightRef.current,
       symmetryRef.current,
+      shape,
+      selectionRef.current,
     )
     schedule()
   }
@@ -866,32 +2231,178 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
     restoreShapeBase()
     if (toolRef.current !== "eraser") adoptColor(colorRef.current)
     const rgb = paintColor()
-    let x1 = end.x
-    let y1 = end.y
-    if (shapeShiftRef.current && (toolRef.current === "rect" || toolRef.current === "ellipse")) {
-      const square = constrainSquareEnd(start.x, start.y, end.x, end.y)
-      x1 = square.x
-      y1 = square.y
-    }
+    const x1 = end.x
+    const y1 = end.y
     const w = canvasWidthRef.current
     const h = canvasHeightRef.current
     const pixels = image().data
-    const filled = shapeFillRef.current
+    const clip = selectionRef.current
     if (toolRef.current === "line") {
-      strokeBrushLine(pixels, start.x, start.y, x1, y1, rgb, brushRef.current, w, h)
-    } else if (toolRef.current === "rect") {
-      if (filled) fillRect(pixels, start.x, start.y, x1, y1, rgb, w, h)
-      else strokeRect(pixels, start.x, start.y, x1, y1, rgb, w, h)
-    } else if (toolRef.current === "ellipse") {
-      paintEllipse(pixels, start.x, start.y, x1, y1, rgb, filled, w, h)
+      strokeBrushLine(pixels, start.x, start.y, x1, y1, rgb, brushRef.current, w, h, "circle", clip)
+    } else if (toolRef.current === "gradient") {
+      strokeBrushLine(pixels, start.x, start.y, x1, y1, rgb, 1, w, h, "square", clip)
     }
+    schedule()
+  }
+
+  const hitShapeCorner = (
+    draft: ShapeDraft & { kind: "rect" | "ellipse" },
+    cell: PixelPoint,
+  ): "nw" | "ne" | "sw" | "se" | null => {
+    const bounds = normalizePixelRect(draft.x0, draft.y0, draft.x1, draft.y1)
+    const corners = [
+      { id: "nw" as const, x: bounds.x, y: bounds.y },
+      { id: "ne" as const, x: bounds.x + bounds.width - 1, y: bounds.y },
+      { id: "sw" as const, x: bounds.x, y: bounds.y + bounds.height - 1 },
+      { id: "se" as const, x: bounds.x + bounds.width - 1, y: bounds.y + bounds.height - 1 },
+    ]
+    for (const corner of corners) {
+      if (Math.hypot(cell.x - corner.x, cell.y - corner.y) <= HANDLE_HIT) return corner.id
+    }
+    return null
+  }
+
+  const hitSelectionCorner = (
+    selection: PixelSelection,
+    cell: PixelPoint,
+  ): "nw" | "ne" | "sw" | "se" | null => {
+    const corners = [
+      { id: "nw" as const, x: selection.x, y: selection.y },
+      { id: "ne" as const, x: selection.x + selection.width - 1, y: selection.y },
+      { id: "sw" as const, x: selection.x, y: selection.y + selection.height - 1 },
+      { id: "se" as const, x: selection.x + selection.width - 1, y: selection.y + selection.height - 1 },
+    ]
+    for (const corner of corners) {
+      if (Math.hypot(cell.x - corner.x, cell.y - corner.y) <= HANDLE_HIT) return corner.id
+    }
+    return null
+  }
+
+  const selectionRotateHandle = (selection: PixelSelection) => ({
+    x: selection.x + selection.width / 2,
+    y: selection.y - 4,
+  })
+
+  const hitSelectionRotate = (selection: PixelSelection, cell: PixelPoint) => {
+    const handle = selectionRotateHandle(selection)
+    return Math.hypot(cell.x - handle.x, cell.y - handle.y) <= HANDLE_HIT + 0.5
+  }
+
+  const beginSelectionRotate = (selection: PixelSelection, cell: PixelPoint) => {
+    if (!activeLayerEditable()) return
+    pushUndo()
+    selectMutatedRef.current = true
+    const w = canvasWidthRef.current
+    const h = canvasHeightRef.current
+    const floating = extractRect(image().data, selection, w, h)
+    clearRectToPaper(image().data, selection, w, h)
+    const base = new Uint8ClampedArray(image().data)
+    const centerX = selection.x + (selection.width - 1) / 2
+    const centerY = selection.y + (selection.height - 1) / 2
+    const startAngle = (Math.atan2(cell.y - centerY, cell.x - centerX) * 180) / Math.PI
+    selectRotateRef.current = {
+      origin: selection,
+      floating,
+      base,
+      centerX,
+      centerY,
+      startAngle,
+      degrees: 0,
+    }
+    blitRect(image().data, floating, selection.x, selection.y, w, h)
+    schedule()
+  }
+
+  const nudgeSelection = (dx: number, dy: number) => {
+    const selection = selectionRef.current
+    if (!selection || (dx === 0 && dy === 0)) return
+    const w = canvasWidthRef.current
+    const h = canvasHeightRef.current
+    const nextX = Math.max(0, Math.min(w - selection.width, selection.x + dx))
+    const nextY = Math.max(0, Math.min(h - selection.height, selection.y + dy))
+    if (nextX === selection.x && nextY === selection.y) return
+    pushUndo()
+    const floating = extractRect(image().data, selection, w, h)
+    clearRectToPaper(image().data, selection, w, h)
+    blitRect(image().data, floating, nextX, nextY, w, h)
+    setSelection({ ...selection, x: nextX, y: nextY, mask: floating.mask })
+    schedule()
+    onStrokeEnd?.()
+  }
+  const nudgeSelectionRef = useRef(nudgeSelection)
+  nudgeSelectionRef.current = nudgeSelection
+
+  const beginSelectionResize = (corner: "nw" | "ne" | "sw" | "se", selection: PixelSelection) => {
+    pushUndo()
+    selectMutatedRef.current = true
+    const w = canvasWidthRef.current
+    const h = canvasHeightRef.current
+    const floating = extractRect(image().data, selection, w, h)
+    clearRectToPaper(image().data, selection, w, h)
+    const base = new Uint8ClampedArray(image().data)
+    selectResizeRef.current = { corner, origin: selection, floating, base }
+    blitRect(image().data, floating, selection.x, selection.y, w, h)
+    schedule()
+  }
+
+  const hitBezierPart = (
+    draft: ShapeDraft & { kind: "bezier" },
+    cell: PixelPoint,
+  ):
+    | { type: "anchor"; index: number }
+    | { type: "handle"; index: number; which: "hi" | "ho" }
+    | null => {
+    for (let i = 0; i < draft.anchors.length; i += 1) {
+      const anchor = draft.anchors[i]
+      if (Math.hypot(cell.x - anchor.x, cell.y - anchor.y) <= HANDLE_HIT) {
+        return { type: "anchor", index: i }
+      }
+      if (Math.hypot(cell.x - anchor.hiX, cell.y - anchor.hiY) <= HANDLE_HIT) {
+        return { type: "handle", index: i, which: "hi" }
+      }
+      if (Math.hypot(cell.x - anchor.hoX, cell.y - anchor.hoY) <= HANDLE_HIT) {
+        return { type: "handle", index: i, which: "ho" }
+      }
+    }
+    return null
+  }
+
+  const hitPolygonPoint = (
+    draft: ShapeDraft & { kind: "polygon" },
+    cell: PixelPoint,
+  ): number | null => {
+    for (let i = 0; i < draft.points.length; i += 1) {
+      const point = draft.points[i]
+      if (Math.hypot(cell.x - point.x, cell.y - point.y) <= HANDLE_HIT) return i
+    }
+    return null
+  }
+
+  const beginSelectionMove = (cell: PixelPoint, selection: PixelSelection) => {
+    pushUndo()
+    selectMutatedRef.current = true
+    const floating = extractRect(image().data, selection, canvasWidthRef.current, canvasHeightRef.current)
+    clearRectToPaper(image().data, selection, canvasWidthRef.current, canvasHeightRef.current)
+    const base = new Uint8ClampedArray(image().data)
+    moveRef.current = {
+      origin: selection,
+      grabX: cell.x - selection.x,
+      grabY: cell.y - selection.y,
+      floating,
+      base,
+    }
+    blitRect(image().data, floating, selection.x, selection.y, canvasWidthRef.current, canvasHeightRef.current)
     schedule()
   }
 
   const onPointerDown = (event: React.PointerEvent<HTMLCanvasElement>) => {
     event.preventDefault()
     const view = event.currentTarget
-    view.setPointerCapture(event.pointerId)
+    try {
+      view.setPointerCapture(event.pointerId)
+    } catch {
+      /* synthetic events and some browsers reject capture */
+    }
     pointersRef.current.set(event.pointerId, { x: event.clientX, y: event.clientY })
     shapeShiftRef.current = event.shiftKey
     shapeFillRef.current = event.altKey
@@ -915,7 +2426,20 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
       return
     }
 
+    const cell = cellFromEvent(event)
+
     if (toolRef.current === "pan" || event.button === 1 || spacePanRef.current) {
+      const selection = selectionRef.current
+      if (
+        toolRef.current === "pan" &&
+        event.button !== 1 &&
+        !spacePanRef.current &&
+        selection &&
+        pointInSelection(cell.x, cell.y, selection)
+      ) {
+        beginSelectionMove(cell, selection)
+        return
+      }
       panRef.current = {
         x: event.clientX,
         y: event.clientY,
@@ -925,17 +2449,20 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
       return
     }
 
-    const cell = cellFromEvent(event)
-
     if (
       toolRef.current === "eyedropper" ||
-      ((altSampleRef.current || event.altKey) && !SHAPE_TOOLS.has(toolRef.current) && toolRef.current !== "fill")
+      ((altSampleRef.current || event.altKey) &&
+        !SHAPE_TOOLS.has(toolRef.current) &&
+        toolRef.current !== "fill" &&
+        toolRef.current !== "polygon" &&
+        toolRef.current !== "bezier")
     ) {
       sampleColorAt(cell)
       return
     }
 
     if (toolRef.current === "fill") {
+      if (!activeLayerEditable()) return
       pushUndo()
       adoptColor(colorRef.current)
       floodFill(
@@ -945,64 +2472,208 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
         hexToRgb(colorRef.current),
         canvasWidthRef.current,
         canvasHeightRef.current,
+        selectionRef.current,
       )
       schedule()
       onStrokeEnd?.()
       return
     }
 
-    if (toolRef.current === "select") {
-      const selection = selectionRef.current
-      if (selection && pointInPixelRect(cell.x, cell.y, selection)) {
-        pushUndo()
-        selectMutatedRef.current = true
-        const floating = extractRect(
-          image().data,
-          selection,
-          canvasWidthRef.current,
-          canvasHeightRef.current,
-        )
-        clearRectToPaper(image().data, selection, canvasWidthRef.current, canvasHeightRef.current)
-        const base = new Uint8ClampedArray(image().data)
-        moveRef.current = {
-          origin: selection,
-          grabX: cell.x - selection.x,
-          grabY: cell.y - selection.y,
-          floating,
-          base,
+    if (toolRef.current === "text") {
+      const frame = textFrameRef.current
+      if (frame && pointInPixelRect(cell.x, cell.y, frame)) {
+        textAreaRef.current?.focus()
+        return
+      }
+      // Finish current edit on outside click; double-click re-opens a placed text.
+      commitTextFrameRef.current()
+      if (placedTextAt(cell)) {
+        scheduleView()
+        return
+      }
+      textCreateRef.current = { start: cell, end: cell }
+      scheduleView()
+      return
+    }
+
+    if (toolRef.current === "polygon") {
+      const existing = shapeDraftRef.current
+      if (existing?.kind === "polygon") {
+        const hit = hitPolygonPoint(existing, cell)
+        if (hit !== null) {
+          shapeDragRef.current = { type: "move-point", index: hit }
+          setShapeDraft({ ...existing, selected: hit })
+          return
         }
-        blitRect(
-          image().data,
-          floating,
-          selection.x,
-          selection.y,
-          canvasWidthRef.current,
-          canvasHeightRef.current,
+        const first = existing.points[0]
+        if (
+          existing.points.length >= 2 &&
+          Math.hypot(cell.x - first.x, cell.y - first.y) <= PATH_CLOSE_DIST
+        ) {
+          setShapeDraft({ ...existing, closed: true, selected: 0 })
+          return
+        }
+        const points = [...existing.points, cell]
+        setShapeDraft({ ...existing, points, selected: points.length - 1 })
+        return
+      }
+      setShapeDraft({
+        kind: "polygon",
+        points: [cell],
+        closed: shapePrefsRef.current.mode === "fill",
+        mode: shapePrefsRef.current.mode,
+        strokeWidth: clampStrokeWidth(brushRef.current),
+        selected: 0,
+      })
+      return
+    }
+
+    if (toolRef.current === "bezier") {
+      const existing = shapeDraftRef.current
+      if (existing?.kind === "bezier") {
+        const hit = hitBezierPart(existing, cell)
+        if (hit?.type === "anchor") {
+          shapeDragRef.current = { type: "move-anchor", index: hit.index }
+          setShapeDraft({ ...existing, selected: hit.index })
+          return
+        }
+        if (hit?.type === "handle") {
+          shapeDragRef.current = { type: "move-handle", index: hit.index, which: hit.which }
+          setShapeDraft({ ...existing, selected: hit.index })
+          return
+        }
+        const first = existing.anchors[0]
+        if (
+          existing.anchors.length >= 2 &&
+          Math.hypot(cell.x - first.x, cell.y - first.y) <= PATH_CLOSE_DIST
+        ) {
+          setShapeDraft({ ...existing, closed: true, selected: 0 })
+          return
+        }
+        const anchor = createBezierAnchor(cell.x, cell.y)
+        const anchors = [...existing.anchors, anchor]
+        shapeDragRef.current = { type: "create-bezier", index: anchors.length - 1, from: cell }
+        setShapeDraft({ ...existing, anchors, selected: anchors.length - 1 })
+        return
+      }
+      const anchor = createBezierAnchor(cell.x, cell.y)
+      shapeDragRef.current = { type: "create-bezier", index: 0, from: cell }
+      setShapeDraft({
+        kind: "bezier",
+        anchors: [anchor],
+        closed: shapePrefsRef.current.mode === "fill",
+        mode: shapePrefsRef.current.mode,
+        strokeWidth: clampStrokeWidth(brushRef.current),
+        selected: 0,
+      })
+      return
+    }
+
+    if (
+      toolRef.current === "selectContiguous" ||
+      toolRef.current === "selectColor" ||
+      toolRef.current === "lasso" ||
+      SELECT_TOOLS.has(toolRef.current)
+    ) {
+      const combining = event.shiftKey || event.altKey
+      selectCombineRef.current = selectionCombineModeFromModifiers(event.shiftKey, event.altKey)
+      const selection = selectionRef.current
+      if (selection && !combining) {
+        if (hitSelectionRotate(selection, cell)) {
+          beginSelectionRotate(selection, cell)
+          return
+        }
+        const corner = hitSelectionCorner(selection, cell)
+        if (corner) {
+          beginSelectionResize(corner, selection)
+          return
+        }
+        if (pointInSelection(cell.x, cell.y, selection)) {
+          beginSelectionMove(cell, selection)
+          return
+        }
+      }
+      if (toolRef.current === "selectContiguous") {
+        commitSelection(
+          selectionFromFlood(image().data, cell.x, cell.y, canvasWidthRef.current, canvasHeightRef.current),
         )
-        schedule()
+        return
+      }
+      if (toolRef.current === "selectColor") {
+        commitSelection(
+          selectionFromColor(image().data, cell.x, cell.y, canvasWidthRef.current, canvasHeightRef.current),
+        )
+        return
+      }
+      if (toolRef.current === "lasso") {
+        lassoRef.current = [cell]
+        if (!combining) setSelection(null)
         return
       }
       selectMutatedRef.current = false
       selectStartRef.current = cell
       moveRef.current = null
-      setSelection(null)
+      if (!combining) setSelection(null)
+      return
+    }
+
+    if (DRAFT_SHAPE_TOOLS.has(toolRef.current)) {
+      const existing = shapeDraftRef.current
+      if (existing && (existing.kind === "rect" || existing.kind === "ellipse")) {
+        const corner = hitShapeCorner(existing, cell)
+        if (corner) {
+          shapeDragRef.current = { type: "resize-rect", corner, origin: existing }
+          return
+        }
+      }
+      shapeDragRef.current = {
+        type: toolRef.current === "ellipse" ? "create-ellipse" : "create-rect",
+        start: cell,
+      }
+      setShapeDraft({
+        kind: toolRef.current === "ellipse" ? "ellipse" : "rect",
+        x0: cell.x,
+        y0: cell.y,
+        x1: cell.x,
+        y1: cell.y,
+        filled: shapeFillRef.current || shapePrefsRef.current.filled,
+        strokeWidth: clampStrokeWidth(brushRef.current),
+      })
       return
     }
 
     if (SHAPE_TOOLS.has(toolRef.current)) {
-      pushUndo()
+      if (!activeLayerEditable()) return
+      if (toolRef.current !== "gradient") pushUndo()
       shapeStartRef.current = cell
       shapeBaseRef.current = new Uint8ClampedArray(image().data)
       paintShapePreview(cell)
       return
     }
 
+    if (!activeLayerEditable()) return
     pushUndo()
     drawRef.current = cell
     stampStroke(cell, cell)
   }
 
+  const emitHover = (event: { clientX: number; clientY: number }) => {
+    const cell = cellFromEvent(event)
+    onHoverCellRef.current?.(
+      inCanvas(cell.x, cell.y, canvasWidthRef.current, canvasHeightRef.current) ? cell : null,
+    )
+  }
+
   const onPointerMove = (event: React.PointerEvent<HTMLCanvasElement>) => {
+    emitHover(event)
+    const hoverCell = cellFromEvent(event)
+    if (lassoRef.current) {
+      const last = lassoRef.current[lassoRef.current.length - 1]
+      if (!last || last.x !== hoverCell.x || last.y !== hoverCell.y) {
+        lassoRef.current.push(hoverCell)
+        scheduleView()
+      }
+    }
     if (!pointersRef.current.has(event.pointerId)) return
     pointersRef.current.set(event.pointerId, { x: event.clientX, y: event.clientY })
     shapeShiftRef.current = event.shiftKey
@@ -1026,7 +2697,7 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
           )
         }
         emitZoom(cameraRef.current.scale)
-        schedule()
+        scheduleView()
       }
       return
     }
@@ -1035,7 +2706,7 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
       cameraRef.current.originX = panRef.current.originX + (event.clientX - panRef.current.x)
       cameraRef.current.originY = panRef.current.originY + (event.clientY - panRef.current.y)
       if (zoomRef.current === "fit") emitZoom(cameraRef.current.scale)
-      schedule()
+      scheduleView()
       return
     }
 
@@ -1058,15 +2729,169 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
         y: nextY,
         width: move.floating.width,
         height: move.floating.height,
+        mask: move.floating.mask,
       })
+      return
+    }
+
+    if (selectResizeRef.current) {
+      const resize = selectResizeRef.current
+      const cell = cellFromEvent(event)
+      const origin = resize.origin
+      let x0 = origin.x
+      let y0 = origin.y
+      let x1 = origin.x + origin.width - 1
+      let y1 = origin.y + origin.height - 1
+      if (resize.corner.includes("w")) x0 = cell.x
+      if (resize.corner.includes("e")) x1 = cell.x
+      if (resize.corner.includes("n")) y0 = cell.y
+      if (resize.corner.includes("s")) y1 = cell.y
+      const bounds = normalizePixelRect(x0, y0, x1, y1)
+      const canvasW = canvasWidthRef.current
+      const canvasH = canvasHeightRef.current
+      const width = Math.max(1, Math.min(bounds.width, canvasW))
+      const height = Math.max(1, Math.min(bounds.height, canvasH))
+      const x = Math.max(0, Math.min(bounds.x, canvasW - width))
+      const y = Math.max(0, Math.min(bounds.y, canvasH - height))
+      const scaled = scaleClipboard(resize.floating, width, height)
+      image().data.set(resize.base)
+      blitRect(image().data, scaled, x, y, canvasW, canvasH)
+      setSelection({ x, y, width, height, mask: scaled.mask })
+      return
+    }
+
+    if (selectRotateRef.current) {
+      const rotate = selectRotateRef.current
+      const cell = cellFromEvent(event)
+      const angle = (Math.atan2(cell.y - rotate.centerY, cell.x - rotate.centerX) * 180) / Math.PI
+      let degrees = angle - rotate.startAngle
+      if (degrees > 180) degrees -= 360
+      if (degrees < -180) degrees += 360
+      rotate.degrees = degrees
+      const rotated = rotateClipboardNearest(rotate.floating, degrees)
+      const destX = Math.round(rotate.centerX - (rotated.width - 1) / 2)
+      const destY = Math.round(rotate.centerY - (rotated.height - 1) / 2)
+      image().data.set(rotate.base)
+      blitRect(
+        image().data,
+        rotated,
+        destX,
+        destY,
+        canvasWidthRef.current,
+        canvasHeightRef.current,
+      )
+      setSelection({
+        x: destX,
+        y: destY,
+        width: rotated.width,
+        height: rotated.height,
+        mask: rotated.mask,
+      })
+      return
+    }
+
+    if (textCreateRef.current) {
+      textCreateRef.current = { ...textCreateRef.current, end: cellFromEvent(event) }
+      scheduleView()
       return
     }
 
     if (selectStartRef.current) {
       const start = selectStartRef.current
       const end = cellFromEvent(event)
-      setSelection(normalizePixelRect(start.x, start.y, end.x, end.y))
+      selectMarqueeEndRef.current = end
+      if (selectCombineRef.current === "replace") {
+        setSelection(normalizePixelRect(start.x, start.y, end.x, end.y))
+      } else {
+        scheduleView()
+      }
       return
+    }
+
+    const drag = shapeDragRef.current
+    if (drag) {
+      const cell = cellFromEvent(event)
+      if (drag.type === "create-rect" || drag.type === "create-ellipse") {
+        let end = cell
+        if (shapeShiftRef.current) end = constrainSquareEnd(drag.start.x, drag.start.y, cell.x, cell.y)
+        const kind = drag.type === "create-ellipse" ? "ellipse" : "rect"
+        setShapeDraft({
+          kind,
+          x0: drag.start.x,
+          y0: drag.start.y,
+          x1: end.x,
+          y1: end.y,
+          filled: shapeFillRef.current || shapePrefsRef.current.filled,
+          strokeWidth: clampStrokeWidth(brushRef.current),
+        })
+        return
+      }
+      if (drag.type === "resize-rect") {
+        const origin = drag.origin
+        const bounds = normalizePixelRect(origin.x0, origin.y0, origin.x1, origin.y1)
+        let x0 = bounds.x
+        let y0 = bounds.y
+        let x1 = bounds.x + bounds.width - 1
+        let y1 = bounds.y + bounds.height - 1
+        if (drag.corner.includes("w")) x0 = cell.x
+        if (drag.corner.includes("e")) x1 = cell.x
+        if (drag.corner.includes("n")) y0 = cell.y
+        if (drag.corner.includes("s")) y1 = cell.y
+        if (shapeShiftRef.current) {
+          const square = constrainSquareEnd(x0, y0, x1, y1)
+          x1 = square.x
+          y1 = square.y
+        }
+        setShapeDraft({
+          ...origin,
+          x0,
+          y0,
+          x1,
+          y1,
+          filled: shapeFillRef.current ? true : origin.filled,
+        })
+        return
+      }
+      const draft = shapeDraftRef.current
+      if (draft?.kind === "bezier") {
+        const anchors = draft.anchors.map((anchor) => ({ ...anchor }))
+        if (drag.type === "move-anchor") {
+          const anchor = anchors[drag.index]
+          const dx = cell.x - anchor.x
+          const dy = cell.y - anchor.y
+          anchor.x = cell.x
+          anchor.y = cell.y
+          anchor.hiX += dx
+          anchor.hiY += dy
+          anchor.hoX += dx
+          anchor.hoY += dy
+        } else if (drag.type === "move-handle") {
+          const anchor = anchors[drag.index]
+          if (drag.which === "hi") {
+            anchor.hiX = cell.x
+            anchor.hiY = cell.y
+          } else {
+            anchor.hoX = cell.x
+            anchor.hoY = cell.y
+          }
+        } else if (drag.type === "create-bezier") {
+          const anchor = anchors[drag.index]
+          anchor.hoX = cell.x
+          anchor.hoY = cell.y
+          anchor.hiX = drag.from.x * 2 - cell.x
+          anchor.hiY = drag.from.y * 2 - cell.y
+        }
+        if (drag.type === "move-anchor" || drag.type === "move-handle" || drag.type === "create-bezier") {
+          setShapeDraft({ ...draft, anchors, selected: drag.index })
+        }
+        return
+      }
+      if (draft?.kind === "polygon" && drag.type === "move-point") {
+        const points = draft.points.map((point) => ({ ...point }))
+        points[drag.index] = { x: cell.x, y: cell.y }
+        setShapeDraft({ ...draft, points, selected: drag.index })
+        return
+      }
     }
 
     if (shapeStartRef.current) {
@@ -1081,28 +2906,144 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
   }
 
   const endPointer = (event: React.PointerEvent<HTMLCanvasElement>) => {
+    const cell = cellFromEvent(event)
+    if (toolRef.current === "gradient" && shapeStartRef.current && shapeBaseRef.current) {
+      const start = shapeStartRef.current
+      restoreShapeBase()
+      if (start.x !== cell.x || start.y !== cell.y) {
+        pushUndo()
+        const from = hexToRgb(colorRef.current)
+        const to = hexToRgb(PIXEL_PAPER)
+        const stops: Array<[number, number, number]> = []
+        for (let i = 0; i < 8; i += 1) {
+          const t = i / 7
+          const rgb: [number, number, number] = [
+            Math.round(from[0] + (to[0] - from[0]) * t),
+            Math.round(from[1] + (to[1] - from[1]) * t),
+            Math.round(from[2] + (to[2] - from[2]) * t),
+          ]
+          const hex = rgbToHex(rgb)
+          if (adoptColor(hex)) stops.push(hexToRgb(hex))
+          else stops.push(from)
+        }
+        fillLinearGradient(
+          image().data,
+          start.x,
+          start.y,
+          cell.x,
+          cell.y,
+          stops,
+          canvasWidthRef.current,
+          canvasHeightRef.current,
+          selectionRef.current ?? undefined,
+        )
+      }
+      schedule()
+    }
+    if (lassoRef.current) {
+      commitSelection(
+        selectionFromPolygon(lassoRef.current, canvasWidthRef.current, canvasHeightRef.current),
+      )
+      lassoRef.current = null
+    }
+    if (selectStartRef.current && selectCombineRef.current !== "replace") {
+      const start = selectStartRef.current
+      const end = selectMarqueeEndRef.current ?? cell
+      commitSelection(normalizePixelRect(start.x, start.y, end.x, end.y))
+    }
+    if (textCreateRef.current) finishTextCreateRef.current(cell)
     const wasStroke = Boolean(drawRef.current) || Boolean(shapeStartRef.current)
-    const wasMove = Boolean(moveRef.current)
+    const wasMove =
+      Boolean(moveRef.current) || Boolean(selectResizeRef.current) || Boolean(selectRotateRef.current)
     const wasMarquee = Boolean(selectStartRef.current)
+    const endingPinch = Boolean(pinchRef.current) && pointersRef.current.size <= 2
     pointersRef.current.delete(event.pointerId)
-    if (pointersRef.current.size < 2) pinchRef.current = null
+    if (pointersRef.current.size < 2) {
+      if (endingPinch) {
+        const dpr = currentDpr()
+        const snappedScale = snapCssScaleToDevicePixels(cameraRef.current.scale, dpr)
+        const snappedOrigin = snapOriginToDevicePixels(
+          cameraRef.current.originX,
+          cameraRef.current.originY,
+          dpr,
+        )
+        cameraRef.current = { scale: snappedScale, ...snappedOrigin }
+        emitZoom(snappedScale)
+        scheduleView()
+      }
+      pinchRef.current = null
+    }
     if (pointersRef.current.size === 0) {
       drawRef.current = null
       panRef.current = null
       shapeStartRef.current = null
+      shapeDragRef.current = null
       shapeBaseRef.current = null
       selectStartRef.current = null
+      selectMarqueeEndRef.current = null
       moveRef.current = null
+      selectResizeRef.current = null
+      selectRotateRef.current = null
       if (wasStroke || wasMove || (wasMarquee && selectMutatedRef.current)) onStrokeEnd?.()
       selectMutatedRef.current = false
     }
-    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
-      event.currentTarget.releasePointerCapture(event.pointerId)
+    try {
+      if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+        event.currentTarget.releasePointerCapture(event.pointerId)
+      }
+    } catch {
+      /* ignore */
     }
   }
 
   const zoomLabel = zoom === "fit" ? copy.pixelFit[lang] : `${Math.round(Number(zoom) * 10) / 10}×`
   void historyTick
+
+  const applyTextResize = (cell: { x: number; y: number }) => {
+    const start = textResizeRef.current
+    const frame = textFrameRef.current
+    if (!start || !frame || frame.mode !== "paragraph") return
+    const canvasW = canvasWidthRef.current
+    const canvasH = canvasHeightRef.current
+    const right = start.x + start.width
+    const minW = PIXEL_FONT_W * brushRef.current
+    let { x, width } = start
+    if (start.handle === "e") {
+      width = Math.max(minW, Math.min(canvasW - start.x, cell.x - start.x + 1))
+    }
+    if (start.handle === "w") {
+      x = Math.max(0, Math.min(cell.x, right - minW))
+      width = right - x
+    }
+    const fitted = measurePixelTextBox(frame.text, brushRef.current, width, { trim: false })
+    setTextFrame((prev) =>
+      prev
+        ? {
+            ...prev,
+            x,
+            width,
+            height: Math.min(fitted.height, canvasH - prev.y),
+            mode: "paragraph",
+          }
+        : null,
+    )
+  }
+
+  const applyTextMove = (cell: { x: number; y: number }) => {
+    const move = textMoveRef.current
+    const frame = textFrameRef.current
+    if (!move || !frame) return
+    const width = frame.width
+    const height = frame.height
+    const x = Math.max(0, Math.min(cell.x - move.grabX, canvasWidthRef.current - width))
+    const y = Math.max(0, Math.min(cell.y - move.grabY, canvasHeightRef.current - height))
+    setTextFrame((prev) => (prev ? { ...prev, x, y } : null))
+  }
+
+  const endTextBoxPointer = () => {
+    textResizeRef.current = null
+    textMoveRef.current = null
+  }
 
   const viewport = (
     <div
@@ -1127,20 +3068,184 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
         role="img"
         aria-labelledby={titleId}
         className={cn(
-          "block h-full w-full touch-none",
+          "pixel-view-canvas block h-full w-full touch-none",
           tool === "pan" || spacePanRef.current
             ? "cursor-grab"
             : tool === "eyedropper"
               ? "cursor-cell"
               : "cursor-crosshair",
         )}
-        style={{ touchAction: "none" }}
+        style={{ touchAction: "none", imageRendering: "pixelated" }}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={endPointer}
         onPointerCancel={endPointer}
-        onContextMenu={(event) => event.preventDefault()}
+        onDoubleClick={(event) => {
+          if (
+            toolRef.current === "polygon" &&
+            shapeDraftRef.current?.kind === "polygon" &&
+            shapeDraftRef.current.points.length >= 3
+          ) {
+            applyShapeDraftRef.current()
+            return
+          }
+          if (toolRef.current !== "text") return
+          const hit = placedTextAt(cellFromEvent(event))
+          if (hit) beginEditPlacedTextRef.current(hit)
+        }}
+        onPointerLeave={() => onHoverCellRef.current?.(null)}
+        onContextMenu={(event) => {
+          event.preventDefault()
+          onCanvasMenuRef.current?.({ clientX: event.clientX, clientY: event.clientY })
+        }}
       />
+      {textFrame ? (
+        <div
+          ref={textOverlayRef}
+          className="pixel-text-box absolute left-0 top-0 z-10 box-border"
+          style={{
+            transformOrigin: "0 0",
+            transform: `translate(${cameraRef.current.originX + textFrame.x * cameraRef.current.scale}px, ${cameraRef.current.originY + textFrame.y * cameraRef.current.scale}px)`,
+            width: Math.max(1, textFrame.width * cameraRef.current.scale),
+            height: Math.max(1, textFrame.height * cameraRef.current.scale),
+            boxShadow: "0 0 0 1px #FFFDF7, 0 0 0 2px #20202A",
+            backgroundColor: "transparent",
+          }}
+          onPointerMove={(event) => {
+            if (textResizeRef.current) applyTextResize(cellFromEvent(event))
+            else if (textMoveRef.current) applyTextMove(cellFromEvent(event))
+          }}
+          onPointerUp={endTextBoxPointer}
+          onPointerCancel={endTextBoxPointer}
+        >
+          <div
+            className="absolute -inset-1 z-0 cursor-move"
+            onPointerDown={(event) => {
+              event.preventDefault()
+              event.stopPropagation()
+              const frame = textFrameRef.current
+              if (!frame) return
+              const cell = cellFromEvent(event)
+              textMoveRef.current = { grabX: cell.x - frame.x, grabY: cell.y - frame.y }
+              try {
+                event.currentTarget.setPointerCapture(event.pointerId)
+              } catch {
+                /* ignore */
+              }
+            }}
+            onPointerMove={(event) => {
+              if (textMoveRef.current) applyTextMove(cellFromEvent(event))
+            }}
+            onPointerUp={endTextBoxPointer}
+            onPointerCancel={endTextBoxPointer}
+          />
+          <label className="sr-only" htmlFor={`${titleId}-text`}>
+            {copy.pixelTextTool[lang]}
+          </label>
+          <textarea
+            id={`${titleId}-text`}
+            ref={textAreaRef}
+            value={textFrame.text}
+            placeholder={copy.pixelTextPlaceholder[lang]}
+            spellCheck={false}
+            onChange={(event) => {
+              const text = event.target.value
+              const current = textFrameRef.current
+              if (!current) return
+              const scale = brushRef.current
+              const canvasW = canvasWidthRef.current
+              const canvasH = canvasHeightRef.current
+              const wrap = current.mode === "paragraph"
+              const measured = measurePixelTextBox(text, scale, wrap ? current.width : undefined, {
+                trim: false,
+              })
+              const width = wrap
+                ? current.width
+                : Math.min(measured.width, canvasW - current.x)
+              const height = Math.min(measured.height, canvasH - current.y)
+              const next = { ...current, text, width, height }
+              textFrameRef.current = next
+              setTextFrame(next)
+            }}
+            onPaste={(event) => {
+              event.preventDefault()
+              const pasted = event.clipboardData.getData("text").replace(/\r/g, "").trim()
+              const area = event.currentTarget
+              const start = area.selectionStart
+              const end = area.selectionEnd
+              const merged = `${area.value.slice(0, start)}${pasted}${area.value.slice(end)}`
+              const current = textFrameRef.current
+              if (!current) return
+              const scale = brushRef.current
+              const canvasW = canvasWidthRef.current
+              const canvasH = canvasHeightRef.current
+              const wrap = current.mode === "paragraph"
+              const measured = measurePixelTextBox(merged, scale, wrap ? current.width : undefined, {
+                trim: false,
+              })
+              const next = {
+                ...current,
+                text: merged,
+                width: wrap ? current.width : Math.min(measured.width, canvasW - current.x),
+                height: Math.min(measured.height, canvasH - current.y),
+              }
+              textFrameRef.current = next
+              setTextFrame(next)
+            }}
+            onKeyDown={(event) => {
+              if (event.key === "Escape") {
+                event.preventDefault()
+                cancelTextFrame()
+              }
+            }}
+            className="absolute inset-0 z-10 resize-none overflow-hidden bg-transparent px-0.5 py-0 outline-none"
+            style={{
+              fontFamily: "var(--font-pixel), ui-monospace, monospace",
+              fontSize: Math.max(8, PIXEL_FONT_H * brushSize * cameraRef.current.scale),
+              lineHeight: `${(PIXEL_FONT_H + PIXEL_FONT_LEADING) * brushSize * cameraRef.current.scale}px`,
+              whiteSpace: textFrame.mode === "point" ? "pre" : "pre-wrap",
+              wordBreak: textFrame.mode === "point" ? "normal" : "break-word",
+              overflowWrap: textFrame.mode === "point" ? "normal" : "anywhere",
+              color,
+              caretColor: color,
+            }}
+          />
+          {textFrame.mode === "paragraph"
+            ? PARAGRAPH_HANDLES.map((handle) => (
+                <button
+                  key={handle.id}
+                  type="button"
+                  aria-label={`${copy.pixelTextResize[lang]} ${handle.id}`}
+                  className="absolute z-20 h-3 w-3 border-[3px] border-earth bg-brick"
+                  style={{ cursor: handle.cursor, ...(handle.style as CSSProperties) }}
+                  onPointerDown={(event) => {
+                    event.preventDefault()
+                    event.stopPropagation()
+                    const frame = textFrameRef.current
+                    if (!frame) return
+                    textResizeRef.current = {
+                      handle: handle.id,
+                      x: frame.x,
+                      y: frame.y,
+                      width: frame.width,
+                      height: frame.height,
+                    }
+                    try {
+                      event.currentTarget.setPointerCapture(event.pointerId)
+                    } catch {
+                      /* ignore */
+                    }
+                  }}
+                  onPointerMove={(event) => {
+                    if (textResizeRef.current) applyTextResize(cellFromEvent(event))
+                  }}
+                  onPointerUp={endTextBoxPointer}
+                  onPointerCancel={endTextBoxPointer}
+                />
+              ))
+            : null}
+        </div>
+      ) : null}
       <span id={titleId} className="sr-only">
         {copy.spaceCanvasTitle[lang]}
       </span>
@@ -1188,7 +3293,14 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
               stepZoom(
                 zoomRef.current,
                 -1,
-                resolveScale("fit", sizeRef.current.width, sizeRef.current.height, width, height),
+                resolveScale(
+                  "fit",
+                  sizeRef.current.width,
+                  sizeRef.current.height,
+                  width,
+                  height,
+                  currentDpr(),
+                ),
               ),
             )
           }
@@ -1204,7 +3316,14 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
               stepZoom(
                 zoomRef.current,
                 1,
-                resolveScale("fit", sizeRef.current.width, sizeRef.current.height, width, height),
+                resolveScale(
+                  "fit",
+                  sizeRef.current.width,
+                  sizeRef.current.height,
+                  width,
+                  height,
+                  currentDpr(),
+                ),
               ),
             )
           }

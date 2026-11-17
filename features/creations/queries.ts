@@ -8,7 +8,7 @@ import {
   parseColorUsage,
   parsePixelSource,
   type ColorUsageEntry,
-  type PixelSourceV1,
+  type PixelSource,
 } from "@/lib/pixel"
 import {
   EXPLORE_PAGE_SIZE,
@@ -529,7 +529,7 @@ export async function countOwnCreations() {
 
 export async function loadOwnedPixelSource(
   creation: CreationRow,
-): Promise<{ source: PixelSourceV1 | null; broken: boolean }> {
+): Promise<{ source: PixelSource | null; broken: boolean }> {
   if (creation.type !== "pixel") return { source: null, broken: false }
   const header = pixelContentSchema.safeParse(creation.content)
   if (!header.success || !header.data.source_path) return { source: null, broken: false }

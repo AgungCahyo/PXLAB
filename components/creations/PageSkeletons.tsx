@@ -107,25 +107,42 @@ export function CreateSkeleton() {
 export function StudioSkeleton() {
   return (
     <div
-      className="fixed inset-x-0 bottom-0 top-0 z-[60] flex flex-col overflow-hidden bg-bg md:top-[66px]"
+      className="fixed inset-0 z-[60] flex flex-col overflow-hidden bg-bg"
       aria-busy="true"
       aria-label="Loading"
     >
-      <div className="playground-header grid shrink-0 grid-cols-[auto_1fr_auto] items-center gap-2 border-b-[3px] border-earth bg-bg px-2 py-2 sm:px-3">
+      <div className="playground-header flex shrink-0 items-center gap-2 border-b-[3px] border-earth bg-bg px-2 py-1.5 sm:px-3 sm:py-2">
         <div className="h-11 w-11 bg-soft" />
-        <div className="min-w-0">
-          <div className="h-9 w-full bg-soft" />
-          <div className="mt-1 h-3 w-40 bg-soft" />
+        <div className="min-w-0 flex-1">
+          <div className="h-5 w-40 bg-soft" />
+          <div className="mt-1 h-3 w-16 bg-soft" />
         </div>
-        <div className="flex gap-1.5">
-          <div className="h-11 w-11 bg-soft sm:w-24" />
-          <div className="h-11 w-11 bg-soft sm:w-28" />
+        <div className="ml-auto flex gap-1.5">
+          <div className="h-11 w-11 bg-soft" />
+          <div className="h-11 w-11 bg-soft" />
         </div>
       </div>
-      <div className="min-h-0 flex-1 bg-soft/60" />
-      <div className="playground-toolbar shrink-0 border-t-[3px] border-earth px-2 pt-2">
+      <div className="flex min-h-0 flex-1">
+        <div className="playground-tool-rail hidden min-h-0 w-16 shrink-0 flex-col items-center gap-1.5 overflow-x-hidden overflow-y-auto border-r-[3px] border-earth p-1 md:flex">
+          {Array.from({ length: 17 }, (_, index) => (
+            <div key={`rail-${index}`} className="h-11 w-11 shrink-0 bg-soft" />
+          ))}
+        </div>
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+          <div className="min-h-0 flex-1 bg-soft/60" />
+          <div className="editor-status hidden h-7 border-t-[3px] border-earth md:block" />
+        </div>
+        <div className="studio-inspector hidden w-[17.5rem] shrink-0 border-l-[3px] border-earth md:block" />
+      </div>
+      <div className="editor-status h-7 border-t-[3px] border-earth md:hidden" />
+      <div className="playground-toolbar shrink-0 border-t-[3px] border-earth px-2 pt-2 md:hidden">
+        <div className="editor-mobile-view mb-2 flex gap-1.5 overflow-x-auto pb-1">
+          {Array.from({ length: 7 }, (_, index) => (
+            <div key={`view-${index}`} className="h-11 w-11 shrink-0 bg-soft" />
+          ))}
+        </div>
         <div className="flex w-full gap-1.5 overflow-x-auto pb-1">
-          {Array.from({ length: 9 }, (_, index) => (
+          {Array.from({ length: 17 }, (_, index) => (
             <div key={`tool-${index}`} className="h-11 w-11 shrink-0 bg-soft" />
           ))}
         </div>

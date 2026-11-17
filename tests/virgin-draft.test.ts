@@ -20,23 +20,25 @@ describe("virgin pixel draft", () => {
     ).toBe(true)
   })
 
-  it("keeps drafts that already have ink or a name", () => {
-    expect(
-      isVirginPixelDraft({
-        type: "pixel",
-        status: "draft",
-        title: DRAFT_UNNAMED_TITLE,
-        cover_url: "/api/pixel-cover/abc",
-        content: emptyCreationContent("pixel"),
-      }),
-    ).toBe(false)
-
+  it("treats a named draft without source as virgin", () => {
     expect(
       isVirginPixelDraft({
         type: "pixel",
         status: "draft",
         title: "Forest sprite",
         cover_url: null,
+        content: emptyCreationContent("pixel"),
+      }),
+    ).toBe(true)
+  })
+
+  it("keeps drafts that already have a cover or source", () => {
+    expect(
+      isVirginPixelDraft({
+        type: "pixel",
+        status: "draft",
+        title: DRAFT_UNNAMED_TITLE,
+        cover_url: "/api/pixel-cover/abc",
         content: emptyCreationContent("pixel"),
       }),
     ).toBe(false)

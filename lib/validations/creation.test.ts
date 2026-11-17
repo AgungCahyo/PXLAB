@@ -57,11 +57,11 @@ describe("parseCreationContent", () => {
 })
 
 describe("emptyCreationContent", () => {
-  it("starts each type at version 1", () => {
+  it("starts text/visual at v1 and pixel drafts at v2", () => {
     expect(emptyCreationContent("text")).toEqual({ version: 1, body: "" })
     expect(emptyCreationContent("visual")).toEqual({ version: 1, elements: [] })
     expect(emptyCreationContent("pixel")).toMatchObject({
-      version: 1,
+      version: 2,
       width: 64,
       height: 64,
       encoding: "rle-index",
@@ -71,6 +71,9 @@ describe("emptyCreationContent", () => {
       width: 128,
       height: 64,
     })
+    expect(
+      emptyCreationContent("pixel", { width: 64, height: 64, stage_ground: "ink" }),
+    ).toMatchObject({ stage_ground: "ink" })
   })
 })
 
@@ -105,10 +108,10 @@ describe("pixel header", () => {
     expect(result.success).toBe(true)
   })
 
-  it("rejects a canvas side above 512", () => {
+  it("rejects a canvas side above 1024", () => {
     const result = parseCreationContent(
       "pixel",
-      { ...header, width: 513, height: 16 },
+      { ...header, width: 1025, height: 16 },
       "draft",
     )
     expect(result.success).toBe(false)
@@ -121,6 +124,15 @@ describe("pixel header", () => {
       "draft",
     )
     expect(result.success).toBe(true)
+  })
+
+  it("accepts content version 1 and 2", () => {
+    expect(
+      parseCreationContent("pixel", { ...header, version: 1 }, "draft").success,
+    ).toBe(true)
+    expect(
+      parseCreationContent("pixel", { ...header, version: 2 }, "draft").success,
+    ).toBe(true)
   })
 
   it("rejects a non-hex palette color in the header", () => {

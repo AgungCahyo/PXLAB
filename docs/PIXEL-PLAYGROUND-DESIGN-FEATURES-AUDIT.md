@@ -4,6 +4,8 @@
 **Tanggal:** 17 Nov 2026  
 **Sifat:** Audit + perencanaan fitur **desain**. Bukan izin implementasi. Tidak mengubah kode, skema, migrasi, RLE, PNG, RLS, atau UI.
 
+> **Kadaluarsa untuk status fitur dan target layout.** Ganti dengan `WPLACE-STUDIO-FEATURE-AUDIT.md` (inventaris) dan `PIXEL-STUDIO-REDESIGN-BLUEPRINT.md` (workspace + modal create). Dokumen ini masih mengklaim fill/eyedropper/shapes belum ada.
+
 **Fokus:** kemampuan studio pixel art (tools, selection, layers, precision, aids) — **bukan** polish workflow Simpan / Terbit / leave. Persistensi Studio (explicit-save, local draft) tetap keputusan produk terpisah; lihat `ARTWORK-METADATA-EXPLORE-AUDIT.md` #8.
 
 **Sumber kebenaran kode:** `components/canvas/PixelBoard.tsx`, `lib/pixel.ts`, `components/creations/PlaygroundForm.tsx`, `components/creations/ColorPicker.tsx`, `lib/pixel-color-memory.ts`, `lib/site.ts` (batas payload).

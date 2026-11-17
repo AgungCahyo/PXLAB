@@ -17,10 +17,15 @@ describe("unnamed draft titles", () => {
     expect(displayTitle("Tanpa judul", "id")).toBe("Belum dinamai")
   })
 
-  it("keeps Create from writing the old untitled labels", () => {
+  it("requires a real title before opening the pixel editor", () => {
     const form = read("components/creations/PixelNewForm.tsx")
-    expect(form).toMatch(/DRAFT_UNNAMED_TITLE/)
+    const schema = read("lib/validations/creation.ts")
+    expect(form).toMatch(/createTitleLabel/)
+    expect(form).toMatch(/createOpenEditor/)
+    expect(form).not.toMatch(/DRAFT_UNNAMED_TITLE/)
     expect(form).not.toMatch(/pixelUntitled/)
+    expect(schema).toMatch(/isUnnamedTitle/)
+    expect(schema).toMatch(/stage_ground/)
   })
 
   it("blocks publish without a real name in the playground and on the server", () => {

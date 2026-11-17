@@ -5,10 +5,17 @@ import {
   PIXEL_PALETTE,
   PIXEL_PAPER,
   PIXEL_SOURCE_VERSION,
+  PIXEL_SOURCE_VERSION_V2,
   buildPixelSource,
+  buildPixelSourceV2,
   clientToCell,
+  pointerToCell,
+  viewDeviceTransform,
   colorUsageFromSource,
   colorUsagePercents,
+  compositeLayersToRgba,
+  createEmptyLayer,
+  createLayerId,
   decodeRle,
   encodeRle,
   blitRect,
@@ -19,6 +26,7 @@ import {
   fillPaper,
   fillRect,
   fitScale,
+  flattenLayersToIndices,
   flipRectHorizontal,
   floodFill,
   hexToRgb,
@@ -35,13 +43,30 @@ import {
   rgbaToIndices,
   removeDocumentColor,
   replaceRgbInPixels,
+  rotateClipboardNearest,
   rotateRect90Cw,
   setPixel,
   stampBrush,
+  measurePixelTextBox,
+  stampText,
   strokeBrushLineSymmetric,
+  strokeCubicBezier,
+  strokeQuadraticBezier,
   strokeRect,
+  strokeRectBrush,
+  createBezierAnchor,
+  rasterizeCubicPath,
+  rasterizePolygon,
   stepZoom,
   symmetryPoints,
+  fillPolygon,
+  fillLinearGradient,
+  combineSelections,
+  scaleClipboard,
+  selectionCombineModeFromModifiers,
+  selectionFromColor,
+  selectionFromFlood,
+  selectionFromPolygon,
   walkLine,
 } from "@/lib/pixel"
 
@@ -64,6 +89,77 @@ describe("pixel canvas geometry", () => {
       scale: 2,
     })
     expect(cell).toEqual({ x: 15, y: 15 })
+  })
+
+  it("maps pointer via buffer space matching the view draw transform", () => {
+    const dpr = 2.625
+    const scale = 4
+    const originX = 12.19047619047619 // snapped-ish CSS origin
+    const originY = 8
+    const { deviceScale, translateX, translateY } = viewDeviceTransform(originX, originY, scale, dpr)
+    // Click the visual center of artwork cell (5, 3) in buffer pixels.
+    const cellX = 5
+    const cellY = 3
+    const bufferX = translateX + (cellX + 0.5) * deviceScale
+    const bufferY = translateY + (cellY + 0.5) * deviceScale
+    // CSS rect disagrees with buffer/dpr (mobile fractional DPR case).
+    const rectWidth = 390.4
+    const rectHeight = 520.2
+    const bufferWidth = 1024
+    const bufferHeight = 1365
+    const cell = pointerToCell({
+      clientX: 40 + (bufferX / bufferWidth) * rectWidth,
+      clientY: 80 + (bufferY / bufferHeight) * rectHeight,
+      rectLeft: 40,
+      rectTop: 80,
+      rectWidth,
+      rectHeight,
+      bufferWidth,
+      bufferHeight,
+      originX,
+      originY,
+      scale,
+      dpr,
+    })
+    expect(cell).toEqual({ x: cellX, y: cellY })
+  })
+
+  it("keeps corners stable when CSS size ≠ buffer/dpr", () => {
+    const dpr = 3
+    const scale = 2
+    const originX = 10
+    const originY = 20
+    const { deviceScale, translateX, translateY } = viewDeviceTransform(originX, originY, scale, dpr)
+    const rectWidth = 361
+    const rectHeight = 361
+    const bufferWidth = 1080
+    const bufferHeight = 1080
+    const samples = [
+      { cellX: 0, cellY: 0 },
+      { cellX: 15, cellY: 0 },
+      { cellX: 0, cellY: 15 },
+      { cellX: 15, cellY: 15 },
+      { cellX: 7, cellY: 8 },
+    ]
+    for (const sample of samples) {
+      const bufferX = translateX + (sample.cellX + 0.25) * deviceScale
+      const bufferY = translateY + (sample.cellY + 0.25) * deviceScale
+      const cell = pointerToCell({
+        clientX: (bufferX / bufferWidth) * rectWidth,
+        clientY: (bufferY / bufferHeight) * rectHeight,
+        rectLeft: 0,
+        rectTop: 0,
+        rectWidth,
+        rectHeight,
+        bufferWidth,
+        bufferHeight,
+        originX,
+        originY,
+        scale,
+        dpr,
+      })
+      expect(cell).toEqual({ x: sample.cellX, y: sample.cellY })
+    }
   })
 
   it("fills gaps on a steep diagonal", () => {
@@ -96,7 +192,7 @@ describe("pixel canvas geometry", () => {
     expect(isPixelCanvasSize(128, 64)).toBe(true)
     expect(isPixelCanvasSize(16, 16)).toBe(true)
     expect(isPixelCanvasSize(7, 16)).toBe(false)
-    expect(isPixelCanvasSize(513, 8)).toBe(false)
+    expect(isPixelCanvasSize(1025, 8)).toBe(false)
   })
 })
 
@@ -125,6 +221,12 @@ describe("pixel buffer", () => {
     expect([pixels[(4 * w + 4) * 4], pixels[(4 * w + 4) * 4 + 1], pixels[(4 * w + 4) * 4 + 2]]).toEqual([
       0, 0, 0,
     ])
+    const square = new Uint8ClampedArray(w * h * 4)
+    fillPaper(square)
+    stampBrush(square, 4, 4, [0, 0, 0], 3, w, h, "square")
+    expect([square[(3 * w + 3) * 4], square[(3 * w + 3) * 4 + 1], square[(3 * w + 3) * 4 + 2]]).toEqual([
+      0, 0, 0,
+    ])
   })
 
   it("draws rect and ellipse shapes", () => {
@@ -142,6 +244,167 @@ describe("pixel buffer", () => {
     ])
     paintEllipse(pixels, 0, 0, 6, 4, [9, 9, 9], true, w, h)
     expect(constrainSquareEnd(0, 0, 5, 2)).toEqual({ x: 5, y: 5 })
+  })
+
+  it("strokes rect and ellipse with brush width", () => {
+    const w = 24
+    const h = 24
+    const pixels = new Uint8ClampedArray(w * h * 4)
+    fillPaper(pixels)
+    strokeRectBrush(pixels, 4, 4, 16, 16, [0, 0, 0], 3, w, h)
+    expect([pixels[(4 * w + 4) * 4], pixels[(4 * w + 4) * 4 + 1], pixels[(4 * w + 4) * 4 + 2]]).toEqual([
+      0, 0, 0,
+    ])
+    expect([pixels[(5 * w + 4) * 4], pixels[(5 * w + 4) * 4 + 1], pixels[(5 * w + 4) * 4 + 2]]).toEqual([
+      0, 0, 0,
+    ])
+    fillPaper(pixels)
+    paintEllipse(pixels, 2, 2, 18, 18, [7, 7, 7], false, w, h, 3)
+    expect([pixels[(2 * w + 10) * 4], pixels[(2 * w + 10) * 4 + 1], pixels[(2 * w + 10) * 4 + 2]]).toEqual([
+      7, 7, 7,
+    ])
+    expect([pixels[(10 * w + 10) * 4], pixels[(10 * w + 10) * 4 + 1], pixels[(10 * w + 10) * 4 + 2]]).toEqual([
+      255, 253, 247,
+    ])
+  })
+
+  it("rasterizes cubic bezier stroke and fill", () => {
+    const w = 32
+    const h = 32
+    const pixels = new Uint8ClampedArray(w * h * 4)
+    fillPaper(pixels)
+    strokeCubicBezier(
+      pixels,
+      { x: 1, y: 16 },
+      { x: 8, y: 1 },
+      { x: 24, y: 1 },
+      { x: 30, y: 16 },
+      [1, 2, 3],
+      1,
+      w,
+      h,
+    )
+    expect([pixels[(16 * w + 1) * 4], pixels[(16 * w + 1) * 4 + 1], pixels[(16 * w + 1) * 4 + 2]]).toEqual([
+      1, 2, 3,
+    ])
+    expect([pixels[(16 * w + 30) * 4], pixels[(16 * w + 30) * 4 + 1], pixels[(16 * w + 30) * 4 + 2]]).toEqual([
+      1, 2, 3,
+    ])
+    fillPaper(pixels)
+    const anchors = [
+      createBezierAnchor(4, 4),
+      createBezierAnchor(20, 4),
+      createBezierAnchor(20, 20),
+      createBezierAnchor(4, 20),
+    ]
+    anchors[0].hoX = 10
+    anchors[0].hoY = 4
+    anchors[1].hiX = 14
+    anchors[1].hiY = 4
+    anchors[1].hoX = 20
+    anchors[1].hoY = 10
+    anchors[2].hiX = 20
+    anchors[2].hiY = 14
+    anchors[2].hoX = 14
+    anchors[2].hoY = 20
+    anchors[3].hiX = 10
+    anchors[3].hiY = 20
+    anchors[3].hoX = 4
+    anchors[3].hoY = 14
+    anchors[0].hiX = 4
+    anchors[0].hiY = 10
+    rasterizeCubicPath(pixels, anchors, [9, 9, 9], w, h, { mode: "fill", closed: true })
+    expect([pixels[(12 * w + 12) * 4], pixels[(12 * w + 12) * 4 + 1], pixels[(12 * w + 12) * 4 + 2]]).toEqual([
+      9, 9, 9,
+    ])
+  })
+
+  it("rasterizes polygon stroke and fill drafts", () => {
+    const w = 16
+    const h = 16
+    const pixels = new Uint8ClampedArray(w * h * 4)
+    fillPaper(pixels)
+    const points = [
+      { x: 2, y: 2 },
+      { x: 12, y: 2 },
+      { x: 12, y: 12 },
+      { x: 2, y: 12 },
+    ]
+    rasterizePolygon(pixels, points, [3, 4, 5], w, h, { mode: "fill", closed: true })
+    expect([pixels[(6 * w + 6) * 4], pixels[(6 * w + 6) * 4 + 1], pixels[(6 * w + 6) * 4 + 2]]).toEqual([
+      3, 4, 5,
+    ])
+    fillPaper(pixels)
+    rasterizePolygon(pixels, points, [8, 8, 8], w, h, { mode: "stroke", size: 1, closed: true })
+    expect([pixels[(2 * w + 2) * 4], pixels[(2 * w + 2) * 4 + 1], pixels[(2 * w + 2) * 4 + 2]]).toEqual([
+      8, 8, 8,
+    ])
+    expect([pixels[(6 * w + 6) * 4], pixels[(6 * w + 6) * 4 + 1], pixels[(6 * w + 6) * 4 + 2]]).toEqual([
+      255, 253, 247,
+    ])
+  })
+
+  it("fills polygons, curves, text, gradients, and mask selections", () => {
+    const w = 16
+    const h = 16
+    const pixels = new Uint8ClampedArray(w * h * 4)
+    fillPaper(pixels)
+    fillPolygon(pixels, [{ x: 1, y: 1 }, { x: 8, y: 1 }, { x: 1, y: 8 }], [0, 0, 0], w, h)
+    expect([pixels[(2 * w + 2) * 4], pixels[(2 * w + 2) * 4 + 1], pixels[(2 * w + 2) * 4 + 2]]).toEqual([
+      0, 0, 0,
+    ])
+    strokeQuadraticBezier(pixels, { x: 0, y: 15 }, { x: 8, y: 0 }, { x: 15, y: 15 }, [1, 2, 3], 1, w, h)
+    expect([pixels[(15 * w + 15) * 4], pixels[(15 * w + 15) * 4 + 1], pixels[(15 * w + 15) * 4 + 2]]).toEqual([
+      1, 2, 3,
+    ])
+    fillPaper(pixels)
+    stampText(pixels, 1, 1, "A", [9, 8, 7], w, h)
+    expect(pixels[(1 * w + 3) * 4]).toBe(9)
+    fillPaper(pixels)
+    stampText(pixels, 0, 0, "A", [9, 8, 7], w, h)
+    stampText(pixels, 8, 0, "a", [9, 8, 7], w, h)
+    expect(pixels[2 * 4]).toBe(9)
+    expect(pixels[8 * 4]).toBe(255)
+    fillPaper(pixels)
+    stampText(pixels, 0, 0, "A", [4, 5, 6], w, h, { width: 10, height: 14, scale: 2 })
+    expect(pixels[4 * 4]).toBe(4)
+    expect(measurePixelTextBox("  Hi  ", 1).text).toBe("Hi")
+    expect(measurePixelTextBox("  Hi  ", 1, undefined, { trim: false }).text).toBe("  Hi  ")
+    expect(measurePixelTextBox("Hi", 1).width).toBe(11)
+    const wrapped = measurePixelTextBox("HelloWorld", 1, 18)
+    expect(wrapped.height).toBeGreaterThan(7)
+    const point = measurePixelTextBox("HelloWorld", 1)
+    expect(point.height).toBe(7)
+    fillLinearGradient(pixels, 0, 0, 15, 0, [[0, 0, 0], [255, 255, 255]], w, h)
+    expect(pixels[0]).toBe(0)
+    expect(pixels[15 * 4]).toBe(255)
+    fillPaper(pixels)
+    const mask = new Uint8Array(w * h)
+    mask[0] = 1
+    fillLinearGradient(
+      pixels,
+      0,
+      0,
+      15,
+      0,
+      [[0, 0, 0], [255, 255, 255]],
+      w,
+      h,
+      { x: 0, y: 0, width: w, height: h, mask },
+    )
+    expect(pixels[0]).toBe(0)
+    expect(pixels[4]).not.toBe(0)
+    fillPaper(pixels)
+    setPixel(pixels, 2, 2, [4, 5, 6], w, h)
+    setPixel(pixels, 3, 2, [4, 5, 6], w, h)
+    setPixel(pixels, 10, 10, [4, 5, 6], w, h)
+    const flood = selectionFromFlood(pixels, 2, 2, w, h)
+    expect(flood?.width).toBe(2)
+    expect(flood?.mask).toBeUndefined()
+    const byColor = selectionFromColor(pixels, 2, 2, w, h)
+    expect(byColor?.mask).toBeDefined()
+    const lasso = selectionFromPolygon([{ x: 0, y: 0 }, { x: 5, y: 0 }, { x: 0, y: 5 }], w, h)
+    expect(lasso).not.toBeNull()
   })
 
   it("extracts, blits, flips, and rotates a rect", () => {
@@ -191,6 +454,71 @@ describe("pixel buffer", () => {
     const removed = removeDocumentColor(pixels, palette, "#090909", w, h)
     expect("palette" in removed && removed.palette).toEqual([PIXEL_PAPER, "#010203"])
   })
+
+  it("scales clipboard pixels with nearest neighbor", () => {
+    const clip = {
+      width: 2,
+      height: 2,
+      data: new Uint8ClampedArray([
+        1, 0, 0, 255, 2, 0, 0, 255, 3, 0, 0, 255, 4, 0, 0, 255,
+      ]),
+      mask: new Uint8Array([1, 1, 0, 1]),
+    }
+    const scaled = scaleClipboard(clip, 4, 2)
+    expect(scaled.width).toBe(4)
+    expect(scaled.height).toBe(2)
+    expect(scaled.data[0]).toBe(1)
+    expect(scaled.data[8]).toBe(2)
+    expect(scaled.mask?.[0]).toBe(1)
+    expect(scaled.mask?.[2]).toBe(1)
+  })
+
+  it("combines selections with union, subtract, and intersect", () => {
+    expect(selectionCombineModeFromModifiers(true, false)).toBe("union")
+    expect(selectionCombineModeFromModifiers(false, true)).toBe("subtract")
+    expect(selectionCombineModeFromModifiers(true, true)).toBe("intersect")
+    const a = { x: 0, y: 0, width: 4, height: 4 }
+    const b = { x: 2, y: 2, width: 4, height: 4 }
+    const united = combineSelections(a, b, "union", 8, 8)
+    expect(united).toEqual({ x: 0, y: 0, width: 6, height: 6, mask: expect.any(Uint8Array) })
+    const subtracted = combineSelections(a, b, "subtract", 8, 8)
+    expect(subtracted?.width).toBe(4)
+    expect(subtracted?.height).toBe(4)
+    expect(subtracted?.mask).toBeDefined()
+    const intersected = combineSelections(a, b, "intersect", 8, 8)
+    expect(intersected).toEqual({ x: 2, y: 2, width: 2, height: 2 })
+  })
+
+  it("clips replace, stroke, and flood fill to selection masks", () => {
+    const w = 8
+    const h = 8
+    const pixels = new Uint8ClampedArray(w * h * 4)
+    fillPaper(pixels)
+    setPixel(pixels, 1, 1, [7, 7, 7], w, h)
+    setPixel(pixels, 2, 1, [7, 7, 7], w, h)
+    setPixel(pixels, 1, 2, [7, 7, 7], w, h)
+    const mask = new Uint8Array(4)
+    mask[0] = 1
+    mask[1] = 1
+    const clip = { x: 1, y: 1, width: 2, height: 2, mask }
+    expect(replaceRgbInPixels(pixels, [7, 7, 7], [1, 2, 3], clip, w, h)).toBe(2)
+    expect([pixels[(1 * w + 1) * 4], pixels[(1 * w + 2) * 4], pixels[(2 * w + 1) * 4]]).toEqual([
+      1, 1, 7,
+    ])
+    fillPaper(pixels)
+    stampBrush(pixels, 1, 1, [9, 9, 9], 1, w, h, "square", clip)
+    stampBrush(pixels, 1, 2, [9, 9, 9], 1, w, h, "square", clip)
+    expect(pixels[(1 * w + 1) * 4]).toBe(9)
+    expect(pixels[(2 * w + 1) * 4]).toBe(255)
+    fillPaper(pixels)
+    setPixel(pixels, 1, 1, [4, 4, 4], w, h)
+    setPixel(pixels, 2, 1, [4, 4, 4], w, h)
+    setPixel(pixels, 1, 2, [4, 4, 4], w, h)
+    expect(floodFill(pixels, 1, 1, [5, 5, 5], w, h, clip)).toBe(2)
+    expect([pixels[(1 * w + 1) * 4], pixels[(1 * w + 2) * 4], pixels[(2 * w + 1) * 4]]).toEqual([
+      5, 5, 4,
+    ])
+  })
 })
 
 describe("pixel editor source", () => {
@@ -212,8 +540,83 @@ describe("pixel editor source", () => {
 
   it("rejects an unknown source version", () => {
     const source = buildPixelSource(new Uint8Array(PIXEL_CANVAS_SIZE * PIXEL_CANVAS_SIZE))
-    const parsed = parsePixelSource({ ...source, version: 2 })
+    const parsed = parsePixelSource({ ...source, version: 99 })
     expect(parsed).toEqual({ ok: false, error: "unsupported_version" })
+  })
+
+  it("promotes v1 to a single layer and round-trips v2", () => {
+    const indices = new Uint8Array(16 * 16)
+    indices[0] = 2
+    indices[1] = 3
+    const v1 = buildPixelSource(indices, 16, 16)
+    const promoted = parsePixelSource(v1)
+    expect(promoted.ok).toBe(true)
+    if (!promoted.ok) return
+    expect(promoted.layers).toHaveLength(1)
+    expect(promoted.layers[0]?.name).toBe("Layer 1")
+    expect(promoted.indices[0]).toBe(2)
+
+    const upper = createEmptyLayer(16, 16, "Layer 2")
+    upper.indices[5] = 1
+    const v2 = buildPixelSourceV2(
+      [
+        {
+          id: createLayerId(),
+          name: "Layer 1",
+          visible: true,
+          locked: false,
+          indices,
+        },
+        upper,
+      ],
+      16,
+      16,
+    )
+    expect(v2.version).toBe(PIXEL_SOURCE_VERSION_V2)
+    const parsed = parsePixelSource(v2)
+    expect(parsed.ok).toBe(true)
+    if (!parsed.ok) return
+    expect(parsed.data.version).toBe(2)
+    expect(parsed.layers).toHaveLength(2)
+    expect(parsed.indices[5]).toBe(1)
+    expect(parsed.indices[0]).toBe(2)
+  })
+
+  it("composites upper-layer zero as transparent", () => {
+    const w = 4
+    const h = 4
+    const bottom = createEmptyLayer(w, h, "Bottom")
+    bottom.indices[0] = 2
+    const top = createEmptyLayer(w, h, "Top")
+    top.indices[0] = 0
+    top.indices[1] = 1
+    const flat = flattenLayersToIndices([bottom, top], w, h)
+    expect(flat[0]).toBe(2)
+    expect(flat[1]).toBe(1)
+    const rgba = new Uint8ClampedArray(w * h * 4)
+    compositeLayersToRgba([bottom, top], rgba, PIXEL_PALETTE, w, h)
+    expect([rgba[0], rgba[1], rgba[2]]).toEqual(hexToRgb(PIXEL_PALETTE[2]!))
+    expect([rgba[4], rgba[5], rgba[6]]).toEqual(hexToRgb(PIXEL_PALETTE[1]!))
+  })
+
+  it("rotateClipboardNearest 90° matches rotateRect90Cw on solid rects", () => {
+    const w = 8
+    const h = 8
+    const pixels = new Uint8ClampedArray(w * h * 4)
+    fillPaper(pixels)
+    fillRect(pixels, 2, 2, 4, 3, [10, 20, 30], w, h)
+    const rect = { x: 2, y: 2, width: 3, height: 2 }
+    const clip = extractRect(pixels, rect, w, h)
+    const rotatedClip = rotateClipboardNearest(clip, 90)
+    expect(rotatedClip.width).toBe(2)
+    expect(rotatedClip.height).toBe(3)
+
+    const viaBoard = new Uint8ClampedArray(pixels)
+    const next = rotateRect90Cw(viaBoard, rect, w, h)
+    expect(next.width).toBe(2)
+    expect(next.height).toBe(3)
+    const expected = extractRect(viaBoard, next, w, h)
+    expect([...rotatedClip.data]).toEqual([...expected.data])
   })
 
   it("rejects truncated and overlong rle", () => {

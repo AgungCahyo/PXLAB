@@ -199,6 +199,7 @@ export async function createDraftAction(
     type: formData.get("type") || "pixel",
     width: formData.get("width") ? Number(formData.get("width")) : undefined,
     height: formData.get("height") ? Number(formData.get("height")) : undefined,
+    stage_ground: formData.get("stage_ground") || undefined,
   })
   if (!parsed.success) return { error: "invalid_input" }
 
@@ -207,6 +208,7 @@ export async function createDraftAction(
       ? {
           width: parsed.data.width ?? PIXEL_SIZE_PRESETS[2].width,
           height: parsed.data.height ?? PIXEL_SIZE_PRESETS[2].height,
+          stage_ground: parsed.data.stage_ground,
         }
       : undefined
   if (pixelSize && !isPixelCanvasSize(pixelSize.width, pixelSize.height)) {
@@ -385,6 +387,9 @@ export async function updatePixelCreationAction(
     palette: payload.source.palette,
     encoding: payload.source.encoding,
     source_path: uploaded.sourcePath,
+    ...(existingHeader.success && existingHeader.data.stage_ground
+      ? { stage_ground: existingHeader.data.stage_ground }
+      : {}),
   }
   const headerParsed = parseCreationContent("pixel", header, parsed.data.intent)
   if (!headerParsed.success) {

@@ -54,8 +54,7 @@ export default async function CreatePage({
 
   return (
     <div className="mx-auto w-full min-w-0 max-w-3xl px-5 py-8 sm:px-8 sm:py-10 lg:px-16">
-      <h1 className="pixel-title">{copy.createNewHeading[lang]}</h1>
-      <p className="mt-3 text-[15px] leading-relaxed text-muted">{copy.createIntro[lang]}</p>
+      <p className="text-[15px] leading-relaxed text-muted">{copy.createIntro[lang]}</p>
       <p className="mt-2 text-[13px]">
         <Link
           href={href(lang, "/dashboard")}

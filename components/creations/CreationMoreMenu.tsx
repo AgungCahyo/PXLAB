@@ -11,17 +11,26 @@ import {
 import { canDownloadCreationPng } from "@/lib/auth/permissions"
 import { copy } from "@/lib/copy"
 import type { Lang } from "@/lib/i18n"
+import { exportPngForDownloadClient } from "@/lib/pixel-export-client"
 import {
-  assertDownloadScaleAllowed,
-  downloadScaleOptions,
+  downloadExportOptions,
+  downloadFilenameSuffix,
+  downloadModeOutputSize,
   formatDownloadEstimateBytes,
-  scaledDownloadSize,
-  scalePngNearest,
+  resolveDownloadExportMode,
   triggerPngDownload,
+  type DownloadBackground,
+  type DownloadExportMode,
+  type DownloadExportOption,
 } from "@/lib/pixel-png-scale"
 import { cn } from "@/lib/utils"
 
-function pngFilename(title: string, creationId: string, scale: number) {
+function pngFilename(
+  title: string,
+  creationId: string,
+  mode: DownloadExportMode,
+  background: DownloadBackground,
+) {
   const base = title
     .trim()
     .toLowerCase()
@@ -29,7 +38,15 @@ function pngFilename(title: string, creationId: string, scale: number) {
     .replace(/^-+|-+$/g, "")
     .slice(0, 64)
   const stem = base || `artwork-${creationId.slice(0, 8)}`
-  return scale > 1 ? `${stem}-${scale}x.png` : `${stem}.png`
+  return `${stem}${downloadFilenameSuffix(mode, background)}.png`
+}
+
+function fitLabel(lang: Lang, id: DownloadExportOption & { kind: "fit" }) {
+  const name =
+    id.id === "1080p" ? copy.downloadFit1080p[lang] : copy.downloadFit1440p[lang]
+  return copy.downloadFitOption[lang]
+    .replace("{label}", name)
+    .replace("{size}", `${id.targetW}×${id.targetH}`)
 }
 
 export function CreationMoreMenu({
@@ -64,7 +81,8 @@ export function CreationMoreMenu({
   const isOwner = Boolean(viewerId && viewerId === ownerId)
   const [open, setOpen] = useState(false)
   const [allow, setAllow] = useState(initialAllow)
-  const [scale, setScale] = useState(1)
+  const [optionKey, setOptionKey] = useState("scale-1")
+  const [background, setBackground] = useState<DownloadBackground>("transparent")
   const [estimateLabel, setEstimateLabel] = useState<string | null>(null)
   const [downloadPending, setDownloadPending] = useState(false)
   const [downloadError, setDownloadError] = useState(false)
@@ -77,7 +95,11 @@ export function CreationMoreMenu({
   const estimateSeq = useRef(0)
   const apiNativeCache = useRef<Blob | null>(null)
 
-  const scales = useMemo(() => downloadScaleOptions(width, height), [width, height])
+  const options = useMemo(() => downloadExportOptions(width, height), [width, height])
+  const mode = useMemo(
+    () => resolveDownloadExportMode(options, optionKey) ?? { kind: "scale" as const, scale: 1 },
+    [options, optionKey],
+  )
 
   useEffect(() => {
     apiNativeCache.current = null
@@ -92,8 +114,8 @@ export function CreationMoreMenu({
   }, [permState, initialAllow])
 
   useEffect(() => {
-    if (!scales.includes(scale)) setScale(1)
-  }, [scales, scale])
+    if (!options.some((item) => item.key === optionKey)) setOptionKey("scale-1")
+  }, [options, optionKey])
 
   const canDownload = canDownloadCreationPng({
     viewerId,
@@ -121,13 +143,15 @@ export function CreationMoreMenu({
     }
     if (estimateTimer.current) window.clearTimeout(estimateTimer.current)
     const seq = ++estimateSeq.current
+    const exportMode = mode
+    const exportBg = background
     estimateTimer.current = window.setTimeout(() => {
       void (async () => {
         try {
           const native = await resolveNativePng()
-          const scaled = await scalePngNearest(native, scale)
+          const exported = await exportPngForDownloadClient(native, exportMode, exportBg)
           if (seq !== estimateSeq.current) return
-          setEstimateLabel(formatDownloadEstimateBytes(scaled.size))
+          setEstimateLabel(formatDownloadEstimateBytes(exported.size))
         } catch {
           if (seq !== estimateSeq.current) return
           setEstimateLabel(null)
@@ -138,8 +162,8 @@ export function CreationMoreMenu({
       if (estimateTimer.current) window.clearTimeout(estimateTimer.current)
     }
     // resolveNativePng closes over latest getNativePng / creationId
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional scale/open gated refresh
-  }, [estimateReady, scale, creationId, getNativePng])
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional option/open gated refresh
+  }, [estimateReady, optionKey, creationId, getNativePng, mode, background])
 
   if (!isOwner && !canDownload) return null
 
@@ -157,14 +181,13 @@ export function CreationMoreMenu({
 
   async function downloadScaled() {
     if (downloadPending) return
-    const allowed = assertDownloadScaleAllowed(width, height, scale)
-    if (!allowed.ok) return
+    if (!resolveDownloadExportMode(options, optionKey)) return
     setDownloadPending(true)
     setDownloadError(false)
     try {
       const native = await resolveNativePng()
-      const out = await scalePngNearest(native, scale)
-      triggerPngDownload(out, pngFilename(title, creationId, scale))
+      const out = await exportPngForDownloadClient(native, mode, background)
+      triggerPngDownload(out, pngFilename(title, creationId, mode, background))
       onDownloaded?.()
     } catch {
       setDownloadError(true)
@@ -173,44 +196,49 @@ export function CreationMoreMenu({
     }
   }
 
-  const out = scaledDownloadSize(width, height, scale)
+  const out = downloadModeOutputSize(width, height, mode)
   const sizeLabel = `${out.width}×${out.height}`
 
   const body = (
     <div className="grid gap-3">
       {canDownload ? (
         <div className="grid gap-2">
-          <p className="text-[14px] font-medium text-fg">{copy.downloadScaleLabel[lang]}</p>
-          <p className="text-[13px] text-muted">{copy.downloadScaleHint[lang]}</p>
-          <fieldset className="grid gap-2">
-            <legend className="sr-only">{copy.downloadScaleLabel[lang]}</legend>
-            <ul className="flex flex-wrap gap-2">
-              {scales.map((option) => {
-                const dims = scaledDownloadSize(width, height, option)
-                const label = copy.downloadScaleOption[lang]
-                  .replace("{scale}", String(option))
-                  .replace("{size}", `${dims.width}×${dims.height}`)
-                const selected = scale === option
+          <label className="grid gap-1.5" htmlFor={`download-size-${creationId}`}>
+            <span className="text-[14px] font-medium text-fg">{copy.downloadScaleLabel[lang]}</span>
+            <select
+              id={`download-size-${creationId}`}
+              className="min-h-11 border-[3px] border-earth bg-card px-3 text-[14px] text-fg"
+              value={optionKey}
+              onChange={(event) => setOptionKey(event.target.value)}
+            >
+              {options.map((option) => {
+                const label =
+                  option.kind === "scale"
+                    ? copy.downloadScaleOption[lang]
+                        .replace("{scale}", String(option.scale))
+                        .replace("{size}", `${option.width}×${option.height}`)
+                    : fitLabel(lang, option)
                 return (
-                  <li key={option}>
-                    <button
-                      type="button"
-                      aria-pressed={selected}
-                      onClick={() => setScale(option)}
-                      className={cn(
-                        "inline-flex min-h-11 items-center border-[3px] px-3 text-[13px]",
-                        selected
-                          ? "border-earth bg-brick text-white shadow-[4px_4px_0_0_var(--fg)]"
-                          : "border-earth bg-card text-muted hover:bg-soft hover:text-fg",
-                      )}
-                    >
-                      {label}
-                    </button>
-                  </li>
+                  <option key={option.key} value={option.key}>
+                    {label}
+                  </option>
                 )
               })}
-            </ul>
-          </fieldset>
+            </select>
+          </label>
+          <label className="grid gap-1.5" htmlFor={`download-bg-${creationId}`}>
+            <span className="text-[14px] font-medium text-fg">{copy.downloadBgLabel[lang]}</span>
+            <select
+              id={`download-bg-${creationId}`}
+              className="min-h-11 border-[3px] border-earth bg-card px-3 text-[14px] text-fg"
+              value={background}
+              onChange={(event) => setBackground(event.target.value as DownloadBackground)}
+            >
+              <option value="transparent">{copy.downloadBgTransparent[lang]}</option>
+              <option value="solid">{copy.downloadBgSolid[lang]}</option>
+            </select>
+          </label>
+          <p className="text-[13px] text-muted">{copy.downloadScaleHint[lang]}</p>
           <p className="text-[13px] text-muted" aria-live="polite">
             {sizeLabel}
             {estimateLabel
