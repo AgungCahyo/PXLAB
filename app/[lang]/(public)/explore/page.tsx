@@ -2,17 +2,31 @@ import type { Metadata } from "next"
 import Link from "next/link"
 import { notFound } from "next/navigation"
 import { Suspense } from "react"
-import { ExploreFilters, ExploreGallery } from "@/components/creations/ExploreGallery"
+import {
+  ExploreFilters,
+  ExploreFollowingGuest,
+  ExploreGallery,
+} from "@/components/creations/ExploreGallery"
 import { GallerySkeleton } from "@/components/creations/GallerySkeleton"
+import { NewCreatorsStrip } from "@/components/creations/NewCreatorsStrip"
+import { QuietRack } from "@/components/creations/QuietRack"
 import { PageTransition } from "@/components/layout/PageTransition"
 import { EmptyState } from "@/components/ui/EmptyState"
 import { buttonClassName } from "@/components/ui/Button"
-import { listPublishedCreations } from "@/features/creations/queries"
+import { listFollowingIds } from "@/features/community/follows"
+import {
+  listNewCreators,
+  listPublishedCreations,
+  listQuietPublishedCreations,
+} from "@/features/creations/queries"
+import { getCurrentProfile } from "@/lib/auth/session"
 import {
   exploreHref,
   parseExploreCategory,
+  parseExploreFeed,
   parseExploreSearch,
   type ExploreCategoryFilter,
+  type ExploreFeed,
 } from "@/lib/creations"
 import { copy } from "@/lib/copy"
 import { isLang, type Lang } from "@/lib/i18n"
@@ -40,7 +54,7 @@ export default async function ExplorePage({
   searchParams,
 }: {
   params: Promise<{ lang: string }>
-  searchParams: Promise<{ category?: string; q?: string; page?: string }>
+  searchParams: Promise<{ category?: string; q?: string; page?: string; feed?: string }>
 }) {
   const { lang: raw } = await params
   if (!isLang(raw)) notFound()
@@ -48,16 +62,37 @@ export default async function ExplorePage({
   const query = await searchParams
   const category = parseExploreCategory(query.category)
   const q = parseExploreSearch(query.q)
+  const feed = parseExploreFeed(query.feed)
   const page = Math.max(1, Number.parseInt(query.page ?? "1", 10) || 1)
+  const showDiscovery = page === 1 && feed === "all" && category === "all" && !q
 
   return (
     <PageTransition>
       <div className="mx-auto w-full min-w-0 max-w-6xl px-5 py-8 sm:px-8 sm:py-10 lg:px-16">
-        <h1 className="pixel-title">{copy.exploreTitle[lang]}</h1>
-        <div className="mt-5 min-w-0">
-          <ExploreFilters lang={lang} category={category} q={q} />
+        <header className="flex min-w-0 items-end justify-between gap-4">
+          <h1 className="pixel-title min-w-0">{copy.exploreTitle[lang]}</h1>
+          {showDiscovery ? (
+            <Suspense fallback={null}>
+              <NewCreatorsSlot lang={lang} />
+            </Suspense>
+          ) : null}
+        </header>
+
+        <div className="mt-4 min-w-0">
+          <ExploreFilters lang={lang} category={category} q={q} feed={feed} />
+        </div>
+
+        {showDiscovery ? (
+          <div className="mt-5 min-w-0">
+            <Suspense fallback={null}>
+              <QuietRackSlot lang={lang} />
+            </Suspense>
+          </div>
+        ) : null}
+
+        <div className="mt-6 min-w-0">
           <Suspense fallback={<GallerySkeleton />}>
-            <ExploreResults lang={lang} category={category} q={q} page={page} />
+            <ExploreResults lang={lang} category={category} q={q} page={page} feed={feed} />
           </Suspense>
         </div>
       </div>
@@ -70,12 +105,58 @@ async function ExploreResults({
   category,
   q,
   page,
+  feed,
 }: {
   lang: Lang
   category: ExploreCategoryFilter
   q: string
   page: number
+  feed: ExploreFeed
 }) {
+  if (feed === "following") {
+    const profile = await getCurrentProfile()
+    if (!profile) return <ExploreFollowingGuest lang={lang} />
+
+    const followingIds = await listFollowingIds(profile.id)
+    const result = await listPublishedCreations({
+      type: "pixel",
+      category: category === "all" ? undefined : category,
+      q: q || undefined,
+      page,
+      followingUserIds: followingIds,
+      markNewSince: profile.activity_seen_at,
+    })
+
+    if (result.failed) {
+      return (
+        <EmptyState
+          title={copy.exploreLoadError[lang]}
+          description={copy.exploreLoadHint[lang]}
+          action={
+            <Link
+              href={exploreHref(lang, { category, q, page, feed })}
+              className={buttonClassName({ size: "sm" })}
+            >
+              {copy.exploreRetry[lang]}
+            </Link>
+          }
+        />
+      )
+    }
+
+    return (
+      <ExploreGallery
+        lang={lang}
+        category={category}
+        q={q}
+        feed={feed}
+        page={result.page}
+        pageCount={result.pageCount}
+        items={result.items}
+      />
+    )
+  }
+
   const result = await listPublishedCreations({
     type: "pixel",
     category: category === "all" ? undefined : category,
@@ -90,7 +171,7 @@ async function ExploreResults({
         description={copy.exploreLoadHint[lang]}
         action={
           <Link
-            href={exploreHref(lang, { category, q, page })}
+            href={exploreHref(lang, { category, q, page, feed })}
             className={buttonClassName({ size: "sm" })}
           >
             {copy.exploreRetry[lang]}
@@ -105,9 +186,22 @@ async function ExploreResults({
       lang={lang}
       category={category}
       q={q}
+      feed={feed}
       page={result.page}
       pageCount={result.pageCount}
       items={result.items}
     />
   )
+}
+
+async function QuietRackSlot({ lang }: { lang: Lang }) {
+  const quiet = await listQuietPublishedCreations(6)
+  if (quiet.failed || quiet.items.length === 0) return null
+  return <QuietRack lang={lang} items={quiet.items} />
+}
+
+async function NewCreatorsSlot({ lang }: { lang: Lang }) {
+  const creators = await listNewCreators(12)
+  if (creators.failed || creators.items.length === 0) return null
+  return <NewCreatorsStrip lang={lang} items={creators.items} />
 }

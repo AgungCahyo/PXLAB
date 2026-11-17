@@ -2,6 +2,7 @@ import { Suspense, type ReactNode } from "react"
 import { SiteFooter } from "@/components/layout/SiteFooter"
 import { SiteHeader } from "@/components/layout/SiteHeader"
 import { ViewTransitionGuard } from "@/components/layout/ViewTransitionGuard"
+import { hasUnseenCreationResponses } from "@/features/community/activity"
 import { getCurrentProfile } from "@/lib/auth/session"
 import type { Lang } from "@/lib/i18n"
 
@@ -30,12 +31,14 @@ export function PublicShell({
 
 async function AuthHeader({ lang }: { lang: Lang }) {
   const profile = await getCurrentProfile()
+  const hasResponses = profile ? await hasUnseenCreationResponses() : false
   const member = profile
     ? {
         username: profile.username,
         displayName: profile.display_name,
         avatarUrl: profile.avatar_url,
         isAdmin: profile.role === "admin",
+        hasResponses,
       }
     : null
   return <SiteHeader lang={lang} member={member} />

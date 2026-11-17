@@ -38,7 +38,7 @@ describe("mobile chrome — R3", () => {
 
   it("closes zoom actions and keeps size start reachable with range errors", () => {
     const playground = read("components/creations/PlaygroundForm.tsx")
-    const form = read("components/creations/StudioNewForm.tsx")
+    const form = read("components/creations/PixelNewForm.tsx")
     expect(playground).toMatch(/zoomBy\(1\)[\s\S]*setMoreOpen\(false\)/)
     expect(playground).toMatch(/zoomBy\(-1\)[\s\S]*setMoreOpen\(false\)/)
     expect(form).toMatch(/sizeRangeError/)

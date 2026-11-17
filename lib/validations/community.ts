@@ -43,6 +43,12 @@ export const forkCreationSchema = z
   })
   .strict()
 
+export const followCreatorSchema = z
+  .object({
+    user_id: z.uuid(),
+  })
+  .strict()
+
 export const reportReasonSchema = z.enum(REPORT_REASONS)
 export const reportTargetTypeSchema = z.enum(REPORT_TARGET_TYPES)
 export const reportStatusSchema = z.enum(REPORT_STATUSES)

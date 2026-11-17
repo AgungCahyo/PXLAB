@@ -27,6 +27,7 @@ export const copy = {
     account: { id: "Akun", en: "Account" } satisfies Bi,
     settings: { id: "Pengaturan", en: "Settings" } satisfies Bi,
     dashboard: { id: "Karya", en: "Works" } satisfies Bi,
+    responses: { id: "Respon", en: "Responses" } satisfies Bi,
     admin: { id: "Moderasi", en: "Moderation" } satisfies Bi,
     signOut: { id: "Keluar", en: "Sign out" } satisfies Bi,
   },
@@ -443,6 +444,24 @@ export const copy = {
   share: { id: "Bagikan", en: "Share" } satisfies Bi,
   shareCopied: { id: "Disalin.", en: "Copied." } satisfies Bi,
   downloadArtwork: { id: "Unduh", en: "Download" } satisfies Bi,
+  downloadWorking: { id: "Menyiapkan…", en: "Preparing…" } satisfies Bi,
+  downloadScaleLabel: { id: "Ukuran unduhan", en: "Download size" } satisfies Bi,
+  downloadScaleHint: {
+    id: "Hanya file unduhan — ukuran karya di situs tidak berubah.",
+    en: "Download file only — on-site artwork size stays the same.",
+  } satisfies Bi,
+  downloadScaleOption: {
+    id: "{scale}× · {size}",
+    en: "{scale}× · {size}",
+  } satisfies Bi,
+  downloadEstimate: {
+    id: "Perkiraan {size}",
+    en: "About {size}",
+  } satisfies Bi,
+  downloadFailed: {
+    id: "Gagal menyiapkan unduhan.",
+    en: "Could not prepare the download.",
+  } satisfies Bi,
   allowPngDownload: {
     id: "Izinkan unduh",
     en: "Allow download",
@@ -455,13 +474,65 @@ export const copy = {
     id: "Gagal memperbarui.",
     en: "Update failed.",
   } satisfies Bi,
-  fork: { id: "Fork", en: "Fork" } satisfies Bi,
-  forkWorking: { id: "Membuat fork…", en: "Forking…" } satisfies Bi,
-  forkedFrom: { id: "Fork dari", en: "Forked from" } satisfies Bi,
+  fork: { id: "Remix", en: "Remix" } satisfies Bi,
+  forkWorking: { id: "Membuat remix…", en: "Remixing…" } satisfies Bi,
+  forkedFrom: { id: "Remix dari", en: "Remixed from" } satisfies Bi,
   forkedUnavailable: {
     id: "Asal tidak publik.",
     en: "Source not public.",
   } satisfies Bi,
+  remixFrom: { id: "Remix dari", en: "Remix of" } satisfies Bi,
+  remixCount: { id: "{count} remix", en: "{count} remixes" } satisfies Bi,
+  remixSignIn: {
+    id: "Masuk untuk remix.",
+    en: "Sign in to remix.",
+  } satisfies Bi,
+  creatorOtherWorks: {
+    id: "Karya lain dari @{username}",
+    en: "More from @{username}",
+  } satisfies Bi,
+  follow: { id: "Ikuti", en: "Follow" } satisfies Bi,
+  following: { id: "Mengikuti", en: "Following" } satisfies Bi,
+  followWorking: { id: "Memproses…", en: "Working…" } satisfies Bi,
+  followSignIn: {
+    id: "Masuk untuk mengikuti.",
+    en: "Sign in to follow.",
+  } satisfies Bi,
+  exploreFeedAll: { id: "Semua", en: "All" } satisfies Bi,
+  exploreFeedFollowing: { id: "Mengikuti", en: "Following" } satisfies Bi,
+  exploreFollowingEmpty: {
+    id: "Belum mengikuti siapa pun. Kunjungi profil kreator.",
+    en: "Not following anyone yet. Visit a creator profile.",
+  } satisfies Bi,
+  exploreFollowingGuest: {
+    id: "Masuk untuk melihat karya dari yang kamu ikuti.",
+    en: "Sign in to see work from people you follow.",
+  } satisfies Bi,
+  similarWorksTitle: { id: "Karya serupa", en: "Similar works" } satisfies Bi,
+  newCreatorsTitle: { id: "Kreator baru", en: "New creators" } satisfies Bi,
+  newCreatorsMore: {
+    id: "+{count} lagi",
+    en: "+{count} more",
+  } satisfies Bi,
+  newCreatorsSeeAll: { id: "Lihat semua", en: "See all" } satisfies Bi,
+  newCreatorsMeta: {
+    id: "Kenali orang yang baru menerbitkan pixel.",
+    en: "Meet people who just published pixel work.",
+  } satisfies Bi,
+  newCreatorsIntro: {
+    id: "Kreator dengan karya pixel terbaru. Buka profil untuk melihat etalase mereka.",
+    en: "Creators with the newest pixel work. Open a profile to see their gallery.",
+  } satisfies Bi,
+  newCreatorsEmpty: {
+    id: "Belum ada kreator untuk ditampilkan.",
+    en: "No creators to show yet.",
+  } satisfies Bi,
+  newCreatorsLatest: {
+    id: "Karya terbaru",
+    en: "Latest work",
+  } satisfies Bi,
+  cardNotesCount: { id: "{count} catatan", en: "{count} notes" } satisfies Bi,
+  feedNewBadge: { id: "Baru", en: "New" } satisfies Bi,
   commentsTitle: { id: "Percakapan", en: "Conversation" } satisfies Bi,
   commentsEmpty: {
     id: "Belum ada catatan.",
@@ -470,6 +541,14 @@ export const copy = {
   conversationPrompt: {
     id: "Tulis catatan…",
     en: "Write a note…",
+  } satisfies Bi,
+  conversationPromptSize: {
+    id: "Catatan untuk kanvas {size}…",
+    en: "A note for this {size} canvas…",
+  } satisfies Bi,
+  conversationGuestPrompt: {
+    id: "Masuk untuk menulis catatan.",
+    en: "Sign in to leave a note.",
   } satisfies Bi,
   conversationSend: { id: "Kirim", en: "Send" } satisfies Bi,
   conversationSending: { id: "Mengirim…", en: "Sending…" } satisfies Bi,
@@ -669,6 +748,57 @@ export const copy = {
     en: "Manage your works.",
   } satisfies Bi,
   worksBack: { id: "Ke profil", en: "To profile" } satisfies Bi,
+  responsesTitle: { id: "Respon", en: "Responses" } satisfies Bi,
+  responsesMeta: {
+    id: "Catatan, apresiasi, dan remix untuk karyamu.",
+    en: "Notes, appreciations, and remixes on your works.",
+  } satisfies Bi,
+  responsesIntro: {
+    id: "Catatan, apresiasi, dan remix pada karya terbit milikmu.",
+    en: "Notes, appreciations, and remixes on your published works.",
+  } satisfies Bi,
+  responsesEmpty: {
+    id: "Belum ada respon pada karya terbitmu.",
+    en: "No responses on your published works yet.",
+  } satisfies Bi,
+  responsesNew: { id: "Baru", en: "New" } satisfies Bi,
+  responsesComment: {
+    id: "{user} menulis catatan di {title}",
+    en: "{user} left a note on {title}",
+  } satisfies Bi,
+  responsesReply: {
+    id: "{user} membalas di {title}",
+    en: "{user} replied on {title}",
+  } satisfies Bi,
+  responsesAppreciate: {
+    id: "{user} mengapresiasi {title}",
+    en: "{user} appreciated {title}",
+  } satisfies Bi,
+  responsesRemix: {
+    id: "{user} me-remix {title}",
+    en: "{user} remixed {title}",
+  } satisfies Bi,
+  responsesNavDot: { id: "Ada respon baru", en: "New responses" } satisfies Bi,
+  quietRackTitle: {
+    id: "Belum ada percakapan",
+    en: "Waiting for a note",
+  } satisfies Bi,
+  quietRackHint: {
+    id: "Karya baru yang masih sepi — tulis catatan pertama.",
+    en: "New works still quiet — leave the first note.",
+  } satisfies Bi,
+  createInspirationTitle: {
+    id: "Inspirasi komunitas",
+    en: "Community inspiration",
+  } satisfies Bi,
+  createInspirationSize: {
+    id: "Karya {size} terbaru",
+    en: "Latest {size} works",
+  } satisfies Bi,
+  createRemixPrompt: {
+    id: "Belum punya ide? Remix karya di Jelajah.",
+    en: "No idea yet? Remix a work on Explore.",
+  } satisfies Bi,
   worksTitle: { id: "Karyamu", en: "Your works" } satisfies Bi,
   worksMeta: {
     id: "Kelola draf dan karya terbit milikmu.",
@@ -700,8 +830,22 @@ export const copy = {
   } satisfies Bi,
   worksPublishDoneTitle: { id: "Karya diterbitkan", en: "Work published" } satisfies Bi,
   worksPublishDoneBody: {
-    id: "Sudah di Jelajah.",
-    en: "Now on Explore.",
+    id: "Sudah di Jelajah — siap dikomentari.",
+    en: "On Explore — ready for notes.",
+  } satisfies Bi,
+  worksPublishCaptionNudgeTitle: {
+    id: "Tambah caption?",
+    en: "Add a caption?",
+  } satisfies Bi,
+  worksPublishCaptionNudgeBody: {
+    id: "Caption membantu percakapan. Bisa dilewati.",
+    en: "Captions help conversation. Optional.",
+  } satisfies Bi,
+  worksPublishCaptionSkip: { id: "Lewati", en: "Skip" } satisfies Bi,
+  worksPublishCaptionAdd: { id: "Tambah caption", en: "Add caption" } satisfies Bi,
+  worksPublishAddCaptionHint: {
+    id: "Belum ada caption — tambah dari menu Caption.",
+    en: "No caption yet — add one from Caption.",
   } satisfies Bi,
   worksViewWork: { id: "Lihat karya", en: "View work" } satisfies Bi,
   worksKeepEditing: { id: "Tetap di kanvas", en: "Stay on canvas" } satisfies Bi,

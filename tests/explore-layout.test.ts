@@ -26,7 +26,8 @@ describe("Explore gallery layout", () => {
     expect(card).toMatch(/@\{creation\.author\.username\}/)
     expect(card).toMatch(/sizeLabel/)
     expect(card).toMatch(/text-\[11px\]/)
-    expect(card).toMatch(/className="block h-full hover:bg-soft"/)
+    expect(card).toMatch(/absolute inset-0/)
+    expect(card).toMatch(/ProfileAvatar/)
   })
 
   it("uses a dense 2 / lg:3 / xl:4 grid", () => {

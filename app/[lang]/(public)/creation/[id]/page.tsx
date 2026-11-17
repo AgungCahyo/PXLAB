@@ -7,12 +7,21 @@ import { CreationBody } from "@/components/creations/CreationBody"
 import { CreationColorPalette } from "@/components/creations/CreationColorPalette"
 import { CreationMoreMenu } from "@/components/creations/CreationMoreMenu"
 import { CreationTags } from "@/components/creations/CreationTags"
+import { CreatorBlock } from "@/components/creations/CreatorBlock"
 import { ConversationSkeleton } from "@/components/creations/PageSkeletons"
+import { RemixStrip } from "@/components/creations/RemixStrip"
+import { SimilarWorksStrip } from "@/components/creations/SimilarWorksStrip"
 import { CreationCommunity, CreationEngagement } from "@/components/community/CreationCommunity"
 import { buttonClassName } from "@/components/ui/Button"
 import { PixelIcon } from "@/components/ui/PixelIcon"
+import { isFollowing } from "@/features/community/follows"
 import { getReactionSummary, listConversation } from "@/features/community/queries"
-import { getPublishedCreation } from "@/features/creations/queries"
+import {
+  getPublishedCreation,
+  listPublishedCreationsByUser,
+  listPublishedRemixes,
+  listSimilarCreations,
+} from "@/features/creations/queries"
 import { getCurrentProfile } from "@/lib/auth/session"
 import { displayTitle } from "@/lib/creations"
 import { copy, creationCategoryLabels, creationTypeLabels } from "@/lib/copy"
@@ -20,7 +29,7 @@ import { formatDayMonthYear } from "@/lib/format"
 import { href, isLang, type Lang } from "@/lib/i18n"
 import { pageMeta } from "@/lib/meta"
 import { pixelCoverUrl } from "@/lib/site"
-import { creationIdSchema } from "@/lib/validations/creation"
+import { creationIdSchema, pixelContentSchema } from "@/lib/validations/creation"
 
 export const instant = false
 
@@ -68,8 +77,6 @@ export default async function CreationDetailPage({
   const creation = await getPublishedCreation(id)
   if (!creation) notFound()
 
-  // Identity + engagement must paint with the artwork (not behind Suspense),
-  // so Apresiasi/Bagikan never disappear during streaming.
   const profile = await getCurrentProfile()
   const member = profile
     ? { id: profile.id, username: profile.username, avatarUrl: profile.avatar_url }
@@ -81,19 +88,50 @@ export default async function CreationDetailPage({
   const coverUrl =
     creation.type === "pixel" ? creation.cover_url || pixelCoverUrl(creation.id) : creation.cover_url
   const isPixel = creation.type === "pixel"
+  const pixelContent = isPixel ? pixelContentSchema.safeParse(creation.content) : null
+  const pixelWidth = pixelContent?.success ? pixelContent.data.width : 64
+  const pixelHeight = pixelContent?.success ? pixelContent.data.height : 64
+  const sizeLabel = creation.category
+    ? creationCategoryLabels[creation.category][lang]
+    : null
+  const conversationPrompt = sizeLabel
+    ? copy.conversationPromptSize[lang].replace("{size}", sizeLabel)
+    : copy.conversationPrompt[lang]
+
+  const following =
+    profile && profile.id !== creation.user_id
+      ? await isFollowing(profile.id, creation.user_id)
+      : false
+  const returnPath = `/creation/${creation.id}`
+
+  const [otherWorks, remixes, similar] = await Promise.all([
+    listPublishedCreationsByUser(creation.user_id, {
+      excludeId: creation.id,
+      limit: 4,
+      type: "pixel",
+    }),
+    isPixel ? listPublishedRemixes(creation.id, 4) : Promise.resolve({ items: [], total: 0, failed: false }),
+    isPixel
+      ? listSimilarCreations({
+          id: creation.id,
+          category: creation.category,
+          tags: creation.tags,
+          limit: 4,
+        })
+      : Promise.resolve({ items: [], failed: false }),
+  ])
 
   const identity = (
     <>
       <h1 className="page-heading-sans mt-4">{title}</h1>
+      {creation.source ? <RemixStrip lang={lang} items={[]} total={0} source={creation.source} /> : null}
       <p className="mt-2 text-[14px] leading-snug text-muted sm:text-[15px]">
         {copy.byAuthor[lang]}{" "}
         <Link href={href(lang, `/u/${creation.author.username}`)} className="hover:text-fg">
           @{creation.author.username}
         </Link>
         {published ? ` · ${formatDayMonthYear(published, lang)}` : ""}
-        {creation.category
-          ? ` · ${creationCategoryLabels[creation.category][lang]}`
-          : ""}
+        {sizeLabel ? ` · ${sizeLabel}` : ""}
       </p>
       {creation.caption ? (
         <p className="mt-3 max-w-prose whitespace-pre-wrap text-[15px] leading-relaxed text-fg">
@@ -118,7 +156,9 @@ export default async function CreationDetailPage({
           title={title}
           appreciated={reaction.appreciated}
           appreciateCount={reaction.count}
+          remixCount={remixes.total}
           member={member}
+          allowFork={!isOwner}
         />
         {isPixel ? (
           <CreationMoreMenu
@@ -128,6 +168,9 @@ export default async function CreationDetailPage({
             viewerId={profile?.id ?? null}
             status={creation.status}
             allowPngDownload={creation.allow_png_download}
+            width={pixelWidth}
+            height={pixelHeight}
+            title={title}
           />
         ) : null}
       </div>
@@ -176,6 +219,24 @@ export default async function CreationDetailPage({
         </>
       )}
 
+      {!creation.source && remixes.total > 0 ? (
+        <RemixStrip lang={lang} items={remixes.items} total={remixes.total} />
+      ) : null}
+
+      <CreatorBlock
+        lang={lang}
+        author={creation.author}
+        authorId={creation.user_id}
+        otherWorks={otherWorks.failed ? [] : otherWorks.items}
+        following={following}
+        canFollow={!isOwner}
+        returnPath={returnPath}
+      />
+
+      {isPixel && !similar.failed && similar.items.length > 0 ? (
+        <SimilarWorksStrip lang={lang} items={similar.items} />
+      ) : null}
+
       <Suspense fallback={<ConversationSkeleton />}>
         <CreationConversationSlot
           lang={lang}
@@ -184,7 +245,7 @@ export default async function CreationDetailPage({
           source={creation.source}
           forkedFrom={creation.forked_from}
           member={member}
-          allowFork={!isOwner}
+          prompt={conversationPrompt}
         />
       </Suspense>
     </article>
@@ -198,15 +259,15 @@ async function CreationConversationSlot({
   source,
   forkedFrom,
   member,
-  allowFork,
+  prompt,
 }: {
   lang: Lang
   creationId: string
   title: string
-  source: { id: string; title: string } | null
+  source: { id: string; title: string; authorUsername: string } | null
   forkedFrom: string | null
   member: { id: string; username: string; avatarUrl: string | null } | null
-  allowFork: boolean
+  prompt: string
 }) {
   const conversation = await listConversation({ creationId })
   return (
@@ -220,7 +281,8 @@ async function CreationConversationSlot({
       total={conversation.total}
       hasEarlier={conversation.hasEarlier}
       member={member}
-      allowFork={allowFork}
+      allowFork={false}
+      prompt={prompt}
     />
   )
 }

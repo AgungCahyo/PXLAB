@@ -14,9 +14,9 @@ Deep link yang harus tetap hidup: `/`, `/explore`, `/creation/[id]`, `/u/[userna
 
 1. Membuka `/`. Melihat satu kalimat, Jelajahi karya, Gabung, catatan Ruang Bersama, lalu sampai enam karya pixel, lalu dua kartu penjelasan.
 2. Membuka kartu ke `/creation/[id]`, atau Jelajah.
-3. Di Jelajah, filter jenis selalu terlihat. Bawaan Pixel. Kartu membuka detail.
+3. Di Jelajah, filter ukuran selalu terlihat. Bawaan Pixel. Tab Semua | Following (Following butuh akun). Kartu membuka detail.
 4. Detail menampilkan judul besar, kreator, gambar, lalu apresiasi (hanya angka jika belum masuk), bagikan, dan percakapan. Tautan masuk tidak membawa identitas halaman ini.
-5. Profil kreator lewat `@username`. Hanya karya terbit. Tidak ada pengikut.
+5. Profil kreator lewat `@username`. Hanya karya terbit. Anggota dapat Follow/Following tanpa melihat jumlah pengikut.
 6. Gabung membuka `/register` (nama, username, email, kata sandi). Setelah berhasil, atau setelah tautan email, tujuan adalah Jelajah, bukan karya yang tadi dilihat.
 7. Masuk sama: selalu Jelajah.
 

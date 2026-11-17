@@ -18,6 +18,7 @@ export type NavMember = {
   displayName: string | null
   avatarUrl?: string | null
   isAdmin?: boolean
+  hasResponses?: boolean
 } | null
 
 function useHere() {
@@ -120,10 +121,16 @@ export function SiteNav({ lang, member }: { lang: Lang; member: NavMember }) {
             aria-expanded={accountOpen}
             aria-controls={menuId}
             onClick={() => setAccountOpen((open) => !open)}
-            className="inline-flex min-h-11 items-center gap-1.5 px-3 text-[14px] text-muted hover:text-fg"
+            className="relative inline-flex min-h-11 items-center gap-1.5 px-3 text-[14px] text-muted hover:text-fg"
           >
             <PixelIcon name="user" />
             {copy.nav.account[lang]}
+            {member.hasResponses ? (
+              <span
+                className="absolute right-1.5 top-2 h-2 w-2 bg-brick"
+                aria-label={copy.responsesNavDot[lang]}
+              />
+            ) : null}
           </button>
           {accountOpen ? (
             <div
@@ -137,6 +144,17 @@ export function SiteNav({ lang, member }: { lang: Lang; member: NavMember }) {
               >
                 <PixelIcon name="folder" />
                 {copy.nav.dashboard[lang]}
+              </Link>
+              <Link
+                href={href(lang, "/responses")}
+                onClick={() => setAccountOpen(false)}
+                className="relative flex min-h-11 items-center gap-2 px-3 text-[14px] text-muted hover:bg-soft hover:text-fg"
+              >
+                <PixelIcon name="heart" />
+                {copy.nav.responses[lang]}
+                {member.hasResponses ? (
+                  <span className="ml-auto h-2 w-2 bg-brick" aria-hidden />
+                ) : null}
               </Link>
               <Link
                 href={href(lang, "/settings")}

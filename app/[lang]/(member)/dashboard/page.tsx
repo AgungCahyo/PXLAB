@@ -61,9 +61,17 @@ export default async function DashboardPage({
             <h1 className="pixel-title">{copy.worksTitle[lang]}</h1>
             <p className="mt-3 max-w-xl text-[15px] leading-relaxed text-muted">{copy.worksIntro[lang]}</p>
           </div>
-          <Link href={href(lang, "/create")} className={buttonClassName({ size: "sm" })}>
-            {copy.worksNew[lang]}
-          </Link>
+          <div className="flex flex-wrap gap-2">
+            <Link
+              href={href(lang, "/responses")}
+              className={buttonClassName({ size: "sm", variant: "outline" })}
+            >
+              {copy.nav.responses[lang]}
+            </Link>
+            <Link href={href(lang, "/create")} className={buttonClassName({ size: "sm" })}>
+              {copy.worksNew[lang]}
+            </Link>
+          </div>
         </div>
 
         {own.length === 0 ? (

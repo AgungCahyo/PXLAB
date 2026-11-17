@@ -1,7 +1,7 @@
 "use client"
 
-import { useActionState, useEffect, useState, useTransition } from "react"
-import { Button, buttonClassName } from "@/components/ui/Button"
+import { useActionState, useEffect, useMemo, useRef, useState, useTransition } from "react"
+import { Button } from "@/components/ui/Button"
 import { Dialog } from "@/components/ui/Dialog"
 import { PixelIcon } from "@/components/ui/PixelIcon"
 import {
@@ -11,7 +11,26 @@ import {
 import { canDownloadCreationPng } from "@/lib/auth/permissions"
 import { copy } from "@/lib/copy"
 import type { Lang } from "@/lib/i18n"
+import {
+  assertDownloadScaleAllowed,
+  downloadScaleOptions,
+  formatDownloadEstimateBytes,
+  scaledDownloadSize,
+  scalePngNearest,
+  triggerPngDownload,
+} from "@/lib/pixel-png-scale"
 import { cn } from "@/lib/utils"
+
+function pngFilename(title: string, creationId: string, scale: number) {
+  const base = title
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 64)
+  const stem = base || `artwork-${creationId.slice(0, 8)}`
+  return scale > 1 ? `${stem}-${scale}x.png` : `${stem}.png`
+}
 
 export function CreationMoreMenu({
   lang,
@@ -20,7 +39,13 @@ export function CreationMoreMenu({
   viewerId,
   status,
   allowPngDownload: initialAllow,
+  width,
+  height,
+  title = "",
   variant = "detail",
+  /** Playground: return live native PNG blob (works before cover.png exists). */
+  getNativePng,
+  onDownloaded,
 }: {
   lang: Lang
   creationId: string
@@ -28,17 +53,35 @@ export function CreationMoreMenu({
   viewerId: string | null
   status: "draft" | "published" | "hidden"
   allowPngDownload: boolean
+  width: number
+  height: number
+  title?: string
   /** detail = ⋯ control on the public page; embedded = panel body for Playground More */
   variant?: "detail" | "embedded"
+  getNativePng?: () => Promise<Blob>
+  onDownloaded?: () => void
 }) {
   const isOwner = Boolean(viewerId && viewerId === ownerId)
   const [open, setOpen] = useState(false)
   const [allow, setAllow] = useState(initialAllow)
+  const [scale, setScale] = useState(1)
+  const [estimateLabel, setEstimateLabel] = useState<string | null>(null)
+  const [downloadPending, setDownloadPending] = useState(false)
+  const [downloadError, setDownloadError] = useState(false)
   const [permState, permAction, permPending] = useActionState(
     updateAllowPngDownloadAction,
     null as CreationActionState,
   )
   const [, startTransition] = useTransition()
+  const estimateTimer = useRef<number | null>(null)
+  const estimateSeq = useRef(0)
+  const apiNativeCache = useRef<Blob | null>(null)
+
+  const scales = useMemo(() => downloadScaleOptions(width, height), [width, height])
+
+  useEffect(() => {
+    apiNativeCache.current = null
+  }, [creationId])
 
   useEffect(() => {
     if (!permPending) setAllow(initialAllow)
@@ -48,12 +91,55 @@ export function CreationMoreMenu({
     if (permState && "error" in permState) setAllow(initialAllow)
   }, [permState, initialAllow])
 
+  useEffect(() => {
+    if (!scales.includes(scale)) setScale(1)
+  }, [scales, scale])
+
   const canDownload = canDownloadCreationPng({
     viewerId,
     ownerId,
     status,
     allowPngDownload: allow,
   })
+
+  async function resolveNativePng(): Promise<Blob> {
+    if (getNativePng) return getNativePng()
+    if (apiNativeCache.current) return apiNativeCache.current
+    const res = await fetch(`/api/pixel-download/${creationId}`, { credentials: "same-origin" })
+    if (!res.ok) throw new Error("fetch")
+    const blob = await res.blob()
+    apiNativeCache.current = blob
+    return blob
+  }
+
+  const estimateReady = canDownload && (variant === "embedded" ? Boolean(getNativePng) : open)
+
+  useEffect(() => {
+    if (!estimateReady) {
+      setEstimateLabel(null)
+      return
+    }
+    if (estimateTimer.current) window.clearTimeout(estimateTimer.current)
+    const seq = ++estimateSeq.current
+    estimateTimer.current = window.setTimeout(() => {
+      void (async () => {
+        try {
+          const native = await resolveNativePng()
+          const scaled = await scalePngNearest(native, scale)
+          if (seq !== estimateSeq.current) return
+          setEstimateLabel(formatDownloadEstimateBytes(scaled.size))
+        } catch {
+          if (seq !== estimateSeq.current) return
+          setEstimateLabel(null)
+        }
+      })()
+    }, 280)
+    return () => {
+      if (estimateTimer.current) window.clearTimeout(estimateTimer.current)
+    }
+    // resolveNativePng closes over latest getNativePng / creationId
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional scale/open gated refresh
+  }, [estimateReady, scale, creationId, getNativePng])
 
   if (!isOwner && !canDownload) return null
 
@@ -69,16 +155,84 @@ export function CreationMoreMenu({
     })
   }
 
+  async function downloadScaled() {
+    if (downloadPending) return
+    const allowed = assertDownloadScaleAllowed(width, height, scale)
+    if (!allowed.ok) return
+    setDownloadPending(true)
+    setDownloadError(false)
+    try {
+      const native = await resolveNativePng()
+      const out = await scalePngNearest(native, scale)
+      triggerPngDownload(out, pngFilename(title, creationId, scale))
+      onDownloaded?.()
+    } catch {
+      setDownloadError(true)
+    } finally {
+      setDownloadPending(false)
+    }
+  }
+
+  const out = scaledDownloadSize(width, height, scale)
+  const sizeLabel = `${out.width}×${out.height}`
+
   const body = (
     <div className="grid gap-3">
       {canDownload ? (
-        <a
-          href={`/api/pixel-download/${creationId}`}
-          className={buttonClassName({ variant: "outline" })}
-        >
-          <PixelIcon name="download" />
-          {copy.downloadArtwork[lang]}
-        </a>
+        <div className="grid gap-2">
+          <p className="text-[14px] font-medium text-fg">{copy.downloadScaleLabel[lang]}</p>
+          <p className="text-[13px] text-muted">{copy.downloadScaleHint[lang]}</p>
+          <fieldset className="grid gap-2">
+            <legend className="sr-only">{copy.downloadScaleLabel[lang]}</legend>
+            <ul className="flex flex-wrap gap-2">
+              {scales.map((option) => {
+                const dims = scaledDownloadSize(width, height, option)
+                const label = copy.downloadScaleOption[lang]
+                  .replace("{scale}", String(option))
+                  .replace("{size}", `${dims.width}×${dims.height}`)
+                const selected = scale === option
+                return (
+                  <li key={option}>
+                    <button
+                      type="button"
+                      aria-pressed={selected}
+                      onClick={() => setScale(option)}
+                      className={cn(
+                        "inline-flex min-h-11 items-center border-[3px] px-3 text-[13px]",
+                        selected
+                          ? "border-earth bg-brick text-white shadow-[4px_4px_0_0_var(--fg)]"
+                          : "border-earth bg-card text-muted hover:bg-soft hover:text-fg",
+                      )}
+                    >
+                      {label}
+                    </button>
+                  </li>
+                )
+              })}
+            </ul>
+          </fieldset>
+          <p className="text-[13px] text-muted" aria-live="polite">
+            {sizeLabel}
+            {estimateLabel
+              ? ` · ${copy.downloadEstimate[lang].replace("{size}", estimateLabel)}`
+              : ""}
+          </p>
+          <Button
+            type="button"
+            variant="outline"
+            disabled={downloadPending}
+            aria-busy={downloadPending || undefined}
+            onClick={() => void downloadScaled()}
+          >
+            <PixelIcon name="download" />
+            {downloadPending ? copy.downloadWorking[lang] : copy.downloadArtwork[lang]}
+          </Button>
+          {downloadError ? (
+            <p className="text-[13px] text-brick" role="status">
+              {copy.downloadFailed[lang]}
+            </p>
+          ) : null}
+        </div>
       ) : null}
       {isOwner ? (
         <label className="flex min-h-11 cursor-pointer items-start gap-3 text-[14px] leading-snug">

@@ -146,6 +146,8 @@ export const COMMENT_BODY_MAX = 1000;
 export const COMMENT_PER_HOUR = 12;
 export const COMMENT_PER_CREATION_MAX = 100;
 export const COMMENTS_PAGE_SIZE = 20;
+/** Outgoing follows per rolling hour (spam guard). */
+export const FOLLOW_PER_HOUR = 40;
 
 export const REPORT_TARGET_TYPES = ["creation", "comment", "space_element"] as const;
 export type ReportTargetType = (typeof REPORT_TARGET_TYPES)[number];

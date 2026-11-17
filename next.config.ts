@@ -6,6 +6,7 @@ const projectRoot = path.dirname(fileURLToPath(import.meta.url));
 
 const indonesianRoutes = [
   "/explore",
+  "/creators",
   "/space",
   "/create",
   "/login",
@@ -13,6 +14,7 @@ const indonesianRoutes = [
   "/forgot-password",
   "/reset-password",
   "/dashboard",
+  "/responses",
   "/settings",
   "/admin",
 ];

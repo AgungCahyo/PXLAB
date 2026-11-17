@@ -26,7 +26,7 @@ Kebutuhan “Explore, Create, My Works, Profile, Artwork Detail, Settings” dap
 | Common Space | `/space` | Tetap catatan nanti, bukan item navigasi. Jangan dinaikkan. |
 | Beranda | `/` | Tetap bisa dibuka siapa saja. Bukan rumah anggota. |
 
-Yang tidak dibuat: `/works`, `/my`, feed, notifikasi, pengikut.
+Yang tidak dibuat: `/works`, `/my`, halaman feed terpisah, notifikasi. Follow satu arah hidup di profil/detail; feed Following adalah filter di `/explore` (`feed=following`), bukan rute baru. Daftar kreator baru: `/creators` (teaser di header Jelajah).
 
 Yang tidak digabung: profil publik dan daftar draf. Pengunjung tidak boleh melihat draf. Yang tidak dipisah menjadi aplikasi lain: Playground. Ia tetap di dalam situs.
 
@@ -37,6 +37,7 @@ Yang tidak digabung: profil publik dan daftar draf. Pengunjung tidak boleh melih
 ```text
 /                         Beranda. Karya terbit + ajakan. Bukan rumah anggota.
 /explore                  Discover. Pixel bawaan. Jenis lain sekunder.
+/creators                 Kenali kreator dari karya pixel terbaru.
 /creation/[id]            Showcase satu karya + Connect.
 /u/[username]             Etalase publik.
 /login                    Masuk. Hormati next.
@@ -116,4 +117,4 @@ Draf yang belum dinamai ditulis “Belum dinamai”, bukan judul publik “Tanpa
 
 ## 7. Yang sengaja tidak masuk navigasi
 
-Pencarian, urutan populer, pengikut, notifikasi, dan Common Space sebagai tujuan utama. Urutan Jelajah tetap `published_at` terbaru. Filter jenis tetap ada, tetapi jenis lama tidak lagi setara secara visual dengan Pixel (lihat REDESIGN-BLUEPRINT.md).
+Pencarian global baru, urutan populer, angka pengikut publik, notifikasi, dan Common Space sebagai tujuan utama. Urutan Jelajah tetap `published_at` terbaru (termasuk tab Following). Filter ukuran tetap ada; follow tanpa angka publik diizinkan.

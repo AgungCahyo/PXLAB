@@ -65,12 +65,14 @@ export function tagsForCard(tags: string[] | null | undefined) {
 }
 
 export type ExploreCategoryFilter = CreationCategory | "all"
+export type ExploreFeed = "all" | "following"
 
 export type ExploreQuery = {
   category?: ExploreCategoryFilter
   q?: string
   /** Canonical tag without #. Ready for M5 filter. */
   tag?: string
+  feed?: ExploreFeed
   page?: number
 }
 
@@ -78,6 +80,10 @@ export function parseExploreCategory(value?: string): ExploreCategoryFilter {
   if (!value || value === "all") return "all"
   if (isCreationCategory(value)) return value
   return "all"
+}
+
+export function parseExploreFeed(value?: string): ExploreFeed {
+  return value === "following" ? "following" : "all"
 }
 
 export function parseExploreSearch(value?: string): string {
@@ -101,9 +107,11 @@ export function exploreHref(lang: Lang, query: ExploreQuery = {}, pageArg = 1) {
   const category = query.category ?? "all"
   const q = parseExploreSearch(query.q)
   const tag = parseExploreTag(query.tag)
+  const feed = query.feed ?? "all"
   const page = Math.max(1, query.page ?? pageArg)
 
   const params = new URLSearchParams()
+  if (feed === "following") params.set("feed", "following")
   if (category !== "all") params.set("category", category)
   if (q) params.set("q", q)
   if (tag) params.set("tag", tag)

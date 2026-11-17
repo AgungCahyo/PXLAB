@@ -15,6 +15,7 @@ import {
   COMMENT_PER_CREATION_MAX,
   COMMENT_PER_HOUR,
   COMMENTS_PAGE_SIZE,
+  FOLLOW_PER_HOUR,
   REACTION_TYPE,
   REPORT_PER_HOUR,
 } from "@/lib/site"
@@ -24,10 +25,12 @@ import {
   addCommentSchema,
   commentIdSchema,
   editCommentSchema,
+  followCreatorSchema,
   submitReportSchema,
   toggleReactionSchema,
 } from "@/lib/validations/community"
 import { getPublishedCreation } from "@/features/creations/queries"
+import { countOwnFollowsSince } from "@/features/community/follows"
 import {
   countCommentsOnCreation,
   countOwnCommentsSince,
@@ -340,5 +343,86 @@ export async function submitReportAction(
 
   if (parsed.data.target_type === "space_element") revalidateSpace()
   if (parsed.data.target_type === "creation") revalidateCreation(parsed.data.target_id)
+  return { ok: true }
+}
+
+function revalidateFollowTargets(username?: string | null) {
+  revalidatePath(href("id", "/explore"))
+  revalidatePath(href("en", "/explore"))
+  if (username) {
+    revalidatePath(href("id", `/u/${username}`))
+    revalidatePath(href("en", `/u/${username}`))
+  }
+}
+
+export async function followCreatorAction(
+  _prev: CommunityActionState,
+  formData: FormData,
+): Promise<CommunityActionState> {
+  const parsed = followCreatorSchema.safeParse({ user_id: formData.get("user_id") })
+  if (!parsed.success) return { error: "invalid_input" }
+
+  const profile = await getCurrentProfile()
+  if (!profile) return { error: "not_authenticated" }
+  if (parsed.data.user_id === profile.id) return { error: "invalid_input" }
+
+  const publicClient = createPublicSupabase()
+  if (!publicClient) return { error: "not_configured" }
+  const { data: target } = await publicClient
+    .from("profiles")
+    .select("id, username")
+    .eq("id", parsed.data.user_id)
+    .maybeSingle()
+  if (!target) return { error: "not_found" }
+
+  const recent = await countOwnFollowsSince(hourAgoIso())
+  if (recent >= FOLLOW_PER_HOUR) return { error: "limit_reached" }
+
+  const supabase = await createServerSupabase()
+  if (!supabase) return { error: "not_configured" }
+
+  const { error } = await supabase.from("follows").insert({
+    follower_id: profile.id,
+    following_id: parsed.data.user_id,
+  })
+  if (error) {
+    const code = error.code ?? ""
+    if (code === "23505") {
+      revalidateFollowTargets(target.username as string)
+      return { ok: true }
+    }
+    return { error: "invalid_input" }
+  }
+
+  revalidateFollowTargets(target.username as string)
+  return { ok: true }
+}
+
+export async function unfollowCreatorAction(
+  _prev: CommunityActionState,
+  formData: FormData,
+): Promise<CommunityActionState> {
+  const parsed = followCreatorSchema.safeParse({ user_id: formData.get("user_id") })
+  if (!parsed.success) return { error: "invalid_input" }
+
+  const profile = await getCurrentProfile()
+  if (!profile) return { error: "not_authenticated" }
+
+  const publicClient = createPublicSupabase()
+  const { data: target } = publicClient
+    ? await publicClient.from("profiles").select("username").eq("id", parsed.data.user_id).maybeSingle()
+    : { data: null }
+
+  const supabase = await createServerSupabase()
+  if (!supabase) return { error: "not_configured" }
+
+  const { error } = await supabase
+    .from("follows")
+    .delete()
+    .eq("follower_id", profile.id)
+    .eq("following_id", parsed.data.user_id)
+  if (error) return { error: "invalid_input" }
+
+  revalidateFollowTargets(target?.username as string | undefined)
   return { ok: true }
 }

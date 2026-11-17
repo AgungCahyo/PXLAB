@@ -3,7 +3,7 @@ import { notFound } from "next/navigation"
 import { connection } from "next/server"
 import { PlaygroundForm } from "@/components/creations/PlaygroundForm"
 import { StudioForm } from "@/components/creations/StudioForm"
-import { getOwnedCreation, loadOwnedPixelSource } from "@/features/creations/queries"
+import { getOwnedCreation, getPublishedCreation, loadOwnedPixelSource } from "@/features/creations/queries"
 import { copy } from "@/lib/copy"
 import { isLang } from "@/lib/i18n"
 import { pageMeta } from "@/lib/meta"
@@ -42,12 +42,23 @@ export default async function EditCreationPage({
     creation.type === "pixel" ? await loadOwnedPixelSource(creation) : { source: null, broken: false }
 
   if (creation.type === "pixel") {
+    const remixParent =
+      creation.forked_from ? await getPublishedCreation(creation.forked_from) : null
     return (
       <PlaygroundForm
         lang={raw}
         creation={creation}
         initialSource={pixel.source}
         loadBroken={pixel.broken}
+        remixOf={
+          remixParent
+            ? {
+                id: remixParent.id,
+                title: remixParent.title,
+                authorUsername: remixParent.author.username,
+              }
+            : null
+        }
       />
     )
   }

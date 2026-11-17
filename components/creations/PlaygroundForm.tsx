@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useRef, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import { useFormStatus } from "react-dom"
 import { useRouter } from "next/navigation"
 import { PixelBoard, type PixelBoardHandle, type Tool } from "@/components/canvas/PixelBoard"
@@ -73,11 +73,13 @@ export function PlaygroundForm({
   creation,
   initialSource,
   loadBroken,
+  remixOf = null,
 }: {
   lang: Lang
   creation: CreationRow
   initialSource: PixelSourceV1 | null
   loadBroken: boolean
+  remixOf?: { id: string; title: string; authorUsername: string } | null
 }) {
   const header = pixelContentSchema.safeParse(creation.content)
   const width = header.success ? header.data.width : 64
@@ -99,6 +101,7 @@ export function PlaygroundForm({
   const [publishName, setPublishName] = useState("")
   const [nameError, setNameError] = useState(false)
   const [publishDoneOpen, setPublishDoneOpen] = useState(false)
+  const [captionNudgeOpen, setCaptionNudgeOpen] = useState(false)
   const [title, setTitle] = useState(isUnnamedTitle(creation.title) ? "" : creation.title)
   const [caption, setCaption] = useState(creation.caption ?? "")
   const [tags, setTags] = useState<string[]>(creation.tags ?? [])
@@ -391,6 +394,20 @@ export function PlaygroundForm({
     void leaveSaveAndGo()
   }
 
+  const runPublish = () => {
+    void persist("publish", { commitMetadata: true }).then((result) => {
+      if (result && "ok" in result && result.published) setPublishDoneOpen(true)
+    })
+  }
+
+  const continuePublishAfterTitle = () => {
+    if (!captionRef.current.trim()) {
+      setCaptionNudgeOpen(true)
+      return
+    }
+    runPublish()
+  }
+
   const requestPublish = () => {
     if (!titleRef.current.trim() || isUnnamedTitle(titleRef.current)) {
       setPublishName("")
@@ -398,9 +415,7 @@ export function PlaygroundForm({
       setNameOpen(true)
       return
     }
-    void persist("publish", { commitMetadata: true }).then((result) => {
-      if (result && "ok" in result && result.published) setPublishDoneOpen(true)
-    })
+    continuePublishAfterTitle()
   }
 
   const confirmNameAndPublish = () => {
@@ -413,9 +428,7 @@ export function PlaygroundForm({
     titleRef.current = name
     touchMetadata({ title: name })
     setNameOpen(false)
-    void persist("publish", { commitMetadata: true }).then((result) => {
-      if (result && "ok" in result && result.published) setPublishDoneOpen(true)
-    })
+    continuePublishAfterTitle()
   }
 
   useEffect(() => {
@@ -498,6 +511,12 @@ export function PlaygroundForm({
     }
   }, [])
 
+  const getNativePng = useCallback(async () => {
+    const board = boardRef.current
+    if (!board) throw new Error("board")
+    return board.exportPng()
+  }, [])
+
   const togglePreview = async () => {
     if (preview) {
       if (previewUrl) URL.revokeObjectURL(previewUrl)
@@ -505,10 +524,8 @@ export function PlaygroundForm({
       setPreview(false)
       return
     }
-    const board = boardRef.current
-    if (!board) return
     try {
-      const png = await board.exportPng()
+      const png = await getNativePng()
       setPreviewUrl(URL.createObjectURL(png))
       setPreview(true)
     } catch {
@@ -565,6 +582,15 @@ export function PlaygroundForm({
       data-chrome="playground"
       className="fixed inset-x-0 bottom-0 top-0 z-[60] flex flex-col overflow-hidden overscroll-none bg-bg md:top-[66px]"
     >
+      {remixOf ? (
+        <p className="shrink-0 border-b-[3px] border-earth bg-soft px-3 py-2 text-[13px] text-muted">
+          {copy.remixFrom[lang]} @{remixOf.authorUsername}
+          {" · "}
+          <a href={href(lang, `/creation/${remixOf.id}`)} className="hover:text-fg">
+            {displayTitle(remixOf.title, lang)}
+          </a>
+        </p>
+      ) : null}
       <header className="playground-header grid shrink-0 grid-cols-[auto_1fr_auto] items-center gap-2 border-b-[3px] border-earth bg-bg px-2 py-2 sm:px-3">
         <button
           type="button"
@@ -874,7 +900,12 @@ export function PlaygroundForm({
             viewerId={creation.user_id}
             status={statusPublished ? "published" : "draft"}
             allowPngDownload={creation.allow_png_download}
+            width={width}
+            height={height}
+            title={title}
             variant="embedded"
+            getNativePng={getNativePng}
+            onDownloaded={() => setMoreOpen(false)}
           />
           <Button
             type="button"
@@ -1154,16 +1185,64 @@ export function PlaygroundForm({
       </Dialog>
 
       <Dialog
+        open={captionNudgeOpen}
+        onClose={() => setCaptionNudgeOpen(false)}
+        title={copy.worksPublishCaptionNudgeTitle[lang]}
+        closeLabel={copy.closeMenu[lang]}
+      >
+        <p className="text-[15px] text-muted">{copy.worksPublishCaptionNudgeBody[lang]}</p>
+        <div className="mt-4 flex flex-wrap gap-3">
+          <Button
+            type="button"
+            onClick={() => {
+              setCaptionNudgeOpen(false)
+              setDetailsOpen(true)
+            }}
+          >
+            {copy.worksPublishCaptionAdd[lang]}
+          </Button>
+          <Button
+            type="button"
+            variant="secondary"
+            disabled={pending}
+            onClick={() => {
+              setCaptionNudgeOpen(false)
+              runPublish()
+            }}
+          >
+            {copy.worksPublishCaptionSkip[lang]}
+          </Button>
+        </div>
+      </Dialog>
+
+      <Dialog
         open={publishDoneOpen}
         onClose={() => setPublishDoneOpen(false)}
         title={copy.worksPublishDoneTitle[lang]}
         closeLabel={copy.closeMenu[lang]}
       >
         <p className="text-[15px] text-muted">{copy.worksPublishDoneBody[lang]}</p>
+        {!captionRef.current.trim() ? (
+          <p className="mt-2 text-[13px] text-muted">{copy.worksPublishAddCaptionHint[lang]}</p>
+        ) : null}
         <div className="mt-4 flex flex-wrap gap-3">
           <a href={href(lang, `/creation/${creation.id}`)} className={buttonClassName()}>
             {copy.worksViewWork[lang]}
           </a>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => {
+              const url =
+                typeof window !== "undefined"
+                  ? `${window.location.origin}${href(lang, `/creation/${creation.id}`)}`
+                  : href(lang, `/creation/${creation.id}`)
+              void navigator.clipboard?.writeText(url)
+            }}
+          >
+            <PixelIcon name="share" />
+            {copy.share[lang]}
+          </Button>
           <Button type="button" variant="secondary" onClick={() => setPublishDoneOpen(false)}>
             {copy.worksKeepEditing[lang]}
           </Button>

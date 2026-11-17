@@ -5,7 +5,7 @@ import { flushSync } from "react-dom"
 import Link from "next/link"
 import { ProfileAvatar } from "@/components/profiles/ProfileAvatar"
 import { Alert } from "@/components/ui/Alert"
-import { Button } from "@/components/ui/Button"
+import { Button, buttonClassName } from "@/components/ui/Button"
 import { PixelIcon } from "@/components/ui/PixelIcon"
 import { Textarea } from "@/components/ui/Textarea"
 import { ReportButton } from "@/components/community/ReportDialog"
@@ -44,12 +44,13 @@ export function CreationCommunity({
   member,
   forkedFrom,
   allowFork = true,
+  prompt,
 }: {
   lang: Lang
   creationId: string
   /** Kept for call-site compatibility; engagement renders outside this section. */
   title?: string
-  source: { id: string; title: string } | null
+  source: { id: string; title: string; authorUsername?: string } | null
   roots: ConversationRoot[]
   total: number
   hasEarlier: boolean
@@ -58,7 +59,10 @@ export function CreationCommunity({
   member: CommunityMember | null
   forkedFrom: string | null
   allowFork?: boolean
+  /** Contextual root composer placeholder. */
+  prompt?: string
 }) {
+  const composerPrompt = prompt ?? copy.conversationPrompt[lang]
   const [earlier, setEarlier] = useState<ConversationRoot[]>([])
   const [hasEarlier, setHasEarlier] = useState(initialHasEarlier)
   const [loadingEarlier, setLoadingEarlier] = useState(false)
@@ -207,18 +211,6 @@ export function CreationCommunity({
         <p className="mt-3 text-[14px] text-muted">{copy.forkedUnavailable[lang]}</p>
       ) : null}
 
-      {!member ? (
-        <p className="mt-4 text-[14px] text-muted">
-          {copy.commentSignIn[lang]}{" "}
-          <Link
-            href={loginHref(lang, href(lang, `/creation/${creationId}`))}
-            className="underline hover:text-fg"
-          >
-            {copy.nav.signIn[lang]}
-          </Link>
-        </p>
-      ) : null}
-
       {hasEarlier ? (
         <div className="mt-8">
           <Button
@@ -320,24 +312,49 @@ export function CreationCommunity({
         </ul>
       )}
 
-      {member ? (
-        <div className="mt-8">
+      <div className="mt-8">
+        {member ? (
           <ConversationComposer
             lang={lang}
             creationId={creationId}
             member={member}
+            prompt={composerPrompt}
             onOptimistic={onOptimistic}
             onPosted={onPosted}
             onFailed={onFailed}
           />
-        </div>
-      ) : null}
+        ) : (
+          <GuestConversationComposer lang={lang} creationId={creationId} prompt={composerPrompt} />
+        )}
+      </div>
 
       <div className="mt-8 flex flex-wrap items-center gap-3">
-        {member && allowFork ? <ForkForm lang={lang} creationId={creationId} /> : null}
+        {allowFork ? <ForkForm lang={lang} creationId={creationId} member={Boolean(member)} /> : null}
         <ReportButton lang={lang} targetType="creation" targetId={creationId} member={Boolean(member)} />
       </div>
     </section>
+  )
+}
+
+function GuestConversationComposer({
+  lang,
+  creationId,
+  prompt,
+}: {
+  lang: Lang
+  creationId: string
+  prompt: string
+}) {
+  const login = loginHref(lang, href(lang, `/creation/${creationId}`))
+  return (
+    <div className="grid gap-3">
+      <p className="w-full border-[3px] border-earth bg-card px-3 py-3 text-left text-[15px] text-muted shadow-[4px_4px_0_0_var(--fg)]">
+        {prompt}
+      </p>
+      <Link href={login} className={cn(buttonClassName({ size: "sm" }), "w-fit")}>
+        {copy.conversationGuestPrompt[lang]}
+      </Link>
+    </div>
   )
 }
 
@@ -449,6 +466,7 @@ function ConversationComposer({
   replyTo,
   collapsed = true,
   initialContent = "",
+  prompt,
   onContentChange,
   onOptimistic,
   onPosted,
@@ -462,6 +480,7 @@ function ConversationComposer({
   replyTo?: string
   collapsed?: boolean
   initialContent?: string
+  prompt?: string
   onContentChange?: (value: string) => void
   onOptimistic: (note: ConversationNote) => void
   onPosted: (tempId: string, posted: PostedComment) => void
@@ -472,6 +491,7 @@ function ConversationComposer({
   const [content, setContent] = useState(initialContent)
   const [error, setError] = useState<CommunityActionState>(null)
   const [pending, setPending] = useState(false)
+  const rootPrompt = prompt ?? copy.conversationPrompt[lang]
 
   if (!open) {
     return (
@@ -480,7 +500,7 @@ function ConversationComposer({
         className="w-full border-[3px] border-earth bg-card px-3 py-3 text-left text-[15px] text-muted shadow-[4px_4px_0_0_var(--fg)] hover:bg-soft"
         onClick={() => setOpen(true)}
       >
-        {copy.conversationPrompt[lang]}
+        {rootPrompt}
       </button>
     )
   }
@@ -543,7 +563,7 @@ function ConversationComposer({
             label={
               parentId
                 ? `${copy.conversationReplyTo[lang]} @${replyTo ?? ""}`
-                : copy.conversationPrompt[lang]
+                : rootPrompt
             }
             className="min-h-24 sm:min-h-28"
           />
@@ -641,14 +661,18 @@ export function CreationEngagement({
   title,
   appreciated,
   appreciateCount,
+  remixCount = 0,
   member,
+  allowFork = false,
 }: {
   lang: Lang
   creationId: string
   title: string
   appreciated: boolean
   appreciateCount: number
+  remixCount?: number
   member: CommunityMember | null
+  allowFork?: boolean
 }) {
   return (
     <div className="flex flex-wrap items-center gap-2">
@@ -666,6 +690,13 @@ export function CreationEngagement({
           {appreciateCount > 0 ? ` · ${appreciateCount}` : ""}
         </p>
       )}
+      {allowFork ? (
+        <ForkForm lang={lang} creationId={creationId} member={Boolean(member)} remixCount={remixCount} />
+      ) : remixCount > 0 ? (
+        <span className="inline-flex min-h-9 items-center border-[3px] border-earth bg-card px-3 text-[13px] text-muted">
+          {copy.remixCount[lang].replace("{count}", String(remixCount))}
+        </span>
+      ) : null}
       <ShareButton lang={lang} creationId={creationId} title={title} />
     </div>
   )
@@ -797,11 +828,38 @@ function ShareButton({
   )
 }
 
-function ForkForm({ lang, creationId }: { lang: Lang; creationId: string }) {
+function ForkForm({
+  lang,
+  creationId,
+  member,
+  remixCount = 0,
+}: {
+  lang: Lang
+  creationId: string
+  member: boolean
+  remixCount?: number
+}) {
   const [state, action, pending] = useActionState<CreationActionState, FormData>(
     forkCreationAction,
     null,
   )
+  const label = pending
+    ? copy.forkWorking[lang]
+    : remixCount > 0
+      ? `${copy.fork[lang]} · ${remixCount}`
+      : copy.fork[lang]
+
+  if (!member) {
+    return (
+      <Link
+        href={loginHref(lang, href(lang, `/creation/${creationId}`))}
+        className={buttonClassName({ size: "sm", variant: "outline" })}
+      >
+        {copy.remixSignIn[lang]}
+      </Link>
+    )
+  }
+
   return (
     <form action={action}>
       <input type="hidden" name="lang" value={lang} />
@@ -811,8 +869,8 @@ function ForkForm({ lang, creationId }: { lang: Lang; creationId: string }) {
           {copy.errors[state.error][lang]}
         </Alert>
       ) : null}
-      <Button type="submit" size="sm" variant="ghost" disabled={pending} aria-busy={pending || undefined}>
-        {pending ? copy.forkWorking[lang] : copy.fork[lang]}
+      <Button type="submit" size="sm" variant="outline" disabled={pending} aria-busy={pending || undefined}>
+        {label}
       </Button>
     </form>
   )

@@ -12,10 +12,11 @@ export type PublicProfile = {
 
 export type MemberProfile = PublicProfile & {
   role: "member" | "admin"
+  activity_seen_at: string | null
 }
 
 const PUBLIC_PROFILE_COLUMNS = "id, username, display_name, bio, avatar_url, created_at"
-const MEMBER_PROFILE_COLUMNS = `${PUBLIC_PROFILE_COLUMNS}, role`
+const MEMBER_PROFILE_COLUMNS = `${PUBLIC_PROFILE_COLUMNS}, role, activity_seen_at`
 
 export async function getSessionUserId() {
   const supabase = await createServerSupabase()

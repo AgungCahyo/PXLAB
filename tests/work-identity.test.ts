@@ -18,7 +18,7 @@ describe("unnamed draft titles", () => {
   })
 
   it("keeps Create from writing the old untitled labels", () => {
-    const form = read("components/creations/StudioNewForm.tsx")
+    const form = read("components/creations/PixelNewForm.tsx")
     expect(form).toMatch(/DRAFT_UNNAMED_TITLE/)
     expect(form).not.toMatch(/pixelUntitled/)
   })

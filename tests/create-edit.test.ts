@@ -6,7 +6,7 @@ const read = (file: string) => readFileSync(path.resolve(__dirname, "..", file),
 
 describe("canvas size selection", () => {
   const css = read("app/globals.css")
-  const form = read("components/creations/StudioNewForm.tsx")
+  const form = read("components/creations/PixelNewForm.tsx")
 
   it("uses a selected class that .pixel-frame cannot override", () => {
     expect(css).toMatch(/\.pixel-choice\[aria-pressed="true"\]/)
@@ -23,7 +23,7 @@ describe("edit existing work instead of copying it", () => {
   const fork = read("features/creations/actions.ts")
 
   it("keeps Create as new-work only and lists own works on My Works", () => {
-    expect(createPage).toMatch(/StudioNewForm/)
+    expect(createPage).toMatch(/PixelNewForm/)
     expect(createPage).toMatch(/createManageLink/)
     expect(createPage).toMatch(/\/dashboard/)
     expect(createPage).not.toMatch(/listOwnCreations/)

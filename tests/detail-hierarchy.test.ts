@@ -34,9 +34,12 @@ describe("artwork detail hierarchy", () => {
     )
   })
 
-  it("adds download More menu outside engagement and keeps fork in conversation", () => {
+  it("adds download More menu outside engagement and keeps remix beside appreciate", () => {
     expect(page).toMatch(/<CreationEngagement[\s\S]*?<CreationMoreMenu/)
-    expect(community).toMatch(/allowFork/)
+    expect(page).toMatch(/allowFork=\{!isOwner\}/)
+    expect(page).toMatch(/CreatorBlock/)
+    expect(page).toMatch(/RemixStrip/)
+    expect(community).toMatch(/ForkForm/)
     expect(community).toMatch(/AppreciateForm/)
     expect(page).not.toMatch(/AppreciateForm/)
   })

@@ -59,6 +59,7 @@ function revalidateCreation(lang: Lang, id: string, username?: string) {
   revalidatePath(href(lang, "/explore"))
   revalidatePath(href(lang, "/create"))
   revalidatePath(href(lang, "/dashboard"))
+  revalidatePath(href(lang, "/responses"))
   revalidatePath(href(lang, `/create/${id}`))
   revalidatePath(href(lang, `/creation/${id}`))
   if (username) revalidatePath(href(lang, `/u/${username}`))

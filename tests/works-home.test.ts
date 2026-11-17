@@ -12,7 +12,7 @@ describe("Create and My Works stay separate", () => {
   const actions = read("features/creations/actions.ts")
 
   it("keeps Create as the new-canvas door only", () => {
-    expect(createPage).toMatch(/StudioNewForm/)
+    expect(createPage).toMatch(/PixelNewForm/)
     expect(createPage).not.toMatch(/listOwnCreations/)
     expect(createPage).toMatch(/\/dashboard/)
   })
@@ -48,7 +48,8 @@ describe("Create and My Works stay separate", () => {
     expect(profile).toMatch(/grid-cols-2 gap-3 lg:grid-cols-3 lg:gap-4 xl:grid-cols-4/)
     expect(profile).toMatch(/nav\.dashboard/)
     expect(profile).toMatch(/nav\.settings/)
-    expect(profile).not.toMatch(/memberSince/)
+    expect(profile).toMatch(/memberSince/)
+    expect(profile).toMatch(/profileWorksCount/)
     expect(profile).not.toMatch(/LogoutButton/)
   })
 

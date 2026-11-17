@@ -2,10 +2,14 @@ import type { Metadata } from "next"
 import Link from "next/link"
 import { notFound } from "next/navigation"
 import { connection } from "next/server"
-import { StudioNewForm } from "@/components/creations/StudioNewForm"
+import { CreateInspiration } from "@/components/creations/CreateInspiration"
+import { PixelNewForm } from "@/components/creations/PixelNewForm"
+import { listPublishedCreations } from "@/features/creations/queries"
 import { copy } from "@/lib/copy"
 import { href, isLang } from "@/lib/i18n"
 import { pageMeta } from "@/lib/meta"
+import type { CreationCategory } from "@/lib/site"
+import type { CreationCard } from "@/features/creations/queries"
 
 export const instant = false
 
@@ -35,6 +39,19 @@ export default async function CreatePage({
   const lang = raw
   await connection()
 
+  const sizes: CreationCategory[] = ["icon", "small", "sprite"]
+  const results = await Promise.all(
+    sizes.map((category) =>
+      listPublishedCreations({ type: "pixel", category, page: 1 }).then((result) => ({
+        category,
+        items: result.failed ? ([] as CreationCard[]) : result.items.slice(0, 4),
+      })),
+    ),
+  )
+  const bySize = Object.fromEntries(
+    results.map((entry) => [entry.category, entry.items]),
+  ) as Partial<Record<CreationCategory, CreationCard[]>>
+
   return (
     <div className="mx-auto w-full min-w-0 max-w-3xl px-5 py-8 sm:px-8 sm:py-10 lg:px-16">
       <h1 className="pixel-title">{copy.createNewHeading[lang]}</h1>
@@ -48,8 +65,9 @@ export default async function CreatePage({
         </Link>
       </p>
       <div className="mt-8">
-        <StudioNewForm lang={lang} />
+        <PixelNewForm lang={lang} />
       </div>
+      <CreateInspiration lang={lang} bySize={bySize} />
     </div>
   )
 }

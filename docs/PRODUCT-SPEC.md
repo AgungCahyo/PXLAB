@@ -16,7 +16,7 @@ The application already exists (original MVP Phases 0–5 plus a local pixel pro
 
 ## 1. Product vision
 
-THE COMMONS is a public home for pixel art. Members draw in a personal Pixel Art Playground, publish finished works, and meet other people’s art through a gallery — not through follower counts, rankings, or an algorithmic feed.
+THE COMMONS is a public home for pixel art. Members draw in a personal Pixel Art Playground, publish finished works, and meet other people’s art through a gallery. One-way follows may help members find new work from creators they care about; the product still rejects public follower counts, rankings, and algorithmic feeds.
 
 The product owner provides the space. Members determine what the gallery becomes.
 
@@ -101,7 +101,7 @@ Visitors who browse, comment, and appreciate published work. Later: people who w
 
 ## 4. Product principles
 
-1. **Contribution over popularity.** Avoid likes-as-ranking, follower counts, or leaderboards as the central experience.
+1. **Contribution over popularity.** Avoid likes-as-ranking, public follower counts, or leaderboards as the central experience. Optional one-way follow is a path to more work, not a popularity score.
 2. **Low-friction creation.** A first published pixel artwork should be achievable quickly.
 3. **Artwork is the hero.** Interface color is deliberate; it must not compete with the canvas.
 4. **Attribution and respect.** Works and later Common Space marks stay attributed to their creators.
