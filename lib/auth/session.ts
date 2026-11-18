@@ -1,3 +1,4 @@
+import { parseAvatarConfig, type AvatarConfig } from "@/lib/avatar-gen"
 import { createPublicSupabase } from "@/lib/supabase/public"
 import { createServerSupabase } from "@/lib/supabase/server"
 
@@ -7,17 +8,30 @@ export type PublicProfile = {
   display_name: string | null
   bio: string | null
   avatar_url: string | null
+  avatar_config: AvatarConfig | null
   created_at: string
 }
 
-export type MemberProfile = PublicProfile & {
+export type MemberProfile = Omit<PublicProfile, "username"> & {
+  /** Null until identity onboarding completes. */
+  username: string | null
   role: "member" | "admin"
   activity_seen_at: string | null
   onboarding_completed_at: string | null
 }
 
-const PUBLIC_PROFILE_COLUMNS = "id, username, display_name, bio, avatar_url, created_at"
+const PUBLIC_PROFILE_COLUMNS =
+  "id, username, display_name, bio, avatar_url, avatar_config, created_at"
 const MEMBER_PROFILE_COLUMNS = `${PUBLIC_PROFILE_COLUMNS}, role, activity_seen_at, onboarding_completed_at`
+
+function mapProfile<T extends { avatar_config?: unknown }>(
+  row: T,
+): T & { avatar_config: AvatarConfig | null } {
+  return {
+    ...row,
+    avatar_config: parseAvatarConfig(row.avatar_config),
+  }
+}
 
 export function needsOnboarding(profile: {
   onboarding_completed_at: string | null
@@ -48,7 +62,7 @@ export async function getCurrentProfile(): Promise<MemberProfile | null> {
     .eq("id", user.id)
     .maybeSingle()
 
-  return (data as MemberProfile | null) ?? null
+  return data ? (mapProfile(data) as MemberProfile) : null
 }
 
 export async function getProfileByUsername(username: string): Promise<PublicProfile | null> {
@@ -59,5 +73,6 @@ export async function getProfileByUsername(username: string): Promise<PublicProf
     .select(PUBLIC_PROFILE_COLUMNS)
     .eq("username", username.toLowerCase())
     .maybeSingle()
-  return (data as PublicProfile | null) ?? null
+  if (!data?.username) return null
+  return mapProfile(data) as PublicProfile
 }

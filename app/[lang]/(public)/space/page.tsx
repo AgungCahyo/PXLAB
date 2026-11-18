@@ -38,7 +38,7 @@ export default async function SpacePage({
   await connection()
 
   const [elements, profile] = await Promise.all([listActiveSpaceElements(), getCurrentProfile()])
-  const member = profile ? { id: profile.id, username: profile.username } : null
+  const member = profile ? { id: profile.id, username: profile.username ?? "member" } : null
 
   return (
     <div className="mx-auto max-w-6xl px-5 py-16 sm:px-8 lg:px-16">

@@ -58,7 +58,7 @@ describe("community experience fase C", () => {
     const nextConfig = read("next.config.ts")
     expect(queries).toMatch(/listSimilarCreations/)
     expect(queries).toMatch(/listNewCreators/)
-    expect(detail).toMatch(/SimilarWorksStrip/)
+    expect(detail).toMatch(/SimilarWorksLazy|SimilarWorksStrip/)
     expect(explorePage).toMatch(/NewCreatorsStrip|NewCreatorsSlot/)
     expect(creatorsStrip).toMatch(/\/creators/)
     expect(creatorsPage).toMatch(/listNewCreators/)

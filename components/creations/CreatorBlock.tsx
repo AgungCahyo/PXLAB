@@ -1,6 +1,10 @@
 import Link from "next/link"
 import { FollowButton } from "@/components/community/FollowButton"
 import { CreationCard } from "@/components/creations/CreationCard"
+import {
+  recommendationStripItemClass,
+  recommendationStripListClass,
+} from "@/components/creations/RecommendationRack"
 import { ProfileAvatar } from "@/components/profiles/ProfileAvatar"
 import { SectionHeader } from "@/components/ui/PageHeader"
 import { copy } from "@/lib/copy"
@@ -46,7 +50,14 @@ export function CreatorBlock({
           href={profileHref}
           className="shrink-0 border-[3px] border-earth bg-card p-0.5 shadow-[4px_4px_0_0_var(--fg)]"
         >
-          <ProfileAvatar src={author.avatarUrl} alt={name} size="sm" className="border-0 sm:h-16 sm:w-16" />
+          <ProfileAvatar
+            src={author.avatarUrl}
+            avatarConfig={author.avatarConfig}
+            userId={authorId}
+            alt={name}
+            size="sm"
+            className="border-0 sm:h-16 sm:w-16"
+          />
         </Link>
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-start justify-between gap-3">
@@ -103,16 +114,16 @@ export function CreatorOtherWorks({
 
   return (
     <section
-      className="mt-10 border-t-[3px] border-earth pt-8"
+      className="mt-8 border-t-[3px] border-earth pt-6"
       aria-labelledby="creator-other-works-heading"
     >
       <SectionHeader
         id="creator-other-works-heading"
         title={copy.creatorOtherWorks[lang].replace("{username}", username)}
       />
-      <ul className="mt-4 grid min-w-0 grid-cols-2 gap-3 sm:grid-cols-4">
+      <ul className={recommendationStripListClass}>
         {items.map((item) => (
-          <li key={item.id} className="min-w-0">
+          <li key={item.id} className={recommendationStripItemClass}>
             <CreationCard creation={item} lang={lang} showAuthor={false} artTransition={false} />
           </li>
         ))}

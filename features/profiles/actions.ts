@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache"
 import { canEditProfile } from "@/lib/auth/permissions"
 import { getProfileByUsername, getSessionUserId } from "@/lib/auth/session"
 import type { AuthErrorCode } from "@/lib/auth/errors"
+import { defaultAvatarConfig, isAvatarConfig } from "@/lib/avatar-gen"
 import { href, isLang, type Lang } from "@/lib/i18n"
 import {
   AVATAR_BUCKET,
@@ -41,13 +42,18 @@ async function requireOwnProfile(): Promise<OwnProfileGate> {
     return { ok: false, error: "forbidden" }
   }
 
-  return { ok: true, userId, supabase, username: existing.username as string }
+  return {
+    ok: true,
+    userId,
+    supabase,
+    username: (existing.username as string | null) ?? "",
+  }
 }
 
 function revalidateProfilePaths(lang: Lang, username: string) {
   revalidatePath(href(lang, "/settings"))
   revalidatePath(href(lang, "/welcome"))
-  revalidatePath(href(lang, `/u/${username}`))
+  if (username) revalidatePath(href(lang, `/u/${username}`))
   revalidatePath(href(lang, "/dashboard"))
 }
 
@@ -73,11 +79,23 @@ export async function completeOnboardingAction(
   const taken = await getProfileByUsername(usernameParsed.data)
   if (taken && taken.id !== userId) return { error: "username_taken" }
 
+  const rawConfig = String(formData.get("avatarConfig") ?? "").trim()
+  let avatarConfig = defaultAvatarConfig(userId)
+  if (rawConfig) {
+    try {
+      const parsed = JSON.parse(rawConfig) as unknown
+      if (isAvatarConfig(parsed)) avatarConfig = parsed
+    } catch {
+      // Keep deterministic default when payload is malformed.
+    }
+  }
+
   const { error } = await supabase
     .from("profiles")
     .update({
       username: usernameParsed.data,
       display_name: displayParsed.data,
+      avatar_config: avatarConfig,
       onboarding_completed_at: new Date().toISOString(),
     })
     .eq("id", userId)
@@ -91,27 +109,6 @@ export async function completeOnboardingAction(
 
   revalidatePath("/", "layout")
   revalidateProfilePaths(lang, usernameParsed.data)
-  return { ok: true }
-}
-
-export async function skipOnboardingAction(
-  _prev: ProfileActionState,
-  formData: FormData,
-): Promise<ProfileActionState> {
-  const lang = langFromForm(formData)
-  const gate = await requireOwnProfile()
-  if (!gate.ok) return { error: gate.error }
-  const { userId, supabase, username } = gate
-
-  const { error } = await supabase
-    .from("profiles")
-    .update({ onboarding_completed_at: new Date().toISOString() })
-    .eq("id", userId)
-
-  if (error) return { error: "invalid_input" }
-
-  revalidatePath("/", "layout")
-  revalidateProfilePaths(lang, username)
   return { ok: true }
 }
 

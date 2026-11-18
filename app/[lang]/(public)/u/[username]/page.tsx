@@ -76,6 +76,8 @@ export default async function PublicProfilePage({
             <div className="shrink-0 self-start border-[3px] border-earth bg-card p-1 shadow-[4px_4px_0_0_var(--fg)]">
               <ProfileAvatar
                 src={profile.avatar_url}
+                avatarConfig={profile.avatar_config}
+                userId={profile.id}
                 alt={name}
                 size="lg"
                 className="border-0"

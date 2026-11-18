@@ -1,5 +1,6 @@
 import { cache } from "react"
 import { connection } from "next/server"
+import { parseAvatarConfig, type AvatarConfig } from "@/lib/avatar-gen"
 import { getSessionUserId } from "@/lib/auth/session"
 import { ilikeContains } from "@/lib/creations"
 import { createPublicSupabase } from "@/lib/supabase/public"
@@ -52,16 +53,20 @@ export type CreationCard = {
   commentCount?: number
   isNew?: boolean
   author: {
+    id: string | null
     username: string
     displayName: string | null
     avatarUrl: string | null
+    avatarConfig: AvatarConfig | null
   }
 }
 
 export type CreationAuthor = {
+  id: string | null
   username: string
   displayName: string | null
   avatarUrl: string | null
+  avatarConfig: AvatarConfig | null
   bio: string | null
 }
 
@@ -69,31 +74,42 @@ const CREATION_COLUMNS =
   "id, user_id, title, caption, tags, color_usage, type, category, content, cover_url, status, allow_png_download, forked_from, created_at, updated_at, published_at"
 const CARD_COLUMNS =
   "id, title, caption, tags, type, category, status, published_at, updated_at, user_id, cover_url"
-const PROFILE_CARD_EMBED = "profiles (username, display_name, avatar_url)"
-const PROFILE_DETAIL_EMBED = "profiles (username, display_name, avatar_url, bio)"
+const PROFILE_CARD_EMBED = "profiles (username, display_name, avatar_url, avatar_config)"
+const PROFILE_DETAIL_EMBED = "profiles (username, display_name, avatar_url, avatar_config, bio)"
 
 type ProfileEmbed = {
-  username: string
+  username: string | null
   display_name: string | null
   avatar_url?: string | null
+  avatar_config?: unknown
   bio?: string | null
 }
 
-function authorOf(row: { profiles?: ProfileEmbed | ProfileEmbed[] | null }) {
+function authorOf(row: {
+  user_id?: string
+  profiles?: ProfileEmbed | ProfileEmbed[] | null
+}) {
   const profile = Array.isArray(row.profiles) ? row.profiles[0] : row.profiles
   return {
+    id: (row.user_id as string | undefined) ?? null,
     username: profile?.username ?? "member",
     displayName: profile?.display_name ?? null,
     avatarUrl: profile?.avatar_url ?? null,
+    avatarConfig: parseAvatarConfig(profile?.avatar_config),
   }
 }
 
-function authorDetailOf(row: { profiles?: ProfileEmbed | ProfileEmbed[] | null }): CreationAuthor {
+function authorDetailOf(row: {
+  user_id?: string
+  profiles?: ProfileEmbed | ProfileEmbed[] | null
+}): CreationAuthor {
   const profile = Array.isArray(row.profiles) ? row.profiles[0] : row.profiles
   return {
+    id: (row.user_id as string | undefined) ?? null,
     username: profile?.username ?? "member",
     displayName: profile?.display_name ?? null,
     avatarUrl: profile?.avatar_url ?? null,
+    avatarConfig: parseAvatarConfig(profile?.avatar_config),
     bio: profile?.bio ?? null,
   }
 }
@@ -205,7 +221,7 @@ export async function listPublishedCreations(args: {
   }
 }
 
-export async function listPublishedCreationsByUser(
+export const listPublishedCreationsByUser = cache(async function listPublishedCreationsByUser(
   userId: string,
   options: { excludeId?: string; limit?: number; type?: CreationType } = {},
 ): Promise<{ items: CreationCard[]; failed: boolean }> {
@@ -232,7 +248,7 @@ export async function listPublishedCreationsByUser(
     failed: false,
     items: data.map((row) => cardFromRow(row)),
   }
-}
+})
 
 /** Recent published pixel works that still have zero published comments. */
 export async function listQuietPublishedCreations(
@@ -268,7 +284,7 @@ export async function listQuietPublishedCreations(
 }
 
 /** Same category first, then tag overlap, then recent fill. */
-export async function listSimilarCreations(args: {
+export const listSimilarCreations = cache(async function listSimilarCreations(args: {
   id: string
   category: CreationCategory | null
   tags: string[]
@@ -278,7 +294,7 @@ export async function listSimilarCreations(args: {
   const supabase = createPublicSupabase()
   if (!supabase) return { items: [], failed: true }
 
-  const limit = Math.max(1, Math.min(8, args.limit ?? 4))
+  const limit = Math.max(1, Math.min(8, args.limit ?? 6))
   const select = `${CARD_COLUMNS}, ${PROFILE_CARD_EMBED}`
   let byCategory: CreationCard[] = []
 
@@ -339,12 +355,14 @@ export async function listSimilarCreations(args: {
   }
 
   return { failed: false, items: await attachCommentCounts(filled.slice(0, limit)) }
-}
+})
 
 export type NewCreatorCard = {
+  id: string
   username: string
   displayName: string | null
   avatarUrl: string | null
+  avatarConfig: AvatarConfig | null
   latestCreationId: string | null
   latestCoverUrl: string | null
   latestPublishedAt: string | null
@@ -377,9 +395,11 @@ export async function listNewCreators(
     seen.add(userId)
     const author = authorOf(row as Record<string, unknown>)
     items.push({
+      id: userId,
       username: author.username,
       displayName: author.displayName,
       avatarUrl: author.avatarUrl,
+      avatarConfig: author.avatarConfig,
       latestCreationId: (row.id as string) ?? null,
       latestCoverUrl: (row.cover_url as string | null) ?? null,
       latestPublishedAt: (row.published_at as string | null) ?? null,
@@ -389,9 +409,26 @@ export async function listNewCreators(
   return { failed: false, items }
 }
 
-export async function listPublishedRemixes(
+/** Lightweight remix total for engagement — no card rows. */
+export async function countPublishedRemixes(parentId: string): Promise<number> {
+  await connection()
+  const supabase = createPublicSupabase()
+  if (!supabase) return 0
+
+  const { count, error } = await supabase
+    .from("creations")
+    .select("id", { count: "exact", head: true })
+    .eq("forked_from", parentId)
+    .eq("status", "published")
+    .eq("type", "pixel")
+
+  if (error) return 0
+  return count ?? 0
+}
+
+export const listPublishedRemixes = cache(async function listPublishedRemixes(
   parentId: string,
-  limit = 4,
+  limit = 6,
 ): Promise<{ items: CreationCard[]; total: number; failed: boolean }> {
   await connection()
   const supabase = createPublicSupabase()
@@ -413,7 +450,7 @@ export async function listPublishedRemixes(
     total: count ?? data.length,
     items: data.map((row) => cardFromRow(row)),
   }
-}
+})
 
 /** Dedupes metadata + page (and any same-request callers) via React cache. */
 export const getPublishedCreation = cache(async function getPublishedCreation(
@@ -511,7 +548,13 @@ export async function listOwnCreations(): Promise<CreationCard[]> {
 
   return (data ?? []).map((row) => ({
     ...cardFromRow(row),
-    author: { username: "me", displayName: null, avatarUrl: null },
+    author: {
+      id: null,
+      username: "me",
+      displayName: null,
+      avatarUrl: null,
+      avatarConfig: null,
+    },
   }))
 }
 

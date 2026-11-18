@@ -40,9 +40,11 @@ async function AuthHeader({ lang }: { lang: Lang }) {
   const hasResponses = profile ? await hasUnseenCreationResponses() : false
   const member = profile
     ? {
+        id: profile.id,
         username: profile.username,
         displayName: profile.display_name,
         avatarUrl: profile.avatar_url,
+        avatarConfig: profile.avatar_config,
         isAdmin: profile.role === "admin",
         hasResponses,
       }

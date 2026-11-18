@@ -9,8 +9,9 @@ import { CreationMoreMenu } from "@/components/creations/CreationMoreMenu"
 import { CreationTags } from "@/components/creations/CreationTags"
 import { CreatorBlock, CreatorOtherWorks } from "@/components/creations/CreatorBlock"
 import { ConversationSkeleton } from "@/components/creations/PageSkeletons"
+import { RecommendationSkeleton } from "@/components/creations/RecommendationRack"
 import { RemixStrip } from "@/components/creations/RemixStrip"
-import { SimilarWorksStrip } from "@/components/creations/SimilarWorksStrip"
+import { SimilarWorksLazy } from "@/components/creations/SimilarWorksLazy"
 import { CreationCommunity, CreationEngagement } from "@/components/community/CreationCommunity"
 import { PageTransition } from "@/components/layout/PageTransition"
 import { BackLink } from "@/components/ui/BackLink"
@@ -19,10 +20,10 @@ import { PixelIcon } from "@/components/ui/PixelIcon"
 import { isFollowing } from "@/features/community/follows"
 import { getReactionSummary, listConversation } from "@/features/community/queries"
 import {
+  countPublishedRemixes,
   getPublishedCreation,
   listPublishedCreationsByUser,
   listPublishedRemixes,
-  listSimilarCreations,
 } from "@/features/creations/queries"
 import { getCurrentProfile } from "@/lib/auth/session"
 import { displayTitle } from "@/lib/creations"
@@ -83,9 +84,19 @@ export default async function CreationDetailPage({
 
   const profile = await getCurrentProfile()
   const member = profile
-    ? { id: profile.id, username: profile.username, avatarUrl: profile.avatar_url }
+    ? {
+        id: profile.id,
+        username: profile.username ?? "member",
+        avatarUrl: profile.avatar_url,
+      }
     : null
-  const reaction = await getReactionSummary(creation.id, member?.id ?? null)
+  const [reaction, remixCount, following] = await Promise.all([
+    getReactionSummary(creation.id, member?.id ?? null),
+    creation.type === "pixel" ? countPublishedRemixes(creation.id) : Promise.resolve(0),
+    profile && profile.id !== creation.user_id
+      ? isFollowing(profile.id, creation.user_id)
+      : Promise.resolve(false),
+  ])
   const isOwner = profile?.id === creation.user_id
   const title = displayTitle(creation.title, lang)
   const published = creation.published_at ?? creation.created_at
@@ -101,30 +112,7 @@ export default async function CreationDetailPage({
   const conversationPrompt = sizeLabel
     ? copy.conversationPromptSize[lang].replace("{size}", sizeLabel)
     : copy.conversationPrompt[lang]
-  const following =
-    profile && profile.id !== creation.user_id
-      ? await isFollowing(profile.id, creation.user_id)
-      : false
   const returnPath = `/creation/${creation.id}`
-
-  const [otherWorks, remixes, similar] = await Promise.all([
-    listPublishedCreationsByUser(creation.user_id, {
-      excludeId: creation.id,
-      limit: 4,
-      type: "pixel",
-    }),
-    isPixel ? listPublishedRemixes(creation.id, 4) : Promise.resolve({ items: [], total: 0, failed: false }),
-    isPixel
-      ? listSimilarCreations({
-          id: creation.id,
-          category: creation.category,
-          tags: creation.tags,
-          limit: 4,
-        })
-      : Promise.resolve({ items: [], failed: false }),
-  ])
-
-  const moreFromCreator = otherWorks.failed ? [] : otherWorks.items
 
   const identity = (
     <>
@@ -174,7 +162,7 @@ export default async function CreationDetailPage({
           title={title}
           appreciated={reaction.appreciated}
           appreciateCount={reaction.count}
-          remixCount={remixes.total}
+          remixCount={remixCount}
           member={member}
           allowFork={!isOwner}
         />
@@ -237,20 +225,6 @@ export default async function CreationDetailPage({
           </>
         )}
 
-        <CreatorOtherWorks
-          lang={lang}
-          username={creation.author.username}
-          items={moreFromCreator}
-        />
-
-        {!creation.source && remixes.total > 0 ? (
-          <RemixStrip lang={lang} items={remixes.items} total={remixes.total} />
-        ) : null}
-
-        {isPixel && !similar.failed && similar.items.length > 0 ? (
-          <SimilarWorksStrip lang={lang} items={similar.items} />
-        ) : null}
-
         <Suspense fallback={<ConversationSkeleton />}>
           <CreationConversationSlot
             lang={lang}
@@ -262,6 +236,30 @@ export default async function CreationDetailPage({
             prompt={conversationPrompt}
           />
         </Suspense>
+
+        <Suspense fallback={<RecommendationSkeleton />}>
+          <CreatorOtherWorksSlot
+            lang={lang}
+            userId={creation.user_id}
+            username={creation.author.username}
+            excludeId={creation.id}
+          />
+        </Suspense>
+
+        {!creation.source && remixCount > 0 ? (
+          <Suspense fallback={<RecommendationSkeleton />}>
+            <RemixStripSlot lang={lang} creationId={creation.id} />
+          </Suspense>
+        ) : null}
+
+        {isPixel ? (
+          <SimilarWorksLazy
+            lang={lang}
+            creationId={creation.id}
+            category={creation.category}
+            tags={creation.tags}
+          />
+        ) : null}
       </article>
     </PageTransition>
   )
@@ -300,4 +298,36 @@ async function CreationConversationSlot({
       prompt={prompt}
     />
   )
+}
+
+async function CreatorOtherWorksSlot({
+  lang,
+  userId,
+  username,
+  excludeId,
+}: {
+  lang: Lang
+  userId: string
+  username: string
+  excludeId: string
+}) {
+  const result = await listPublishedCreationsByUser(userId, {
+    excludeId,
+    limit: 6,
+    type: "pixel",
+  })
+  if (result.failed || result.items.length === 0) return null
+  return <CreatorOtherWorks lang={lang} username={username} items={result.items} />
+}
+
+async function RemixStripSlot({
+  lang,
+  creationId,
+}: {
+  lang: Lang
+  creationId: string
+}) {
+  const remixes = await listPublishedRemixes(creationId, 6)
+  if (remixes.failed || remixes.items.length === 0) return null
+  return <RemixStrip lang={lang} items={remixes.items} total={remixes.total} />
 }

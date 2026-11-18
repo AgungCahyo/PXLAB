@@ -35,11 +35,10 @@ export const bioSchema = z.string().trim().max(280)
 export const passwordSchema = z.string().min(8).max(72)
 export const emailSchema = z.string().trim().email()
 
+/** Credentials only — identity is collected on /welcome. */
 export const registerSchema = z.object({
   email: emailSchema,
   password: passwordSchema,
-  username: usernameSchema,
-  displayName: displayNameSchema,
 })
 
 export const loginSchema = z.object({

@@ -14,9 +14,11 @@ import { NAV_ITEMS } from "@/lib/site"
 import { cn } from "@/lib/utils"
 
 export type NavMember = {
-  username: string
+  id?: string | null
+  username: string | null
   displayName: string | null
   avatarUrl?: string | null
+  avatarConfig?: import("@/lib/avatar-gen").AvatarConfig | null
   isAdmin?: boolean
   hasResponses?: boolean
 } | null
@@ -124,12 +126,14 @@ export function SiteNav({ lang, member }: { lang: Lang; member: NavMember }) {
           >
             <ProfileAvatar
               src={member.avatarUrl}
-              alt={member.displayName ?? member.username}
+              avatarConfig={member.avatarConfig}
+              userId={member.id}
+              alt={member.displayName ?? member.username ?? "PXLB"}
               size="xs"
               className="border-earth"
             />
             <span className="hidden max-w-[8rem] truncate md:inline">
-              @{member.username}
+              {member.username ? `@${member.username}` : copy.nav.account[lang]}
             </span>
             {member.hasResponses ? (
               <span
@@ -144,7 +148,7 @@ export function SiteNav({ lang, member }: { lang: Lang; member: NavMember }) {
               className="absolute right-0 top-full z-50 mt-1 min-w-48 border-[3px] border-earth bg-card p-2 shadow-[4px_4px_0_0_var(--fg)]"
             >
               <Link
-                href={href(lang, `/u/${member.username}`)}
+                href={href(lang, member.username ? `/u/${member.username}` : "/welcome")}
                 onClick={() => setAccountOpen(false)}
                 className="flex min-h-11 items-center gap-2 px-3 text-[14px] text-muted hover:bg-soft hover:text-fg"
               >
@@ -240,10 +244,12 @@ export function AppTabBar({ lang, member }: { lang: Lang; member: NavMember }) {
     })
     items.push({
       key: "profile",
-      href: href(lang, `/u/${member.username}`),
+      href: href(lang, member.username ? `/u/${member.username}` : "/welcome"),
       label: copy.nav.profile[lang],
       icon: "user",
-      active: isActive(`/u/${member.username}`),
+      active: member.username
+        ? isActive(`/u/${member.username}`)
+        : isActive("/welcome"),
       avatar: true,
     })
   } else {
@@ -276,7 +282,9 @@ export function AppTabBar({ lang, member }: { lang: Lang; member: NavMember }) {
               {item.avatar && member ? (
                 <ProfileAvatar
                   src={member.avatarUrl}
-                  alt={member.displayName ?? member.username}
+                  avatarConfig={member.avatarConfig}
+                  userId={member.id}
+                  alt={member.displayName ?? member.username ?? "PXLB"}
                   size="xs"
                 />
               ) : (

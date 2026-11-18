@@ -18,7 +18,7 @@ import { loginHref } from "@/lib/paths"
 
 function fieldMessage(
   state: AuthActionState,
-  field: "email" | "password" | "username" | "displayName",
+  field: "email" | "password",
   lang: Lang,
 ): string | undefined {
   if (!state || !("error" in state) || !state.fields?.[field]) return undefined
@@ -105,15 +105,8 @@ export function RegisterForm({ lang, next }: { lang: Lang; next: string }) {
 
   const emailError = fieldMessage(state, "email", lang)
   const passwordError = fieldMessage(state, "password", lang)
-  const usernameError = fieldMessage(state, "username", lang)
-  const displayNameError = fieldMessage(state, "displayName", lang)
   const formError =
-    state &&
-    "error" in state &&
-    !emailError &&
-    !passwordError &&
-    !usernameError &&
-    !displayNameError
+    state && "error" in state && !emailError && !passwordError
       ? copy.errors[state.error][lang]
       : null
 
@@ -123,31 +116,6 @@ export function RegisterForm({ lang, next }: { lang: Lang; next: string }) {
         <input type="hidden" name="lang" value={lang} />
         <input type="hidden" name="next" value={next} />
         {formError ? <Alert tone="error">{formError}</Alert> : null}
-        <Input
-          id="username"
-          name="username"
-          type="text"
-          autoComplete="username"
-          required
-          minLength={3}
-          maxLength={20}
-          pattern="[a-zA-Z0-9_]+"
-          autoCapitalize="none"
-          spellCheck={false}
-          label={copy.usernameLabel[lang]}
-          hint={copy.usernameHint[lang]}
-          error={usernameError}
-        />
-        <Input
-          id="displayName"
-          name="displayName"
-          type="text"
-          autoComplete="nickname"
-          required
-          maxLength={50}
-          label={copy.displayNameLabel[lang]}
-          error={displayNameError}
-        />
         <Input
           id="email"
           name="email"

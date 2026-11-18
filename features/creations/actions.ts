@@ -55,7 +55,7 @@ function langOf(value: FormDataEntryValue | null): Lang {
   return isLang(String(value ?? "")) ? (value as Lang) : "id"
 }
 
-function revalidateCreation(lang: Lang, id: string, username?: string) {
+function revalidateCreation(lang: Lang, id: string, username?: string | null) {
   revalidatePath(href(lang, "/explore"))
   revalidatePath(href(lang, "/create"))
   revalidatePath(href(lang, "/dashboard"))

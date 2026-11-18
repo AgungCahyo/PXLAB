@@ -171,7 +171,9 @@ export function SettingsForm({ lang, profile }: { lang: Lang; profile: MemberPro
           <div className="shrink-0 self-start border-[3px] border-earth bg-soft p-1 shadow-[4px_4px_0_0_var(--fg)]">
             <ProfileAvatar
               src={avatarSrc}
-              alt={profile.display_name ?? profile.username}
+              avatarConfig={profile.avatar_config}
+              userId={profile.id}
+              alt={profile.display_name ?? profile.username ?? "PXLB"}
               size="lg"
               className="border-0"
             />
@@ -256,7 +258,7 @@ export function SettingsForm({ lang, profile }: { lang: Lang; profile: MemberPro
             required
             minLength={3}
             maxLength={20}
-            defaultValue={profile.username}
+            defaultValue={profile.username ?? ""}
             label={copy.usernameLabel[lang]}
             hint={copy.usernameHint[lang]}
           />

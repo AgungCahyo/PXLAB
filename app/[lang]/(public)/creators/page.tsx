@@ -91,7 +91,13 @@ export default async function CreatorsPage({
                     href={href(lang, `/u/${creator.username}`)}
                     className="flex min-w-0 items-center gap-3 py-4 transition-colors hover:bg-soft/60 sm:gap-4"
                   >
-                    <ProfileAvatar src={creator.avatarUrl} alt={name} size="md" />
+                    <ProfileAvatar
+                      src={creator.avatarUrl}
+                      avatarConfig={creator.avatarConfig}
+                      userId={creator.id}
+                      alt={name}
+                      size="md"
+                    />
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-[15px] font-medium text-fg">{name}</p>
                       <p className="truncate text-[13px] text-muted">@{creator.username}</p>

@@ -1,5 +1,9 @@
 import Link from "next/link"
 import { CreationCard } from "@/components/creations/CreationCard"
+import {
+  recommendationStripItemClass,
+  recommendationStripListClass,
+} from "@/components/creations/RecommendationRack"
 import { SectionHeader } from "@/components/ui/PageHeader"
 import { copy } from "@/lib/copy"
 import { href, type Lang } from "@/lib/i18n"
@@ -35,16 +39,16 @@ export function RemixStrip({
 
   return (
     <section
-      className="mt-10 border-t-[3px] border-earth pt-8"
+      className="mt-8 border-t-[3px] border-earth pt-6"
       aria-labelledby="remix-strip-heading"
     >
       <SectionHeader
         id="remix-strip-heading"
         title={copy.remixCount[lang].replace("{count}", String(total))}
       />
-      <ul className="mt-4 grid min-w-0 grid-cols-2 gap-3 sm:grid-cols-4">
+      <ul className={recommendationStripListClass}>
         {items.map((item) => (
-          <li key={item.id} className="min-w-0">
+          <li key={item.id} className={recommendationStripItemClass}>
             <CreationCard creation={item} lang={lang} artTransition={false} />
           </li>
         ))}

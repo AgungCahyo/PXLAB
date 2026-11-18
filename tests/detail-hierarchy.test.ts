@@ -34,6 +34,19 @@ describe("artwork detail hierarchy", () => {
     )
   })
 
+  it("streams comments before deferred recommendations", () => {
+    expect(page.indexOf("<CreationConversationSlot")).toBeLessThan(
+      page.indexOf("<CreatorOtherWorksSlot"),
+    )
+    expect(page.indexOf("<CreationConversationSlot")).toBeLessThan(
+      page.indexOf("<SimilarWorksLazy"),
+    )
+    expect(page).not.toMatch(/await Promise\.all\(\[\s*listPublishedCreationsByUser/)
+    expect(page).toMatch(/SimilarWorksLazy/)
+    expect(page).toMatch(/countPublishedRemixes/)
+    expect(page).toMatch(/RecommendationSkeleton/)
+  })
+
   it("adds download More menu outside engagement and keeps remix beside appreciate", () => {
     expect(page).toMatch(/<CreationEngagement[\s\S]*?<CreationMoreMenu/)
     expect(page).toMatch(/allowFork=\{!isOwner\}/)

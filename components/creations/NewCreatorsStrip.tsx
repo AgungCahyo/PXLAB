@@ -38,6 +38,8 @@ export function NewCreatorsStrip({
               >
                 <ProfileAvatar
                   src={creator.avatarUrl}
+                  avatarConfig={creator.avatarConfig}
+                  userId={creator.id}
                   alt={name}
                   size="sm"
                   className="ring-[3px] ring-bg shadow-[3px_3px_0_0_var(--earth)]"

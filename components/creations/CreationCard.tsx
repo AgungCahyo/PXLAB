@@ -67,7 +67,13 @@ export function CreationCard({
           {showAuthor ? (
             <div className="pointer-events-auto relative z-[2] mt-1 flex min-w-0 items-center gap-1.5">
               <Link href={profileHref} className="flex min-w-0 items-center gap-1.5 hover:text-fg">
-                <ProfileAvatar src={creation.author.avatarUrl} alt={creation.author.username} size="xs" />
+                <ProfileAvatar
+                  src={creation.author.avatarUrl}
+                  avatarConfig={creation.author.avatarConfig}
+                  userId={creation.author.id}
+                  alt={creation.author.username}
+                  size="xs"
+                />
                 <span className="truncate text-[12px] text-muted">@{creation.author.username}</span>
               </Link>
             </div>

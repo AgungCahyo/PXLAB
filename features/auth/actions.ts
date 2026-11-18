@@ -9,7 +9,7 @@ import {
   type AuthErrorCode,
   type AuthField,
 } from "@/lib/auth/errors"
-import { getCurrentProfile, getProfileByUsername, getSessionUserId } from "@/lib/auth/session"
+import { getCurrentProfile, getSessionUserId } from "@/lib/auth/session"
 import { href, isLang, type Lang } from "@/lib/i18n"
 import { authDestination, postAuthPath, resetPasswordHref } from "@/lib/paths"
 import { SITE_URL } from "@/lib/site"
@@ -64,8 +64,6 @@ export async function registerAction(
   const parsed = registerSchema.safeParse({
     email: formData.get("email"),
     password: formData.get("password"),
-    username: formData.get("username"),
-    displayName: formData.get("displayName"),
   })
   if (!parsed.success) {
     return { error: "invalid_input", fields: fieldsFromZod(parsed.error) }
@@ -74,18 +72,12 @@ export async function registerAction(
   const supabase = await createServerSupabase()
   if (!supabase) return { error: "not_configured" }
 
-  const taken = await getProfileByUsername(parsed.data.username)
-  if (taken) return { error: "username_taken", fields: { username: "username_taken" } }
-
-  const { destination, emailRedirectTo } = emailRedirect(lang, formData.get("next"))
+  // Identity (username / display name) is collected on /welcome after auth.
+  const { emailRedirectTo } = emailRedirect(lang, formData.get("next"))
   const { data, error } = await supabase.auth.signUp({
     email: parsed.data.email,
     password: parsed.data.password,
     options: {
-      data: {
-        username: parsed.data.username,
-        display_name: parsed.data.displayName,
-      },
       emailRedirectTo,
     },
   })

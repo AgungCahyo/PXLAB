@@ -710,6 +710,10 @@ export const copy = {
     en: "Sign in to see work from people you follow.",
   } satisfies Bi,
   similarWorksTitle: { id: "Karya serupa", en: "Similar works" } satisfies Bi,
+  recommendationRetry: {
+    id: "Muat ulang saran",
+    en: "Retry suggestions",
+  } satisfies Bi,
   newCreatorsTitle: { id: "Kreator baru", en: "New creators" } satisfies Bi,
   newCreatorsMore: {
     id: "+{count} lagi",
@@ -913,8 +917,8 @@ export const copy = {
 
   registerTitle: { id: "Buat akunmu.", en: "Create your account." } satisfies Bi,
   registerMeta: {
-    id: "Gabung PXLB dan mulai berbagi karyamu.",
-    en: "Join PXLB and start sharing your creativity.",
+    id: "Daftar dengan email atau Google. Identitas PXLB dipilih setelahnya.",
+    en: "Sign up with email or Google. Your PXLB identity comes next.",
   } satisfies Bi,
   registerSubmit: { id: "Buat akun", en: "Create account" } satisfies Bi,
   registerSubmitting: { id: "Membuat akun…", en: "Creating account…" } satisfies Bi,
@@ -1087,18 +1091,35 @@ export const copy = {
     en: "A place to make, share, and explore pixel art with the community.",
   } satisfies Bi,
   welcomeMeta: {
-    id: "Konfirmasi identitas PXLB-mu.",
-    en: "Confirm your PXLB identity.",
+    id: "Pilih avatar dan identitas PXLB-mu.",
+    en: "Choose your PXLB avatar and identity.",
   } satisfies Bi,
-  welcomeSubmit: { id: "Lanjut", en: "Continue" } satisfies Bi,
+  welcomeSubmit: { id: "Selesai", en: "Finish" } satisfies Bi,
   welcomeSubmitting: { id: "Menyimpan…", en: "Saving…" } satisfies Bi,
-  welcomeSkip: { id: "Lewati dulu", en: "Skip for now" } satisfies Bi,
+  welcomeBack: { id: "Kembali", en: "Back" } satisfies Bi,
   welcomeReady: {
     id: "Siap. Mau mulai dari mana?",
     en: "You're in. Where to next?",
   } satisfies Bi,
   welcomeCreate: { id: "Buat karya", en: "Create a work" } satisfies Bi,
   welcomeExplore: { id: "Jelajahi karya", en: "Explore works" } satisfies Bi,
+  welcomeAvatarTitle: { id: "Pilih avatar", en: "Choose your avatar" } satisfies Bi,
+  welcomeAvatarHint: {
+    id: "Karakter pixel — bisa diganti nanti di pengaturan foto.",
+    en: "A pixel character — you can replace it later with a photo.",
+  } satisfies Bi,
+  welcomeAvatarPreview: { id: "Pratinjau avatar", en: "Avatar preview" } satisfies Bi,
+  welcomeAvatarPick: { id: "Pilih satu", en: "Pick one" } satisfies Bi,
+  welcomeAvatarOption: { id: "Avatar {n}", en: "Avatar {n}" } satisfies Bi,
+  welcomeAvatarShuffle: { id: "Acak lagi", en: "Shuffle" } satisfies Bi,
+  welcomeAvatarSkip: { id: "Lewati", en: "Skip" } satisfies Bi,
+  welcomeAvatarContinue: { id: "Lanjut", en: "Continue" } satisfies Bi,
+  welcomeAvatarChange: { id: "Ganti avatar", en: "Change avatar" } satisfies Bi,
+  welcomeIdentityTitle: { id: "Buat identitasmu", en: "Create your identity" } satisfies Bi,
+  welcomeIdentityHint: {
+    id: "Username unik dan nama tampilan untuk komunitas.",
+    en: "A unique username and display name for the community.",
+  } satisfies Bi,
 
   settingsTitle: { id: "Pengaturan", en: "Settings" } satisfies Bi,
   settingsIntro: {
