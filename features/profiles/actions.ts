@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache"
 import { canEditProfile } from "@/lib/auth/permissions"
-import { getSessionUserId } from "@/lib/auth/session"
+import { getProfileByUsername, getSessionUserId } from "@/lib/auth/session"
 import type { AuthErrorCode } from "@/lib/auth/errors"
 import { href, isLang, type Lang } from "@/lib/i18n"
 import {
@@ -12,7 +12,7 @@ import {
   isAvatarMimeType,
 } from "@/lib/site"
 import { createServerSupabase } from "@/lib/supabase/server"
-import { parseProfileUpdate } from "@/lib/validations/profile"
+import { displayNameSchema, parseProfileUpdate, usernameSchema } from "@/lib/validations/profile"
 
 export type ProfileActionState = { error: AuthErrorCode } | { ok: true } | null
 
@@ -46,8 +46,73 @@ async function requireOwnProfile(): Promise<OwnProfileGate> {
 
 function revalidateProfilePaths(lang: Lang, username: string) {
   revalidatePath(href(lang, "/settings"))
+  revalidatePath(href(lang, "/welcome"))
   revalidatePath(href(lang, `/u/${username}`))
   revalidatePath(href(lang, "/dashboard"))
+}
+
+export async function completeOnboardingAction(
+  _prev: ProfileActionState,
+  formData: FormData,
+): Promise<ProfileActionState> {
+  const lang = langFromForm(formData)
+
+  const usernameParsed = usernameSchema.safeParse(formData.get("username"))
+  const displayParsed = displayNameSchema.safeParse(formData.get("displayName"))
+  if (!usernameParsed.success) {
+    const issue = usernameParsed.error.issues[0]?.message
+    if (issue === "username_reserved") return { error: "username_reserved" }
+    return { error: "username_format" }
+  }
+  if (!displayParsed.success) return { error: "invalid_input" }
+
+  const gate = await requireOwnProfile()
+  if (!gate.ok) return { error: gate.error }
+  const { userId, supabase } = gate
+
+  const taken = await getProfileByUsername(usernameParsed.data)
+  if (taken && taken.id !== userId) return { error: "username_taken" }
+
+  const { error } = await supabase
+    .from("profiles")
+    .update({
+      username: usernameParsed.data,
+      display_name: displayParsed.data,
+      onboarding_completed_at: new Date().toISOString(),
+    })
+    .eq("id", userId)
+
+  if (error) {
+    if (error.code === "23505") return { error: "username_taken" }
+    if (error.message.includes("username_format")) return { error: "username_format" }
+    if (error.message.includes("username_reserved")) return { error: "username_reserved" }
+    return { error: "invalid_input" }
+  }
+
+  revalidatePath("/", "layout")
+  revalidateProfilePaths(lang, usernameParsed.data)
+  return { ok: true }
+}
+
+export async function skipOnboardingAction(
+  _prev: ProfileActionState,
+  formData: FormData,
+): Promise<ProfileActionState> {
+  const lang = langFromForm(formData)
+  const gate = await requireOwnProfile()
+  if (!gate.ok) return { error: gate.error }
+  const { userId, supabase, username } = gate
+
+  const { error } = await supabase
+    .from("profiles")
+    .update({ onboarding_completed_at: new Date().toISOString() })
+    .eq("id", userId)
+
+  if (error) return { error: "invalid_input" }
+
+  revalidatePath("/", "layout")
+  revalidateProfilePaths(lang, username)
+  return { ok: true }
 }
 
 export async function updateProfileAction(

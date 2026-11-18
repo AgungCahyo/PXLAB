@@ -16,6 +16,7 @@ const indonesianRoutes = [
   "/dashboard",
   "/responses",
   "/settings",
+  "/welcome",
   "/admin",
 ];
 

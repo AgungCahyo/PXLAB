@@ -1,11 +1,12 @@
 import type { Metadata } from "next"
 import { notFound, redirect } from "next/navigation"
+import { AuthShell } from "@/components/auth/AuthShell"
 import { RegisterForm } from "@/components/auth/RegisterForm"
 import { getCurrentProfile } from "@/lib/auth/session"
 import { copy } from "@/lib/copy"
 import { isLang } from "@/lib/i18n"
 import { pageMeta } from "@/lib/meta"
-import { authDestination } from "@/lib/paths"
+import { authDestination, postAuthPath } from "@/lib/paths"
 
 export const instant = false
 
@@ -38,13 +39,11 @@ export default async function RegisterPage({
   const { next } = await searchParams
   const destination = authDestination(lang, next)
   const profile = await getCurrentProfile()
-  if (profile) redirect(destination)
+  if (profile) redirect(postAuthPath(lang, next, profile))
 
   return (
-    <div className="mx-auto max-w-xl px-5 py-16 sm:px-8 lg:px-16">
-      <h1 className="pixel-title">{copy.registerTitle[lang]}</h1>
-      <p className="mt-3 text-[15px] text-muted">{copy.registerMeta[lang]}</p>
+    <AuthShell lang={lang} title={copy.registerTitle[lang]} intro={copy.registerMeta[lang]}>
       <RegisterForm lang={lang} next={destination} />
-    </div>
+    </AuthShell>
   )
 }

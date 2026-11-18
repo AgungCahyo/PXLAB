@@ -1,6 +1,7 @@
 import type { Metadata } from "next"
 import Link from "next/link"
 import { notFound } from "next/navigation"
+import { AuthShell } from "@/components/auth/AuthShell"
 import { ResetPasswordForm } from "@/components/auth/ResetPasswordForm"
 import { Alert } from "@/components/ui/Alert"
 import { getSessionUserId } from "@/lib/auth/session"
@@ -42,22 +43,24 @@ export default async function ResetPasswordPage({
   const userId = await getSessionUserId()
 
   return (
-    <div className="mx-auto max-w-xl px-5 py-16 sm:px-8 lg:px-16">
-      <h1 className="pixel-title">{copy.resetPasswordTitle[lang]}</h1>
-      <p className="mt-3 text-[15px] text-muted">{copy.resetPasswordMeta[lang]}</p>
+    <AuthShell
+      lang={lang}
+      title={copy.resetPasswordTitle[lang]}
+      intro={copy.resetPasswordMeta[lang]}
+    >
       {userId ? (
         <ResetPasswordForm lang={lang} next={destination} />
       ) : (
-        <div className="mt-8 grid gap-4">
+        <div className="grid gap-4">
           <Alert tone="warning">{copy.resetPasswordInvalid[lang]}</Alert>
           <Link
             href={forgotPasswordHref(lang, destination)}
-            className="text-[14px] text-muted hover:text-fg"
+            className="text-[14px] font-medium text-fg underline decoration-earth underline-offset-4 hover:text-brick"
           >
             {copy.forgotPasswordTitle[lang]}
           </Link>
         </div>
       )}
-    </div>
+    </AuthShell>
   )
 }

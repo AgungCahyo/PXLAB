@@ -4,6 +4,7 @@ export type AuthErrorCode =
   | "email_not_confirmed"
   | "email_taken"
   | "oauth_failed"
+  | "oauth_email_conflict"
   | "invalid_input"
   | "invalid_email"
   | "invalid_password"

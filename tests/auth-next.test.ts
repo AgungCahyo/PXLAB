@@ -93,6 +93,7 @@ describe("auth UX — R2", () => {
     expect(actions).toMatch(/provider: "google"/)
     expect(callback).toMatch(/exchangeCodeForSession/)
     expect(callback).toMatch(/error=oauth/)
+    expect(callback).toMatch(/oauth_email/)
   })
 })
 

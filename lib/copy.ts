@@ -839,18 +839,44 @@ export const copy = {
     space_element: { id: "Elemen ruang", en: "Space element" } satisfies Bi,
   },
 
-  loginTitle: { id: "Masuk", en: "Sign in" } satisfies Bi,
+  loginTitle: { id: "Selamat datang kembali.", en: "Welcome back." } satisfies Bi,
   loginMeta: {
-    id: "Masuk dengan Google atau email.",
-    en: "Sign in with Google or email.",
+    id: "Lanjut membuat dan menjelajahi pixel art.",
+    en: "Continue creating and exploring pixel art.",
   } satisfies Bi,
   loginSubmit: { id: "Masuk", en: "Sign in" } satisfies Bi,
   loginSubmitting: { id: "Masuk…", en: "Signing in…" } satisfies Bi,
-  loginToRegister: { id: "Gabung", en: "Join" } satisfies Bi,
+  loginToRegisterPrompt: { id: "Belum punya akun?", en: "New here?" } satisfies Bi,
+  loginToRegister: { id: "Buat akun", en: "Create an account" } satisfies Bi,
   loginForgotPassword: { id: "Lupa kata sandi?", en: "Forgot password?" } satisfies Bi,
   authContinueGoogle: { id: "Lanjut dengan Google", en: "Continue with Google" } satisfies Bi,
   authContinueGoogleWorking: { id: "Mengalihkan…", en: "Redirecting…" } satisfies Bi,
-  authOrEmail: { id: "atau email", en: "or email" } satisfies Bi,
+  authOrEmail: { id: "atau", en: "or" } satisfies Bi,
+  authShowPassword: { id: "Tampilkan kata sandi", en: "Show password" } satisfies Bi,
+  authHidePassword: { id: "Sembunyikan kata sandi", en: "Hide password" } satisfies Bi,
+  authAsideTitle: {
+    id: "Ruang kreatif untuk pixel art.",
+    en: "A creative space for pixel art.",
+  } satisfies Bi,
+  authAsideBody: {
+    id: "Buat, bagikan, dan jelajahi karya bersama komunitas PXLB.",
+    en: "Make, share, and explore works with the PXLB community.",
+  } satisfies Bi,
+  authDoodleTitle: {
+    id: "Gores dulu sebentar.",
+    en: "Doodle while you're here.",
+  } satisfies Bi,
+  authDoodleHint: {
+    id: "Mini kanvas — tidak tersimpan. Editor penuh ada di Buat.",
+    en: "A tiny pad — nothing is saved. The full editor is in Create.",
+  } satisfies Bi,
+  authDoodleAria: {
+    id: "Kanvas doodle kecil",
+    en: "Small doodle canvas",
+  } satisfies Bi,
+  authDoodleClear: { id: "Hapus", en: "Clear" } satisfies Bi,
+  authDoodleErase: { id: "Penghapus", en: "Eraser" } satisfies Bi,
+  authDoodleColor: { id: "Pilih warna", en: "Pick color" } satisfies Bi,
 
   forgotPasswordTitle: { id: "Lupa kata sandi", en: "Forgot password" } satisfies Bi,
   forgotPasswordMeta: {
@@ -885,13 +911,14 @@ export const copy = {
     en: "Confirm password",
   } satisfies Bi,
 
-  registerTitle: { id: "Gabung", en: "Join" } satisfies Bi,
+  registerTitle: { id: "Buat akunmu.", en: "Create your account." } satisfies Bi,
   registerMeta: {
-    id: "Gabung dengan Google atau email.",
-    en: "Join with Google or email.",
+    id: "Gabung PXLB dan mulai berbagi karyamu.",
+    en: "Join PXLB and start sharing your creativity.",
   } satisfies Bi,
   registerSubmit: { id: "Buat akun", en: "Create account" } satisfies Bi,
   registerSubmitting: { id: "Membuat akun…", en: "Creating account…" } satisfies Bi,
+  registerToLoginPrompt: { id: "Sudah punya akun?", en: "Already have an account?" } satisfies Bi,
   registerToLogin: { id: "Masuk", en: "Sign in" } satisfies Bi,
   registerEmailSent: {
     id: "Cek email untuk lanjut.",
@@ -1054,6 +1081,25 @@ export const copy = {
   worksViewWork: { id: "Lihat karya", en: "View work" } satisfies Bi,
   worksKeepEditing: { id: "Tetap di kanvas", en: "Stay on canvas" } satisfies Bi,
 
+  welcomeTitle: { id: "Selamat datang di PXLB", en: "Welcome to PXLB" } satisfies Bi,
+  welcomeIntro: {
+    id: "Ruang untuk membuat, berbagi, dan menjelajahi karya pixel art bersama komunitas.",
+    en: "A place to make, share, and explore pixel art with the community.",
+  } satisfies Bi,
+  welcomeMeta: {
+    id: "Konfirmasi identitas PXLB-mu.",
+    en: "Confirm your PXLB identity.",
+  } satisfies Bi,
+  welcomeSubmit: { id: "Lanjut", en: "Continue" } satisfies Bi,
+  welcomeSubmitting: { id: "Menyimpan…", en: "Saving…" } satisfies Bi,
+  welcomeSkip: { id: "Lewati dulu", en: "Skip for now" } satisfies Bi,
+  welcomeReady: {
+    id: "Siap. Mau mulai dari mana?",
+    en: "You're in. Where to next?",
+  } satisfies Bi,
+  welcomeCreate: { id: "Buat karya", en: "Create a work" } satisfies Bi,
+  welcomeExplore: { id: "Jelajahi karya", en: "Explore works" } satisfies Bi,
+
   settingsTitle: { id: "Pengaturan", en: "Settings" } satisfies Bi,
   settingsIntro: {
     id: "Profil, bahasa, dan keluar akun.",
@@ -1121,8 +1167,12 @@ export const copy = {
       en: "Email already registered. Sign in instead.",
     } satisfies Bi,
     oauth_failed: {
-      id: "Login Google gagal. Coba lagi.",
-      en: "Google sign-in failed. Try again.",
+      id: "Login Google gagal. Coba lagi, atau masuk dengan email.",
+      en: "Google sign-in failed. Try again, or sign in with email.",
+    } satisfies Bi,
+    oauth_email_conflict: {
+      id: "Email ini sudah terdaftar lewat email/sandi. Masuk dengan email dulu (konfirmasi email jika diminta), lalu Google bisa dipakai.",
+      en: "This email is already registered with email/password. Sign in with email first (confirm email if asked); then Google can link.",
     } satisfies Bi,
     invalid_input: {
       id: "Periksa isian.",

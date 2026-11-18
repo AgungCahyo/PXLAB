@@ -1,8 +1,9 @@
 "use client"
 
 import { useActionState, useEffect, useState } from "react"
-import Link from "next/link"
+import { AuthDivider, AuthSwitchLink } from "@/components/auth/AuthShell"
 import { GoogleAuthButton } from "@/components/auth/GoogleAuthButton"
+import { PasswordField } from "@/components/auth/PasswordField"
 import { Alert } from "@/components/ui/Alert"
 import { Button } from "@/components/ui/Button"
 import { Input } from "@/components/ui/Input"
@@ -40,14 +41,13 @@ function RegisterEmailSent({
     null,
   )
   const resent = Boolean(state && "ok" in state && "resent" in state && state.resent)
-  const error =
-    state && "error" in state ? copy.errors[state.error][lang] : null
+  const error = state && "error" in state ? copy.errors[state.error][lang] : null
 
   return (
-    <div className="mt-8 grid gap-4">
+    <div className="grid gap-5">
       <Alert tone="info">{copy.registerEmailSent[lang]}</Alert>
       {email ? (
-        <p className="text-[15px] text-fg">
+        <p className="text-[15px] leading-relaxed text-fg">
           {copy.registerEmailSentTo[lang].replaceAll("{email}", email)}
         </p>
       ) : null}
@@ -57,16 +57,24 @@ function RegisterEmailSent({
         <input type="hidden" name="lang" value={lang} />
         <input type="hidden" name="next" value={next} />
         <input type="hidden" name="email" value={email} />
-        <Button type="submit" variant="secondary" disabled={pending} aria-busy={pending || undefined}>
+        <Button
+          type="submit"
+          variant="secondary"
+          className="w-full"
+          disabled={pending}
+          aria-busy={pending || undefined}
+        >
           {pending ? copy.registerResending[lang] : copy.registerResend[lang]}
         </Button>
       </form>
-      <Link href={loginHref(lang, next)} className="text-[14px] text-muted hover:text-fg">
-        {copy.registerToLogin[lang]}
-      </Link>
-      <Button type="button" variant="ghost" size="sm" onClick={onChangeEmail}>
+      <Button type="button" variant="ghost" className="w-full" onClick={onChangeEmail}>
         {copy.registerChangeEmail[lang]}
       </Button>
+      <AuthSwitchLink
+        prompt={copy.registerToLoginPrompt[lang]}
+        href={loginHref(lang, next)}
+        label={copy.registerToLogin[lang]}
+      />
     </div>
   )
 }
@@ -110,20 +118,25 @@ export function RegisterForm({ lang, next }: { lang: Lang; next: string }) {
       : null
 
   return (
-    <div className="mt-8 grid gap-4">
-      <GoogleAuthButton lang={lang} next={next} />
+    <div className="grid gap-5">
       <form action={action} className="grid gap-4">
         <input type="hidden" name="lang" value={lang} />
         <input type="hidden" name="next" value={next} />
         {formError ? <Alert tone="error">{formError}</Alert> : null}
         <Input
-          id="email"
-          name="email"
-          type="email"
-          autoComplete="email"
+          id="username"
+          name="username"
+          type="text"
+          autoComplete="username"
           required
-          label={copy.emailLabel[lang]}
-          error={emailError}
+          minLength={3}
+          maxLength={20}
+          pattern="[a-zA-Z0-9_]+"
+          autoCapitalize="none"
+          spellCheck={false}
+          label={copy.usernameLabel[lang]}
+          hint={copy.usernameHint[lang]}
+          error={usernameError}
         />
         <Input
           id="displayName"
@@ -136,36 +149,40 @@ export function RegisterForm({ lang, next }: { lang: Lang; next: string }) {
           error={displayNameError}
         />
         <Input
-          id="username"
-          name="username"
-          type="text"
-          autoComplete="username"
+          id="email"
+          name="email"
+          type="email"
+          autoComplete="email"
           required
-          minLength={3}
-          maxLength={20}
-          pattern="[a-zA-Z0-9_]+"
-          label={copy.usernameLabel[lang]}
-          hint={copy.usernameHint[lang]}
-          error={usernameError}
+          autoCapitalize="none"
+          spellCheck={false}
+          label={copy.emailLabel[lang]}
+          error={emailError}
         />
-        <Input
+        <PasswordField
           id="password"
           name="password"
-          type="password"
           autoComplete="new-password"
           required
           minLength={8}
           label={copy.passwordLabel[lang]}
           hint={copy.passwordHint[lang]}
           error={passwordError}
+          showLabel={copy.authShowPassword[lang]}
+          hideLabel={copy.authHidePassword[lang]}
         />
-        <Button type="submit" disabled={pending} aria-busy={pending || undefined}>
+        <Button type="submit" className="w-full" disabled={pending} aria-busy={pending || undefined}>
           {pending ? copy.registerSubmitting[lang] : copy.registerSubmit[lang]}
         </Button>
-        <Link href={loginHref(lang, next)} className="text-[14px] text-muted hover:text-fg">
-          {copy.registerToLogin[lang]}
-        </Link>
       </form>
+
+      <AuthDivider label={copy.authOrEmail[lang]} />
+      <GoogleAuthButton lang={lang} next={next} />
+      <AuthSwitchLink
+        prompt={copy.registerToLoginPrompt[lang]}
+        href={loginHref(lang, next)}
+        label={copy.registerToLogin[lang]}
+      />
     </div>
   )
 }

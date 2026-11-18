@@ -1,9 +1,9 @@
 "use client"
 
 import { useActionState } from "react"
+import { PasswordField } from "@/components/auth/PasswordField"
 import { Alert } from "@/components/ui/Alert"
 import { Button } from "@/components/ui/Button"
-import { Input } from "@/components/ui/Input"
 import { updatePasswordAction, type AuthActionState } from "@/features/auth/actions"
 import { copy } from "@/lib/copy"
 import type { Lang } from "@/lib/i18n"
@@ -21,31 +21,33 @@ export function ResetPasswordForm({ lang, next }: { lang: Lang; next: string }) 
     state && "error" in state && !passwordError ? copy.errors[state.error][lang] : null
 
   return (
-    <form action={action} className="mt-8 grid gap-4">
+    <form action={action} className="grid gap-4">
       <input type="hidden" name="lang" value={lang} />
       <input type="hidden" name="next" value={next} />
       {formError ? <Alert tone="error">{formError}</Alert> : null}
-      <Input
+      <PasswordField
         id="password"
         name="password"
-        type="password"
         autoComplete="new-password"
         required
         minLength={8}
         label={copy.passwordLabel[lang]}
         hint={copy.passwordHint[lang]}
         error={passwordError}
+        showLabel={copy.authShowPassword[lang]}
+        hideLabel={copy.authHidePassword[lang]}
       />
-      <Input
+      <PasswordField
         id="confirm"
         name="confirm"
-        type="password"
         autoComplete="new-password"
         required
         minLength={8}
         label={copy.resetPasswordConfirmLabel[lang]}
+        showLabel={copy.authShowPassword[lang]}
+        hideLabel={copy.authHidePassword[lang]}
       />
-      <Button type="submit" disabled={pending} aria-busy={pending || undefined}>
+      <Button type="submit" className="w-full" disabled={pending} aria-busy={pending || undefined}>
         {pending ? copy.resetPasswordSubmitting[lang] : copy.resetPasswordSubmit[lang]}
       </Button>
     </form>

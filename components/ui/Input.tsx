@@ -35,6 +35,8 @@ export function Input({
         aria-describedby={describedBy}
         className={cn(
           "min-h-11 w-full border-[3px] bg-bg px-3 text-[15px] text-fg placeholder:text-muted",
+          "transition-[box-shadow,border-color] duration-150",
+          "focus-visible:border-fg focus-visible:outline-none focus-visible:shadow-[4px_4px_0_0_var(--fg)]",
           error ? "border-brick" : "border-earth",
           className,
         )}

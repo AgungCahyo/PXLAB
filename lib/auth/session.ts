@@ -13,10 +13,17 @@ export type PublicProfile = {
 export type MemberProfile = PublicProfile & {
   role: "member" | "admin"
   activity_seen_at: string | null
+  onboarding_completed_at: string | null
 }
 
 const PUBLIC_PROFILE_COLUMNS = "id, username, display_name, bio, avatar_url, created_at"
-const MEMBER_PROFILE_COLUMNS = `${PUBLIC_PROFILE_COLUMNS}, role, activity_seen_at`
+const MEMBER_PROFILE_COLUMNS = `${PUBLIC_PROFILE_COLUMNS}, role, activity_seen_at, onboarding_completed_at`
+
+export function needsOnboarding(profile: {
+  onboarding_completed_at: string | null
+} | null | undefined) {
+  return !profile?.onboarding_completed_at
+}
 
 export async function getSessionUserId() {
   const supabase = await createServerSupabase()

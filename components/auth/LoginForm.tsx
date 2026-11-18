@@ -2,7 +2,9 @@
 
 import { useActionState } from "react"
 import Link from "next/link"
+import { AuthDivider, AuthSwitchLink } from "@/components/auth/AuthShell"
 import { GoogleAuthButton } from "@/components/auth/GoogleAuthButton"
+import { PasswordField } from "@/components/auth/PasswordField"
 import { Alert } from "@/components/ui/Alert"
 import { Button } from "@/components/ui/Button"
 import { Input } from "@/components/ui/Input"
@@ -23,11 +25,11 @@ function fieldMessage(
 export function LoginForm({
   lang,
   next,
-  oauthError = false,
+  oauthError = null,
 }: {
   lang: Lang
   next: string
-  oauthError?: boolean
+  oauthError?: "oauth" | "oauth_email" | null
 }) {
   const [state, action, pending] = useActionState<AuthActionState, FormData>(loginAction, null)
   const emailError = fieldMessage(state, "email", lang)
@@ -36,11 +38,17 @@ export function LoginForm({
     state && "error" in state && !emailError && !passwordError
       ? copy.errors[state.error][lang]
       : null
+  const oauthMessage =
+    oauthError === "oauth_email"
+      ? copy.errors.oauth_email_conflict[lang]
+      : oauthError === "oauth"
+        ? copy.errors.oauth_failed[lang]
+        : null
 
   return (
-    <div className="mt-8 grid gap-4">
-      {oauthError ? <Alert tone="error">{copy.errors.oauth_failed[lang]}</Alert> : null}
-      <GoogleAuthButton lang={lang} next={next} />
+    <div className="grid gap-5">
+      {oauthMessage ? <Alert tone="error">{oauthMessage}</Alert> : null}
+
       <form action={action} className="grid gap-4">
         <input type="hidden" name="lang" value={lang} />
         <input type="hidden" name="next" value={next} />
@@ -51,28 +59,43 @@ export function LoginForm({
           type="email"
           autoComplete="email"
           required
+          autoCapitalize="none"
+          spellCheck={false}
           label={copy.emailLabel[lang]}
           error={emailError}
         />
-        <Input
-          id="password"
-          name="password"
-          type="password"
-          autoComplete="current-password"
-          required
-          label={copy.passwordLabel[lang]}
-          error={passwordError}
-        />
-        <Button type="submit" disabled={pending} aria-busy={pending || undefined}>
+        <div className="grid gap-2">
+          <PasswordField
+            id="password"
+            name="password"
+            autoComplete="current-password"
+            required
+            label={copy.passwordLabel[lang]}
+            error={passwordError}
+            showLabel={copy.authShowPassword[lang]}
+            hideLabel={copy.authHidePassword[lang]}
+          />
+          <div className="flex justify-end">
+            <Link
+              href={forgotPasswordHref(lang, next)}
+              className="text-[13px] text-muted underline decoration-earth/50 underline-offset-4 hover:text-fg"
+            >
+              {copy.loginForgotPassword[lang]}
+            </Link>
+          </div>
+        </div>
+        <Button type="submit" className="w-full" disabled={pending} aria-busy={pending || undefined}>
           {pending ? copy.loginSubmitting[lang] : copy.loginSubmit[lang]}
         </Button>
-        <Link href={forgotPasswordHref(lang, next)} className="text-[14px] text-muted hover:text-fg">
-          {copy.loginForgotPassword[lang]}
-        </Link>
-        <Link href={registerHref(lang, next)} className="text-[14px] text-muted hover:text-fg">
-          {copy.loginToRegister[lang]}
-        </Link>
       </form>
+
+      <AuthDivider label={copy.authOrEmail[lang]} />
+      <GoogleAuthButton lang={lang} next={next} />
+      <AuthSwitchLink
+        prompt={copy.loginToRegisterPrompt[lang]}
+        href={registerHref(lang, next)}
+        label={copy.loginToRegister[lang]}
+      />
     </div>
   )
 }

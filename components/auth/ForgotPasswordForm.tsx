@@ -1,7 +1,7 @@
 "use client"
 
 import { useActionState } from "react"
-import Link from "next/link"
+import { AuthSwitchLink } from "@/components/auth/AuthShell"
 import { Alert } from "@/components/ui/Alert"
 import { Button } from "@/components/ui/Button"
 import { Input } from "@/components/ui/Input"
@@ -25,35 +25,35 @@ export function ForgotPasswordForm({ lang, next }: { lang: Lang; next: string })
 
   if (sent) {
     return (
-      <div className="mt-8 grid gap-4">
+      <div className="grid gap-5">
         <Alert tone="info">{copy.forgotPasswordSent[lang]}</Alert>
-        <Link href={loginHref(lang, next)} className="text-[14px] text-muted hover:text-fg">
-          {copy.forgotPasswordBack[lang]}
-        </Link>
+        <AuthSwitchLink href={loginHref(lang, next)} label={copy.forgotPasswordBack[lang]} />
       </div>
     )
   }
 
   return (
-    <form action={action} className="mt-8 grid gap-4">
-      <input type="hidden" name="lang" value={lang} />
-      <input type="hidden" name="next" value={next} />
-      {formError ? <Alert tone="error">{formError}</Alert> : null}
-      <Input
-        id="email"
-        name="email"
-        type="email"
-        autoComplete="email"
-        required
-        label={copy.emailLabel[lang]}
-        error={emailError}
-      />
-      <Button type="submit" disabled={pending} aria-busy={pending || undefined}>
-        {pending ? copy.forgotPasswordSubmitting[lang] : copy.forgotPasswordSubmit[lang]}
-      </Button>
-      <Link href={loginHref(lang, next)} className="text-[14px] text-muted hover:text-fg">
-        {copy.forgotPasswordBack[lang]}
-      </Link>
-    </form>
+    <div className="grid gap-5">
+      <form action={action} className="grid gap-4">
+        <input type="hidden" name="lang" value={lang} />
+        <input type="hidden" name="next" value={next} />
+        {formError ? <Alert tone="error">{formError}</Alert> : null}
+        <Input
+          id="email"
+          name="email"
+          type="email"
+          autoComplete="email"
+          required
+          autoCapitalize="none"
+          spellCheck={false}
+          label={copy.emailLabel[lang]}
+          error={emailError}
+        />
+        <Button type="submit" className="w-full" disabled={pending} aria-busy={pending || undefined}>
+          {pending ? copy.forgotPasswordSubmitting[lang] : copy.forgotPasswordSubmit[lang]}
+        </Button>
+      </form>
+      <AuthSwitchLink href={loginHref(lang, next)} label={copy.forgotPasswordBack[lang]} />
+    </div>
   )
 }

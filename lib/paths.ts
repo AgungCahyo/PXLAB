@@ -33,9 +33,24 @@ export function resetPasswordHref(lang: Lang, next?: string | null) {
   return withNextQuery(href(lang, "/reset-password"), next)
 }
 
+export function welcomeHref(lang: Lang, next?: string | null) {
+  return withNextQuery(href(lang, "/welcome"), next)
+}
+
 export function authDestination(lang: Lang, next: unknown) {
   const fallback = href(lang, "/explore")
   const safe = safeInternalPath(next, fallback)
   if (safe === "/" || safe === "/en" || safe === "/en/") return fallback
   return safe
+}
+
+/** After auth: unfinished onboarding → /welcome; else safe destination. */
+export function postAuthPath(
+  lang: Lang,
+  next: unknown,
+  profile: { onboarding_completed_at: string | null } | null | undefined,
+) {
+  const destination = authDestination(lang, next)
+  if (!profile?.onboarding_completed_at) return welcomeHref(lang, destination)
+  return destination
 }

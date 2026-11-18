@@ -1,5 +1,6 @@
 import type { Metadata } from "next"
 import { notFound, redirect } from "next/navigation"
+import { AuthShell } from "@/components/auth/AuthShell"
 import { ForgotPasswordForm } from "@/components/auth/ForgotPasswordForm"
 import { getCurrentProfile } from "@/lib/auth/session"
 import { copy } from "@/lib/copy"
@@ -41,10 +42,12 @@ export default async function ForgotPasswordPage({
   if (profile) redirect(destination)
 
   return (
-    <div className="mx-auto max-w-xl px-5 py-16 sm:px-8 lg:px-16">
-      <h1 className="pixel-title">{copy.forgotPasswordTitle[lang]}</h1>
-      <p className="mt-3 text-[15px] text-muted">{copy.forgotPasswordMeta[lang]}</p>
+    <AuthShell
+      lang={lang}
+      title={copy.forgotPasswordTitle[lang]}
+      intro={copy.forgotPasswordMeta[lang]}
+    >
       <ForgotPasswordForm lang={lang} next={destination} />
-    </div>
+    </AuthShell>
   )
 }

@@ -18,6 +18,7 @@ export const RESERVED_USERNAMES = [
   "space",
   "thecommons",
   "u",
+  "welcome",
 ] as const
 
 export const usernameSchema = z

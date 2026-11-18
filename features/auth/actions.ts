@@ -9,9 +9,9 @@ import {
   type AuthErrorCode,
   type AuthField,
 } from "@/lib/auth/errors"
-import { getProfileByUsername, getSessionUserId } from "@/lib/auth/session"
+import { getCurrentProfile, getProfileByUsername, getSessionUserId } from "@/lib/auth/session"
 import { href, isLang, type Lang } from "@/lib/i18n"
-import { authDestination, resetPasswordHref } from "@/lib/paths"
+import { authDestination, postAuthPath, resetPasswordHref } from "@/lib/paths"
 import { SITE_URL } from "@/lib/site"
 import { createServerSupabase } from "@/lib/supabase/server"
 import { emailSchema, loginSchema, passwordSchema, registerSchema } from "@/lib/validations/profile"
@@ -94,7 +94,8 @@ export async function registerAction(
 
   revalidatePath("/", "layout")
   if (data.session) {
-    redirect(destination)
+    const profile = await getCurrentProfile()
+    redirect(postAuthPath(lang, formData.get("next"), profile))
   }
   return { ok: true, needsEmail: true, email: parsed.data.email }
 }
@@ -166,7 +167,8 @@ export async function loginAction(
   if (error) return { error: mapLoginError(error) }
 
   revalidatePath("/", "layout")
-  redirect(authDestination(lang, formData.get("next")))
+  const profile = await getCurrentProfile()
+  redirect(postAuthPath(lang, formData.get("next"), profile))
 }
 
 export async function requestPasswordResetAction(
@@ -215,7 +217,8 @@ export async function updatePasswordAction(
   if (error) return { error: "generic_auth" }
 
   revalidatePath("/", "layout")
-  redirect(authDestination(lang, formData.get("next")))
+  const profile = await getCurrentProfile()
+  redirect(postAuthPath(lang, formData.get("next"), profile))
 }
 
 export async function logoutAction(formData: FormData) {
