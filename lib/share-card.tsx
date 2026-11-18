@@ -2,7 +2,6 @@ import { SITE_NAME } from "@/lib/site"
 import type { ShareExportFormat } from "@/lib/share"
 import { SHARE_EXPORT_FORMATS } from "@/lib/share"
 import {
-  mixHex,
   socialCardPalette,
   type SocialArtAspect,
   type SocialCardPalette,
@@ -19,7 +18,7 @@ export type SocialCardProps = {
   showBrand?: boolean
   showCredit?: boolean
   aspect?: SocialArtAspect
-  /** Intrinsic pixel size — required so Satori does not treat every cover as square. */
+  /** Intrinsic pixel size — used only to derive aspect-correct Satori box. */
   artWidth?: number
   artHeight?: number
   palette?: SocialCardPalette
@@ -54,9 +53,12 @@ export function socialCardSize(format: ShareExportFormat) {
 }
 
 /**
- * JSX for next/og ImageResponse. Flexbox only.
- * OG: artwork-first horizontal split (~62% / ~38%).
- * Square / Story: artwork-dominant vertical stages.
+ * Social preview markup for next/og ImageResponse (flexbox only).
+ * Warm editorial system — independent from website theme.
+ *
+ * Layout adapts by aspect:
+ * - landscape → stacked (maximize horizontal art)
+ * - square / portrait → art-dominant with warm caption band
  */
 export function SocialCardMarkup({
   format,
@@ -78,8 +80,26 @@ export function SocialCardMarkup({
   const intrinsic = intrinsicArtSize(aspect, artWidth, artHeight)
 
   if (format === "og") {
+    // Landscape: stack to maximize horizontal display width.
+    // Square + portrait: side caption so art can use full 630px height.
+    if (aspect === "landscape") {
+      return (
+        <OgStackedCard
+          title={title}
+          displayName={name}
+          handle={handle}
+          artworkDataUrl={artworkDataUrl}
+          showBrand={showBrand}
+          showCredit={showCredit}
+          aspect={aspect}
+          intrinsic={intrinsic}
+          colors={colors}
+          artFlex={0.86}
+        />
+      )
+    }
     return (
-      <OgSplitCard
+      <OgSideCaptionCard
         title={title}
         displayName={name}
         handle={handle}
@@ -89,6 +109,7 @@ export function SocialCardMarkup({
         aspect={aspect}
         intrinsic={intrinsic}
         colors={colors}
+        artShare={aspect === "portrait" ? 0.56 : 0.62}
       />
     )
   }
@@ -122,9 +143,13 @@ function ArtworkStage({
   intrinsic: { width: number; height: number }
   padPercent?: number
 }) {
-  // Tight pad so artwork fills the stage; portrait/landscape use intrinsic box for Satori.
   const pad =
-    aspect === "portrait" ? Math.max(1.5, padPercent - 1.5) : aspect === "landscape" ? Math.max(1.5, padPercent - 0.5) : padPercent
+    aspect === "portrait"
+      ? Math.max(1.5, padPercent - 1)
+      : aspect === "landscape"
+        ? Math.max(1.5, padPercent - 0.5)
+        : padPercent
+
   return (
     <div
       style={{
@@ -134,7 +159,6 @@ function ArtworkStage({
         width: "100%",
         height: "100%",
         backgroundColor: colors.artStageBg,
-        backgroundImage: `linear-gradient(145deg, ${colors.artStageBg} 0%, ${mixHex(colors.artStageBg, colors.accent, 0.22)} 100%)`,
         overflow: "hidden",
       }}
     >
@@ -158,9 +182,9 @@ function ArtworkStage({
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            color: colors.panelMuted,
-            fontSize: 36,
-            letterSpacing: "0.12em",
+            color: colors.muted,
+            fontSize: 32,
+            letterSpacing: "0.1em",
             fontWeight: 700,
           }}
         >
@@ -171,7 +195,121 @@ function ArtworkStage({
   )
 }
 
-function OgSplitCard({
+function CreditBlock({
+  title,
+  displayName,
+  handle,
+  showBrand,
+  showCredit,
+  colors,
+  titleSize,
+  nameSize,
+  handleSize,
+  brandSize,
+  direction = "column",
+}: {
+  title: string
+  displayName: string
+  handle: string
+  showBrand: boolean
+  showCredit: boolean
+  colors: SocialCardPalette
+  titleSize: number
+  nameSize: number
+  handleSize: number
+  brandSize: number
+  direction?: "column" | "row"
+}) {
+  const isRow = direction === "row"
+  return (
+    <div
+      style={{
+        display: "flex",
+        flexDirection: isRow ? "row" : "column",
+        alignItems: isRow ? "flex-end" : "flex-start",
+        justifyContent: isRow ? "space-between" : "flex-start",
+        gap: isRow ? 20 : 12,
+        width: "100%",
+      }}
+    >
+      {showCredit ? (
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            gap: 8,
+            flex: 1,
+            minWidth: 0,
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              fontSize: titleSize,
+              fontWeight: 700,
+              color: colors.ink,
+              lineHeight: 1.2,
+              maxHeight: titleSize * 2.6,
+              overflow: "hidden",
+            }}
+          >
+            {title.slice(0, 72)}
+          </div>
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "row",
+              alignItems: "baseline",
+              gap: 10,
+              flexWrap: "wrap",
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                fontSize: nameSize,
+                fontWeight: 600,
+                color: colors.ink,
+              }}
+            >
+              {displayName.slice(0, 40)}
+            </div>
+            {handle ? (
+              <div
+                style={{
+                  display: "flex",
+                  fontSize: handleSize,
+                  color: colors.muted,
+                }}
+              >
+                {handle.slice(0, 36)}
+              </div>
+            ) : null}
+          </div>
+        </div>
+      ) : (
+        <div style={{ display: "flex", flex: 1 }} />
+      )}
+      {showBrand ? (
+        <div
+          style={{
+            display: "flex",
+            fontSize: brandSize,
+            fontWeight: 700,
+            letterSpacing: "0.12em",
+            color: colors.accent,
+            flexShrink: 0,
+          }}
+        >
+          {SITE_NAME}
+        </div>
+      ) : null}
+    </div>
+  )
+}
+
+/** Landscape + square: art stacked above a warm caption band. */
+function OgStackedCard({
   title,
   displayName,
   handle,
@@ -181,6 +319,7 @@ function OgSplitCard({
   aspect,
   intrinsic,
   colors,
+  artFlex,
 }: {
   title: string
   displayName: string
@@ -191,10 +330,88 @@ function OgSplitCard({
   aspect: SocialArtAspect
   intrinsic: { width: number; height: number }
   colors: SocialCardPalette
+  artFlex: number
 }) {
-  // Landscape gets a slightly wider stage; portrait stays near 62% so tall art can grow.
-  const artShare =
-    !(showCredit || showBrand) ? 1 : aspect === "landscape" ? 0.68 : aspect === "portrait" ? 0.6 : 0.64
+  const hasMeta = showCredit || showBrand
+  return (
+    <div
+      style={{
+        width: "100%",
+        height: "100%",
+        display: "flex",
+        flexDirection: "column",
+        backgroundColor: colors.artStageBg,
+      }}
+    >
+      <div
+        style={{
+          display: "flex",
+          flex: hasMeta ? artFlex : 1,
+          minHeight: 0,
+          width: "100%",
+        }}
+      >
+        <ArtworkStage
+          artworkDataUrl={artworkDataUrl}
+          colors={colors}
+          aspect={aspect}
+          intrinsic={intrinsic}
+          padPercent={aspect === "landscape" ? 1.5 : 2}
+        />
+      </div>
+      {hasMeta ? (
+        <div
+          style={{
+            display: "flex",
+            padding: "24px 40px 28px",
+            backgroundColor: colors.artStageBg,
+          }}
+        >
+          <CreditBlock
+            title={title}
+            displayName={displayName}
+            handle={handle}
+            showBrand={showBrand}
+            showCredit={showCredit}
+            colors={colors}
+            titleSize={aspect === "landscape" ? 34 : 36}
+            nameSize={22}
+            handleSize={20}
+            brandSize={15}
+            direction="row"
+          />
+        </div>
+      ) : null}
+    </div>
+  )
+}
+
+/** Portrait: tall art uses full height; warm side caption (never a dark panel). */
+function OgSideCaptionCard({
+  title,
+  displayName,
+  handle,
+  artworkDataUrl,
+  showBrand,
+  showCredit,
+  aspect,
+  intrinsic,
+  colors,
+  artShare,
+}: {
+  title: string
+  displayName: string
+  handle: string
+  artworkDataUrl: string | null
+  showBrand: boolean
+  showCredit: boolean
+  aspect: SocialArtAspect
+  intrinsic: { width: number; height: number }
+  colors: SocialCardPalette
+  artShare: number
+}) {
+  const hasMeta = showCredit || showBrand
+  const share = hasMeta ? artShare : 1
 
   return (
     <div
@@ -203,13 +420,13 @@ function OgSplitCard({
         height: "100%",
         display: "flex",
         flexDirection: "row",
-        backgroundColor: colors.panelBg,
+        backgroundColor: colors.artStageBg,
       }}
     >
       <div
         style={{
           display: "flex",
-          width: `${Math.round(artShare * 100)}%`,
+          width: `${Math.round(share * 100)}%`,
           height: "100%",
           flexShrink: 0,
         }}
@@ -219,116 +436,34 @@ function OgSplitCard({
           colors={colors}
           aspect={aspect}
           intrinsic={intrinsic}
-          padPercent={aspect === "landscape" ? 2 : 2.5}
+          padPercent={2}
         />
       </div>
-
-      {showCredit || showBrand ? (
+      {hasMeta ? (
         <div
           style={{
             display: "flex",
             flexDirection: "column",
-            justifyContent: "space-between",
-            width: `${100 - Math.round(artShare * 100)}%`,
+            justifyContent: "center",
+            width: `${100 - Math.round(share * 100)}%`,
             height: "100%",
-            padding: "48px 40px",
-            backgroundColor: colors.panelBg,
-            backgroundImage: `linear-gradient(180deg, ${colors.panelBg} 0%, #0c0d12 100%)`,
+            padding: "40px 36px",
+            backgroundColor: colors.artStageBg,
           }}
         >
-          {showBrand ? (
-            <div
-              style={{
-                display: "flex",
-                fontSize: 18,
-                fontWeight: 700,
-                letterSpacing: "0.16em",
-                color: colors.accent,
-              }}
-            >
-              {SITE_NAME}
-            </div>
-          ) : (
-            <div style={{ display: "flex", height: 18 }} />
-          )}
-
-          {showCredit ? (
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                gap: 18,
-                flex: 1,
-                justifyContent: "center",
-              }}
-            >
-              <div
-                style={{
-                  display: "flex",
-                  fontSize: 42,
-                  fontWeight: 700,
-                  color: colors.panelFg,
-                  lineHeight: 1.2,
-                  maxHeight: 42 * 3.2,
-                  overflow: "hidden",
-                }}
-              >
-                {title.slice(0, 72)}
-              </div>
-              <div
-                style={{
-                  display: "flex",
-                  width: 48,
-                  height: 4,
-                  backgroundColor: colors.accent,
-                }}
-              />
-              <div
-                style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: 6,
-                }}
-              >
-                <div
-                  style={{
-                    display: "flex",
-                    fontSize: 26,
-                    fontWeight: 600,
-                    color: colors.panelFg,
-                    lineHeight: 1.25,
-                  }}
-                >
-                  {displayName.slice(0, 40)}
-                </div>
-                {handle ? (
-                  <div
-                    style={{
-                      display: "flex",
-                      fontSize: 22,
-                      color: colors.panelMuted,
-                      lineHeight: 1.25,
-                    }}
-                  >
-                    {handle.slice(0, 36)}
-                  </div>
-                ) : null}
-              </div>
-            </div>
-          ) : (
-            <div style={{ display: "flex", flex: 1 }} />
-          )}
-
-          <div
-            style={{
-              display: "flex",
-              fontSize: 16,
-              color: colors.panelMuted,
-              letterSpacing: "0.04em",
-            }}
-          >
-            pxlb.fun
-          </div>
+          <CreditBlock
+            title={title}
+            displayName={displayName}
+            handle={handle}
+            showBrand={showBrand}
+            showCredit={showCredit}
+            colors={colors}
+            titleSize={36}
+            nameSize={22}
+            handleSize={20}
+            brandSize={15}
+            direction="column"
+          />
         </div>
       ) : null}
     </div>
@@ -359,7 +494,7 @@ function VerticalArtCard({
   colors: SocialCardPalette
 }) {
   const isStory = format === "story"
-  const artFlex = showCredit || showBrand ? (isStory ? 0.78 : 0.82) : 1
+  const artFlex = showCredit || showBrand ? (isStory ? 0.8 : 0.84) : 1
 
   return (
     <div
@@ -368,7 +503,7 @@ function VerticalArtCard({
         height: "100%",
         display: "flex",
         flexDirection: "column",
-        backgroundColor: colors.panelBg,
+        backgroundColor: colors.artStageBg,
       }}
     >
       <div style={{ display: "flex", flex: artFlex, minHeight: 0, width: "100%" }}>
@@ -385,64 +520,23 @@ function VerticalArtCard({
         <div
           style={{
             display: "flex",
-            flexDirection: "row",
-            alignItems: "flex-end",
-            justifyContent: "space-between",
-            padding: isStory ? "36px 44px 44px" : "28px 36px 36px",
-            gap: 20,
-            backgroundColor: colors.panelBg,
+            padding: isStory ? "32px 40px 40px" : "24px 32px 32px",
+            backgroundColor: colors.artStageBg,
           }}
         >
-          {showCredit ? (
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                gap: 10,
-                flex: 1,
-                minWidth: 0,
-              }}
-            >
-              <div
-                style={{
-                  display: "flex",
-                  fontSize: isStory ? 40 : 34,
-                  fontWeight: 700,
-                  color: colors.panelFg,
-                  lineHeight: 1.2,
-                  maxHeight: (isStory ? 40 : 34) * 2.5,
-                  overflow: "hidden",
-                }}
-              >
-                {title.slice(0, 72)}
-              </div>
-              <div
-                style={{
-                  display: "flex",
-                  fontSize: isStory ? 26 : 22,
-                  color: colors.panelMuted,
-                }}
-              >
-                {[displayName, handle].filter(Boolean).join("  ·  ").slice(0, 56)}
-              </div>
-            </div>
-          ) : (
-            <div style={{ display: "flex", flex: 1 }} />
-          )}
-          {showBrand ? (
-            <div
-              style={{
-                display: "flex",
-                fontSize: isStory ? 22 : 18,
-                fontWeight: 700,
-                letterSpacing: "0.14em",
-                color: colors.accent,
-                flexShrink: 0,
-              }}
-            >
-              {SITE_NAME}
-            </div>
-          ) : null}
+          <CreditBlock
+            title={title}
+            displayName={displayName}
+            handle={handle}
+            showBrand={showBrand}
+            showCredit={showCredit}
+            colors={colors}
+            titleSize={isStory ? 38 : 32}
+            nameSize={isStory ? 24 : 20}
+            handleSize={isStory ? 22 : 18}
+            brandSize={isStory ? 18 : 15}
+            direction="row"
+          />
         </div>
       ) : null}
     </div>

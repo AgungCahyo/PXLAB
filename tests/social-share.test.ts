@@ -117,13 +117,18 @@ describe("social sharing architecture", () => {
     expect(server).toMatch(/cover\.png/)
   })
 
-  it("uses an artwork-first OG split card with palette adaptation", () => {
+  it("uses a warm artwork-first social card system (no dark tech panels)", () => {
     const card = read("lib/share-card.tsx")
-    expect(card).toMatch(/OgSplitCard/)
-    expect(card).toMatch(/artShare/)
+    const palette = read("lib/share-palette.ts")
+    expect(card).toMatch(/OgStackedCard/)
+    expect(card).toMatch(/OgSideCaptionCard/)
     expect(card).toMatch(/imageRendering:\s*"pixelated"/)
-    expect(card).not.toMatch(/#fffdf7/)
-    expect(card).toMatch(/intrinsicArtSize|artWidth/)
+    expect(card).not.toMatch(/#0c0d12/)
+    expect(card).not.toMatch(/#101218/)
+    expect(palette).toMatch(/SOCIAL_IVORY/)
+    expect(palette).toMatch(/faf6ee/)
+    expect(palette).not.toMatch(/#0a0b10/)
   })
 })
+
 

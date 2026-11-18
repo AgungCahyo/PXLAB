@@ -1,5 +1,5 @@
 /**
- * Renders synthetic OG previews for visual QA.
+ * Renders warm editorial OG previews for visual QA.
  * Run: node scripts/render-og-samples.mjs
  */
 import { deflateSync } from "node:zlib"
@@ -12,6 +12,13 @@ import { ImageResponse } from "next/og.js"
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const outDir = join(__dirname, "..", ".tmp", "og-samples")
 mkdirSync(outDir, { recursive: true })
+
+const SOCIAL_IVORY = "#faf6ee"
+const SOCIAL_WARM = "#f3ede3"
+const SOCIAL_INK = "#2c2825"
+const SOCIAL_MUTED = "#6b645c"
+const SOCIAL_EARTH = "#936037"
+const SOCIAL_SKY = "#59bceb"
 
 function mixHex(a, b, amountOfB) {
   const t = Math.min(1, Math.max(0, amountOfB))
@@ -48,19 +55,23 @@ function hexLuminance(hex) {
 }
 
 function socialCardPalette(usage) {
-  const top = usage ?? []
-  const accent = top[0]?.hex ?? "#59bceb"
-  const secondary = top[1]?.hex ?? accent
-  const artIsDark = hexLuminance(accent) < 0.35
-  const artStageBg = artIsDark
-    ? mixHex(accent, "#0a0b10", 0.55)
-    : mixHex(mixHex(accent, secondary, 0.35), "#12141c", 0.62)
+  const top = (usage ?? []).filter((e) => {
+    const h = e.hex.toLowerCase()
+    return h !== "#000000" && h !== "#ffffff"
+  })
+  const rawAccent = top[0]?.hex ?? SOCIAL_SKY
+  const lum = hexLuminance(rawAccent)
+  const artIsDark = lum < 0.35
+  const accent =
+    lum < 0.22
+      ? top.find((e) => hexLuminance(e.hex) >= 0.28)?.hex ?? SOCIAL_EARTH
+      : rawAccent
   return {
-    artStageBg,
-    panelBg: mixHex("#101218", accent, 0.12),
-    panelFg: "#f3f0ea",
-    panelMuted: "#a8a3b0",
-    accent,
+    canvasBg: mixHex(SOCIAL_IVORY, SOCIAL_WARM, 0.35),
+    artStageBg: mixHex(SOCIAL_IVORY, accent, artIsDark ? 0.08 : 0.14),
+    ink: SOCIAL_INK,
+    muted: SOCIAL_MUTED,
+    accent: mixHex(accent, SOCIAL_EARTH, lum > 0.7 ? 0.25 : 0.08),
     artIsDark,
   }
 }
@@ -138,12 +149,130 @@ function makeArt({ w, h, colors, transparent = false }) {
   return `data:image/png;base64,${png.toString("base64")}`
 }
 
-function SocialCardMarkup({ title, displayName, username, artworkDataUrl, aspect, artWidth, artHeight, palette }) {
-  const colors = palette
-  const handle = `@${username}`
-  const artShare = aspect === "landscape" ? 0.68 : aspect === "portrait" ? 0.6 : 0.64
-  const pad = aspect === "landscape" ? 2 : 2.5
+function intrinsic(artWidth, artHeight) {
+  const ratio = artWidth / artHeight
+  if (ratio >= 1) return { width: 1200, height: Math.round(1200 / ratio) }
+  return { width: Math.round(1200 * ratio), height: 1200 }
+}
 
+function Artwork({ src, aspect, artWidth, artHeight, colors }) {
+  const box = intrinsic(artWidth, artHeight)
+  const pad = aspect === "landscape" ? 2 : aspect === "portrait" ? 2.5 : 3
+  return createElement(
+    "div",
+    {
+      style: {
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        width: "100%",
+        height: "100%",
+        backgroundColor: colors.artStageBg,
+        overflow: "hidden",
+      },
+    },
+    createElement("img", {
+      src,
+      width: box.width,
+      height: box.height,
+      style: {
+        maxWidth: `${100 - pad * 2}%`,
+        maxHeight: `${100 - pad * 2}%`,
+        objectFit: "contain",
+        imageRendering: "pixelated",
+      },
+    }),
+  )
+}
+
+function Credit({ title, colors, brand }) {
+  return createElement(
+    "div",
+    {
+      style: {
+        display: "flex",
+        flexDirection: "row",
+        alignItems: "flex-end",
+        justifyContent: "space-between",
+        gap: 20,
+        width: "100%",
+      },
+    },
+    createElement(
+      "div",
+      { style: { display: "flex", flexDirection: "column", gap: 8, flex: 1 } },
+      createElement(
+        "div",
+        { style: { display: "flex", fontSize: 36, fontWeight: 700, color: colors.ink, lineHeight: 1.2 } },
+        title,
+      ),
+      createElement(
+        "div",
+        { style: { display: "flex", flexDirection: "row", gap: 10 } },
+        createElement(
+          "div",
+          { style: { display: "flex", fontSize: 22, fontWeight: 600, color: colors.ink } },
+          "Agung Cahyo",
+        ),
+        createElement(
+          "div",
+          { style: { display: "flex", fontSize: 20, color: colors.muted } },
+          "@cahyo",
+        ),
+      ),
+    ),
+    brand
+      ? createElement(
+          "div",
+          {
+            style: {
+              display: "flex",
+              fontSize: 16,
+              fontWeight: 700,
+              letterSpacing: "0.12em",
+              color: colors.accent,
+            },
+          },
+          "PXLB",
+        )
+      : null,
+  )
+}
+
+function Stacked({ title, artworkDataUrl, aspect, artWidth, artHeight, colors, artFlex }) {
+  return createElement(
+    "div",
+    {
+      style: {
+        width: "100%",
+        height: "100%",
+        display: "flex",
+        flexDirection: "column",
+        backgroundColor: colors.artStageBg,
+      },
+    },
+    createElement(
+      "div",
+      { style: { display: "flex", flex: artFlex, minHeight: 0, width: "100%" } },
+      createElement(Artwork, { src: artworkDataUrl, aspect, artWidth, artHeight, colors }),
+    ),
+    createElement(
+      "div",
+      {
+        style: {
+          display: "flex",
+          padding: "24px 40px 28px",
+          backgroundColor: colors.artStageBg,
+        },
+      },
+      createElement(Credit, { title, colors, brand: true }),
+    ),
+  )
+}
+
+function SideCaption({ title, artworkDataUrl, aspect, artWidth, artHeight, colors, artShare = 0.62 }) {
+  const left = Math.round(artShare * 100)
+  const right = 100 - left
   return createElement(
     "div",
     {
@@ -152,45 +281,13 @@ function SocialCardMarkup({ title, displayName, username, artworkDataUrl, aspect
         height: "100%",
         display: "flex",
         flexDirection: "row",
-        backgroundColor: colors.panelBg,
+        backgroundColor: colors.artStageBg,
       },
     },
     createElement(
       "div",
-      {
-        style: {
-          display: "flex",
-          width: `${Math.round(artShare * 100)}%`,
-          height: "100%",
-          flexShrink: 0,
-        },
-      },
-      createElement(
-        "div",
-        {
-          style: {
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            width: "100%",
-            height: "100%",
-            backgroundColor: colors.artStageBg,
-            backgroundImage: `linear-gradient(145deg, ${colors.artStageBg} 0%, ${mixHex(colors.artStageBg, colors.accent, 0.22)} 100%)`,
-            overflow: "hidden",
-          },
-        },
-        createElement("img", {
-          src: artworkDataUrl,
-          width: artWidth >= artHeight ? 1200 : Math.round(1200 * (artWidth / artHeight)),
-          height: artHeight >= artWidth ? 1200 : Math.round(1200 * (artHeight / artWidth)),
-          style: {
-            maxWidth: `${100 - pad * 2}%`,
-            maxHeight: `${100 - pad * 2}%`,
-            objectFit: "contain",
-            imageRendering: "pixelated",
-          },
-        }),
-      ),
+      { style: { display: "flex", width: `${left}%`, height: "100%", flexShrink: 0 } },
+      createElement(Artwork, { src: artworkDataUrl, aspect, artWidth, artHeight, colors }),
     ),
     createElement(
       "div",
@@ -198,84 +295,72 @@ function SocialCardMarkup({ title, displayName, username, artworkDataUrl, aspect
         style: {
           display: "flex",
           flexDirection: "column",
-          justifyContent: "space-between",
-          width: `${100 - Math.round(artShare * 100)}%`,
+          justifyContent: "center",
+          width: `${right}%`,
           height: "100%",
-          padding: "48px 40px",
-          backgroundColor: colors.panelBg,
-          backgroundImage: `linear-gradient(180deg, ${colors.panelBg} 0%, #0c0d12 100%)`,
+          padding: "40px 36px",
+          backgroundColor: colors.artStageBg,
         },
       },
       createElement(
         "div",
-        {
-          style: {
-            display: "flex",
-            fontSize: 18,
-            fontWeight: 700,
-            letterSpacing: "0.16em",
-            color: colors.accent,
-          },
-        },
-        "PXLB",
-      ),
-      createElement(
-        "div",
-        {
-          style: {
-            display: "flex",
-            flexDirection: "column",
-            gap: 18,
-            flex: 1,
-            justifyContent: "center",
-          },
-        },
+        { style: { display: "flex", flexDirection: "column", gap: 12 } },
+        createElement(
+          "div",
+          { style: { display: "flex", fontSize: 38, fontWeight: 700, color: colors.ink, lineHeight: 1.2 } },
+          title,
+        ),
+        createElement(
+          "div",
+          { style: { display: "flex", fontSize: 24, fontWeight: 600, color: colors.ink } },
+          "Agung Cahyo",
+        ),
+        createElement(
+          "div",
+          { style: { display: "flex", fontSize: 20, color: colors.muted } },
+          "@cahyo",
+        ),
         createElement(
           "div",
           {
             style: {
               display: "flex",
-              fontSize: 42,
+              marginTop: 16,
+              fontSize: 16,
               fontWeight: 700,
-              color: colors.panelFg,
-              lineHeight: 1.2,
+              letterSpacing: "0.12em",
+              color: colors.accent,
             },
           },
-          title,
+          "PXLB",
         ),
-        createElement("div", {
-          style: { display: "flex", width: 48, height: 4, backgroundColor: colors.accent },
-        }),
-        createElement(
-          "div",
-          { style: { display: "flex", flexDirection: "column", gap: 6 } },
-          createElement(
-            "div",
-            { style: { display: "flex", fontSize: 26, fontWeight: 600, color: colors.panelFg } },
-            displayName,
-          ),
-          createElement(
-            "div",
-            { style: { display: "flex", fontSize: 22, color: colors.panelMuted } },
-            handle,
-          ),
-        ),
-      ),
-      createElement(
-        "div",
-        { style: { display: "flex", fontSize: 16, color: colors.panelMuted, letterSpacing: "0.04em" } },
-        "pxlb.fun",
       ),
     ),
   )
 }
 
+function Card(props) {
+  if (props.aspect === "landscape") {
+    return createElement(Stacked, { ...props, artFlex: 0.86 })
+  }
+  return createElement(SideCaption, {
+    ...props,
+    artShare: props.aspect === "portrait" ? 0.56 : 0.62,
+  })
+}
+
 const samples = [
+  {
+    name: "small-64",
+    aspect: "square",
+    usage: [{ hex: "#59bceb", count: 30 }, { hex: "#e94b3c", count: 20 }],
+    art: { w: 64, h: 64, colors: ["#59bceb", "#e94b3c", "#ffd447", "#ffffff"] },
+  },
   {
     name: "square-bright",
     aspect: "square",
     usage: [{ hex: "#ffd447", count: 40 }, { hex: "#59bceb", count: 20 }],
-    art: { w: 64, h: 64, colors: ["#ffd447", "#59bceb", "#ffffff", "#e94b3c"] },
+    art: { w: 128, h: 128, colors: ["#ffd447", "#59bceb", "#ffffff", "#e94b3c"] },
   },
   {
     name: "portrait-dark",
@@ -296,12 +381,6 @@ const samples = [
     art: { w: 64, h: 64, colors: ["#111111", "#222222", "#59bceb", "#e94b3c"] },
   },
   {
-    name: "transparent-bright",
-    aspect: "square",
-    usage: [{ hex: "#9a45e0", count: 30 }, { hex: "#59bceb", count: 20 }],
-    art: { w: 64, h: 64, colors: ["#9a45e0", "#59bceb", "#ffd447"], transparent: true },
-  },
-  {
     name: "portrait-bright",
     aspect: "portrait",
     usage: [{ hex: "#fff6d6", count: 40 }, { hex: "#936037", count: 20 }],
@@ -311,17 +390,15 @@ const samples = [
 
 for (const sample of samples) {
   const artworkDataUrl = makeArt(sample.art)
-  const palette = socialCardPalette(sample.usage)
+  const colors = socialCardPalette(sample.usage)
   const res = new ImageResponse(
-    createElement(SocialCardMarkup, {
+    createElement(Card, {
       title: sample.name.replace(/-/g, " "),
-      displayName: "Agung Cahyo",
-      username: "cahyo",
       artworkDataUrl,
       aspect: sample.aspect,
       artWidth: sample.art.w,
       artHeight: sample.art.h,
-      palette,
+      colors,
     }),
     { width: 1200, height: 630 },
   )
