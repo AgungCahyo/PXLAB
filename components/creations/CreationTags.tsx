@@ -7,12 +7,12 @@ export function CreationTags({ lang, tags }: { lang: Lang; tags: string[] }) {
   if (tags.length === 0) return null
 
   return (
-    <ul className="mt-2 flex flex-wrap gap-x-3 gap-y-1">
+    <ul className="mt-4 flex flex-wrap gap-2">
       {tags.map((tag) => (
         <li key={tag}>
           <Link
             href={exploreHref(lang, { tag })}
-            className="text-[13px] text-muted underline-offset-2 hover:text-fg hover:underline"
+            className="inline-flex border-[2px] border-earth bg-card px-2 py-1 text-[12px] font-medium text-fg hover:bg-soft"
           >
             {formatCreationTag(tag)}
           </Link>

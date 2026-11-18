@@ -1,4 +1,4 @@
-# THE COMMONS — Implementation Plan
+# PXLB — Implementation Plan
 
 **Document:** IMPLEMENTATION-PLAN.md  
 **Status:** Pixel Art Community migration. B0–B5 and **B7 QA** are in the codebase. Launch gates A/B/C/E pass at build, policy, and public-surface level. Operator must still apply `supabase/migrations` and do a logged-in Playground pass on the live project. Do not start B6. B6 is not a launch requirement.  

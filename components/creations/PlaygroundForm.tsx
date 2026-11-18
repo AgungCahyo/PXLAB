@@ -12,6 +12,7 @@ import {
 import { ColorPicker } from "@/components/creations/ColorPicker"
 import { CreationMoreMenu } from "@/components/creations/CreationMoreMenu"
 import { DocumentPaletteDialog } from "@/components/creations/DocumentPaletteDialog"
+import { ImportPixelArtDialog } from "@/components/creations/ImportPixelArtDialog"
 import { CreationTagInput } from "@/components/creations/CreationTagInput"
 import { DeleteCreationCopy } from "@/components/creations/DeleteCreationCopy"
 import { PixelArt } from "@/components/creations/PixelArt"
@@ -41,13 +42,17 @@ import {
 } from "@/lib/creation-metadata-local"
 import { displayTitle, isUnnamedTitle, titleForStorage } from "@/lib/creations"
 import { copy } from "@/lib/copy"
+import { CornerBusyMark } from "@/components/layout/CornerBusy"
+import { beginGlobalBusy, endGlobalBusy } from "@/lib/global-busy"
 import { href, type Lang } from "@/lib/i18n"
+import { PIXEL_IMPORT_ACCEPT, validateImportFile } from "@/lib/pixel-import"
 import {
   buildPixelSourceV2,
   createEmptyLayer,
   filledPixelIndices,
   formatPixelSize,
   PIXEL_INK,
+  PIXEL_LAYER_MAX,
   PIXEL_PALETTE,
   PIXEL_PAPER,
   type PixelBrushSize,
@@ -153,6 +158,9 @@ export function PlaygroundForm({
   const [canvasMenu, setCanvasMenu] = useState<{ x: number; y: number } | null>(null)
   const [canvasSizeOpen, setCanvasSizeOpen] = useState(false)
   const [discardOpen, setDiscardOpen] = useState(false)
+  const [importFile, setImportFile] = useState<File | null>(null)
+  const [importOpen, setImportOpen] = useState(false)
+  const importInputRef = useRef<HTMLInputElement | null>(null)
   const [boardEpoch, setBoardEpoch] = useState(0)
   const [hoverCell, setHoverCell] = useState<{ x: number; y: number } | null>(null)
   const hoverCellRef = useRef<{ x: number; y: number } | null>(null)
@@ -292,6 +300,7 @@ export function PlaygroundForm({
       setBusyIntent(intent)
       setPending(true)
       pendingRef.current = true
+      if (!silent) beginGlobalBusy()
       const savedGen = editGen.current
       try {
         const liveTitle =
@@ -387,6 +396,7 @@ export function PlaygroundForm({
         pendingRef.current = false
         setPending(false)
         setBusyIntent(null)
+        if (!silent) endGlobalBusy()
       }
     })
     flightRef.current = job.then(
@@ -648,6 +658,25 @@ export function PlaygroundForm({
     lasso: copy.pixelSelectLasso[lang],
   }
   const toolLabel = toolLabels[tool]
+  const toolIcons: Record<Tool, PixelIconName> = {
+    pencil: "square",
+    circle: "circle",
+    fill: "fill",
+    polygon: "polygon",
+    line: "line",
+    rect: "rect",
+    ellipse: "ellipse",
+    bezier: "bezier",
+    eraser: "eraser",
+    eyedropper: "eyedropper",
+    pan: "pan",
+    text: "text",
+    gradient: "gradient",
+    select: "select",
+    selectContiguous: "wand",
+    selectColor: "colorSelect",
+    lasso: "lasso",
+  }
   const showShapeOptions =
     tool === "rect" || tool === "ellipse" || tool === "bezier" || tool === "polygon"
   const showBrushControls =
@@ -660,7 +689,36 @@ export function PlaygroundForm({
     showShapeOptions
   const showSymmetryControls = tool === "pencil" || tool === "circle" || tool === "eraser"
   const mobileBrushId = useId()
-  const mobileSymmetryId = useId()
+  const symmetryModes: PixelSymmetry[] = ["off", "x", "y", "xy"]
+  const symmetryModeLabel =
+    symmetry === "x"
+      ? copy.pixelSymmetryX[lang]
+      : symmetry === "y"
+        ? copy.pixelSymmetryY[lang]
+        : symmetry === "xy"
+          ? copy.pixelSymmetryXY[lang]
+          : copy.pixelSymmetryOff[lang]
+  const symmetryTitle = `${copy.pixelSymmetry[lang]}: ${symmetryModeLabel}`
+  const cycleSymmetry = () => {
+    const index = symmetryModes.indexOf(symmetry)
+    setSymmetry(symmetryModes[(index + 1) % symmetryModes.length]!)
+  }
+  const renderSymmetryButton = () =>
+    showSymmetryControls ? (
+      <button
+        type="button"
+        aria-label={symmetryTitle}
+        title={symmetryTitle}
+        aria-pressed={symmetry !== "off"}
+        onClick={cycleSymmetry}
+        className={cn(
+          "studio-hit border-[3px]",
+          symmetry !== "off" ? "border-fg bg-brick text-white" : "border-earth bg-card text-fg",
+        )}
+      >
+        <PixelIcon name="flip" />
+      </button>
+    ) : null
 
   const toolButton = (value: Tool, icon: PixelIconName, label: string, shortcut: string) => {
     const titled = copy.pixelToolWithShortcut[lang]
@@ -747,118 +805,123 @@ export function PlaygroundForm({
     <div className="studio-row w-full flex-wrap">
       {tool === "bezier" || tool === "polygon" ? (
         <>
-          <Button
+          <button
             type="button"
-            variant={shapeDraft.mode === "stroke" ? "primary" : "outline"}
-            size="sm"
-            className="studio-control"
+            className={cn(
+              "studio-hit border-[3px]",
+              shapeDraft.mode === "stroke"
+                ? "border-fg bg-brick text-white"
+                : "border-earth bg-card text-fg",
+            )}
+            aria-label={copy.pixelShapeStroke[lang]}
+            title={copy.pixelShapeStroke[lang]}
+            aria-pressed={shapeDraft.mode === "stroke"}
             onClick={() => boardRef.current?.updateShapeDraft({ mode: "stroke" })}
           >
-            {copy.pixelShapeStroke[lang]}
-          </Button>
-          <Button
+            <PixelIcon name="shapeStroke" />
+          </button>
+          <button
             type="button"
-            variant={shapeDraft.mode === "fill" ? "primary" : "outline"}
-            size="sm"
-            className="studio-control"
+            className={cn(
+              "studio-hit border-[3px]",
+              shapeDraft.mode === "fill"
+                ? "border-fg bg-brick text-white"
+                : "border-earth bg-card text-fg",
+            )}
+            aria-label={copy.pixelShapeFill[lang]}
+            title={copy.pixelShapeFill[lang]}
+            aria-pressed={shapeDraft.mode === "fill"}
             onClick={() => boardRef.current?.updateShapeDraft({ mode: "fill" })}
           >
-            {copy.pixelShapeFill[lang]}
-          </Button>
+            <PixelIcon name="shapeFill" />
+          </button>
         </>
       ) : (
         <>
-          <Button
+          <button
             type="button"
-            variant={!shapeDraft.filled ? "primary" : "outline"}
-            size="sm"
-            className="studio-control"
+            className={cn(
+              "studio-hit border-[3px]",
+              !shapeDraft.filled
+                ? "border-fg bg-brick text-white"
+                : "border-earth bg-card text-fg",
+            )}
+            aria-label={copy.pixelShapeOutline[lang]}
+            title={copy.pixelShapeOutline[lang]}
+            aria-pressed={!shapeDraft.filled}
             onClick={() => boardRef.current?.updateShapeDraft({ filled: false })}
           >
-            {copy.pixelShapeOutline[lang]}
-          </Button>
-          <Button
+            <PixelIcon name="shapeStroke" />
+          </button>
+          <button
             type="button"
-            variant={shapeDraft.filled ? "primary" : "outline"}
-            size="sm"
-            className="studio-control"
+            className={cn(
+              "studio-hit border-[3px]",
+              shapeDraft.filled
+                ? "border-fg bg-brick text-white"
+                : "border-earth bg-card text-fg",
+            )}
+            aria-label={copy.pixelShapeFilled[lang]}
+            title={copy.pixelShapeFilled[lang]}
+            aria-pressed={shapeDraft.filled}
             onClick={() => boardRef.current?.updateShapeDraft({ filled: true })}
           >
-            {copy.pixelShapeFilled[lang]}
-          </Button>
-          <label className="flex items-center gap-1 text-[12px] font-medium text-fg">
-            {copy.pixelShapeWidth[lang]}
-            <input
-              type="number"
-              min={1}
-              value={shapeDraft.width || 1}
-              onChange={(event) =>
-                boardRef.current?.updateShapeDraft({
-                  width: Math.max(1, Math.round(Number(event.target.value) || 1)),
-                })
-              }
-              className="studio-control w-14 border-[3px] border-earth bg-card px-1 text-[12px]"
-            />
-          </label>
-          <label className="flex items-center gap-1 text-[12px] font-medium text-fg">
-            {copy.pixelShapeHeight[lang]}
-            <input
-              type="number"
-              min={1}
-              value={shapeDraft.height || 1}
-              onChange={(event) =>
-                boardRef.current?.updateShapeDraft({
-                  height: Math.max(1, Math.round(Number(event.target.value) || 1)),
-                })
-              }
-              className="studio-control w-14 border-[3px] border-earth bg-card px-1 text-[12px]"
-            />
-          </label>
+            <PixelIcon name="shapeFill" />
+          </button>
+          <input
+            type="number"
+            min={1}
+            value={shapeDraft.width || 1}
+            aria-label={copy.pixelShapeWidth[lang]}
+            title={copy.pixelShapeWidth[lang]}
+            placeholder="W"
+            onChange={(event) =>
+              boardRef.current?.updateShapeDraft({
+                width: Math.max(1, Math.round(Number(event.target.value) || 1)),
+              })
+            }
+            className="studio-control w-14 border-[3px] border-earth bg-card px-1 text-center text-[12px]"
+          />
+          <input
+            type="number"
+            min={1}
+            value={shapeDraft.height || 1}
+            aria-label={copy.pixelShapeHeight[lang]}
+            title={copy.pixelShapeHeight[lang]}
+            placeholder="H"
+            onChange={(event) =>
+              boardRef.current?.updateShapeDraft({
+                height: Math.max(1, Math.round(Number(event.target.value) || 1)),
+              })
+            }
+            className="studio-control w-14 border-[3px] border-earth bg-card px-1 text-center text-[12px]"
+          />
         </>
       )}
       {shapeDraft.active ? (
         <>
-          <Button
+          <button
             type="button"
-            size="sm"
-            className="studio-control"
+            className="studio-hit border-[3px] border-fg bg-brick text-white"
+            aria-label={copy.pixelShapeApply[lang]}
+            title={copy.pixelShapeApply[lang]}
             onClick={() => boardRef.current?.applyShapeDraft()}
           >
-            {copy.pixelShapeApply[lang]}
-          </Button>
-          <Button
+            <PixelIcon name="apply" />
+          </button>
+          <button
             type="button"
-            variant="outline"
-            size="sm"
-            className="studio-control"
+            className="studio-hit border-[3px] border-earth bg-card text-fg"
+            aria-label={copy.pixelShapeCancel[lang]}
+            title={copy.pixelShapeCancel[lang]}
             onClick={() => boardRef.current?.cancelShapeDraft()}
           >
-            {copy.pixelShapeCancel[lang]}
-          </Button>
+            <PixelIcon name="close" />
+          </button>
         </>
       ) : null}
     </div>
   ) : null
-
-  const symmetrySelect = (fieldId: string) => (
-    <>
-      <label className="sr-only" htmlFor={fieldId}>
-        {copy.pixelSymmetry[lang]}
-      </label>
-      <select
-        id={fieldId}
-        aria-label={copy.pixelSymmetry[lang]}
-        value={symmetry}
-        onChange={(event) => setSymmetry(event.target.value as PixelSymmetry)}
-        className="studio-control max-w-[6.5rem] border-[3px] border-earth bg-card px-1.5 text-[12px] font-medium text-fg"
-      >
-        <option value="off">{copy.pixelSymmetryOff[lang]}</option>
-        <option value="x">{copy.pixelSymmetryX[lang]}</option>
-        <option value="y">{copy.pixelSymmetryY[lang]}</option>
-        <option value="xy">{copy.pixelSymmetryXY[lang]}</option>
-      </select>
-    </>
-  )
 
   const paletteRow = (
     <div className="studio-row">
@@ -913,21 +976,27 @@ export function PlaygroundForm({
         aria-label={copy.pixelZoomOut[lang]}
         title={copy.pixelZoomOut[lang]}
         onClick={() => boardRef.current?.zoomBy(-1)}
-        className="studio-hit border-[3px] border-earth bg-bg text-[16px] font-bold text-fg"
+        className="studio-hit border-[3px] border-earth bg-bg text-fg"
       >
-        −
+        <PixelIcon name="zoomOut" />
       </button>
-      <span className="min-w-[2.5rem] text-center text-[12px] font-medium text-fg md:min-w-[3.25rem] md:text-[13px]">
+      <button
+        type="button"
+        className="min-w-[2.5rem] border-[3px] border-earth bg-card px-1 text-center text-[12px] font-medium text-fg md:min-w-[3.25rem] md:text-[13px]"
+        aria-label={`${copy.pixelFit[lang]}: ${zoomLabel}`}
+        title={zoomLabel}
+        onClick={() => boardRef.current?.fit()}
+      >
         {zoomLabel}
-      </span>
+      </button>
       <button
         type="button"
         aria-label={copy.pixelZoomIn[lang]}
         title={copy.pixelZoomIn[lang]}
         onClick={() => boardRef.current?.zoomBy(1)}
-        className="studio-hit border-[3px] border-earth bg-bg text-[16px] font-bold text-fg"
+        className="studio-hit border-[3px] border-earth bg-bg text-fg"
       >
-        +
+        <PixelIcon name="zoomIn" />
       </button>
     </div>
   )
@@ -977,30 +1046,37 @@ export function PlaygroundForm({
         role="status"
         aria-label={copy.pixelStatusBar[lang]}
       >
-        <span>
-          {hoverCell
-            ? `x ${hoverCell.x}, y ${hoverCell.y}`
-            : copy.pixelCursorNone[lang]}
+        <span className="font-mono tabular-nums" title={hoverCell ? undefined : copy.pixelCursorNone[lang]}>
+          {hoverCell ? `${hoverCell.x},${hoverCell.y}` : "—"}
         </span>
         <span aria-hidden="true">·</span>
-        <span>
-          {toolLabel} {color}
+        <span className="inline-flex items-center gap-1.5" title={`${toolLabel} ${color}`}>
+          <PixelIcon name={toolIcons[tool]} className="text-fg" />
+          <span
+            className="inline-block h-3 w-3 border border-earth"
+            style={{ backgroundColor: color }}
+            aria-hidden="true"
+          />
+          <span className="sr-only">{`${toolLabel} ${color}`}</span>
         </span>
         <span aria-hidden="true">·</span>
-        <span>{saveLabel}</span>
+        <span
+          className="inline-flex items-center gap-1"
+          title={saveLabel}
+          aria-label={saveLabel}
+        >
+          <PixelIcon
+            name={saveStatus === "saving" ? "save" : saveStatus === "unsaved" ? "clear" : "apply"}
+            className={saveStatus === "unsaved" ? "text-brick" : "text-fg"}
+          />
+          <span className="sr-only">{saveLabel}</span>
+        </span>
         {editFlash ? (
           <>
             <span aria-hidden="true">·</span>
             <span className="text-fg">{editFlash}</span>
           </>
-        ) : (
-          <>
-            <span className="hidden sm:inline" aria-hidden="true">
-              ·
-            </span>
-            <span className="hidden sm:inline">{copy.pixelStatusShortcuts[lang]}</span>
-          </>
-        )}
+        ) : null}
       </div>
     )
 
@@ -1024,7 +1100,7 @@ export function PlaygroundForm({
             title={copy.pixelCopy[lang]}
             onClick={() => boardRef.current?.copySelection()}
           >
-            <PixelIcon name="duplicate" />
+            <PixelIcon name="copy" />
           </button>
           <button
             type="button"
@@ -1033,7 +1109,7 @@ export function PlaygroundForm({
             title={copy.pixelCut[lang]}
             onClick={() => boardRef.current?.cutSelection()}
           >
-            <PixelIcon name="eraser" />
+            <PixelIcon name="cut" />
           </button>
           <button
             type="button"
@@ -1054,7 +1130,7 @@ export function PlaygroundForm({
         disabled={!hasClipboard}
         onClick={() => boardRef.current?.pasteClipboard()}
       >
-        <PixelIcon name="download" />
+        <PixelIcon name="paste" />
       </button>
       {hasSelection ? (
         <button
@@ -1085,6 +1161,33 @@ export function PlaygroundForm({
       flashEdit(messages[kind])
     },
     [lang],
+  )
+
+  const beginImportFile = useCallback(
+    (file: File | null | undefined) => {
+      if (!file) return
+      if (layers.length >= PIXEL_LAYER_MAX) {
+        flashEdit(copy.pixelImportLayerLimit[lang])
+        return
+      }
+      const invalid = validateImportFile(file)
+      if (invalid === "type") {
+        flashEdit(copy.pixelImportBadType[lang])
+        return
+      }
+      if (invalid === "too_large") {
+        flashEdit(copy.pixelImportTooLarge[lang])
+        return
+      }
+      if (invalid) {
+        flashEdit(copy.pixelImportFailed[lang])
+        return
+      }
+      setImportFile(file)
+      setImportOpen(true)
+      setMoreOpen(false)
+    },
+    [flashEdit, lang, layers.length],
   )
 
   const getLayerThumbnail = useCallback(
@@ -1127,6 +1230,9 @@ export function PlaygroundForm({
       data-chrome="playground"
       className="fixed inset-0 z-[60] flex flex-col overflow-hidden overscroll-none bg-bg"
     >
+      {pending || leaving ? (
+        <CornerBusyMark lang={lang} className="corner-busy-studio" visible />
+      ) : null}
       {remixOf ? (
         <p className="shrink-0 border-b-[3px] border-earth bg-soft px-3 py-2 text-[13px] text-muted">
           {copy.remixFrom[lang]} @{remixOf.authorUsername}
@@ -1249,10 +1355,31 @@ export function PlaygroundForm({
           aria-label={copy.pixelTools[lang]}
         >
           {toolButtons}
+          {showSymmetryControls ? (
+            <>
+              {toolDivider}
+              {renderSymmetryButton()}
+            </>
+          ) : null}
         </aside>
 
         <div className="flex min-h-0 min-w-0 flex-1 flex-col">
-          <div className="playground-stage flex min-h-0 flex-1 flex-col px-2 py-2 sm:px-3">
+          <div
+            className="playground-stage flex min-h-0 flex-1 flex-col px-2 py-2 sm:px-3"
+            onDragOver={(event) => {
+              if (preview || pending || leaving) return
+              if (![...event.dataTransfer.types].includes("Files")) return
+              event.preventDefault()
+              event.dataTransfer.dropEffect = "copy"
+            }}
+            onDrop={(event) => {
+              if (preview || pending || leaving) return
+              const file = event.dataTransfer.files?.[0]
+              if (!file) return
+              event.preventDefault()
+              beginImportFile(file)
+            }}
+          >
             {preview && previewUrl ? (
               <PixelArt
                 src={previewUrl}
@@ -1305,10 +1432,7 @@ export function PlaygroundForm({
                 onHistoryChange={setHistory}
                 onHoverCell={reportHover}
                 onCanvasMenu={({ clientX, clientY }) => setCanvasMenu({ x: clientX, y: clientY })}
-                className={cn(
-                  preview ? "hidden" : "min-h-0 flex-1",
-                  stageGround === "checker" && "pixel-stage-checker",
-                )}
+                className={preview ? "hidden" : "min-h-0 flex-1"}
               />
             ) : (
               <div className={preview ? "hidden" : "min-h-0 flex-1"} aria-hidden="true" />
@@ -1324,7 +1448,6 @@ export function PlaygroundForm({
             color={color}
             documentPalette={documentPalette}
             brushSize={shapeDraft.active ? shapeDraft.strokeWidth : brushSize}
-            symmetry={symmetry}
             hasSelection={hasSelection}
             hasClipboard={hasClipboard}
             layerPanel={
@@ -1338,7 +1461,6 @@ export function PlaygroundForm({
             }
             showBrushControls={showBrushControls && !showShapeOptions}
             brushLabel={sizeLabel}
-            showSymmetryControls={showSymmetryControls}
             showShapeOptions={showShapeOptions}
             shapeKind={
               tool === "rect" || tool === "ellipse" || tool === "bezier" || tool === "polygon"
@@ -1355,7 +1477,6 @@ export function PlaygroundForm({
               if (tool === "eraser") setTool("pencil")
             }}
             onBrushSize={setBrushSize}
-            onSymmetry={setSymmetry}
             onPaletteMore={() => {
               setPaletteFullAlert(false)
               setPaletteOpen(true)
@@ -1394,6 +1515,12 @@ export function PlaygroundForm({
               {renderHistoryButtons()}
               {toolDividerMobile}
               {toolButtons}
+              {showSymmetryControls ? (
+                <>
+                  {toolDividerMobile}
+                  {renderSymmetryButton()}
+                </>
+              ) : null}
             </div>
           ) : (
             <div
@@ -1402,13 +1529,16 @@ export function PlaygroundForm({
               aria-label={copy.pixelTools[lang]}
             >
               {toolButtons}
+              {showSymmetryControls ? (
+                <>
+                  {toolDividerMobile}
+                  {renderSymmetryButton()}
+                </>
+              ) : null}
             </div>
           )}
-          {showBrushControls || showSymmetryControls ? (
-            <div className="studio-row w-full flex-wrap">
-              {brushSelect(mobileBrushId)}
-              {showSymmetryControls ? symmetrySelect(mobileSymmetryId) : null}
-            </div>
+          {showBrushControls ? (
+            <div className="studio-row w-full flex-wrap">{brushSelect(mobileBrushId)}</div>
           ) : null}
           {shapeMobileOptions}
           {selectionActions}
@@ -1506,63 +1636,219 @@ export function PlaygroundForm({
         </div>
       </Dialog>
 
+      <input
+        ref={importInputRef}
+        type="file"
+        accept={PIXEL_IMPORT_ACCEPT}
+        className="hidden"
+        onChange={(event) => {
+          const file = event.target.files?.[0]
+          event.target.value = ""
+          beginImportFile(file)
+        }}
+      />
+
+      <ImportPixelArtDialog
+        lang={lang}
+        open={importOpen}
+        file={importFile}
+        canvasWidth={width}
+        canvasHeight={height}
+        documentPalette={documentPalette}
+        onClose={() => {
+          setImportOpen(false)
+          setImportFile(null)
+        }}
+        onConfirm={(result) => {
+          const imported = boardRef.current?.importPixelArtLayer({
+            indices: result.indices,
+            width: result.width,
+            height: result.height,
+            palette: result.palette,
+            name: importFile?.name.replace(/\.[^.]+$/, "").slice(0, 32) || undefined,
+          })
+          setImportOpen(false)
+          setImportFile(null)
+          if (!imported || !imported.ok) {
+            flashEdit(
+              imported?.error === "layer_limit"
+                ? copy.pixelImportLayerLimit[lang]
+                : copy.pixelImportFailed[lang],
+            )
+            return
+          }
+          setDocumentPalette(boardRef.current?.getPalette() ?? documentPalette)
+          flashEdit(copy.pixelImportDone[lang])
+        }}
+      />
+
       <Dialog open={moreOpen} onClose={() => setMoreOpen(false)} title={copy.pixelMore[lang]} closeLabel={copy.closeMenu[lang]}>
         <div className="grid gap-3">
-          <Button
-            type="button"
-            variant="outline"
-            disabled={pending}
-            onClick={() => {
-              setMoreOpen(false)
-              void togglePreview()
-            }}
-          >
-            {preview ? copy.createEdit[lang] : copy.createPreview[lang]}
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            aria-pressed={gridVisible}
-            onClick={() => {
-              setGridVisible((value) => !value)
-              setMoreOpen(false)
-            }}
-          >
-            {copy.pixelGridToggle[lang]}
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => {
-              setMoreOpen(false)
-              setCanvasSizeOpen(true)
-            }}
-          >
-            {copy.pixelCanvasSize[lang]}
-          </Button>
-          {dirty || metadataDirty ? (
-            <Button
+          <div className="grid grid-cols-4 gap-1.5 sm:gap-2" role="toolbar" aria-label={copy.pixelMore[lang]}>
+            <button
               type="button"
-              variant="outline"
-              disabled={pending || leaving}
+              className="studio-hit border-[3px] border-earth bg-bg text-fg disabled:opacity-40"
+              disabled={pending}
+              aria-label={preview ? copy.createEdit[lang] : copy.createPreview[lang]}
+              title={preview ? copy.createEdit[lang] : copy.createPreview[lang]}
               onClick={() => {
                 setMoreOpen(false)
-                setDiscardOpen(true)
+                void togglePreview()
               }}
             >
-              {copy.pixelDiscard[lang]}
-            </Button>
+              <PixelIcon name={preview ? "edit" : "eye"} />
+            </button>
+            <button
+              type="button"
+              className="studio-hit border-[3px] border-earth bg-bg text-fg"
+              aria-label={copy.createDetailsMenu[lang]}
+              title={copy.createDetailsMenu[lang]}
+              onClick={() => {
+                setMoreOpen(false)
+                setDetailsOpen(true)
+              }}
+            >
+              <PixelIcon name="text" />
+            </button>
+            <button
+              type="button"
+              className="studio-hit border-[3px] border-earth bg-bg text-fg"
+              aria-label={copy.pixelPaletteManage[lang]}
+              title={copy.pixelPaletteManage[lang]}
+              onClick={() => {
+                setMoreOpen(false)
+                setPaletteManageOpen(true)
+              }}
+            >
+              <PixelIcon name="sliders" />
+            </button>
+            <button
+              type="button"
+              className="studio-hit border-[3px] border-earth bg-bg text-fg disabled:opacity-40"
+              aria-label={copy.pixelImport[lang]}
+              title={copy.pixelImport[lang]}
+              disabled={layers.length >= PIXEL_LAYER_MAX}
+              onClick={() => importInputRef.current?.click()}
+            >
+              <PixelIcon name="image" />
+            </button>
+            <button
+              type="button"
+              className="studio-hit border-[3px] border-earth bg-bg text-fg"
+              aria-label={copy.pixelFlipH[lang]}
+              title={copy.pixelFlipH[lang]}
+              onClick={() => {
+                boardRef.current?.flipHorizontal()
+                setMoreOpen(false)
+              }}
+            >
+              <PixelIcon name="flip" />
+            </button>
+            <button
+              type="button"
+              className="studio-hit border-[3px] border-earth bg-bg text-fg"
+              aria-label={copy.pixelFlipV[lang]}
+              title={copy.pixelFlipV[lang]}
+              onClick={() => {
+                boardRef.current?.flipVertical()
+                setMoreOpen(false)
+              }}
+            >
+              <PixelIcon name="flipV" />
+            </button>
+            <button
+              type="button"
+              className="studio-hit border-[3px] border-earth bg-bg text-fg"
+              aria-label={copy.pixelRotate90[lang]}
+              title={copy.pixelRotate90[lang]}
+              onClick={() => {
+                const ok = boardRef.current?.rotate90Cw() ?? false
+                if (!ok) setRotateHint(true)
+                else {
+                  setRotateHint(false)
+                  setMoreOpen(false)
+                }
+              }}
+            >
+              <PixelIcon name="rotate" />
+            </button>
+            <button
+              type="button"
+              className="studio-hit border-[3px] border-earth bg-bg text-fg"
+              aria-label={copy.pixelClearCanvas[lang]}
+              title={copy.pixelClearCanvas[lang]}
+              onClick={() => {
+                boardRef.current?.clearCanvas()
+                setMoreOpen(false)
+              }}
+            >
+              <PixelIcon name="clear" />
+            </button>
+            {dirty || metadataDirty ? (
+              <button
+                type="button"
+                className="studio-hit border-[3px] border-earth bg-bg text-fg disabled:opacity-40"
+                disabled={pending || leaving}
+                aria-label={copy.pixelDiscard[lang]}
+                title={copy.pixelDiscard[lang]}
+                onClick={() => {
+                  setMoreOpen(false)
+                  setDiscardOpen(true)
+                }}
+              >
+                <PixelIcon name="minus" />
+              </button>
+            ) : null}
+            {published ? (
+              <button
+                type="button"
+                className="studio-hit border-[3px] border-earth bg-bg text-fg disabled:opacity-40"
+                disabled={pending}
+                aria-busy={(pending && busyIntent === "unpublish") || undefined}
+                aria-label={
+                  pending && busyIntent === "unpublish"
+                    ? copy.pixelUnpublishing[lang]
+                    : copy.createUnpublish[lang]
+                }
+                title={
+                  pending && busyIntent === "unpublish"
+                    ? copy.pixelUnpublishing[lang]
+                    : copy.createUnpublish[lang]
+                }
+                onClick={() => {
+                  void persist("unpublish")
+                  setMoreOpen(false)
+                }}
+              >
+                <PixelIcon name="download" />
+              </button>
+            ) : null}
+            {published ? (
+              <a
+                href={href(lang, `/creation/${creation.id}`)}
+                className="studio-hit inline-flex items-center justify-center border-[3px] border-earth bg-bg text-fg"
+                aria-label={copy.createViewPublic[lang]}
+                title={copy.createViewPublic[lang]}
+              >
+                <PixelIcon name="share" />
+              </a>
+            ) : null}
+            <button
+              type="button"
+              className="studio-hit border-[3px] border-earth bg-bg text-brick"
+              aria-label={copy.createDelete[lang]}
+              title={copy.createDelete[lang]}
+              onClick={() => {
+                setMoreOpen(false)
+                setConfirmDelete(true)
+              }}
+            >
+              <PixelIcon name="trash" />
+            </button>
+          </div>
+          {rotateHint ? (
+            <p className="text-[13px] text-brick">{copy.pixelRotateNeedSquare[lang]}</p>
           ) : null}
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => {
-              setMoreOpen(false)
-              setDetailsOpen(true)
-            }}
-          >
-            {copy.createDetailsMenu[lang]}
-          </Button>
           <CreationMoreMenu
             lang={lang}
             creationId={creation.id}
@@ -1577,120 +1863,6 @@ export function PlaygroundForm({
             getNativePng={getNativePng}
             onDownloaded={() => setMoreOpen(false)}
           />
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => {
-              setMoreOpen(false)
-              setPaletteManageOpen(true)
-            }}
-          >
-            {copy.pixelPaletteManage[lang]}
-          </Button>
-          <p className="text-[12px] font-medium uppercase tracking-wide text-muted">
-            {hasSelection ? copy.pixelSelect[lang] : copy.pixelFit[lang]}
-          </p>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => {
-              boardRef.current?.flipHorizontal()
-              setMoreOpen(false)
-            }}
-          >
-            {copy.pixelFlipH[lang]}
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => {
-              boardRef.current?.flipVertical()
-              setMoreOpen(false)
-            }}
-          >
-            {copy.pixelFlipV[lang]}
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => {
-              const ok = boardRef.current?.rotate90Cw() ?? false
-              if (!ok) setRotateHint(true)
-              else {
-                setRotateHint(false)
-                setMoreOpen(false)
-              }
-            }}
-          >
-            {copy.pixelRotate90[lang]}
-          </Button>
-          {rotateHint ? (
-            <p className="text-[13px] text-brick">{copy.pixelRotateNeedSquare[lang]}</p>
-          ) : null}
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => {
-              boardRef.current?.clearCanvas()
-              setMoreOpen(false)
-            }}
-          >
-            {copy.pixelClearCanvas[lang]}
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => {
-              boardRef.current?.fit()
-              setMoreOpen(false)
-            }}
-          >
-            {copy.pixelFit[lang]}
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => {
-              boardRef.current?.zoomBy(1)
-              setMoreOpen(false)
-            }}
-          >
-            {copy.pixelZoomIn[lang]}
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => {
-              boardRef.current?.zoomBy(-1)
-              setMoreOpen(false)
-            }}
-          >
-            {copy.pixelZoomOut[lang]}
-          </Button>
-          {published ? (
-            <Button
-              type="button"
-              variant="outline"
-              disabled={pending}
-              aria-busy={(pending && busyIntent === "unpublish") || undefined}
-              onClick={() => {
-                void persist("unpublish")
-                setMoreOpen(false)
-              }}
-            >
-              {pending && busyIntent === "unpublish"
-                ? copy.pixelUnpublishing[lang]
-                : copy.createUnpublish[lang]}
-            </Button>
-          ) : null}
-          {published ? (
-            <a href={href(lang, `/creation/${creation.id}`)} className="text-[14px] text-muted hover:text-fg">
-              {copy.createViewPublic[lang]}
-            </a>
-          ) : null}
-          <Button type="button" variant="ghost" onClick={() => { setMoreOpen(false); setConfirmDelete(true) }}>
-            {copy.createDelete[lang]}
-          </Button>
         </div>
       </Dialog>
 

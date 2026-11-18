@@ -195,7 +195,7 @@ export function CreationCommunity({
   }
 
   return (
-    <section className="mt-10 border-t border-line pt-8" aria-labelledby="conversation-heading">
+    <section className="mt-10 border-t-[3px] border-earth pt-8" aria-labelledby="conversation-heading">
       <h2 id="conversation-heading" className="pixel-title">
         {copy.commentsTitle[lang]}
         {headingCount > 0 ? ` (${headingCount})` : ""}

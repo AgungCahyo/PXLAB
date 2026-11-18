@@ -20,18 +20,17 @@ export function CreationColorPalette({
 
   if (usage.length === 0) {
     return (
-      <section className="mt-4" aria-labelledby="color-palette-heading">
-        <h2 id="color-palette-heading" className="text-[14px] font-medium text-fg">
+      <section className="mt-5" aria-labelledby="color-palette-heading">
+        <h2 id="color-palette-heading" className="text-[13px] font-medium text-fg">
           {copy.colorPaletteTitle[lang]}
         </h2>
-        <p className="mt-0.5 text-[12px] text-muted">{copy.colorPaletteHint[lang]}</p>
-        <p className="mt-2 text-[13px] text-muted">{copy.colorPaletteEmpty[lang]}</p>
+        <p className="mt-1 text-[12px] text-muted">{copy.colorPaletteEmpty[lang]}</p>
       </section>
     )
   }
 
   const percents = colorUsagePercents(usage)
-  const visible = expanded ? usage : usage.slice(0, COLOR_USAGE_PREVIEW_MAX)
+  const swatches = expanded ? usage : usage.slice(0, COLOR_USAGE_PREVIEW_MAX)
   const hasMore = usage.length > COLOR_USAGE_PREVIEW_MAX
 
   async function copyHex(hex: string) {
@@ -45,11 +44,20 @@ export function CreationColorPalette({
   }
 
   return (
-    <section className="mt-4" aria-labelledby="color-palette-heading">
-      <h2 id="color-palette-heading" className="text-[14px] font-medium text-fg">
-        {copy.colorPaletteTitle[lang]}
-      </h2>
-      <p className="mt-0.5 text-[12px] text-muted">{copy.colorPaletteHint[lang]}</p>
+    <section className="mt-5" aria-labelledby="color-palette-heading">
+      <div className="flex flex-wrap items-end justify-between gap-2">
+        <div>
+          <h2 id="color-palette-heading" className="text-[13px] font-medium text-fg">
+            {copy.colorPaletteTitle[lang]}
+          </h2>
+          <p className="mt-0.5 text-[12px] text-muted">{copy.colorPaletteHint[lang]}</p>
+        </div>
+        {copiedHex ? (
+          <p className="text-[12px] text-muted" aria-live="polite">
+            {copy.colorHexCopied[lang]}
+          </p>
+        ) : null}
+      </div>
 
       <div
         className="mt-2 flex h-3 w-full overflow-hidden border-[3px] border-earth sm:h-3.5"
@@ -70,34 +78,51 @@ export function CreationColorPalette({
         })}
       </div>
 
-      <ul className="mt-2 grid gap-1">
-        {visible.map((entry, index) => {
+      <ul className="mt-2.5 flex flex-wrap gap-1.5">
+        {swatches.map((entry, index) => {
           const pct = percents[index] ?? 0
           return (
-            <li key={`${entry.hex}-${index}`} className="flex items-center gap-2.5 text-[12px]">
-              <span
-                className="h-3.5 w-3.5 shrink-0 border-[2px] border-earth"
-                style={{ backgroundColor: entry.hex }}
-                aria-hidden
-              />
+            <li key={`${entry.hex}-${index}`}>
               <button
                 type="button"
-                className="font-mono text-fg underline-offset-2 hover:underline"
+                title={`${entry.hex} · ${pct}%`}
                 aria-label={copy.colorCopyHex[lang].replace("{hex}", entry.hex)}
                 onClick={() => void copyHex(entry.hex)}
-              >
-                {entry.hex}
-              </button>
-              <span className="text-muted">{pct}%</span>
-              {copiedHex === entry.hex ? (
-                <span className="text-muted">{copy.colorHexCopied[lang]}</span>
-              ) : null}
+                className="h-7 w-7 border-[2px] border-earth hover:outline hover:outline-2 hover:outline-offset-1 hover:outline-sky"
+                style={{ backgroundColor: entry.hex }}
+              />
             </li>
           )
         })}
       </ul>
 
-      {hasMore ? (
+      {expanded ? (
+        <ul className="mt-3 grid gap-1 border-t border-line pt-3">
+          {usage.map((entry, index) => {
+            const pct = percents[index] ?? 0
+            return (
+              <li key={`${entry.hex}-row-${index}`} className="flex items-center gap-2.5 text-[12px]">
+                <span
+                  className="h-3.5 w-3.5 shrink-0 border-[2px] border-earth"
+                  style={{ backgroundColor: entry.hex }}
+                  aria-hidden
+                />
+                <button
+                  type="button"
+                  className="font-mono text-fg underline-offset-2 hover:underline"
+                  aria-label={copy.colorCopyHex[lang].replace("{hex}", entry.hex)}
+                  onClick={() => void copyHex(entry.hex)}
+                >
+                  {entry.hex}
+                </button>
+                <span className="text-muted">{pct}%</span>
+              </li>
+            )
+          })}
+        </ul>
+      ) : null}
+
+      {hasMore || usage.length > 4 ? (
         <button
           type="button"
           className="mt-2 text-[12px] font-medium text-fg underline-offset-2 hover:underline"

@@ -7,11 +7,13 @@ import { CreationBody } from "@/components/creations/CreationBody"
 import { CreationColorPalette } from "@/components/creations/CreationColorPalette"
 import { CreationMoreMenu } from "@/components/creations/CreationMoreMenu"
 import { CreationTags } from "@/components/creations/CreationTags"
-import { CreatorBlock } from "@/components/creations/CreatorBlock"
+import { CreatorBlock, CreatorOtherWorks } from "@/components/creations/CreatorBlock"
 import { ConversationSkeleton } from "@/components/creations/PageSkeletons"
 import { RemixStrip } from "@/components/creations/RemixStrip"
 import { SimilarWorksStrip } from "@/components/creations/SimilarWorksStrip"
 import { CreationCommunity, CreationEngagement } from "@/components/community/CreationCommunity"
+import { PageTransition } from "@/components/layout/PageTransition"
+import { BackLink } from "@/components/ui/BackLink"
 import { buttonClassName } from "@/components/ui/Button"
 import { PixelIcon } from "@/components/ui/PixelIcon"
 import { isFollowing } from "@/features/community/follows"
@@ -97,7 +99,6 @@ export default async function CreationDetailPage({
   const conversationPrompt = sizeLabel
     ? copy.conversationPromptSize[lang].replace("{size}", sizeLabel)
     : copy.conversationPrompt[lang]
-
   const following =
     profile && profile.id !== creation.user_id
       ? await isFollowing(profile.id, creation.user_id)
@@ -121,26 +122,41 @@ export default async function CreationDetailPage({
       : Promise.resolve({ items: [], failed: false }),
   ])
 
+  const moreFromCreator = otherWorks.failed ? [] : otherWorks.items
+
   const identity = (
     <>
-      <h1 className="page-heading-sans mt-4">{title}</h1>
+      <h1 className="page-heading-sans break-words">{title}</h1>
       {creation.source ? <RemixStrip lang={lang} items={[]} total={0} source={creation.source} /> : null}
-      <p className="mt-2 text-[14px] leading-snug text-muted sm:text-[15px]">
-        {copy.byAuthor[lang]}{" "}
-        <Link href={href(lang, `/u/${creation.author.username}`)} className="hover:text-fg">
-          @{creation.author.username}
-        </Link>
-        {published ? ` · ${formatDayMonthYear(published, lang)}` : ""}
-        {sizeLabel ? ` · ${sizeLabel}` : ""}
-      </p>
+
+      <div className="mt-4">
+        <CreatorBlock
+          lang={lang}
+          author={creation.author}
+          authorId={creation.user_id}
+          otherWorks={[]}
+          following={following}
+          canFollow={!isOwner}
+          returnPath={returnPath}
+          publishedLabel={
+            [published ? formatDayMonthYear(published, lang) : null, sizeLabel]
+              .filter(Boolean)
+              .join(" · ") || null
+          }
+          flush
+        />
+      </div>
+
       {creation.caption ? (
-        <p className="mt-3 max-w-prose whitespace-pre-wrap text-[15px] leading-relaxed text-fg">
+        <p className="mt-5 max-w-prose whitespace-pre-wrap text-[15px] leading-relaxed text-fg">
           {creation.caption}
         </p>
       ) : null}
+
       <CreationTags lang={lang} tags={creation.tags} />
       {isPixel ? <CreationColorPalette lang={lang} usage={creation.color_usage} /> : null}
-      <div className="mt-4 flex flex-wrap items-center gap-2">
+
+      <div className="mt-5 flex flex-wrap items-center gap-2 border-t border-line pt-5">
         {isOwner ? (
           <Link
             href={href(lang, `/create/${creation.id}`)}
@@ -178,77 +194,74 @@ export default async function CreationDetailPage({
   )
 
   return (
-    <article
-      className={
-        isPixel
-          ? "mx-auto max-w-5xl px-5 py-8 sm:px-8 sm:py-10 lg:px-16"
-          : "mx-auto max-w-3xl px-5 py-12 sm:px-8 sm:py-12 lg:px-16"
-      }
-    >
-      <Link
-        href={href(lang, "/explore")}
-        className="mb-6 inline-flex h-11 w-fit items-center gap-2 border-[3px] border-earth bg-card px-3 text-[14px] font-medium"
+    <PageTransition>
+      <article
+        className={
+          isPixel
+            ? "mx-auto w-full min-w-0 max-w-5xl px-5 py-6 sm:px-8 sm:py-8 lg:px-16"
+            : "mx-auto w-full min-w-0 max-w-3xl px-5 py-10 sm:px-8 sm:py-12 lg:px-16"
+        }
       >
-        <PixelIcon name="back" />
-        {copy.creationBack[lang]}
-      </Link>
-      {isPixel ? (
-        <>
-          <CreationBody
-            type={creation.type}
-            content={creation.content}
-            lang={lang}
-            coverUrl={coverUrl}
-            creationId={creation.id}
-            priority
-          />
-          {identity}
-        </>
-      ) : (
-        <>
-          <p className="pixel-kicker mb-3">{creationTypeLabels[creation.type][lang]}</p>
-          {identity}
-          <div className="mt-10">
-            <CreationBody
-              type={creation.type}
-              content={creation.content}
-              lang={lang}
-              coverUrl={coverUrl}
-            />
-          </div>
-        </>
-      )}
+        <BackLink href={href(lang, "/explore")} className="mb-5">
+          {copy.creationBack[lang]}
+        </BackLink>
 
-      {!creation.source && remixes.total > 0 ? (
-        <RemixStrip lang={lang} items={remixes.items} total={remixes.total} />
-      ) : null}
+        {isPixel ? (
+          <>
+            <div className="detail-art-stage">
+              <CreationBody
+                type={creation.type}
+                content={creation.content}
+                lang={lang}
+                coverUrl={coverUrl}
+                creationId={creation.id}
+                priority
+              />
+            </div>
+            <div className="mt-6 sm:mt-8">{identity}</div>
+          </>
+        ) : (
+          <>
+            <p className="pixel-kicker mb-3">{creationTypeLabels[creation.type][lang]}</p>
+            {identity}
+            <div className="mt-10">
+              <CreationBody
+                type={creation.type}
+                content={creation.content}
+                lang={lang}
+                coverUrl={coverUrl}
+              />
+            </div>
+          </>
+        )}
 
-      <CreatorBlock
-        lang={lang}
-        author={creation.author}
-        authorId={creation.user_id}
-        otherWorks={otherWorks.failed ? [] : otherWorks.items}
-        following={following}
-        canFollow={!isOwner}
-        returnPath={returnPath}
-      />
-
-      {isPixel && !similar.failed && similar.items.length > 0 ? (
-        <SimilarWorksStrip lang={lang} items={similar.items} />
-      ) : null}
-
-      <Suspense fallback={<ConversationSkeleton />}>
-        <CreationConversationSlot
+        <CreatorOtherWorks
           lang={lang}
-          creationId={creation.id}
-          title={title}
-          source={creation.source}
-          forkedFrom={creation.forked_from}
-          member={member}
-          prompt={conversationPrompt}
+          username={creation.author.username}
+          items={moreFromCreator}
         />
-      </Suspense>
-    </article>
+
+        {!creation.source && remixes.total > 0 ? (
+          <RemixStrip lang={lang} items={remixes.items} total={remixes.total} />
+        ) : null}
+
+        {isPixel && !similar.failed && similar.items.length > 0 ? (
+          <SimilarWorksStrip lang={lang} items={similar.items} />
+        ) : null}
+
+        <Suspense fallback={<ConversationSkeleton />}>
+          <CreationConversationSlot
+            lang={lang}
+            creationId={creation.id}
+            title={title}
+            source={creation.source}
+            forkedFrom={creation.forked_from}
+            member={member}
+            prompt={conversationPrompt}
+          />
+        </Suspense>
+      </article>
+    </PageTransition>
   )
 }
 

@@ -4,6 +4,7 @@ import { CreationCard } from "@/components/creations/CreationCard"
 import { ProfileAvatar } from "@/components/profiles/ProfileAvatar"
 import { copy } from "@/lib/copy"
 import { href, type Lang } from "@/lib/i18n"
+import { cn } from "@/lib/utils"
 import type { CreationAuthor, CreationCard as CreationCardData } from "@/features/creations/queries"
 
 export function CreatorBlock({
@@ -14,6 +15,8 @@ export function CreatorBlock({
   following,
   canFollow,
   returnPath,
+  publishedLabel = null,
+  flush = false,
 }: {
   lang: Lang
   author: CreationAuthor
@@ -22,29 +25,41 @@ export function CreatorBlock({
   following: boolean
   canFollow: boolean
   returnPath: string
+  /** Optional date / size line under the creator name. */
+  publishedLabel?: string | null
+  /** Sit directly under artwork — no section rule; other works render separately. */
+  flush?: boolean
 }) {
   const name = author.displayName?.trim() || author.username
   const bioLine = author.bio?.replace(/\s+/g, " ").trim() ?? ""
   const profileHref = href(lang, `/u/${author.username}`)
+  const showOtherWorks = !flush && otherWorks.length > 0
 
   return (
-    <section className="mt-10 border-t border-line pt-8" aria-labelledby="creator-block-heading">
-      <div className="flex min-w-0 items-start gap-3">
-        <Link href={profileHref} className="shrink-0">
-          <ProfileAvatar src={author.avatarUrl} alt={name} size="sm" />
+    <section
+      className={cn(!flush && "mt-10 border-t-[3px] border-earth pt-8")}
+      aria-labelledby="creator-block-heading"
+    >
+      <div className="flex min-w-0 items-start gap-3 sm:gap-4">
+        <Link
+          href={profileHref}
+          className="shrink-0 border-[3px] border-earth bg-card p-0.5 shadow-[4px_4px_0_0_var(--fg)]"
+        >
+          <ProfileAvatar src={author.avatarUrl} alt={name} size="sm" className="border-0 sm:h-16 sm:w-16" />
         </Link>
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div className="min-w-0">
-              <h2 id="creator-block-heading" className="text-[15px] font-medium text-fg">
+              <h2 id="creator-block-heading" className="text-[15px] font-medium text-fg sm:text-[1.0625rem]">
                 <Link href={profileHref} className="hover:underline">
                   {name}
                 </Link>
               </h2>
-              <p className="mt-0.5 text-[13px] text-muted">
+              <p className="mt-0.5 truncate text-[13px] text-muted">
                 <Link href={profileHref} className="hover:text-fg">
                   @{author.username}
                 </Link>
+                {publishedLabel ? ` · ${publishedLabel}` : ""}
               </p>
             </div>
             {canFollow ? (
@@ -59,25 +74,47 @@ export function CreatorBlock({
             ) : null}
           </div>
           {bioLine ? (
-            <p className="mt-2 line-clamp-2 text-[14px] leading-snug text-muted">{bioLine}</p>
+            <p className="mt-2 line-clamp-2 max-w-2xl text-[14px] leading-snug text-muted">
+              {bioLine}
+            </p>
           ) : null}
         </div>
       </div>
 
-      {otherWorks.length > 0 ? (
-        <div className="mt-6">
-          <p className="text-[14px] font-medium text-fg">
-            {copy.creatorOtherWorks[lang].replace("{username}", author.username)}
-          </p>
-          <ul className="mt-3 grid min-w-0 grid-cols-2 gap-3 sm:grid-cols-4">
-            {otherWorks.map((item) => (
-              <li key={item.id} className="min-w-0">
-                <CreationCard creation={item} lang={lang} showAuthor={false} artTransition={false} />
-              </li>
-            ))}
-          </ul>
-        </div>
+      {showOtherWorks ? (
+        <CreatorOtherWorks lang={lang} username={author.username} items={otherWorks} />
       ) : null}
+    </section>
+  )
+}
+
+/** Gallery of more works from the same creator (detail page section). */
+export function CreatorOtherWorks({
+  lang,
+  username,
+  items,
+}: {
+  lang: Lang
+  username: string
+  items: CreationCardData[]
+}) {
+  if (items.length === 0) return null
+
+  return (
+    <section
+      className="mt-10 border-t-[3px] border-earth pt-8"
+      aria-labelledby="creator-other-works-heading"
+    >
+      <h2 id="creator-other-works-heading" className="text-[15px] font-medium text-fg">
+        {copy.creatorOtherWorks[lang].replace("{username}", username)}
+      </h2>
+      <ul className="mt-4 grid min-w-0 grid-cols-2 gap-3 sm:grid-cols-4">
+        {items.map((item) => (
+          <li key={item.id} className="min-w-0">
+            <CreationCard creation={item} lang={lang} showAuthor={false} artTransition={false} />
+          </li>
+        ))}
+      </ul>
     </section>
   )
 }

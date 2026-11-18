@@ -1,6 +1,10 @@
-export const SITE_NAME = "THE COMMONS";
-export const SITE_URL = "https://commons.agungcahyo.my.id";
-export const OWNER_NAME = "Agung Cahyo";
+export const SITE_NAME = "PXLB"
+/** Canonical production origin. Override locally with NEXT_PUBLIC_SITE_URL. */
+export const SITE_URL = "https://pxlb.fun"
+/** Previous production host — keep reachable via DNS redirect until cutover is verified. */
+export const LEGACY_SITE_URL = "https://commons.agungcahyo.my.id"
+export const OWNER_NAME = "Agung Cahyo"
+export const SITE_POSITIONING = "A creative playground for pixel art."
 
 export const NAV_ITEMS = [
   { href: "/explore", key: "explore" },

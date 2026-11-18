@@ -54,7 +54,7 @@ function SizeFilterList({
 }) {
   const base = { category, q, feed }
   return (
-    <ul className="flex w-full min-w-0 flex-nowrap gap-2 overflow-x-auto pb-0.5 [-ms-overflow-style:none] [scrollbar-width:none] sm:flex-wrap sm:overflow-visible [&::-webkit-scrollbar]:hidden">
+    <ul className="flex w-full min-w-0 gap-2 flex-nowrap overflow-x-auto pb-0.5 [-ms-overflow-style:none] [scrollbar-width:none] sm:flex-wrap sm:overflow-visible [&::-webkit-scrollbar]:hidden">
       <li className="shrink-0">
         <FilterLink
           href={exploreHref(lang, { ...base, category: "all", page: 1 })}
@@ -90,7 +90,7 @@ export function ExploreFilters({
     <div className="min-w-0 border-b border-line pb-4">
       <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
         <nav
-          aria-label={copy.exploreTitle[lang]}
+          aria-label={copy.exploreFeedAria[lang]}
           className="flex shrink-0 flex-wrap gap-2"
         >
           <FilterLink
@@ -136,9 +136,23 @@ export function ExploreFilters({
         </form>
       </div>
 
-      <nav aria-label={copy.categoryAria[lang]} className="mt-2 min-w-0 max-w-full">
-        <SizeFilterList lang={lang} category={category} q={q} feed={feed} />
-      </nav>
+      <div className="mt-3 min-w-0 max-w-full">
+        <details className="group sm:hidden">
+          <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 border-[3px] border-earth bg-card px-3 text-[14px] font-medium text-fg [&::-webkit-details-marker]:hidden">
+            <span>{copy.categoryFilterSummary[lang]}</span>
+            <span className="truncate text-muted group-open:hidden">
+              {category === "all" ? copy.categoryAll[lang] : creationCategoryLabels[category][lang]}
+            </span>
+            <span className="sr-only">{copy.categoryAria[lang]}</span>
+          </summary>
+          <nav aria-label={copy.categoryAria[lang]} className="mt-2 min-w-0">
+            <SizeFilterList lang={lang} category={category} q={q} feed={feed} />
+          </nav>
+        </details>
+        <nav aria-label={copy.categoryAria[lang]} className="hidden min-w-0 sm:block">
+          <SizeFilterList lang={lang} category={category} q={q} feed={feed} />
+        </nav>
+      </div>
     </div>
   )
 }

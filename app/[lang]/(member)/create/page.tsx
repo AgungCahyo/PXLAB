@@ -53,19 +53,25 @@ export default async function CreatePage({
   ) as Partial<Record<CreationCategory, CreationCard[]>>
 
   return (
-    <div className="mx-auto w-full min-w-0 max-w-3xl px-5 py-8 sm:px-8 sm:py-10 lg:px-16">
-      <p className="text-[15px] leading-relaxed text-muted">{copy.createIntro[lang]}</p>
-      <p className="mt-2 text-[13px]">
-        <Link
-          href={href(lang, "/dashboard")}
-          className="text-muted underline-offset-4 hover:text-fg hover:underline"
-        >
-          {copy.createManageLink[lang]}
-        </Link>
-      </p>
-      <div className="mt-8">
+    <div className="mx-auto w-full min-w-0 max-w-5xl px-5 py-8 sm:px-8 sm:py-10 lg:px-16">
+      <header className="max-w-2xl">
+        <p className="pixel-kicker mb-3">{copy.createEyebrow[lang]}</p>
+        <h1 className="pixel-title">{copy.createTitle[lang]}</h1>
+        <p className="mt-3 text-[15px] leading-relaxed text-muted">{copy.createIntro[lang]}</p>
+        <p className="mt-2 text-[13px]">
+          <Link
+            href={href(lang, "/dashboard")}
+            className="text-muted underline-offset-4 hover:text-fg hover:underline"
+          >
+            {copy.createManageLink[lang]}
+          </Link>
+        </p>
+      </header>
+
+      <div className="mt-8 min-w-0">
         <PixelNewForm lang={lang} />
       </div>
+
       <CreateInspiration lang={lang} bySize={bySize} />
     </div>
   )

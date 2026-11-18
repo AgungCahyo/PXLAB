@@ -1,6 +1,7 @@
 import type { Metadata } from "next"
 import { notFound } from "next/navigation"
 import { connection } from "next/server"
+import { PageTransition } from "@/components/layout/PageTransition"
 import { SettingsForm } from "@/components/profiles/SettingsForm"
 import { getCurrentProfile } from "@/lib/auth/session"
 import { copy } from "@/lib/copy"
@@ -38,9 +39,15 @@ export default async function SettingsPage({
   if (!profile) notFound()
 
   return (
-    <div className="mx-auto w-full min-w-0 max-w-xl px-5 py-8 sm:px-8 sm:py-10">
-      <h1 className="pixel-title">{copy.settingsTitle[lang]}</h1>
-      <SettingsForm lang={lang} profile={profile} />
-    </div>
+    <PageTransition>
+      <div className="mx-auto w-full min-w-0 max-w-2xl px-5 py-8 sm:px-8 sm:py-10 lg:px-16">
+        <header className="max-w-xl">
+          <p className="pixel-kicker mb-3">{copy.nav.settings[lang]}</p>
+          <h1 className="pixel-title">{copy.settingsTitle[lang]}</h1>
+          <p className="mt-3 text-[15px] leading-relaxed text-muted">{copy.settingsIntro[lang]}</p>
+        </header>
+        <SettingsForm lang={lang} profile={profile} />
+      </div>
+    </PageTransition>
   )
 }

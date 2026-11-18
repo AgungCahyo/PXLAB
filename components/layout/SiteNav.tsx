@@ -58,6 +58,15 @@ export function SiteNav({ lang, member }: { lang: Lang; member: NavMember }) {
       active ? "text-fg underline decoration-sky decoration-4 underline-offset-8" : "text-muted hover:text-fg",
     )
 
+  const profilePath = member ? `/u/${member.username}` : null
+  const accountActive =
+    Boolean(member) &&
+    (isActive("/dashboard") ||
+      isActive("/responses") ||
+      isActive("/settings") ||
+      isActive("/admin") ||
+      (profilePath ? isActive(profilePath) : false))
+
   return (
     <div className="flex items-center gap-1">
       <div className="hidden items-center gap-1 md:flex">
@@ -74,21 +83,7 @@ export function SiteNav({ lang, member }: { lang: Lang; member: NavMember }) {
             </Link>
           )
         })}
-        {member ? (
-          <Link
-            href={href(lang, `/u/${member.username}`)}
-            aria-current={isActive(`/u/${member.username}`) ? "page" : undefined}
-            className={cn(itemClass(isActive(`/u/${member.username}`)), "gap-2")}
-          >
-            <ProfileAvatar
-              src={member.avatarUrl}
-              alt={member.displayName ?? member.username}
-              size="xs"
-              className="border-earth"
-            />
-            {copy.nav.profile[lang]}
-          </Link>
-        ) : (
+        {!member ? (
           <>
             <Link
               href={registerHref(lang, authNext)}
@@ -103,7 +98,7 @@ export function SiteNav({ lang, member }: { lang: Lang; member: NavMember }) {
               {copy.nav.signIn[lang]}
             </Link>
           </>
-        )}
+        ) : null}
       </div>
       {/* One guest CTA on small screens — Join covers convert; sign-in lives on that page. */}
       {!member ? (
@@ -115,19 +110,30 @@ export function SiteNav({ lang, member }: { lang: Lang; member: NavMember }) {
         </Link>
       ) : null}
       {member ? (
-        <div className="relative ml-1 hidden md:block" ref={menuRef}>
+        <div className="relative ml-1" ref={menuRef}>
           <button
             type="button"
             aria-expanded={accountOpen}
             aria-controls={menuId}
+            aria-label={copy.nav.account[lang]}
             onClick={() => setAccountOpen((open) => !open)}
-            className="relative inline-flex min-h-11 items-center gap-1.5 px-3 text-[14px] text-muted hover:text-fg"
+            className={cn(
+              "relative inline-flex min-h-11 items-center gap-2 px-2 text-[14px] hover:text-fg",
+              accountActive ? "text-fg" : "text-muted",
+            )}
           >
-            <PixelIcon name="user" />
-            {copy.nav.account[lang]}
+            <ProfileAvatar
+              src={member.avatarUrl}
+              alt={member.displayName ?? member.username}
+              size="xs"
+              className="border-earth"
+            />
+            <span className="hidden max-w-[8rem] truncate md:inline">
+              @{member.username}
+            </span>
             {member.hasResponses ? (
               <span
-                className="absolute right-1.5 top-2 h-2 w-2 bg-brick"
+                className="absolute right-1 top-2 h-2 w-2 bg-brick"
                 aria-label={copy.responsesNavDot[lang]}
               />
             ) : null}
@@ -135,8 +141,16 @@ export function SiteNav({ lang, member }: { lang: Lang; member: NavMember }) {
           {accountOpen ? (
             <div
               id={menuId}
-              className="absolute right-0 top-full z-50 mt-1 min-w-44 border-[3px] border-earth bg-card p-2 shadow-[4px_4px_0_0_var(--fg)]"
+              className="absolute right-0 top-full z-50 mt-1 min-w-48 border-[3px] border-earth bg-card p-2 shadow-[4px_4px_0_0_var(--fg)]"
             >
+              <Link
+                href={href(lang, `/u/${member.username}`)}
+                onClick={() => setAccountOpen(false)}
+                className="flex min-h-11 items-center gap-2 px-3 text-[14px] text-muted hover:bg-soft hover:text-fg"
+              >
+                <PixelIcon name="user" />
+                {copy.nav.profile[lang]}
+              </Link>
               <Link
                 href={href(lang, "/dashboard")}
                 onClick={() => setAccountOpen(false)}
@@ -197,6 +211,7 @@ export function AppTabBar({ lang, member }: { lang: Lang; member: NavMember }) {
     icon: PixelIconName
     active: boolean
     avatar?: boolean
+    badge?: boolean
   }[] = [
     {
       key: "explore",
@@ -212,15 +227,34 @@ export function AppTabBar({ lang, member }: { lang: Lang; member: NavMember }) {
       icon: "pencil",
       active: isActive("/create"),
     },
-    {
+  ]
+
+  if (member) {
+    items.push({
+      key: "works",
+      href: href(lang, "/dashboard"),
+      label: copy.nav.dashboard[lang],
+      icon: "folder",
+      active: isActive("/dashboard") || isActive("/responses"),
+      badge: Boolean(member.hasResponses),
+    })
+    items.push({
       key: "profile",
-      href: member ? href(lang, `/u/${member.username}`) : loginHref(lang, pathname),
+      href: href(lang, `/u/${member.username}`),
       label: copy.nav.profile[lang],
       icon: "user",
-      active: member ? isActive(`/u/${member.username}`) : false,
-      avatar: Boolean(member),
-    },
-  ]
+      active: isActive(`/u/${member.username}`),
+      avatar: true,
+    })
+  } else {
+    items.push({
+      key: "profile",
+      href: loginHref(lang, pathname),
+      label: copy.nav.profile[lang],
+      icon: "user",
+      active: false,
+    })
+  }
 
   return (
     <nav
@@ -228,14 +262,14 @@ export function AppTabBar({ lang, member }: { lang: Lang; member: NavMember }) {
       className="app-tabbar fixed inset-x-0 bottom-0 z-40 border-t-[3px] border-earth bg-bg md:hidden"
       style={{ viewTransitionName: "site-tabbar" }}
     >
-      <ul className="grid grid-cols-3">
+      <ul className={cn("grid", member ? "grid-cols-4" : "grid-cols-3")}>
         {items.map((item) => (
           <li key={item.key}>
             <Link
               href={item.href}
               aria-current={item.active ? "page" : undefined}
               className={cn(
-                "flex min-h-14 flex-col items-center justify-center gap-0.5 px-2 text-[12px]",
+                "relative flex min-h-14 flex-col items-center justify-center gap-0.5 px-1.5 text-[11px] sm:px-2 sm:text-[12px]",
                 item.active ? "text-fg" : "text-muted",
               )}
             >
@@ -250,11 +284,18 @@ export function AppTabBar({ lang, member }: { lang: Lang; member: NavMember }) {
               )}
               <span
                 className={cn(
+                  "truncate",
                   item.active && "underline decoration-sky decoration-4 underline-offset-4",
                 )}
               >
                 {item.label}
               </span>
+              {item.badge ? (
+                <span
+                  className="absolute right-[calc(50%-1.25rem)] top-2 h-2 w-2 bg-brick"
+                  aria-label={copy.responsesNavDot[lang]}
+                />
+              ) : null}
             </Link>
           </li>
         ))}

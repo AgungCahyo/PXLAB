@@ -416,8 +416,9 @@ export async function updatePixelCreationAction(
     status: nextStatus,
     published_at: publishedAt,
   }
-  // Snapshot ink usage only on publish (not draft autosave). Unpublish keeps the last value.
-  if (parsed.data.intent === "publish") {
+  // Refresh ink usage whenever the public page would show this cover/source.
+  // Pure unpublished drafts skip the write; unpublish keeps the last snapshot.
+  if (parsed.data.intent === "publish" || nextStatus === "published") {
     updatePayload.color_usage = colorUsageFromSource(payload.source)
   }
 

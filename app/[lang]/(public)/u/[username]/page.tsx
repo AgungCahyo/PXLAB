@@ -69,63 +69,99 @@ export default async function PublicProfilePage({
   return (
     <PageTransition>
       <div className="mx-auto w-full min-w-0 max-w-6xl px-5 py-8 sm:px-8 sm:py-10 lg:px-16">
-        <header className="flex min-w-0 items-start gap-4">
-          <ProfileAvatar src={profile.avatar_url} alt={name} size="md" />
-          <div className="min-w-0 flex-1">
-            <p className="text-[14px] leading-snug text-muted">@{profile.username}</p>
-            <h1 className="pixel-title mt-1 break-words">{name}</h1>
-            <p className="mt-2 text-[13px] leading-snug text-muted">
-              {copy.profileWorksCount[lang].replace("{count}", String(worksCount))}
-              {joined ? ` · ${copy.memberSince[lang]} ${joined}` : ""}
-            </p>
-            {profile.bio ? (
-              <p className="mt-2 max-w-xl whitespace-pre-wrap text-[15px] leading-relaxed text-muted">
-                {profile.bio}
-              </p>
-            ) : null}
-            {ownProfile ? (
-              <div className="mt-4 flex flex-wrap gap-2">
-                <Link href={href(lang, "/dashboard")} className={buttonClassName({ size: "sm" })}>
-                  {copy.nav.dashboard[lang]}
-                </Link>
-                <Link
-                  href={href(lang, "/responses")}
-                  className={buttonClassName({ size: "sm", variant: "outline" })}
-                >
-                  {copy.nav.responses[lang]}
-                </Link>
-                <Link
-                  href={href(lang, "/settings")}
-                  className={buttonClassName({ variant: "outline", size: "sm" })}
-                >
-                  {copy.nav.settings[lang]}
-                </Link>
-              </div>
-            ) : (
-              <div className="mt-4">
-                <FollowButton
-                  lang={lang}
-                  userId={profile.id}
-                  username={profile.username}
-                  initialFollowing={following}
-                  member={Boolean(me)}
-                  returnPath={profilePath}
-                />
-              </div>
-            )}
+        <header className="min-w-0">
+          <div className="flex min-w-0 flex-col gap-5 sm:flex-row sm:items-start sm:gap-6">
+            <div className="shrink-0 self-start border-[3px] border-earth bg-card p-1 shadow-[4px_4px_0_0_var(--fg)]">
+              <ProfileAvatar
+                src={profile.avatar_url}
+                alt={name}
+                size="lg"
+                className="border-0"
+              />
+            </div>
+
+            <div className="min-w-0 flex-1">
+              <p className="pixel-kicker">@{profile.username}</p>
+              <h1 className="page-heading-sans mt-2 break-words">{name}</h1>
+
+              <ul className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-[13px] text-muted">
+                <li>{copy.profileWorksCount[lang].replace("{count}", String(worksCount))}</li>
+                {joined ? (
+                  <li>
+                    <span className="text-earth" aria-hidden="true">
+                      ·
+                    </span>{" "}
+                    {copy.memberSince[lang]} {joined}
+                  </li>
+                ) : null}
+              </ul>
+
+              {profile.bio ? (
+                <p className="mt-4 max-w-2xl whitespace-pre-wrap text-[15px] leading-relaxed text-fg">
+                  {profile.bio}
+                </p>
+              ) : null}
+
+              {ownProfile ? (
+                <div className="mt-5 flex flex-wrap gap-2">
+                  <Link href={href(lang, "/dashboard")} className={buttonClassName({ size: "sm" })}>
+                    {copy.nav.dashboard[lang]}
+                  </Link>
+                  <Link
+                    href={href(lang, "/create")}
+                    className={buttonClassName({ size: "sm", variant: "secondary" })}
+                  >
+                    {copy.nav.create[lang]}
+                  </Link>
+                  <Link
+                    href={href(lang, "/responses")}
+                    className={buttonClassName({ size: "sm", variant: "outline" })}
+                  >
+                    {copy.nav.responses[lang]}
+                  </Link>
+                  <Link
+                    href={href(lang, "/settings")}
+                    className={buttonClassName({ size: "sm", variant: "outline" })}
+                  >
+                    {copy.nav.settings[lang]}
+                  </Link>
+                </div>
+              ) : (
+                <div className="mt-5">
+                  <FollowButton
+                    lang={lang}
+                    userId={profile.id}
+                    username={profile.username}
+                    initialFollowing={following}
+                    member={Boolean(me)}
+                    returnPath={profilePath}
+                  />
+                </div>
+              )}
+            </div>
           </div>
         </header>
 
-        <div className="mt-8 min-w-0">
+        <section className="mt-10 min-w-0 border-t-[3px] border-earth pt-8" aria-labelledby="profile-works-heading">
+          <div className="mb-5 flex min-w-0 flex-wrap items-end justify-between gap-3">
+            <h2 id="profile-works-heading" className="text-[15px] font-medium text-fg">
+              {copy.profileWorksHeading[lang]}
+            </h2>
+            <p className="text-[13px] text-muted">
+              {copy.profileWorksCount[lang].replace("{count}", String(worksCount))}
+            </p>
+          </div>
+
           <Suspense fallback={<GallerySkeleton />}>
             <ProfileWorks
               lang={lang}
               username={profile.username}
               items={works.failed ? null : works.items}
               failed={works.failed}
+              ownProfile={ownProfile}
             />
           </Suspense>
-        </div>
+        </section>
       </div>
     </PageTransition>
   )
@@ -136,11 +172,13 @@ function ProfileWorks({
   username,
   items,
   failed,
+  ownProfile,
 }: {
   lang: Lang
   username: string
   items: Awaited<ReturnType<typeof listPublishedCreationsByUser>>["items"] | null
   failed: boolean
+  ownProfile: boolean
 }) {
   if (failed || items === null) {
     return (
@@ -158,7 +196,17 @@ function ProfileWorks({
 
   if (items.length === 0) {
     return (
-      <EmptyState title={copy.profileEmptyCreations[lang]} description={copy.profileEmptyBody[lang]} />
+      <EmptyState
+        title={copy.profileEmptyCreations[lang]}
+        description={ownProfile ? copy.profileEmptyOwnBody[lang] : copy.profileEmptyBody[lang]}
+        action={
+          ownProfile ? (
+            <Link href={href(lang, "/create")} className={buttonClassName({ size: "sm" })}>
+              {copy.nav.create[lang]}
+            </Link>
+          ) : undefined
+        }
+      />
     )
   }
 

@@ -29,7 +29,7 @@ describe("Create and My Works stay separate", () => {
 
   it("links My Works back to the owner profile", () => {
     expect(dashboard).toMatch(/worksBack/)
-    expect(dashboard).toMatch(/PixelIcon/)
+    expect(dashboard).toMatch(/BackLink/)
     expect(dashboard).toMatch(/\/u\/\$\{profile\.username\}/)
   })
 
@@ -38,6 +38,8 @@ describe("Create and My Works stay separate", () => {
     expect(profile).toMatch(/nav\.dashboard/)
     expect(nav).toMatch(/\/dashboard/)
     expect(nav).toMatch(/nav\.dashboard/)
+    expect(nav).toMatch(/key: "works"/)
+    expect(nav).toMatch(/grid-cols-4/)
   })
 
   it("keeps a minimal public profile header with avatar and works grid", () => {

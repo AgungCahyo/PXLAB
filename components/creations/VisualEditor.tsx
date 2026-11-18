@@ -95,7 +95,7 @@ export function VisualEditor({
                 type: "text",
                 x: 80,
                 y: 80 + value.elements.length * 40,
-                body: "THE COMMONS",
+                body: "PXLB",
                 fill: "#f4f2ef",
               })
             }

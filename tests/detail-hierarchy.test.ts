@@ -19,7 +19,7 @@ describe("artwork detail hierarchy", () => {
 
   it("links artwork detail back to Explore", () => {
     expect(page).toMatch(/creationBack/)
-    expect(page).toMatch(/PixelIcon/)
+    expect(page).toMatch(/BackLink/)
     expect(page).toMatch(/\/explore/)
   })
 

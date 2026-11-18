@@ -1,4 +1,6 @@
 import { Suspense, type ReactNode } from "react"
+import { CornerBusy } from "@/components/layout/CornerBusy"
+import { PixelWorldBackdrop } from "@/components/layout/PixelWorldBackdrop"
 import { SiteFooter } from "@/components/layout/SiteFooter"
 import { SiteHeader } from "@/components/layout/SiteHeader"
 import { ViewTransitionGuard } from "@/components/layout/ViewTransitionGuard"
@@ -16,6 +18,7 @@ export function PublicShell({
   return (
     <div className="relative flex min-h-dvh flex-col pb-[calc(4rem+env(safe-area-inset-bottom,0px))] md:pb-0">
       <ViewTransitionGuard />
+      <PixelWorldBackdrop />
       <div className="relative z-10 flex min-h-dvh flex-col">
         <Suspense fallback={<SiteHeader lang={lang} member={null} />}>
           <AuthHeader lang={lang} />
@@ -25,6 +28,9 @@ export function PublicShell({
         </main>
         <SiteFooter />
       </div>
+      <Suspense fallback={null}>
+        <CornerBusy lang={lang} />
+      </Suspense>
     </div>
   )
 }

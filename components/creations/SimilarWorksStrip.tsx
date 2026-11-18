@@ -13,14 +13,17 @@ export function SimilarWorksStrip({
   if (items.length === 0) return null
 
   return (
-    <section className="mt-10 border-t border-line pt-8" aria-labelledby="similar-works-heading">
+    <section
+      className="mt-10 border-t-[3px] border-earth pt-8"
+      aria-labelledby="similar-works-heading"
+    >
       <h2 id="similar-works-heading" className="text-[15px] font-medium text-fg">
         {copy.similarWorksTitle[lang]}
       </h2>
       <ul className="mt-4 grid min-w-0 grid-cols-2 gap-3 sm:grid-cols-4">
         {items.map((item) => (
           <li key={item.id} className="min-w-0">
-                <CreationCard creation={item} lang={lang} artTransition={false} />
+            <CreationCard creation={item} lang={lang} artTransition={false} />
           </li>
         ))}
       </ul>

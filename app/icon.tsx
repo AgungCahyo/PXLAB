@@ -1,16 +1,10 @@
-import { ImageResponse } from "next/og";
+import { ImageResponse } from "next/og"
 
-export const size = { width: 32, height: 32 };
-export const contentType = "image/png";
+export const size = { width: 32, height: 32 }
+export const contentType = "image/png"
 
+/** PXLB favicon — four Classic Pixel Adventure blocks on Paper. */
 export default function Icon() {
-  const cell = {
-    width: 10,
-    height: 10,
-    borderRadius: 999,
-    border: "1.5px solid #f4f2ef",
-  };
-
   return new ImageResponse(
     (
       <div
@@ -20,25 +14,25 @@ export default function Icon() {
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          background: "#0b0a12",
+          background: "#fffdf7",
         }}
       >
         <div
           style={{
             display: "flex",
             flexWrap: "wrap",
-            width: 22,
-            height: 22,
+            width: 24,
+            height: 24,
             gap: 2,
           }}
         >
-          <div style={{ ...cell, background: "transparent" }} />
-          <div style={{ ...cell, background: "transparent" }} />
-          <div style={{ ...cell, background: "transparent" }} />
-          <div style={{ ...cell, background: "#9a45e0" }} />
+          <div style={{ width: 11, height: 11, background: "#59bceb" }} />
+          <div style={{ width: 11, height: 11, background: "#45a849" }} />
+          <div style={{ width: 11, height: 11, background: "#ffd447" }} />
+          <div style={{ width: 11, height: 11, background: "#e94b3c" }} />
         </div>
       </div>
     ),
     size,
-  );
+  )
 }

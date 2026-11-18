@@ -87,7 +87,7 @@ export function canForkCreation(args: {
   return Boolean(args.sessionUserId) && args.creationStatus === "published"
 }
 
-/** Official PNG download (THE COMMONS facility). Independent of fork and of display/cover access. */
+/** Official PNG download (PXLB facility). Independent of fork and of display/cover access. */
 export function canDownloadCreationPng(args: {
   viewerId: string | null
   ownerId: string

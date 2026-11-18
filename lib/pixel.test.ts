@@ -57,17 +57,22 @@ import {
   createBezierAnchor,
   rasterizeCubicPath,
   rasterizePolygon,
+  snapCssScaleToDevicePixels,
   stepZoom,
+  strokeBrushLine,
   symmetryPoints,
   fillPolygon,
   fillLinearGradient,
   combineSelections,
+  densifyStrokeSegment,
+  listPointerClientSamples,
   scaleClipboard,
   selectionCombineModeFromModifiers,
   selectionFromColor,
   selectionFromFlood,
   selectionFromPolygon,
   walkLine,
+  zoomToward,
 } from "@/lib/pixel"
 
 describe("pixel canvas geometry", () => {
@@ -597,6 +602,153 @@ describe("pixel editor source", () => {
     compositeLayersToRgba([bottom, top], rgba, PIXEL_PALETTE, w, h)
     expect([rgba[0], rgba[1], rgba[2]]).toEqual(hexToRgb(PIXEL_PALETTE[2]!))
     expect([rgba[4], rgba[5], rgba[6]]).toEqual(hexToRgb(PIXEL_PALETTE[1]!))
+  })
+
+  it("lists coalesced pointer samples in order and falls back", () => {
+    const coalesced = listPointerClientSamples({
+      clientX: 9,
+      clientY: 9,
+      getCoalescedEvents: () => [
+        { clientX: 1, clientY: 2 },
+        { clientX: 3, clientY: 4 },
+        { clientX: 5, clientY: 6 },
+      ],
+    })
+    expect(coalesced).toEqual([
+      { clientX: 1, clientY: 2 },
+      { clientX: 3, clientY: 4 },
+      { clientX: 5, clientY: 6 },
+    ])
+    expect(
+      listPointerClientSamples({
+        clientX: 8,
+        clientY: 7,
+        getCoalescedEvents: () => [],
+      }),
+    ).toEqual([{ clientX: 8, clientY: 7 }])
+    expect(listPointerClientSamples({ clientX: 2, clientY: 3 })).toEqual([{ clientX: 2, clientY: 3 }])
+  })
+
+  it("densifies sparse curved stroke segments without rewriting short chords", () => {
+    const short = densifyStrokeSegment(
+      [
+        { x: 0, y: 0 },
+        { x: 1, y: 0 },
+      ],
+      { x: 2, y: 1 },
+    )
+    expect(short).toEqual([{ x: 2, y: 1 }])
+
+    const dense = densifyStrokeSegment(
+      [
+        { x: 0, y: 10 },
+        { x: 2, y: 10 },
+      ],
+      { x: 10, y: 2 },
+    )
+    expect(dense.length).toBeGreaterThan(1)
+    expect(dense[dense.length - 1]).toEqual({ x: 10, y: 2 })
+    // Midpoints should arc upward of the chord (incoming horizontal → down-right).
+    const mid = dense[Math.floor(dense.length / 2)]!
+    const chordY = 10 + ((2 - 10) * (mid.x - 2)) / (10 - 2)
+    expect(mid.y).toBeLessThanOrEqual(Math.ceil(chordY) + 1)
+  })
+
+  it("rasterizes a fast circular trajectory closer to the path than coarse chords", () => {
+    const w = 64
+    const h = 64
+    const cx = 32
+    const cy = 32
+    const r = 14
+    const fine: Array<{ x: number; y: number }> = []
+    for (let i = 0; i <= 48; i += 1) {
+      const t = (i / 48) * Math.PI * 2
+      fine.push({ x: Math.round(cx + Math.cos(t) * r), y: Math.round(cy + Math.sin(t) * r) })
+    }
+    // Sparse samples as if coalesced events were dropped.
+    const coarse = fine.filter((_, index) => index % 6 === 0 || index === fine.length - 1)
+
+    const paintPath = (samples: Array<{ x: number; y: number }>) => {
+      const pixels = new Uint8ClampedArray(w * h * 4)
+      fillPaper(pixels)
+      const trail: Array<{ x: number; y: number }> = []
+      let prev: { x: number; y: number } | null = null
+      for (const cell of samples) {
+        if (!prev) {
+          strokeBrushLine(pixels, cell.x, cell.y, cell.x, cell.y, [1, 2, 3], 1, w, h)
+          trail.push(cell)
+          prev = cell
+          continue
+        }
+        for (const point of densifyStrokeSegment(trail, cell)) {
+          strokeBrushLine(pixels, prev.x, prev.y, point.x, point.y, [1, 2, 3], 1, w, h)
+          trail.push(point)
+          if (trail.length > 8) trail.splice(0, trail.length - 8)
+          prev = point
+        }
+      }
+      return pixels
+    }
+
+    const densePaint = paintPath(fine)
+    const recovered = paintPath(coarse)
+    const chordOnly = (() => {
+      const pixels = new Uint8ClampedArray(w * h * 4)
+      fillPaper(pixels)
+      for (let i = 1; i < coarse.length; i += 1) {
+        const a = coarse[i - 1]!
+        const b = coarse[i]!
+        strokeBrushLine(pixels, a.x, a.y, b.x, b.y, [1, 2, 3], 1, w, h)
+      }
+      return pixels
+    })()
+
+    const ink = (pixels: Uint8ClampedArray) => {
+      let count = 0
+      for (let i = 0; i < pixels.length; i += 4) if (pixels[i] === 1) count += 1
+      return count
+    }
+    const overlap = (a: Uint8ClampedArray, b: Uint8ClampedArray) => {
+      let shared = 0
+      for (let i = 0; i < a.length; i += 4) if (a[i] === 1 && b[i] === 1) shared += 1
+      return shared
+    }
+    // Recovered sparse path should share more ink with the fine path than pure chords.
+    expect(overlap(recovered, densePaint) / ink(densePaint)).toBeGreaterThan(
+      overlap(chordOnly, densePaint) / ink(densePaint),
+    )
+  })
+
+  it("keeps multi-layer composite identical after viewport zoom math", () => {
+    const w = 8
+    const h = 8
+    const bottom = createEmptyLayer(w, h, "Bottom")
+    const top = createEmptyLayer(w, h, "Top")
+    bottom.indices[0] = 2
+    bottom.indices[10] = 3
+    top.indices[10] = 1
+    top.indices[20] = 4
+    const beforeBottom = Uint8Array.from(bottom.indices)
+    const beforeTop = Uint8Array.from(top.indices)
+    const rgbaA = new Uint8ClampedArray(w * h * 4)
+    const rgbaB = new Uint8ClampedArray(w * h * 4)
+    compositeLayersToRgba([bottom, top], rgbaA, PIXEL_PALETTE, w, h)
+    // Viewport zoom must not rewrite layer pixel data — only camera changes.
+    zoomToward({
+      originX: 0,
+      originY: 0,
+      scale: 1,
+      nextScale: 4,
+      focusX: 40,
+      focusY: 40,
+    })
+    const snapped = snapCssScaleToDevicePixels(4, 2)
+    const { deviceScale } = viewDeviceTransform(0, 0, snapped, 2)
+    expect(deviceScale).toBe(Math.max(1, Math.floor(snapped * 2 + 1e-9)))
+    compositeLayersToRgba([bottom, top], rgbaB, PIXEL_PALETTE, w, h)
+    expect([...bottom.indices]).toEqual([...beforeBottom])
+    expect([...top.indices]).toEqual([...beforeTop])
+    expect([...rgbaB]).toEqual([...rgbaA])
   })
 
   it("rotateClipboardNearest 90° matches rotateRect90Cw on solid rects", () => {

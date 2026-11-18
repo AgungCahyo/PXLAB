@@ -1,11 +1,13 @@
-# THE COMMONS — Product Specification
+# PXLB — Product Specification
 
 **Document:** PRODUCT-SPEC.md  
 **Status:** Pixel Art Community baseline (supersedes the dual-mode “individual + Common Space” MVP)  
-**Product:** THE COMMONS  
-**Tagline:** A place made by everyone. / Tempat yang dibuat bersama.  
+**Product:** PXLB (formerly THE COMMONS)  
+**Positioning:** A creative playground for pixel art.  
+**Tagline:** Create. Explore. Share. / Buat. Jelajah. Bagikan.  
 **Portfolio owner:** Agung Cahyo  
 **Product type:** Pixel art community  
+**Canonical domain:** https://pxlb.fun  
 **Canonical concept:** Creators make, showcase, discover, and appreciate pixel art. Common Space is a later, secondary giant shared canvas — not the product center.
 
 This document is the product source of truth. [TECHNICAL-SPEC.md](TECHNICAL-SPEC.md) covers architecture. [IMPLEMENTATION-PLAN.md](IMPLEMENTATION-PLAN.md) covers how the existing app migrates. Visual identity lives in [PIXEL-ART-DESIGN-SYSTEM.md](PIXEL-ART-DESIGN-SYSTEM.md).
@@ -16,19 +18,19 @@ The application already exists (original MVP Phases 0–5 plus a local pixel pro
 
 ## 1. Product vision
 
-THE COMMONS is a public home for pixel art. Members draw in a personal Pixel Art Playground, publish finished works, and meet other people’s art through a gallery. One-way follows may help members find new work from creators they care about; the product still rejects public follower counts, rankings, and algorithmic feeds.
+PXLB is a creative playground for pixel art. Members draw in a personal Pixel Art Playground, publish finished works, and meet other people’s art through a gallery. One-way follows may help members find new work from creators they care about; the product still rejects public follower counts, rankings, and algorithmic feeds.
 
 The product owner provides the space. Members determine what the gallery becomes.
 
 **Core loop:** make a pixel artwork → save a draft → keep developing it in the Playground → preview → publish → others find it, comment, and appreciate it → return to the same work or make another.
 
-THE COMMONS is not an image dump. Making, saving, developing, and showing work is one continuous experience.
+PXLB is not an image dump. Making, saving, developing, and showing work is one continuous experience.
 
 Common Space remains in the product as a later layer: one giant, practically unbounded collaborative pixel world. It is not the hero of the landing page, **not a launch requirement** for the community MVP, and not the reason people first join. Tile storage, world coordinates, edit conflicts, and realtime must not delay the community loop.
 
 ### Product positioning
 
-THE COMMONS is not intended to be:
+PXLB is not intended to be:
 
 - A conventional social network.
 - A discussion forum.
@@ -49,7 +51,7 @@ Do not continue these retired assumptions:
 - Personal Creation and Common Space as equal product modes.
 - Creation types `text`, `visual`, `idea`, and `story` as the primary Create path.
 - Common Space as a text-and-shape SVG board at the center of the product.
-- “THE COMMONS is one shared pixel canvas” (the pixel-canvas addendum’s previous framing).
+- “THE COMMONS is one shared pixel canvas” (the pixel-canvas addendum’s previous framing; brand is now PXLB).
 
 Keep working product surface that already exists: authentication, profiles, Explore, comments, appreciation, reports, admin, bilingual public browse.
 
@@ -61,8 +63,8 @@ These decisions are the current source of truth:
 
 | Decision | Baseline |
 |---|---|
-| Brand relationship | Independent-feeling project within Agung Cahyo's portfolio |
-| Product name | THE COMMONS |
+| Brand relationship | Independent brand (PXLB) within Agung Cahyo's portfolio — not an expansion of “Pixel Base/Lab” |
+| Product name | PXLB |
 | Experience | Pixel art community first; giant Common Space later |
 | Create | In-app Pixel Art Playground at `/create` (not a separate app) |
 | Account model | Account required to save, publish, comment, appreciate, fork, or draw on Common Space |
@@ -70,12 +72,12 @@ These decisions are the current source of truth:
 | Hosting | Vercel |
 | Application | Next.js App Router + TypeScript |
 | Backend services | Supabase |
-| Initial domain concept | `commons.agungcahyo.my.id` (subject to DNS availability/configuration) |
+| Canonical domain | `https://pxlb.fun` (DNS/Vercel cutover required; legacy `commons.agungcahyo.my.id` redirects until retired) |
 | Community MVP collaboration | Asynchronous publish and gallery; not live multiplayer editing |
 | Common Space collaboration | Later phase; sparse giant canvas; realtime only after persistence works |
 | Languages | Indonesian (default, unprefixed URLs) and English (`/en`) |
 | Visual identity | Colorful pixel-art UI on a light/white Paper background; see PIXEL-ART-DESIGN-SYSTEM.md |
-| Tagline | Keep current bilingual tagline until a separate copy decision |
+| Tagline | Create. Explore. Share. / Buat. Jelajah. Bagikan. |
 
 ---
 
@@ -224,14 +226,14 @@ Community around a work is a **small conversation beside the art**, not a blog c
 - Each root comment: mark, @username, relative time, body, Reply, report. Owner: edit and delete. Replies indent once (`↳ @user`). Thin separators and space — not a pixel-frame card per comment.
 - Empty state is friendly, not a forum void: ID *“Belum ada percakapan. Sampaikan kesanmu pada karyanya.”* / EN *“No conversation yet. Leave a note about the artwork.”*
 - New comments appear without a full page reload. Optimistic UI: the member sees their note immediately; the server remains authoritative. Load earlier / load more (latest slice first, newest at the bottom). Do not dump hundreds of comments. Do not add realtime or a notification system in this phase.
-- Fork stays in B4 as a quiet action (copy editor source, then PNG). Do not put it in the primary Appreciate / Share cluster.
+- Remix (fork of editor source, then PNG) sits with Appreciate / Share on the detail engagement row. Lineage and remix strips stay visible both ways.
 - Per-comment likes, nested threads beyond one level, comment ranking, and complex notifications are **out**.
 
-Keep working: reports on creations and comments, admin hide/restore, rate limits, unique appreciate.
+Keep working: reports on creations and comments, admin hide/restore, rate limits, unique appreciate, one-way follow without public counts, Following filter on Explore, responses inbox.
 
 Avoid:
 
-- Followers/following.
+- Public follower counts or follow-as-score.
 - Direct messages.
 - Public popularity rankings.
 - Complex notification systems.
@@ -317,7 +319,7 @@ English uses the same paths under `/en`. Indonesian is the default and stays at 
 ### First-time visitor
 
 1. Opens the landing page.
-2. Understands THE COMMONS as a pixel art community.
+2. Understands PXLB as a pixel art community.
 3. Browses Explore and opens a published work.
 4. Registers in order to make or appreciate work.
 
@@ -411,7 +413,7 @@ Explicitly excluded from the community MVP:
 
 - Direct messages.
 - Voice or video calls.
-- Followers/following.
+- Public follower counts, follow rankings, or algorithmic follow feeds (one-way follow + chronological Following filter on Explore are in scope).
 - Real-time multiplayer canvas editing.
 - The giant/unlimited Common Space world, tile persistence, world viewport, stroke conflict handling, and canvas realtime. These stay vision-only until a post-launch phase. Community launch must not wait on them.
 - Multiple rooms/worlds.

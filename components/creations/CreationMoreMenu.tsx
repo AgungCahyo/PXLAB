@@ -309,11 +309,11 @@ export function CreationMoreMenu({
         closeLabel={copy.closeMenu[lang]}
       >
         {body}
-        <div className="mt-4">
+        {/* <div className="mt-4">
           <Button type="button" variant="ghost" size="sm" onClick={() => setOpen(false)}>
             {copy.closeMenu[lang]}
           </Button>
-        </div>
+        </div> */}
       </Dialog>
     </div>
   )

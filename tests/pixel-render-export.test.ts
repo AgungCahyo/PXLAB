@@ -1,8 +1,11 @@
 import { describe, expect, it } from "vitest"
 import {
+  PIXEL_CANVAS_CHECKER_A,
+  PIXEL_CANVAS_CHECKER_B,
   PIXEL_PAPER,
   buildPaletteRgbIndex,
   buildPixelSource,
+  copyRgbaWithCanvasChecker,
   hexToRgb,
   indicesToRgba,
   parsePixelSource,
@@ -98,5 +101,32 @@ describe("pixel render/export stage 2 — integer device scale", () => {
     const snapped = snapOriginToDevicePixels(10.4, 3.2, 2)
     expect(snapped.originX * 2).toBe(Math.round(10.4 * 2))
     expect(snapped.originY * 2).toBe(Math.round(3.2 * 2))
+  })
+})
+
+describe("view-only canvas checker ground", () => {
+  it("tints Paper cells to alternating light colors without mutating source", () => {
+    const paper = hexToRgb(PIXEL_PAPER)
+    const light = hexToRgb(PIXEL_CANVAS_CHECKER_A)
+    const dark = hexToRgb(PIXEL_CANVAS_CHECKER_B)
+    const source = new Uint8ClampedArray(2 * 2 * 4)
+    for (let i = 0; i < 4; i += 1) {
+      const p = i * 4
+      source[p] = paper[0]
+      source[p + 1] = paper[1]
+      source[p + 2] = paper[2]
+      source[p + 3] = 255
+    }
+    source[4] = 233
+    source[5] = 75
+    source[6] = 60
+    source[7] = 255
+    const dest = new Uint8ClampedArray(source.length)
+    copyRgbaWithCanvasChecker(source, dest, 2, 2)
+    expect([...dest.slice(0, 4)]).toEqual([light[0], light[1], light[2], 255])
+    expect([...dest.slice(4, 8)]).toEqual([233, 75, 60, 255])
+    expect([...dest.slice(8, 12)]).toEqual([dark[0], dark[1], dark[2], 255])
+    expect([...dest.slice(12, 16)]).toEqual([light[0], light[1], light[2], 255])
+    expect([...source.slice(0, 4)]).toEqual([paper[0], paper[1], paper[2], 255])
   })
 })

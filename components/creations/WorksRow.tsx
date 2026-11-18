@@ -5,12 +5,13 @@ import Link from "next/link"
 import { PixelArt } from "@/components/creations/PixelArt"
 import { WorksDeleteButton } from "@/components/creations/WorksDeleteButton"
 import { buttonClassName } from "@/components/ui/Button"
-import { captionForCard, displayTitle } from "@/lib/creations"
-import { copy, creationTypeLabels } from "@/lib/copy"
+import { displayTitle } from "@/lib/creations"
+import { copy } from "@/lib/copy"
 import { formatDayMonthYear } from "@/lib/format"
 import { href, type Lang } from "@/lib/i18n"
 import type { CreationCard } from "@/features/creations/queries"
 
+/** Owner gallery tile — same framed-art language as Explore/Profile cards. */
 export function WorksRow({
   lang,
   item,
@@ -31,58 +32,63 @@ export function WorksRow({
         ? copy.createHiddenBadge[lang]
         : copy.createDraftBadge[lang]
   const title = displayTitle(item.title, lang)
-  const cardCaption = captionForCard(item.caption)
+  const openHref =
+    primary === "view" ? href(lang, `/creation/${item.id}`) : href(lang, `/create/${item.id}`)
 
   return (
     <li>
-      <div className="pixel-frame flex min-h-16 items-center gap-4 bg-card">
-        {cover ? (
-          <div className="relative h-20 w-20 shrink-0 overflow-hidden border-r-[3px] border-earth bg-bg">
+      <article className="pixel-frame flex h-full min-w-0 flex-col bg-card">
+        <Link href={openHref} className="relative block" aria-label={title}>
+          {cover ? (
             <PixelArt src={cover} alt="" variant="thumb" framed={false} />
+          ) : (
+            <div className="pixel-thumb bg-soft" />
+          )}
+        </Link>
+        <div className="flex min-w-0 flex-1 flex-col gap-2 px-2.5 pb-2.5 pt-2">
+          <div className="min-w-0">
+            <p className="truncate text-[13px] font-medium leading-snug text-fg sm:text-[14px]">
+              {title}
+            </p>
+            <p className="mt-0.5 truncate text-[11px] leading-snug text-muted">
+              {statusLabel}
+              {` · ${formatDayMonthYear(item.updated_at, lang)}`}
+            </p>
           </div>
-        ) : (
-          <div className="h-20 w-20 shrink-0 border-r-[3px] border-earth bg-soft" aria-hidden />
-        )}
-        <div className="flex min-w-0 flex-1 flex-col justify-center px-2 py-4 sm:px-4">
-          <p className="truncate font-medium">{title}</p>
-          {cardCaption ? (
-            <p className="mt-0.5 truncate text-[13px] text-muted">{cardCaption}</p>
-          ) : null}
-          <p className="mt-1 text-[13px] text-muted">
-            {creationTypeLabels[item.type][lang]} · {statusLabel}
-            {` · ${formatDayMonthYear(item.updated_at, lang)}`}
-          </p>
-        </div>
-        <div className="flex shrink-0 flex-col gap-2 px-3 py-3 sm:flex-row sm:flex-wrap sm:px-5">
-          {primary === "view" ? (
-            <>
-              <Link
-                href={href(lang, `/creation/${item.id}`)}
-                className={buttonClassName({ size: "sm", variant: "secondary" })}
-              >
-                {copy.worksView[lang]}
-              </Link>
+          <div className="mt-auto flex flex-wrap gap-1.5">
+            {primary === "view" ? (
+              <>
+                <Link
+                  href={href(lang, `/creation/${item.id}`)}
+                  className={buttonClassName({ size: "sm", variant: "secondary", className: "px-2.5" })}
+                >
+                  {copy.worksView[lang]}
+                </Link>
+                <Link
+                  href={href(lang, `/create/${item.id}`)}
+                  className={buttonClassName({ size: "sm", variant: "outline", className: "px-2.5" })}
+                >
+                  {copy.createEdit[lang]}
+                </Link>
+              </>
+            ) : (
               <Link
                 href={href(lang, `/create/${item.id}`)}
-                className={buttonClassName({ size: "sm", variant: "outline" })}
+                className={buttonClassName({ size: "sm", className: "px-2.5" })}
               >
-                {copy.createEdit[lang]}
+                {copy.worksContinue[lang]}
               </Link>
-            </>
-          ) : (
-            <Link href={href(lang, `/create/${item.id}`)} className={buttonClassName({ size: "sm" })}>
-              {copy.worksContinue[lang]}
-            </Link>
-          )}
-          <WorksDeleteButton
-            lang={lang}
-            creationId={item.id}
-            title={title}
-            published={item.status === "published"}
-            onDeleted={() => setRemoved(true)}
-          />
+            )}
+            <WorksDeleteButton
+              lang={lang}
+              creationId={item.id}
+              title={title}
+              published={item.status === "published"}
+              onDeleted={() => setRemoved(true)}
+            />
+          </div>
         </div>
-      </div>
+      </article>
     </li>
   )
 }

@@ -23,12 +23,14 @@ import {
   PIXEL_SWATCHES,
   PIXEL_ZOOM_PINCH_MAX,
   PIXEL_ZOOM_PINCH_MIN,
+  blitIndicesIntoLayer,
   blitRect,
   buildPaletteRgbIndex,
   buildPixelSourceV2,
   clampStrokeWidth,
   clearCanvasToPaper,
   clearRectToPaper,
+  copyRgbaWithCanvasChecker,
   pointerToCell,
   compositeLayersToRgba,
   viewDeviceTransform,
@@ -39,6 +41,7 @@ import {
   layerThumbnailDataUrl,
   mergeLayerIndices,
   constrainSquareEnd,
+  densifyStrokeSegment,
   ensurePaletteColor,
   extractRect,
   fillLinearGradient,
@@ -46,6 +49,7 @@ import {
   fillRect,
   fitOrigin,
   flattenLayersToIndices,
+  listPointerClientSamples,
   flipCanvasHorizontal,
   flipCanvasVertical,
   flipRectHorizontal,
@@ -101,6 +105,7 @@ import {
   type PixelZoom,
 } from "@/lib/pixel"
 import { PIXEL_FONT_H, PIXEL_FONT_LEADING, PIXEL_FONT_W } from "@/lib/pixel-font"
+import { mergeImportIntoDocumentPalette } from "@/lib/pixel-import"
 import { cn } from "@/lib/utils"
 
 export type Tool = PixelDrawTool
@@ -269,6 +274,15 @@ export type PixelBoardHandle = {
     height?: number
   }) => void
   getShapeDraft: () => ShapeDraftInfo
+  importPixelArtLayer: (input: {
+    indices: Uint8Array
+    width: number
+    height: number
+    palette: string[]
+    name?: string
+  }) =>
+    | { ok: true; layerId: string; colorsAdded: number }
+    | { ok: false; error: "layer_limit" | "empty" | "dimensions" }
 }
 
 export type PixelBoardProps = {
@@ -343,8 +357,13 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
   const wrapRef = useRef<HTMLDivElement | null>(null)
   const viewRef = useRef<HTMLCanvasElement | null>(null)
   const bufferRef = useRef<HTMLCanvasElement | null>(null)
+  /** View-only: Paper shown as light cell checker; never used for export. */
+  const displayRef = useRef<HTMLCanvasElement | null>(null)
+  const displayImageRef = useRef<ImageData | null>(null)
+  const viewCtxRef = useRef<CanvasRenderingContext2D | null>(null)
   const imageRef = useRef<ImageData | null>(null)
   const compositeRef = useRef<ImageData | null>(null)
+  const paperRgbRef = useRef(hexToRgb(PIXEL_PAPER))
   const layersRef = useRef<PixelLayerRuntime[]>(
     layersFromInitialSource(initialSource, width, height),
   )
@@ -396,6 +415,13 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
     | null
   >(null)
   const selectionRef = useRef<PixelSelection | null>(null)
+  /**
+   * Full selection pixels while a marquee exists (including parts outside the canvas).
+   * When `selectionFloatingRef` is true, pixels are lifted from the layer and only
+   * composited in the view until commit — so move does not stamp over neighbors yet.
+   */
+  const selectionFloatRef = useRef<PixelClipboard | null>(null)
+  const selectionFloatingRef = useRef(false)
   const selectStartRef = useRef<{ x: number; y: number } | null>(null)
   const selectMarqueeEndRef = useRef<PixelPoint | null>(null)
   const selectCombineRef = useRef<SelectionCombineMode>("replace")
@@ -447,6 +473,8 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
   const onHoverCellRef = useRef(onHoverCell)
   onHoverCellRef.current = onHoverCell
   const drawRef = useRef<{ x: number; y: number } | null>(null)
+  /** Recent freehand cells for sparse-gap Catmull-Rom densify (not undo history). */
+  const strokeTrailRef = useRef<PixelPoint[]>([])
   const panRef = useRef<{ x: number; y: number; originX: number; originY: number } | null>(null)
   const onZoomChangeRef = useRef(onZoomChange)
   onZoomChangeRef.current = onZoomChange
@@ -579,6 +607,8 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
       0,
       Math.min(frame.active, layersRef.current.length - 1),
     )
+    selectionFloatRef.current = null
+    selectionFloatingRef.current = false
     loadActiveIntoImage()
     emitLayers()
     schedule()
@@ -655,7 +685,8 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
     emitZoom(next)
     if (next === "fit") {
       applyFit()
-      scheduleView()
+      // Camera-only: never mutate layer pixels; refresh full-stack composite under the new viewport.
+      schedule()
       return
     }
     const fx = focusX ?? viewW / 2
@@ -672,7 +703,9 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
       scale: nextScale,
       ...snapOriginToDevicePixels(zoomed.originX, zoomed.originY, dpr),
     }
-    scheduleView()
+    // Recomposite all layers into the buffer, then draw with the shared viewport transform.
+    // Zoom must not target the active layer alone.
+    schedule()
   }
 
   const draw = () => {
@@ -690,8 +723,37 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
       pixelsDirtyRef.current = true
     }
 
+    // Buffer = opaque Paper composite (export). Display = Paper as light cell colors.
     if (pixelsDirtyRef.current) {
-      bufferCtx.putImageData(compositeImage(), 0, 0)
+      const composite = compositeImage()
+      bufferCtx.putImageData(composite, 0, 0)
+
+      let display = displayRef.current
+      if (!display) {
+        display = document.createElement("canvas")
+        displayRef.current = display
+      }
+      if (display.width !== canvasW || display.height !== canvasH) {
+        display.width = canvasW
+        display.height = canvasH
+      }
+      if (
+        !displayImageRef.current ||
+        displayImageRef.current.width !== canvasW ||
+        displayImageRef.current.height !== canvasH
+      ) {
+        displayImageRef.current = new ImageData(canvasW, canvasH)
+      }
+      copyRgbaWithCanvasChecker(
+        composite.data,
+        displayImageRef.current.data,
+        canvasW,
+        canvasH,
+        paperRgbRef.current,
+      )
+      const displayCtx = display.getContext("2d")
+      if (displayCtx) displayCtx.putImageData(displayImageRef.current, 0, 0)
+
       pixelsDirtyRef.current = false
     }
 
@@ -703,19 +765,42 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
     if (view.width !== pixelW || view.height !== pixelH) {
       view.width = pixelW
       view.height = pixelH
+      viewCtxRef.current = null
     }
 
-    const viewCtx = view.getContext("2d", { alpha: false })
+    let viewCtx = viewCtxRef.current
+    if (!viewCtx || viewCtx.canvas !== view) {
+      viewCtx = view.getContext("2d", { alpha: false })
+      viewCtxRef.current = viewCtx
+    }
     if (!viewCtx) return
 
+    // One shared viewport camera for every layer, grid, and overlay drawn below.
     const { originX, originY, scale } = cameraRef.current
     const { deviceScale, translateX, translateY } = viewDeviceTransform(originX, originY, scale, dpr)
     viewCtx.setTransform(1, 0, 0, 1, 0, 0)
-    viewCtx.fillStyle = "#e8e4d8"
+    viewCtx.fillStyle = "#f4f1e8"
     viewCtx.fillRect(0, 0, view.width, view.height)
     viewCtx.imageSmoothingEnabled = false
     viewCtx.setTransform(deviceScale, 0, 0, deviceScale, translateX, translateY)
-    viewCtx.drawImage(buffer, 0, 0)
+    viewCtx.drawImage(displayRef.current ?? buffer, 0, 0)
+
+    // Lifted selection lives in float until commit — draw it above the layer stack.
+    if (selectionFloatingRef.current && selectionFloatRef.current && selectionRef.current) {
+      const clip = selectionFloatRef.current
+      const sel = selectionRef.current
+      for (let row = 0; row < clip.height; row += 1) {
+        for (let col = 0; col < clip.width; col += 1) {
+          if (clip.mask && clip.mask[row * clip.width + col] !== 1) continue
+          const x = sel.x + col
+          const y = sel.y + row
+          if (!inCanvas(x, y, canvasW, canvasH)) continue
+          const p = (row * clip.width + col) * 4
+          viewCtx.fillStyle = `rgb(${clip.data[p]}, ${clip.data[p + 1]}, ${clip.data[p + 2]})`
+          viewCtx.fillRect(x, y, 1, 1)
+        }
+      }
+    }
 
     // Grid: cull to visible cells; lighter below PIXEL_GRID_MIN_ZOOM.
     if (gridRef.current) {
@@ -973,7 +1058,79 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
     scheduleView()
   }
 
+  const cloneClipboard = (clip: PixelClipboard): PixelClipboard => ({
+    width: clip.width,
+    height: clip.height,
+    data: new Uint8ClampedArray(clip.data),
+    mask: clip.mask ? new Uint8Array(clip.mask) : undefined,
+  })
+
+  const rememberSelectionFloat = (clip: PixelClipboard) => {
+    selectionFloatRef.current = cloneClipboard(clip)
+  }
+
+  const liftSelectionClipboard = (selection: PixelSelection): PixelClipboard => {
+    const held = selectionFloatRef.current
+    if (
+      held &&
+      held.width === selection.width &&
+      held.height === selection.height &&
+      Boolean(held.mask) === Boolean(selection.mask) &&
+      (!held.mask || !selection.mask || held.mask.length === selection.mask.length)
+    ) {
+      return cloneClipboard(held)
+    }
+    return extractRect(
+      image().data,
+      selection,
+      canvasWidthRef.current,
+      canvasHeightRef.current,
+    )
+  }
+
+  /** Keep at least one cell of the selection bbox on the canvas so it stays grabbable. */
+  const softClampSelectionOrigin = (
+    x: number,
+    y: number,
+    width: number,
+    height: number,
+    canvasW: number,
+    canvasH: number,
+  ) => ({
+    x: Math.max(1 - width, Math.min(canvasW - 1, x)),
+    y: Math.max(1 - height, Math.min(canvasH - 1, y)),
+  })
+
+  /** Stamp lifted pixels into the layer (overwrites destination). */
+  const commitFloatingSelection = () => {
+    if (!selectionFloatingRef.current) return false
+    const selection = selectionRef.current
+    const clip = selectionFloatRef.current
+    selectionFloatingRef.current = false
+    if (!selection || !clip) return false
+    blitRect(
+      image().data,
+      clip,
+      selection.x,
+      selection.y,
+      canvasWidthRef.current,
+      canvasHeightRef.current,
+    )
+    pixelsDirtyRef.current = true
+    schedule()
+    onStrokeEnd?.()
+    return true
+  }
+
+  const ensureSelectionCommitted = () => {
+    if (selectionFloatingRef.current) commitFloatingSelection()
+  }
+
   const setSelection = (next: PixelSelection | null) => {
+    if (!next) {
+      selectionFloatRef.current = null
+      selectionFloatingRef.current = false
+    }
     selectionRef.current = next
     emitSelection()
   }
@@ -1409,12 +1566,8 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
   const copySelection = () => {
     const selection = selectionRef.current
     if (!selection) return false
-    sessionClipboard = extractRect(
-      image().data,
-      selection,
-      canvasWidthRef.current,
-      canvasHeightRef.current,
-    )
+    sessionClipboard = liftSelectionClipboard(selection)
+    rememberSelectionFloat(sessionClipboard)
     emitClipboard()
     onEditFeedbackRef.current?.("copied")
     return true
@@ -1423,6 +1576,13 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
   const deleteSelection = () => {
     const selection = selectionRef.current
     if (!selection) return false
+    if (selectionFloatingRef.current) {
+      // Already lifted — drop the float; hole stays.
+      setSelection(null)
+      onStrokeEnd?.()
+      scheduleView()
+      return true
+    }
     runBufferOp(() => {
       clearRectToPaper(image().data, selection, canvasWidthRef.current, canvasHeightRef.current)
       setSelection(null)
@@ -1433,14 +1593,24 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
   const cutSelection = () => {
     const selection = selectionRef.current
     if (!selection) return false
-    sessionClipboard = extractRect(
-      image().data,
-      selection,
-      canvasWidthRef.current,
-      canvasHeightRef.current,
-    )
+    sessionClipboard = liftSelectionClipboard(selection)
     emitClipboard()
-    deleteSelection()
+    if (!selectionFloatingRef.current) {
+      runBufferOp(() => {
+        clearRectToPaper(image().data, selection, canvasWidthRef.current, canvasHeightRef.current)
+        selectionFloatingRef.current = false
+        selectionFloatRef.current = null
+        selectionRef.current = null
+        emitSelection()
+      })
+    } else {
+      selectionFloatingRef.current = false
+      selectionFloatRef.current = null
+      selectionRef.current = null
+      emitSelection()
+      onStrokeEnd?.()
+      scheduleView()
+    }
     onEditFeedbackRef.current?.("cut")
     return true
   }
@@ -1450,21 +1620,31 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
       onEditFeedbackRef.current?.("clipboard-empty")
       return false
     }
+    ensureSelectionCommitted()
     const w = canvasWidthRef.current
     const h = canvasHeightRef.current
     const selection = selectionRef.current
-    const destX = selection ? selection.x : Math.max(0, Math.floor((w - sessionClipboard.width) / 2))
-    const destY = selection ? selection.y : Math.max(0, Math.floor((h - sessionClipboard.height) / 2))
-    runBufferOp(() => {
-      blitRect(image().data, sessionClipboard!, destX, destY, w, h)
-      setSelection({
-        x: destX,
-        y: destY,
-        width: sessionClipboard!.width,
-        height: sessionClipboard!.height,
-        mask: sessionClipboard!.mask,
-      })
+    const rawX = selection ? selection.x : Math.floor((w - sessionClipboard.width) / 2)
+    const rawY = selection ? selection.y : Math.floor((h - sessionClipboard.height) / 2)
+    const { x: destX, y: destY } = softClampSelectionOrigin(
+      rawX,
+      rawY,
+      sessionClipboard.width,
+      sessionClipboard.height,
+      w,
+      h,
+    )
+    pushUndo()
+    rememberSelectionFloat(sessionClipboard)
+    selectionFloatingRef.current = true
+    setSelection({
+      x: destX,
+      y: destY,
+      width: sessionClipboard.width,
+      height: sessionClipboard.height,
+      mask: sessionClipboard.mask,
     })
+    scheduleView()
     onEditFeedbackRef.current?.("pasted")
     return true
   }
@@ -1492,28 +1672,42 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
     if (!selection || !activeLayerEditable()) return false
     const w = canvasWidthRef.current
     const h = canvasHeightRef.current
-    runBufferOp(() => {
-      const floating = extractRect(image().data, selection, w, h)
+    const floating = liftSelectionClipboard(selection)
+    if (!selectionFloatingRef.current) {
+      pushUndo()
       clearRectToPaper(image().data, selection, w, h)
-      const rotated = rotateClipboardNearest(floating, degrees)
-      const cx = selection.x + (selection.width - 1) / 2
-      const cy = selection.y + (selection.height - 1) / 2
-      const destX = Math.round(cx - (rotated.width - 1) / 2)
-      const destY = Math.round(cy - (rotated.height - 1) / 2)
-      blitRect(image().data, rotated, destX, destY, w, h)
-      setSelection({
-        x: destX,
-        y: destY,
-        width: rotated.width,
-        height: rotated.height,
-        mask: rotated.mask,
-      })
+      selectionFloatingRef.current = true
+      pixelsDirtyRef.current = true
+      schedule()
+    }
+    const rotated = rotateClipboardNearest(floating, degrees)
+    const cx = selection.x + (selection.width - 1) / 2
+    const cy = selection.y + (selection.height - 1) / 2
+    const rawX = Math.round(cx - (rotated.width - 1) / 2)
+    const rawY = Math.round(cy - (rotated.height - 1) / 2)
+    const { x: destX, y: destY } = softClampSelectionOrigin(
+      rawX,
+      rawY,
+      rotated.width,
+      rotated.height,
+      w,
+      h,
+    )
+    rememberSelectionFloat(rotated)
+    setSelection({
+      x: destX,
+      y: destY,
+      width: rotated.width,
+      height: rotated.height,
+      mask: rotated.mask,
     })
+    scheduleView()
     return true
   }
 
   useImperativeHandle(ref, () => ({
     exportSource: () => {
+      ensureSelectionCommitted()
       syncActiveFromImage()
       return buildPixelSourceV2(
         layersRef.current,
@@ -1523,6 +1717,7 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
       )
     },
     exportPng: () => {
+      ensureSelectionCommitted()
       const buffer = bufferRef.current
       if (!buffer) return Promise.reject(new Error("buffer"))
       const ctx = buffer.getContext("2d")
@@ -1601,7 +1796,10 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
       setSelection({ x: 0, y: 0, width: canvasWidthRef.current, height: canvasHeightRef.current })
       chooseTool("select")
     },
-    clearSelection: () => setSelection(null),
+    clearSelection: () => {
+      ensureSelectionCommitted()
+      setSelection(null)
+    },
     hasSelection: () => selectionRef.current !== null,
     copySelection,
     cutSelection,
@@ -1649,6 +1847,48 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
       onStrokeEnd?.()
       return true
     },
+    importPixelArtLayer: (input) => {
+      if (layersRef.current.length >= PIXEL_LAYER_MAX) return { ok: false, error: "layer_limit" }
+      const srcW = Math.floor(input.width)
+      const srcH = Math.floor(input.height)
+      if (srcW < 1 || srcH < 1 || input.indices.length < srcW * srcH) {
+        return { ok: false, error: "dimensions" }
+      }
+      const opaque = input.indices.some((index) => index !== 0)
+      if (!opaque) return { ok: false, error: "empty" }
+
+      const canvasW = canvasWidthRef.current
+      const canvasH = canvasHeightRef.current
+      const merged = mergeImportIntoDocumentPalette(
+        paletteRef.current,
+        input.palette,
+        input.indices,
+      )
+      if (!merged.ok) return { ok: false, error: "empty" }
+
+      pushUndo()
+      syncActiveFromImage()
+      paletteRef.current = merged.palette
+      syncPaletteIndexMap()
+      onPaletteChange?.(merged.palette)
+
+      const nextIndex = layersRef.current.length + 1
+      const layer = createEmptyLayer(
+        canvasW,
+        canvasH,
+        input.name?.trim() || `Import ${nextIndex}`,
+      )
+      const destX = Math.floor((canvasW - srcW) / 2)
+      const destY = Math.floor((canvasH - srcH) / 2)
+      blitIndicesIntoLayer(layer.indices, merged.indices, srcW, srcH, destX, destY, canvasW, canvasH)
+      layersRef.current.push(layer)
+      activeLayerIndexRef.current = layersRef.current.length - 1
+      loadActiveIntoImage()
+      emitLayers()
+      schedule()
+      onStrokeEnd?.()
+      return { ok: true, layerId: layer.id, colorsAdded: merged.colorsAdded }
+    },
     deleteLayer: (id) => {
       if (layersRef.current.length <= 1) return false
       const index = layersRef.current.findIndex((layer) => layer.id === id)
@@ -1691,8 +1931,11 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
     setActiveLayer: (id) => {
       const index = layersRef.current.findIndex((layer) => layer.id === id)
       if (index < 0 || index === activeLayerIndexRef.current) return false
+      ensureSelectionCommitted()
       syncActiveFromImage()
       activeLayerIndexRef.current = index
+      selectionFloatRef.current = null
+      selectionFloatingRef.current = false
       loadActiveIntoImage()
       emitLayers()
       schedule()
@@ -2076,29 +2319,48 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
         }
         if (moveRef.current) {
           event.preventDefault()
-          const origin = moveRef.current.origin
           moveRef.current = null
           selectMutatedRef.current = false
+          selectionFloatingRef.current = false
+          selectionFloatRef.current = null
           undoFnRef.current()
-          setSelection(origin)
+          selectionRef.current = null
+          emitSelection()
+          schedule()
           return
         }
         if (selectResizeRef.current) {
           event.preventDefault()
-          const origin = selectResizeRef.current.origin
           selectResizeRef.current = null
           selectMutatedRef.current = false
+          selectionFloatingRef.current = false
+          selectionFloatRef.current = null
           undoFnRef.current()
-          setSelection(origin)
+          selectionRef.current = null
+          emitSelection()
+          schedule()
           return
         }
         if (selectRotateRef.current) {
           event.preventDefault()
-          const origin = selectRotateRef.current.origin
           selectRotateRef.current = null
           selectMutatedRef.current = false
+          selectionFloatingRef.current = false
+          selectionFloatRef.current = null
           undoFnRef.current()
-          setSelection(origin)
+          selectionRef.current = null
+          emitSelection()
+          schedule()
+          return
+        }
+        if (selectionFloatingRef.current) {
+          event.preventDefault()
+          selectionFloatingRef.current = false
+          selectionFloatRef.current = null
+          undoFnRef.current()
+          selectionRef.current = null
+          emitSelection()
+          schedule()
           return
         }
         setSelection(null)
@@ -2189,20 +2451,21 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
     }
   }, [variant, onGridVisibleChange])
 
-  const stampStroke = (from: { x: number; y: number } | null, to: { x: number; y: number }) => {
+  const stampStrokeSegment = (
+    from: { x: number; y: number },
+    to: { x: number; y: number },
+  ) => {
     if (toolRef.current !== "eraser") {
       if (!adoptColor(colorRef.current)) return
     }
-    const rgb = paintColor()
-    const start = from ?? to
     const shape = toolRef.current === "circle" ? "circle" : "square"
     strokeBrushLineSymmetric(
       image().data,
-      start.x,
-      start.y,
+      from.x,
+      from.y,
       to.x,
       to.y,
-      rgb,
+      paintColor(),
       brushRef.current,
       canvasWidthRef.current,
       canvasHeightRef.current,
@@ -2210,7 +2473,52 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
       shape,
       selectionRef.current,
     )
+  }
+
+  const appendStrokeTrail = (cell: PixelPoint) => {
+    const trail = strokeTrailRef.current
+    const tip = trail[trail.length - 1]
+    if (tip && tip.x === cell.x && tip.y === cell.y) return
+    trail.push(cell)
+    if (trail.length > 8) trail.splice(0, trail.length - 8)
+  }
+
+  /** Stamp freehand through ordered cell samples; one composite at the end. */
+  const paintStrokeCells = (cells: PixelPoint[]) => {
+    if (cells.length === 0) return
+    let prev = drawRef.current
+    for (const cell of cells) {
+      if (!prev) {
+        stampStrokeSegment(cell, cell)
+        appendStrokeTrail(cell)
+        prev = cell
+        continue
+      }
+      if (prev.x === cell.x && prev.y === cell.y) continue
+      const waypoints = densifyStrokeSegment(strokeTrailRef.current, cell)
+      for (const point of waypoints) {
+        if (prev.x === point.x && prev.y === point.y) continue
+        stampStrokeSegment(prev, point)
+        appendStrokeTrail(point)
+        prev = point
+      }
+    }
+    drawRef.current = prev
     schedule()
+  }
+
+  const paintStrokeFromPointerEvent = (event: {
+    clientX: number
+    clientY: number
+    nativeEvent?: Event
+  }) => {
+    const source =
+      event.nativeEvent && "clientX" in event.nativeEvent
+        ? (event.nativeEvent as PointerEvent)
+        : event
+    const samples = listPointerClientSamples(source)
+    const cells = samples.map((sample) => cellFromEvent(sample))
+    paintStrokeCells(cells)
   }
 
   const sampleColorAt = (cell: { x: number; y: number }) => {
@@ -2290,27 +2598,31 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
 
   const beginSelectionRotate = (selection: PixelSelection, cell: PixelPoint) => {
     if (!activeLayerEditable()) return
-    pushUndo()
     selectMutatedRef.current = true
     const w = canvasWidthRef.current
     const h = canvasHeightRef.current
-    const floating = extractRect(image().data, selection, w, h)
-    clearRectToPaper(image().data, selection, w, h)
-    const base = new Uint8ClampedArray(image().data)
+    const floating = liftSelectionClipboard(selection)
+    if (!selectionFloatingRef.current) {
+      pushUndo()
+      clearRectToPaper(image().data, selection, w, h)
+      selectionFloatingRef.current = true
+      pixelsDirtyRef.current = true
+      schedule()
+    }
+    rememberSelectionFloat(floating)
     const centerX = selection.x + (selection.width - 1) / 2
     const centerY = selection.y + (selection.height - 1) / 2
     const startAngle = (Math.atan2(cell.y - centerY, cell.x - centerX) * 180) / Math.PI
     selectRotateRef.current = {
       origin: selection,
       floating,
-      base,
+      base: new Uint8ClampedArray(0),
       centerX,
       centerY,
       startAngle,
       degrees: 0,
     }
-    blitRect(image().data, floating, selection.x, selection.y, w, h)
-    schedule()
+    scheduleView()
   }
 
   const nudgeSelection = (dx: number, dy: number) => {
@@ -2318,31 +2630,50 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
     if (!selection || (dx === 0 && dy === 0)) return
     const w = canvasWidthRef.current
     const h = canvasHeightRef.current
-    const nextX = Math.max(0, Math.min(w - selection.width, selection.x + dx))
-    const nextY = Math.max(0, Math.min(h - selection.height, selection.y + dy))
+    const { x: nextX, y: nextY } = softClampSelectionOrigin(
+      selection.x + dx,
+      selection.y + dy,
+      selection.width,
+      selection.height,
+      w,
+      h,
+    )
     if (nextX === selection.x && nextY === selection.y) return
-    pushUndo()
-    const floating = extractRect(image().data, selection, w, h)
-    clearRectToPaper(image().data, selection, w, h)
-    blitRect(image().data, floating, nextX, nextY, w, h)
+    const floating = liftSelectionClipboard(selection)
+    if (!selectionFloatingRef.current) {
+      pushUndo()
+      clearRectToPaper(image().data, selection, w, h)
+      selectionFloatingRef.current = true
+      pixelsDirtyRef.current = true
+      schedule()
+    }
+    rememberSelectionFloat(floating)
     setSelection({ ...selection, x: nextX, y: nextY, mask: floating.mask })
-    schedule()
-    onStrokeEnd?.()
+    scheduleView()
   }
   const nudgeSelectionRef = useRef(nudgeSelection)
   nudgeSelectionRef.current = nudgeSelection
 
   const beginSelectionResize = (corner: "nw" | "ne" | "sw" | "se", selection: PixelSelection) => {
-    pushUndo()
     selectMutatedRef.current = true
     const w = canvasWidthRef.current
     const h = canvasHeightRef.current
-    const floating = extractRect(image().data, selection, w, h)
-    clearRectToPaper(image().data, selection, w, h)
-    const base = new Uint8ClampedArray(image().data)
-    selectResizeRef.current = { corner, origin: selection, floating, base }
-    blitRect(image().data, floating, selection.x, selection.y, w, h)
-    schedule()
+    const floating = liftSelectionClipboard(selection)
+    if (!selectionFloatingRef.current) {
+      pushUndo()
+      clearRectToPaper(image().data, selection, w, h)
+      selectionFloatingRef.current = true
+      pixelsDirtyRef.current = true
+      schedule()
+    }
+    rememberSelectionFloat(floating)
+    selectResizeRef.current = {
+      corner,
+      origin: selection,
+      floating,
+      base: new Uint8ClampedArray(0),
+    }
+    scheduleView()
   }
 
   const hitBezierPart = (
@@ -2379,20 +2710,24 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
   }
 
   const beginSelectionMove = (cell: PixelPoint, selection: PixelSelection) => {
-    pushUndo()
     selectMutatedRef.current = true
-    const floating = extractRect(image().data, selection, canvasWidthRef.current, canvasHeightRef.current)
-    clearRectToPaper(image().data, selection, canvasWidthRef.current, canvasHeightRef.current)
-    const base = new Uint8ClampedArray(image().data)
+    const floating = liftSelectionClipboard(selection)
+    if (!selectionFloatingRef.current) {
+      pushUndo()
+      clearRectToPaper(image().data, selection, canvasWidthRef.current, canvasHeightRef.current)
+      selectionFloatingRef.current = true
+      pixelsDirtyRef.current = true
+      schedule()
+    }
+    rememberSelectionFloat(floating)
     moveRef.current = {
       origin: selection,
       grabX: cell.x - selection.x,
       grabY: cell.y - selection.y,
       floating,
-      base,
+      base: new Uint8ClampedArray(0),
     }
-    blitRect(image().data, floating, selection.x, selection.y, canvasWidthRef.current, canvasHeightRef.current)
-    schedule()
+    scheduleView()
   }
 
   const onPointerDown = (event: React.PointerEvent<HTMLCanvasElement>) => {
@@ -2594,12 +2929,14 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
         }
       }
       if (toolRef.current === "selectContiguous") {
+        ensureSelectionCommitted()
         commitSelection(
           selectionFromFlood(image().data, cell.x, cell.y, canvasWidthRef.current, canvasHeightRef.current),
         )
         return
       }
       if (toolRef.current === "selectColor") {
+        ensureSelectionCommitted()
         commitSelection(
           selectionFromColor(image().data, cell.x, cell.y, canvasWidthRef.current, canvasHeightRef.current),
         )
@@ -2607,17 +2944,24 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
       }
       if (toolRef.current === "lasso") {
         lassoRef.current = [cell]
-        if (!combining) setSelection(null)
+        if (!combining) {
+          ensureSelectionCommitted()
+          setSelection(null)
+        }
         return
       }
       selectMutatedRef.current = false
       selectStartRef.current = cell
       moveRef.current = null
-      if (!combining) setSelection(null)
+      if (!combining) {
+        ensureSelectionCommitted()
+        setSelection(null)
+      }
       return
     }
 
     if (DRAFT_SHAPE_TOOLS.has(toolRef.current)) {
+      ensureSelectionCommitted()
       const existing = shapeDraftRef.current
       if (existing && (existing.kind === "rect" || existing.kind === "ellipse")) {
         const corner = hitShapeCorner(existing, cell)
@@ -2644,6 +2988,7 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
 
     if (SHAPE_TOOLS.has(toolRef.current)) {
       if (!activeLayerEditable()) return
+      ensureSelectionCommitted()
       if (toolRef.current !== "gradient") pushUndo()
       shapeStartRef.current = cell
       shapeBaseRef.current = new Uint8ClampedArray(image().data)
@@ -2652,9 +2997,11 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
     }
 
     if (!activeLayerEditable()) return
+    ensureSelectionCommitted()
     pushUndo()
-    drawRef.current = cell
-    stampStroke(cell, cell)
+    strokeTrailRef.current = []
+    drawRef.current = null
+    paintStrokeCells([cell])
   }
 
   const emitHover = (event: { clientX: number; clientY: number }) => {
@@ -2713,16 +3060,15 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
     if (moveRef.current) {
       const move = moveRef.current
       const cell = cellFromEvent(event)
-      const nextX = cell.x - move.grabX
-      const nextY = cell.y - move.grabY
-      image().data.set(move.base)
-      blitRect(
-        image().data,
-        move.floating,
-        nextX,
-        nextY,
-        canvasWidthRef.current,
-        canvasHeightRef.current,
+      const canvasW = canvasWidthRef.current
+      const canvasH = canvasHeightRef.current
+      const { x: nextX, y: nextY } = softClampSelectionOrigin(
+        cell.x - move.grabX,
+        cell.y - move.grabY,
+        move.floating.width,
+        move.floating.height,
+        canvasW,
+        canvasH,
       )
       setSelection({
         x: nextX,
@@ -2731,6 +3077,7 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
         height: move.floating.height,
         mask: move.floating.mask,
       })
+      scheduleView()
       return
     }
 
@@ -2749,14 +3096,13 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
       const bounds = normalizePixelRect(x0, y0, x1, y1)
       const canvasW = canvasWidthRef.current
       const canvasH = canvasHeightRef.current
-      const width = Math.max(1, Math.min(bounds.width, canvasW))
-      const height = Math.max(1, Math.min(bounds.height, canvasH))
-      const x = Math.max(0, Math.min(bounds.x, canvasW - width))
-      const y = Math.max(0, Math.min(bounds.y, canvasH - height))
+      const width = Math.max(1, bounds.width)
+      const height = Math.max(1, bounds.height)
+      const { x, y } = softClampSelectionOrigin(bounds.x, bounds.y, width, height, canvasW, canvasH)
       const scaled = scaleClipboard(resize.floating, width, height)
-      image().data.set(resize.base)
-      blitRect(image().data, scaled, x, y, canvasW, canvasH)
+      rememberSelectionFloat(scaled)
       setSelection({ x, y, width, height, mask: scaled.mask })
+      scheduleView()
       return
     }
 
@@ -2769,17 +3115,19 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
       if (degrees < -180) degrees += 360
       rotate.degrees = degrees
       const rotated = rotateClipboardNearest(rotate.floating, degrees)
-      const destX = Math.round(rotate.centerX - (rotated.width - 1) / 2)
-      const destY = Math.round(rotate.centerY - (rotated.height - 1) / 2)
-      image().data.set(rotate.base)
-      blitRect(
-        image().data,
-        rotated,
-        destX,
-        destY,
-        canvasWidthRef.current,
-        canvasHeightRef.current,
+      const canvasW = canvasWidthRef.current
+      const canvasH = canvasHeightRef.current
+      const rawX = Math.round(rotate.centerX - (rotated.width - 1) / 2)
+      const rawY = Math.round(rotate.centerY - (rotated.height - 1) / 2)
+      const { x: destX, y: destY } = softClampSelectionOrigin(
+        rawX,
+        rawY,
+        rotated.width,
+        rotated.height,
+        canvasW,
+        canvasH,
       )
+      rememberSelectionFloat(rotated)
       setSelection({
         x: destX,
         y: destY,
@@ -2787,6 +3135,7 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
         height: rotated.height,
         mask: rotated.mask,
       })
+      scheduleView()
       return
     }
 
@@ -2900,12 +3249,13 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
     }
 
     if (!drawRef.current) return
-    const cell = cellFromEvent(event)
-    stampStroke(drawRef.current, cell)
-    drawRef.current = cell
+    paintStrokeFromPointerEvent(event)
   }
 
   const endPointer = (event: React.PointerEvent<HTMLCanvasElement>) => {
+    if (drawRef.current) {
+      paintStrokeFromPointerEvent(event)
+    }
     const cell = cellFromEvent(event)
     if (toolRef.current === "gradient" && shapeStartRef.current && shapeBaseRef.current) {
       const start = shapeStartRef.current
@@ -2974,7 +3324,26 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
       pinchRef.current = null
     }
     if (pointersRef.current.size === 0) {
+      if (moveRef.current) {
+        rememberSelectionFloat(moveRef.current.floating)
+        selectionFloatingRef.current = true
+      } else if (selectResizeRef.current && selectionRef.current) {
+        const sel = selectionRef.current
+        rememberSelectionFloat(
+          scaleClipboard(selectResizeRef.current.floating, sel.width, sel.height),
+        )
+        selectionFloatingRef.current = true
+      } else if (selectRotateRef.current) {
+        rememberSelectionFloat(
+          rotateClipboardNearest(
+            selectRotateRef.current.floating,
+            selectRotateRef.current.degrees,
+          ),
+        )
+        selectionFloatingRef.current = true
+      }
       drawRef.current = null
+      strokeTrailRef.current = []
       panRef.current = null
       shapeStartRef.current = null
       shapeDragRef.current = null
@@ -2984,7 +3353,9 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
       moveRef.current = null
       selectResizeRef.current = null
       selectRotateRef.current = null
-      if (wasStroke || wasMove || (wasMarquee && selectMutatedRef.current)) onStrokeEnd?.()
+      // Floating moves do not stamp yet — skip autosave until commit/deselect.
+      if (wasStroke || (wasMarquee && selectMutatedRef.current)) onStrokeEnd?.()
+      else if (wasMove) scheduleView()
       selectMutatedRef.current = false
     }
     try {

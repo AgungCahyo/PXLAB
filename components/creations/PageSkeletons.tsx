@@ -8,20 +8,29 @@ function Bone({ className }: { className?: string }) {
 export function ArtworkDetailSkeleton() {
   return (
     <div
-      className="mx-auto max-w-5xl px-5 py-8 sm:px-8 sm:py-10 lg:px-16"
+      className="mx-auto w-full min-w-0 max-w-5xl px-5 py-6 sm:px-8 sm:py-8 lg:px-16"
       aria-busy="true"
       aria-label="Loading"
     >
-      <div className="pixel-frame pixel-present">
-        <Bone className="aspect-square w-full border-0 sm:aspect-[4/3]" />
+      <Bone className="mb-5 h-11 w-36" />
+      <div className="detail-art-stage">
+        <div className="pixel-frame pixel-present">
+          <Bone className="h-full w-full border-0" />
+        </div>
       </div>
-      <Bone className="mt-4 h-7 w-2/3 max-w-md" />
-      <Bone className="mt-2 h-4 w-48" />
-      <div className="mt-4 flex gap-2">
+      <Bone className="mt-6 h-7 w-2/3 max-w-md sm:mt-8" />
+      <div className="mt-4 flex items-center gap-3">
+        <Bone className="h-10 w-10 shrink-0" />
+        <div className="min-w-0 flex-1 space-y-2">
+          <Bone className="h-4 w-40 max-w-full" />
+          <Bone className="h-3 w-56 max-w-full" />
+        </div>
+      </div>
+      <div className="mt-5 flex gap-2 border-t border-line pt-5">
         <Bone className="h-9 w-28" />
         <Bone className="h-9 w-24" />
       </div>
-      <div className="mt-10 border-t border-line pt-8">
+      <div className="mt-10 border-t-[3px] border-earth pt-8">
         <Bone className="h-6 w-40" />
         <Bone className="mt-6 h-24 w-full" />
       </div>
@@ -35,14 +44,17 @@ export function ProfileSkeleton() {
       className="mx-auto w-full min-w-0 max-w-6xl px-5 py-8 sm:px-8 sm:py-10 lg:px-16"
       aria-hidden="true"
     >
-      <div className="flex items-start gap-4">
-        <div className="h-16 w-16 shrink-0 bg-soft sm:h-20 sm:w-20" />
-        <div className="min-w-0 flex-1 space-y-2">
+      <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:gap-6">
+        <div className="h-20 w-20 shrink-0 border-[3px] border-earth bg-soft sm:h-24 sm:w-24" />
+        <div className="min-w-0 flex-1 space-y-3">
           <div className="h-3 w-24 bg-soft" />
-          <div className="h-7 w-40 max-w-full bg-soft" />
+          <div className="h-8 w-48 max-w-full bg-soft" />
+          <div className="h-3 w-40 bg-soft" />
+          <div className="h-4 w-full max-w-md bg-soft" />
         </div>
       </div>
-      <div className="mt-8">
+      <div className="mt-10 border-t-[3px] border-earth pt-8">
+        <div className="mb-5 h-4 w-28 bg-soft" />
         <GallerySkeleton />
       </div>
     </div>
@@ -63,14 +75,14 @@ export function WorksSkeleton() {
         </div>
         <div className="h-9 w-28 bg-soft" />
       </div>
-      <ul className="mt-10 grid gap-4">
-        {Array.from({ length: 4 }, (_, index) => (
-          <li key={index} className="pixel-frame flex gap-4 bg-card p-3">
-            <div className="h-20 w-20 shrink-0 bg-soft" />
-            <div className="min-w-0 flex-1 space-y-2 py-1">
-              <div className="h-4 w-1/2 bg-soft" />
-              <div className="h-3 w-1/3 bg-soft" />
-              <div className="h-8 w-40 bg-soft" />
+      <ul className="mt-10 grid min-w-0 grid-cols-2 gap-3 lg:grid-cols-3 lg:gap-4 xl:grid-cols-4">
+        {Array.from({ length: 8 }, (_, index) => (
+          <li key={index} className="pixel-frame min-w-0 bg-card">
+            <div className="aspect-square bg-soft" />
+            <div className="space-y-2 px-2.5 py-2">
+              <div className="h-4 w-2/3 bg-soft" />
+              <div className="h-3 w-1/2 bg-soft" />
+              <div className="h-8 w-24 bg-soft" />
             </div>
           </li>
         ))}
@@ -172,7 +184,7 @@ export function EngagementSkeleton() {
 
 export function ConversationSkeleton() {
   return (
-    <div className="mt-10 border-t border-line pt-8" aria-hidden="true">
+    <div className="mt-10 border-t-[3px] border-earth pt-8" aria-hidden="true">
       <div className="h-6 w-40 bg-soft" />
       <div className="mt-8 space-y-5">
         {Array.from({ length: 3 }, (_, index) => (

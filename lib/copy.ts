@@ -4,17 +4,18 @@ import type { CreationCategory, CreationType } from "@/lib/site";
 
 export const copy = {
   skip: { id: "Lewati", en: "Skip" } satisfies Bi,
-  homeAria: { id: "THE COMMONS — beranda", en: "THE COMMONS — home" } satisfies Bi,
+  globalBusy: { id: "Memuat…", en: "Loading…" } satisfies Bi,
+  homeAria: { id: "PXLB — beranda", en: "PXLB — home" } satisfies Bi,
   navAria: { id: "Utama", en: "Main" } satisfies Bi,
   openMenu: { id: "Buka menu", en: "Open menu" } satisfies Bi,
   closeMenu: { id: "Tutup menu", en: "Close menu" } satisfies Bi,
   switchToEn: { id: "English", en: "English" } satisfies Bi,
   switchToId: { id: "Bahasa Indonesia", en: "Bahasa Indonesia" } satisfies Bi,
 
-  tagline: { id: "Dibuat bersama.", en: "Made together." } satisfies Bi,
+  tagline: { id: "Buat. Jelajah. Bagikan.", en: "Create. Explore. Share." } satisfies Bi,
   description: {
-    id: "Pixel art publik.",
-    en: "Public pixel art.",
+    id: "Playground kreatif untuk pixel art.",
+    en: "A creative playground for pixel art.",
   } satisfies Bi,
 
   nav: {
@@ -33,8 +34,8 @@ export const copy = {
   },
 
   landingIntro: {
-    id: "Pixel art publik.",
-    en: "Public pixel art.",
+    id: "Gambar pixel art, terbitkan, dan temukan karya kreator lain — satu playground.",
+    en: "Draw pixel art, publish, and find other creators’ work — one playground.",
   } satisfies Bi,
   landingExplore: { id: "Jelajah", en: "Explore" } satisfies Bi,
   landingCreate: { id: "Buat", en: "Create" } satisfies Bi,
@@ -44,6 +45,7 @@ export const copy = {
     id: "Kanvas bersama nanti.",
     en: "Shared canvas later.",
   } satisfies Bi,
+  landingWorksHeading: { id: "Karya di PXLB", en: "Works on PXLB" } satisfies Bi,
   modesHeading: { id: "Cara kerja", en: "How it works" } satisfies Bi,
   mode1: { id: "Buat", en: "Make" } satisfies Bi,
   personalTitle: { id: "Playground", en: "Playground" } satisfies Bi,
@@ -281,6 +283,56 @@ export const copy = {
   } satisfies Bi,
   pixelPreviewAlt: { id: "Pratinjau pixel art", en: "Pixel art preview" } satisfies Bi,
   pixelMore: { id: "Lainnya", en: "More" } satisfies Bi,
+  pixelImport: { id: "Impor gambar", en: "Import image" } satisfies Bi,
+  pixelImportTitle: { id: "Impor sebagai pixel art", en: "Import as pixel art" } satisfies Bi,
+  pixelImportSource: {
+    id: "Sumber {size} · {name}",
+    en: "Source {size} · {name}",
+  } satisfies Bi,
+  pixelImportLoading: { id: "Membaca gambar…", en: "Reading image…" } satisfies Bi,
+  pixelImportPreviewAlt: { id: "Pratinjau impor", en: "Import preview" } satisfies Bi,
+  pixelImportPreviewWait: { id: "Menyiapkan pratinjau…", en: "Preparing preview…" } satisfies Bi,
+  pixelImportOutputSize: { id: "Ukuran keluaran", en: "Output size" } satisfies Bi,
+  pixelImportOutputHint: {
+    id: "Hasil: {size} (dokumen tidak diubah)",
+    en: "Result: {size} (document size unchanged)",
+  } satisfies Bi,
+  pixelImportKeepAspect: { id: "Pertahankan rasio", en: "Keep aspect ratio" } satisfies Bi,
+  pixelImportColor: { id: "Warna", en: "Color" } satisfies Bi,
+  pixelImportReduce: { id: "Kurangi warna", en: "Reduce colors" } satisfies Bi,
+  pixelImportDocumentPalette: { id: "Palet dokumen", en: "Document palette" } satisfies Bi,
+  pixelImportColorCount: { id: "{n} warna", en: "{n} colors" } satisfies Bi,
+  pixelImportDither: { id: "Dithering", en: "Dithering" } satisfies Bi,
+  pixelImportDitherNone: { id: "Tidak ada", en: "None" } satisfies Bi,
+  pixelImportDitherFloyd: { id: "Floyd–Steinberg", en: "Floyd–Steinberg" } satisfies Bi,
+  pixelImportDitherOrdered: { id: "Ordered", en: "Ordered" } satisfies Bi,
+  pixelImportScaleHint: {
+    id: "Skala: nearest neighbor.",
+    en: "Scale: nearest neighbor.",
+  } satisfies Bi,
+  pixelImportConfirm: { id: "Impor ke lapisan", en: "Import to layer" } satisfies Bi,
+  pixelImportBadType: {
+    id: "Format harus PNG, JPG, atau WebP.",
+    en: "Use PNG, JPG, or WebP.",
+  } satisfies Bi,
+  pixelImportTooLarge: {
+    id: "File terlalu besar (maks 8 MB).",
+    en: "File too large (max 8 MB).",
+  } satisfies Bi,
+  pixelImportBadSize: {
+    id: "Dimensi gambar tidak didukung.",
+    en: "Unsupported image dimensions.",
+  } satisfies Bi,
+  pixelImportFailed: {
+    id: "Gagal mengimpor gambar.",
+    en: "Could not import image.",
+  } satisfies Bi,
+  pixelImportLayerLimit: { id: "Maksimal 8 lapisan", en: "Max 8 layers" } satisfies Bi,
+  pixelImportDone: { id: "Gambar diimpor", en: "Image imported" } satisfies Bi,
+  pixelImportDrop: {
+    id: "Lepas gambar untuk impor",
+    en: "Drop image to import",
+  } satisfies Bi,
   pixelPaletteMore: { id: "Palet", en: "Palette" } satisfies Bi,
   pixelHex: { id: "Kode HEX", en: "HEX code" } satisfies Bi,
   pixelPickColor: { id: "Pilih warna", en: "Pick a color" } satisfies Bi,
@@ -422,9 +474,11 @@ export const copy = {
   createEyebrow: { id: "Playground", en: "Playground" } satisfies Bi,
   createTitle: { id: "Buat", en: "Create" } satisfies Bi,
   createIntro: {
-    id: "Judul wajib. Lalu pilih ukuran kanvas.",
-    en: "Title required. Then pick a canvas size.",
+    id: "Beri judul, pilih ukuran, lalu buka editor.",
+    en: "Name it, pick a size, then open the editor.",
   } satisfies Bi,
+  createSizeSquare: { id: "Persegi", en: "Square" } satisfies Bi,
+  createSizeAspect: { id: "Lebar & tinggi", en: "Wide & tall" } satisfies Bi,
   createManageLink: {
     id: "Kelola karya",
     en: "Manage works",
@@ -624,6 +678,7 @@ export const copy = {
     id: "Masuk untuk mengikuti.",
     en: "Sign in to follow.",
   } satisfies Bi,
+  exploreFeedAria: { id: "Sumber jelajah", en: "Explore feed" } satisfies Bi,
   exploreFeedAll: { id: "Semua", en: "All" } satisfies Bi,
   exploreFeedFollowing: { id: "Mengikuti", en: "Following" } satisfies Bi,
   exploreFollowingEmpty: {
@@ -977,6 +1032,10 @@ export const copy = {
   worksKeepEditing: { id: "Tetap di kanvas", en: "Stay on canvas" } satisfies Bi,
 
   settingsTitle: { id: "Pengaturan", en: "Settings" } satisfies Bi,
+  settingsIntro: {
+    id: "Profil, bahasa, dan keluar akun.",
+    en: "Profile, language, and sign out.",
+  } satisfies Bi,
   settingsMeta: {
     id: "Sunting profil.",
     en: "Edit profile.",
@@ -1007,8 +1066,12 @@ export const copy = {
     en: "No works yet.",
   } satisfies Bi,
   profileEmptyBody: {
-    id: "Karya terbit di sini.",
-    en: "Published works here.",
+    id: "Karya terbit muncul di sini.",
+    en: "Published works show up here.",
+  } satisfies Bi,
+  profileEmptyOwnBody: {
+    id: "Terbitkan karya pertamamu agar profil ini hidup.",
+    en: "Publish your first work to bring this profile to life.",
   } satisfies Bi,
   profileNotFound: { id: "Tidak ditemukan.", en: "Not found." } satisfies Bi,
   memberSince: { id: "Anggota sejak", en: "Member since" } satisfies Bi,

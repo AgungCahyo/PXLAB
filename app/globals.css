@@ -1,6 +1,6 @@
 @import "tailwindcss";
 
-/* Classic Pixel Adventure — PIXEL-ART-DESIGN-SYSTEM.md */
+/* Modern Pixel Playground — PIXEL-ART-DESIGN-SYSTEM.md */
 :root {
   --bg: #fffdf7;
   --fg: #282b35;
@@ -265,17 +265,6 @@ body:has([data-chrome="playground"]) .site-header {
   }
 }
 
-.pixel-frame.pixel-stage-checker {
-  background-color: var(--bg);
-  background-image:
-    linear-gradient(45deg, var(--soft) 25%, transparent 25%),
-    linear-gradient(-45deg, var(--soft) 25%, transparent 25%),
-    linear-gradient(45deg, transparent 75%, var(--soft) 75%),
-    linear-gradient(-45deg, transparent 75%, var(--soft) 75%);
-  background-size: 16px 16px;
-  background-position: 0 0, 0 8px, 8px -8px, -8px 0;
-}
-
 :focus-visible {
   outline: 3px solid var(--sky);
   outline-offset: 3px;
@@ -384,7 +373,7 @@ body:has([data-chrome="playground"]) .site-header {
   image-rendering: crisp-edges;
 }
 
-/* Pixel World — Classic Pixel Adventure stage behind content */
+/* Soft Paper atmosphere — Modern Pixel Playground (theme tokens only) */
 .pixel-world {
   pointer-events: none;
   position: fixed;
@@ -396,37 +385,45 @@ body:has([data-chrome="playground"]) .site-header {
 .pixel-world-sky {
   position: absolute;
   inset: 0;
-  background: #5c94fc;
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--sky) 16%, var(--bg)) 0%,
+      var(--bg) 38%,
+      var(--bg) 100%
+    );
 }
 
 .pixel-world-ground {
   position: absolute;
   inset: auto 0 0 0;
-  /* ~10% of stage height — matches SVG ground line y=180/200 with xMidYMax */
-  height: 10%;
-  min-height: 3.25rem;
-  background-color: #c84c0c;
+  height: 7%;
+  min-height: 2.25rem;
+  background-color: color-mix(in srgb, var(--grass) 18%, var(--soft));
   background-image:
-    linear-gradient(#000 2px, transparent 2px),
-    linear-gradient(90deg, #000 2px, transparent 2px);
-  background-size: 32px 16px;
-  border-top: 4px solid #fcbcb0;
-  box-shadow: inset 0 4px 0 #000;
+    linear-gradient(color-mix(in srgb, var(--earth) 28%, transparent) 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in srgb, var(--earth) 28%, transparent) 1px, transparent 1px);
+  background-size: 24px 12px;
+  border-top: 3px solid color-mix(in srgb, var(--earth) 45%, var(--soft));
 }
 
-/* Soft paper band so body copy stays readable over the sky */
+/* Keep long reading on solid Paper while sparse deco stays visible at edges */
 .pixel-world-veil {
   position: absolute;
-  inset: 4.5rem 0 10% 0;
+  inset: 4rem 0 7% 0;
   background: linear-gradient(
     180deg,
     transparent 0%,
-    color-mix(in srgb, var(--bg) 82%, transparent) 8%,
-    color-mix(in srgb, var(--bg) 92%, transparent) 40%,
-    color-mix(in srgb, var(--bg) 92%, transparent) 70%,
-    color-mix(in srgb, var(--bg) 78%, transparent) 92%,
+    color-mix(in srgb, var(--bg) 88%, transparent) 6%,
+    color-mix(in srgb, var(--bg) 96%, transparent) 28%,
+    color-mix(in srgb, var(--bg) 96%, transparent) 72%,
+    color-mix(in srgb, var(--bg) 86%, transparent) 92%,
     transparent 100%
   );
+}
+
+.pixel-world .pixel-deco {
+  opacity: 0.55;
 }
 
 @keyframes pixel-world-drift {
@@ -484,6 +481,44 @@ body:has([data-chrome="studio"]) .pixel-world {
   display: none;
 }
 
+/* Studio embeds its own mark above the stage — hide the shell copy to avoid doubles. */
+body.playground-open .corner-busy-shell,
+body:has([data-chrome="playground"]) .corner-busy-shell {
+  display: none;
+}
+
+/* Studio has no tab bar — pin the in-studio mark to the true corner. */
+body.playground-open .corner-busy-studio,
+body:has([data-chrome="playground"]) .corner-busy-studio {
+  bottom: max(1rem, env(safe-area-inset-bottom, 0px));
+  right: max(0.75rem, env(safe-area-inset-right, 0px));
+}
+
+@keyframes corner-busy-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes corner-busy-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+
+.corner-busy-spin {
+  display: block;
+  box-sizing: border-box;
+  border-style: solid;
+  border-color: color-mix(in srgb, var(--earth) 35%, var(--card));
+  border-top-color: var(--brick);
+  animation: corner-busy-spin 0.65s linear infinite;
+}
+
 .pixel-mark {
   display: inline-flex;
   width: 2rem;
@@ -497,6 +532,30 @@ body:has([data-chrome="studio"]) .pixel-world {
   font-size: 0.7rem;
   line-height: 1;
   color: var(--fg);
+}
+
+/* Artwork detail: soft stage band so the piece sits as the first composition. */
+.detail-art-stage {
+  margin-inline: -1.25rem;
+  padding: 1.25rem;
+  border-block: 3px solid var(--earth);
+  background:
+    radial-gradient(120% 80% at 50% 0%, color-mix(in srgb, var(--sky) 14%, var(--soft)) 0%, transparent 55%),
+    linear-gradient(180deg, var(--soft) 0%, color-mix(in srgb, var(--soft) 88%, var(--earth) 12%) 100%);
+}
+
+@media (min-width: 640px) {
+  .detail-art-stage {
+    margin-inline: -2rem;
+    padding: 1.5rem 2rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .detail-art-stage {
+    margin-inline: -4rem;
+    padding: 1.75rem 4rem;
+  }
 }
 
 /* Display size is independent of source resolution. Nearest-neighbor only. */
@@ -674,5 +733,11 @@ body:has([data-chrome="studio"]) .pixel-world {
   .pixel-press:active {
     transform: none !important;
     box-shadow: var(--shadow) !important;
+  }
+
+  /* Keep a noticeable busy cue even when OS disables motion. */
+  .corner-busy-spin {
+    animation: corner-busy-pulse 0.9s ease-in-out infinite !important;
+    transform: none !important;
   }
 }

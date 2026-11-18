@@ -17,7 +17,7 @@ export function RemixStrip({
 }) {
   if (source) {
     return (
-      <p className="mt-4 text-[14px] text-muted">
+      <p className="mt-3 text-[13px] text-muted sm:text-[14px]">
         {copy.remixFrom[lang]}{" "}
         <Link href={href(lang, `/u/${source.authorUsername}`)} className="hover:text-fg">
           @{source.authorUsername}
@@ -33,11 +33,14 @@ export function RemixStrip({
   if (total <= 0 || items.length === 0) return null
 
   return (
-    <section className="mt-8" aria-labelledby="remix-strip-heading">
-      <h2 id="remix-strip-heading" className="text-[14px] font-medium text-fg">
+    <section
+      className="mt-10 border-t-[3px] border-earth pt-8"
+      aria-labelledby="remix-strip-heading"
+    >
+      <h2 id="remix-strip-heading" className="text-[15px] font-medium text-fg">
         {copy.remixCount[lang].replace("{count}", String(total))}
       </h2>
-      <ul className="mt-3 grid min-w-0 grid-cols-2 gap-3 sm:grid-cols-4">
+      <ul className="mt-4 grid min-w-0 grid-cols-2 gap-3 sm:grid-cols-4">
         {items.map((item) => (
           <li key={item.id} className="min-w-0">
             <CreationCard creation={item} lang={lang} artTransition={false} />

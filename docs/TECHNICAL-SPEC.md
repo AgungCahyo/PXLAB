@@ -1,4 +1,4 @@
-# THE COMMONS — Technical Specification
+# PXLB — Technical Specification
 
 **Document:** TECHNICAL-SPEC.md  
 **Status:** Pixel Art Community baseline (migrates the existing app; does not replace it)  

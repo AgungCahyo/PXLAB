@@ -12,6 +12,7 @@ export const RESERVED_USERNAMES = [
   "explore",
   "login",
   "me",
+  "pxlb",
   "register",
   "settings",
   "space",

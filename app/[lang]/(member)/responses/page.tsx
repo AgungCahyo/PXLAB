@@ -1,10 +1,9 @@
 import type { Metadata } from "next"
-import Link from "next/link"
 import { notFound } from "next/navigation"
 import { connection } from "next/server"
 import { ResponsesInbox } from "@/components/community/ResponsesInbox"
 import { PageTransition } from "@/components/layout/PageTransition"
-import { PixelIcon } from "@/components/ui/PixelIcon"
+import { BackLink } from "@/components/ui/BackLink"
 import { listCreationResponses } from "@/features/community/activity"
 import { getCurrentProfile } from "@/lib/auth/session"
 import { copy } from "@/lib/copy"
@@ -46,13 +45,7 @@ export default async function ResponsesPage({
   return (
     <PageTransition>
       <div className="mx-auto max-w-3xl px-5 py-10 sm:px-8 sm:py-12 lg:px-16">
-        <Link
-          href={href(lang, "/dashboard")}
-          className="inline-flex h-11 w-fit items-center gap-2 border-[3px] border-earth bg-card px-3 text-[14px] font-medium"
-        >
-          <PixelIcon name="back" />
-          {copy.nav.dashboard[lang]}
-        </Link>
+        <BackLink href={href(lang, "/dashboard")}>{copy.nav.dashboard[lang]}</BackLink>
         <h1 className="pixel-title mt-6">{copy.responsesTitle[lang]}</h1>
         <p className="mt-3 max-w-xl text-[15px] leading-relaxed text-muted">
           {copy.responsesIntro[lang]}

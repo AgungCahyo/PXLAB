@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { CommonsMark } from "@/components/layout/CommonsMark"
+import { PxlbMark } from "@/components/layout/PxlbMark"
 import { AppTabBar, SiteNav, type NavMember } from "@/components/layout/SiteNav"
 import { copy } from "@/lib/copy"
 import { href, type Lang } from "@/lib/i18n"
@@ -24,7 +24,7 @@ export function SiteHeader({ lang, member }: { lang: Lang; member: NavMember }) 
             aria-label={copy.homeAria[lang]}
             className="flex min-h-11 items-center gap-2.5"
           >
-            <CommonsMark />
+            <PxlbMark />
             <span className="pixel-brand">{SITE_NAME}</span>
           </Link>
           <SiteNav lang={lang} member={member} />

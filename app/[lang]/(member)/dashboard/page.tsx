@@ -4,9 +4,9 @@ import { notFound } from "next/navigation"
 import { connection } from "next/server"
 import { WorksRow } from "@/components/creations/WorksRow"
 import { PageTransition } from "@/components/layout/PageTransition"
+import { BackLink } from "@/components/ui/BackLink"
 import { EmptyState } from "@/components/ui/EmptyState"
 import { buttonClassName } from "@/components/ui/Button"
-import { PixelIcon } from "@/components/ui/PixelIcon"
 import { listOwnCreations } from "@/features/creations/queries"
 import { getCurrentProfile } from "@/lib/auth/session"
 import { copy } from "@/lib/copy"
@@ -49,13 +49,7 @@ export default async function DashboardPage({
   return (
     <PageTransition>
       <div className="mx-auto max-w-6xl px-5 py-10 sm:px-8 sm:py-12 lg:px-16">
-        <Link
-          href={href(lang, `/u/${profile.username}`)}
-          className="inline-flex h-11 w-fit items-center gap-2 border-[3px] border-earth bg-card px-3 text-[14px] font-medium"
-        >
-          <PixelIcon name="back" />
-          {copy.worksBack[lang]}
-        </Link>
+        <BackLink href={href(lang, `/u/${profile.username}`)}>{copy.worksBack[lang]}</BackLink>
         <div className="mt-6 flex flex-wrap items-end justify-between gap-4">
           <div>
             <h1 className="pixel-title">{copy.worksTitle[lang]}</h1>
@@ -128,13 +122,13 @@ function WorksGroup({
 }) {
   return (
     <section aria-labelledby={headingId}>
-      <h2 id={headingId} className="pixel-title">
+      <h2 id={headingId} className="text-[15px] font-medium text-fg">
         {title}
       </h2>
       {items.length === 0 ? (
         <p className="mt-4 text-[15px] text-muted">{empty}</p>
       ) : (
-        <ul className="mt-6 grid gap-3">
+        <ul className="mt-5 grid min-w-0 grid-cols-2 gap-3 lg:grid-cols-3 lg:gap-4 xl:grid-cols-4">
           {items.map((item) => (
             <WorksRow key={item.id} lang={lang} item={item} primary={primary} />
           ))}

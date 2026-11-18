@@ -35,11 +35,15 @@ describe("Pixel World backdrop", () => {
     expect(world).toMatch(/scene === "playground"/)
   })
 
-  it("uses theme atmosphere CSS and hides on playground chrome", () => {
+  it("uses soft Paper atmosphere CSS and hides on playground chrome", () => {
     expect(css).toMatch(/\.pixel-world/)
     expect(css).toMatch(/pixel-world-sky/)
     expect(css).toMatch(/pixel-world-ground/)
     expect(css).toMatch(/pixel-world-veil/)
+    expect(css).toMatch(/color-mix\(in srgb, var\(--sky\)/)
+    expect(css).toMatch(/color-mix\(in srgb, var\(--grass\)/)
+    expect(css).not.toMatch(/#5c94fc/)
+    expect(css).not.toMatch(/#c84c0c/)
     expect(css).toMatch(/pixel-world-drift/)
     expect(css).toMatch(/pixel-world-bob/)
     expect(css).toMatch(/data-chrome="playground"\]\) \.pixel-world/)

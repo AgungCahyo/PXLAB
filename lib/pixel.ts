@@ -25,8 +25,8 @@ export const PIXEL_ZOOM_PINCH_MAX = 48
 export const PIXEL_BRUSH_SIZES = [1, 2, 3, 4, 6, 8] as const
 /** Stroke / brush width range for SizeSlider and shape tools. */
 export const PIXEL_STROKE_MIN = 1
-export const PIXEL_STROKE_MAX = 16
-/** Brush / stroke width (integer 1–16). */
+export const PIXEL_STROKE_MAX = 32
+/** Brush / stroke width (integer 1–32). */
 export type PixelBrushSize = number
 export type PixelStrokeWidth = number
 
@@ -197,6 +197,45 @@ export function rgbToHex(rgb: readonly [number, number, number]) {
   return `#${to(rgb[0])}${to(rgb[1])}${to(rgb[2])}`
 }
 
+/** Light alternating canvas ground (view-only; not stored / exported). */
+export const PIXEL_CANVAS_CHECKER_A = "#FFFDF7"
+export const PIXEL_CANVAS_CHECKER_B = "#F0EBE0"
+
+/**
+ * View-only: paint Paper cells as an opaque light checker by cell position.
+ * Does not mutate `source`. Export/compositor keep solid Paper.
+ */
+export function copyRgbaWithCanvasChecker(
+  source: Uint8ClampedArray,
+  dest: Uint8ClampedArray,
+  width: number,
+  height: number,
+  paperRgb: readonly [number, number, number] = hexToRgb(PIXEL_PAPER),
+  lightRgb: readonly [number, number, number] = hexToRgb(PIXEL_CANVAS_CHECKER_A),
+  darkRgb: readonly [number, number, number] = hexToRgb(PIXEL_CANVAS_CHECKER_B),
+) {
+  const [pr, pg, pb] = paperRgb
+  const cellCount = width * height
+  for (let i = 0; i < cellCount; i += 1) {
+    const p = i * 4
+    const isPaper = source[p] === pr && source[p + 1] === pg && source[p + 2] === pb
+    if (isPaper) {
+      const x = i % width
+      const y = (i / width) | 0
+      const [r, g, b] = (x + y) % 2 === 0 ? lightRgb : darkRgb
+      dest[p] = r
+      dest[p + 1] = g
+      dest[p + 2] = b
+      dest[p + 3] = 255
+    } else {
+      dest[p] = source[p]!
+      dest[p + 1] = source[p + 1]!
+      dest[p + 2] = source[p + 2]!
+      dest[p + 3] = source[p + 3]!
+    }
+  }
+}
+
 export function fillPaper(pixels: Uint8ClampedArray) {
   const [r, g, b] = hexToRgb(PIXEL_PAPER)
   for (let i = 0; i < pixels.length; i += 4) {
@@ -313,6 +352,83 @@ export function walkLine(
       y += sy
     }
   }
+}
+
+export type PointerClientSample = { clientX: number; clientY: number }
+
+/**
+ * Prefer browser coalesced pointer samples (in time order). Falls back to the
+ * event itself when getCoalescedEvents is missing or empty.
+ */
+export function listPointerClientSamples(event: {
+  clientX: number
+  clientY: number
+  getCoalescedEvents?: () => Iterable<{ clientX: number; clientY: number }>
+}): PointerClientSample[] {
+  try {
+    const coalesced = event.getCoalescedEvents?.()
+    if (coalesced) {
+      const samples = Array.from(coalesced, (sample) => ({
+        clientX: sample.clientX,
+        clientY: sample.clientY,
+      }))
+      if (samples.length > 0) return samples
+    }
+  } catch {
+    /* ignore unsupported / restricted environments */
+  }
+  return [{ clientX: event.clientX, clientY: event.clientY }]
+}
+
+/** Chord length (cells) above which Catmull-Rom densifies between sparse samples. */
+export const STROKE_CURVE_GAP = 3
+
+export function catmullRom1D(p0: number, p1: number, p2: number, p3: number, t: number) {
+  const t2 = t * t
+  const t3 = t2 * t
+  return (
+    0.5 *
+    (2 * p1 +
+      (-p0 + p2) * t +
+      (2 * p0 - 5 * p1 + 4 * p2 - p3) * t2 +
+      (-p0 + 3 * p1 - 3 * p2 + p3) * t3)
+  )
+}
+
+/**
+ * Waypoints from the end of `trail` toward `to` (does not include the trail tip).
+ * Short gaps stay as a single chord (Bresenham later). Large gaps densify with
+ * Catmull-Rom using incoming direction — not aggressive smoothing.
+ */
+export function densifyStrokeSegment(
+  trail: readonly PixelPoint[],
+  to: PixelPoint,
+  gap = STROKE_CURVE_GAP,
+): PixelPoint[] {
+  const from = trail[trail.length - 1]
+  if (!from) return [{ x: to.x, y: to.y }]
+  const dist = Math.hypot(to.x - from.x, to.y - from.y)
+  if (dist <= gap || trail.length < 2) return [{ x: to.x, y: to.y }]
+  const p0 = trail[trail.length - 2]!
+  const p1 = from
+  const p2 = to
+  const p3 = to
+  const steps = Math.min(32, Math.max(2, Math.ceil(dist)))
+  const out: PixelPoint[] = []
+  let lastX = from.x
+  let lastY = from.y
+  for (let i = 1; i <= steps; i += 1) {
+    const t = i / steps
+    const x = Math.round(catmullRom1D(p0.x, p1.x, p2.x, p3.x, t))
+    const y = Math.round(catmullRom1D(p0.y, p1.y, p2.y, p3.y, t))
+    if (x === lastX && y === lastY) continue
+    out.push({ x, y })
+    lastX = x
+    lastY = y
+  }
+  const tip = out[out.length - 1]
+  if (!tip || tip.x !== to.x || tip.y !== to.y) out.push({ x: to.x, y: to.y })
+  return out
 }
 
 export function strokeBrushLine(
@@ -1125,6 +1241,29 @@ export function blitRect(
   }
 }
 
+/** Copy indexed pixels into a layer (0 stays 0 / transparent on upper layers). */
+export function blitIndicesIntoLayer(
+  dest: Uint8Array,
+  src: Uint8Array,
+  srcW: number,
+  srcH: number,
+  destX: number,
+  destY: number,
+  canvasW: number,
+  canvasH: number,
+) {
+  for (let row = 0; row < srcH; row += 1) {
+    for (let col = 0; col < srcW; col += 1) {
+      const x = destX + col
+      const y = destY + row
+      if (!inCanvas(x, y, canvasW, canvasH)) continue
+      const index = src[row * srcW + col] ?? 0
+      if (index === 0) continue
+      dest[y * canvasW + x] = index
+    }
+  }
+}
+
 export function clearRectToPaper(
   pixels: Uint8ClampedArray,
   rect: PixelSelection,
@@ -1481,8 +1620,9 @@ export function clientToCell(args: {
  */
 export function viewDeviceTransform(originX: number, originY: number, scale: number, dpr = 1) {
   const ratio = Math.max(1e-6, dpr)
+  // Match snapCssScaleToDevicePixels (floor) so draw + hit-test share one integer cell size.
   return {
-    deviceScale: Math.max(1, Math.round(scale * ratio)),
+    deviceScale: Math.max(1, Math.floor(scale * ratio + 1e-9)),
     translateX: Math.round(originX * ratio),
     translateY: Math.round(originY * ratio),
   }

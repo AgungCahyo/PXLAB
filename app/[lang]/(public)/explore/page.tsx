@@ -69,7 +69,7 @@ export default async function ExplorePage({
   return (
     <PageTransition>
       <div className="mx-auto w-full min-w-0 max-w-6xl px-5 py-8 sm:px-8 sm:py-10 lg:px-16">
-        <header className="flex min-w-0 items-end justify-between gap-4">
+        <header className="flex min-w-0 flex-wrap items-end justify-between gap-3">
           <h1 className="pixel-title min-w-0">{copy.exploreTitle[lang]}</h1>
           {showDiscovery ? (
             <Suspense fallback={null}>
@@ -78,23 +78,23 @@ export default async function ExplorePage({
           ) : null}
         </header>
 
-        <div className="mt-4 min-w-0">
+        <div className="mt-5 min-w-0">
           <ExploreFilters lang={lang} category={category} q={q} feed={feed} />
         </div>
 
+        <div className="mt-8 min-w-0">
+          <Suspense fallback={<GallerySkeleton />}>
+            <ExploreResults lang={lang} category={category} q={q} page={page} feed={feed} />
+          </Suspense>
+        </div>
+
         {showDiscovery ? (
-          <div className="mt-5 min-w-0">
+          <div className="mt-10 min-w-0 border-t border-line pt-8">
             <Suspense fallback={null}>
               <QuietRackSlot lang={lang} />
             </Suspense>
           </div>
         ) : null}
-
-        <div className="mt-6 min-w-0">
-          <Suspense fallback={<GallerySkeleton />}>
-            <ExploreResults lang={lang} category={category} q={q} page={page} feed={feed} />
-          </Suspense>
-        </div>
       </div>
     </PageTransition>
   )

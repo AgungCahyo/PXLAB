@@ -8,7 +8,6 @@ import {
   type PointerEvent as ReactPointerEvent,
 } from "react"
 import type { PixelLayerInfo } from "@/components/canvas/PixelBoard"
-import { Button } from "@/components/ui/Button"
 import { Dialog } from "@/components/ui/Dialog"
 import { PixelIcon } from "@/components/ui/PixelIcon"
 import { copy } from "@/lib/copy"
@@ -159,7 +158,7 @@ export function LayerPanel({
       <div className="mb-2 flex items-center justify-between gap-2">
         <h3 className="flex items-center gap-1.5 text-[13px] font-medium text-fg">
           <PixelIcon name="layers" />
-          {copy.pixelLayers[lang]}
+          <span className="sr-only">{copy.pixelLayers[lang]}</span>
         </h3>
         <div className="flex items-center gap-1">
           <button
@@ -525,7 +524,7 @@ export function LayerMobileSheet({
   if (!layer) {
     return (
       <Dialog open={open} onClose={onClose} title={copy.pixelLayers[lang]} closeLabel={copy.closeMenu[lang]}>
-        <p className="text-[13px] text-muted">{copy.pixelLayers[lang]}</p>
+        <p className="sr-only">{copy.pixelLayers[lang]}</p>
       </Dialog>
     )
   }
@@ -586,12 +585,12 @@ export function LayerMobileSheet({
         />
       </div>
 
-      <div className="studio-stack mt-2">
-        <Button
+      <div className="studio-row mt-2 flex-wrap">
+        <button
           type="button"
-          variant="outline"
-          size="sm"
-          className="studio-control justify-start gap-2"
+          className="studio-hit border-[3px] border-earth bg-bg text-fg disabled:opacity-40"
+          aria-label={copy.pixelLayerDuplicate[lang]}
+          title={copy.pixelLayerDuplicate[lang]}
           disabled={layers.length >= PIXEL_LAYER_MAX}
           onClick={() => {
             if (onDuplicate(layer.id)) {
@@ -601,13 +600,12 @@ export function LayerMobileSheet({
           }}
         >
           <PixelIcon name="duplicate" />
-          {copy.pixelLayerDuplicate[lang]}
-        </Button>
-        <Button
+        </button>
+        <button
           type="button"
-          variant="outline"
-          size="sm"
-          className="studio-control justify-start gap-2"
+          className="studio-hit border-[3px] border-earth bg-bg text-fg disabled:opacity-40"
+          aria-label={copy.pixelLayerMergeDown[lang]}
+          title={copy.pixelLayerMergeDown[lang]}
           disabled={stack <= 0}
           onClick={() => {
             if (onMergeDown(layer.id)) {
@@ -617,13 +615,12 @@ export function LayerMobileSheet({
           }}
         >
           <PixelIcon name="merge" />
-          {copy.pixelLayerMergeDown[lang]}
-        </Button>
-        <Button
+        </button>
+        <button
           type="button"
-          variant="outline"
-          size="sm"
-          className="studio-control justify-start gap-2"
+          className="studio-hit border-[3px] border-earth bg-bg text-fg disabled:opacity-40"
+          aria-label={copy.pixelLayerMergeVisible[lang]}
+          title={copy.pixelLayerMergeVisible[lang]}
           disabled={layers.filter((item) => item.visible).length < 2}
           onClick={() => {
             if (onMergeVisible()) {
@@ -633,13 +630,12 @@ export function LayerMobileSheet({
           }}
         >
           <PixelIcon name="merge" />
-          {copy.pixelLayerMergeVisible[lang]}
-        </Button>
-        <Button
+        </button>
+        <button
           type="button"
-          variant="outline"
-          size="sm"
-          className="studio-control justify-start gap-2"
+          className="studio-hit border-[3px] border-earth bg-bg text-fg disabled:opacity-40"
+          aria-label={copy.pixelLayerDelete[lang]}
+          title={copy.pixelLayerDelete[lang]}
           disabled={layers.length <= 1}
           onClick={() => {
             if (onDelete(layer.id)) {
@@ -649,8 +645,7 @@ export function LayerMobileSheet({
           }}
         >
           <PixelIcon name="trash" />
-          {copy.pixelLayerDelete[lang]}
-        </Button>
+        </button>
       </div>
     </Dialog>
   )
@@ -672,11 +667,12 @@ function IconAction({
       type="button"
       disabled={disabled}
       aria-label={label}
-      className="flex h-12 flex-col items-center justify-center gap-0.5 border-[3px] border-earth bg-bg text-[10px] text-fg disabled:opacity-40 sm:h-14 sm:text-[11px]"
+      title={label}
+      className="flex h-12 flex-col items-center justify-center border-[3px] border-earth bg-bg text-fg disabled:opacity-40 sm:h-14"
       onClick={onClick}
     >
       <PixelIcon name={icon} />
-      <span className="truncate px-0.5">{label}</span>
+      <span className="sr-only">{label}</span>
     </button>
   )
 }
