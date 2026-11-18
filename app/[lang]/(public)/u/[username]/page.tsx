@@ -16,7 +16,6 @@ import { copy } from "@/lib/copy"
 import { formatMonthYear } from "@/lib/format"
 import { href, isLang, type Lang } from "@/lib/i18n"
 import { pageMeta } from "@/lib/meta"
-import { SITE_NAME } from "@/lib/site"
 
 export const instant = false
 
@@ -37,11 +36,14 @@ export async function generateMetadata({
     })
   }
   const name = profile.display_name ?? profile.username
+  const bio = profile.bio?.trim()
   return pageMeta({
     lang,
     path: `/u/${profile.username}`,
     title: name,
-    description: profile.bio || `${name} — ${SITE_NAME}`,
+    description: bio
+      ? bio.slice(0, 160)
+      : copy.profileMetaBy[lang].replace("{username}", profile.username),
   })
 }
 

@@ -14,9 +14,25 @@ export const copy = {
 
   tagline: { id: "Buat. Jelajah. Bagikan.", en: "Create. Explore. Share." } satisfies Bi,
   description: {
-    id: "Playground kreatif untuk pixel art.",
-    en: "A creative playground for pixel art.",
+    id: "Playground kreatif untuk menggambar, menerbitkan, dan menjelajah pixel art bersama kreator lain.",
+    en: "A creative playground to draw, publish, and explore pixel art with other creators.",
   } satisfies Bi,
+  landingMeta: {
+    id: "PXLB — playground pixel art: buat karya, terbitkan ke galeri, dan temukan kreator baru.",
+    en: "PXLB — a pixel art playground: make work, publish to the gallery, and meet new creators.",
+  } satisfies Bi,
+  notFoundTitle: { id: "Halaman tidak ada", en: "Page not found" } satisfies Bi,
+  notFoundBody: {
+    id: "Tautan ini tidak ketemu. Kembali ke beranda atau jelajah galeri.",
+    en: "This link could not be found. Head home or browse the gallery.",
+  } satisfies Bi,
+  notFoundHome: { id: "Beranda", en: "Home" } satisfies Bi,
+  errorTitle: { id: "Ada yang gagal", en: "Something went wrong" } satisfies Bi,
+  errorBody: {
+    id: "Coba muat ulang. Kalau berlanjut, kembali ke beranda.",
+    en: "Try reloading. If it keeps happening, go back home.",
+  } satisfies Bi,
+  errorRetry: { id: "Coba lagi", en: "Try again" } satisfies Bi,
 
   nav: {
     explore: { id: "Jelajah", en: "Explore" } satisfies Bi,
@@ -88,8 +104,8 @@ export const copy = {
   } satisfies Bi,
   exploreRetry: { id: "Coba lagi", en: "Try again" } satisfies Bi,
   exploreMeta: {
-    id: "Galeri pixel art.",
-    en: "Pixel art gallery.",
+    id: "Jelajah galeri pixel art terbit di PXLB — saring ukuran, cari judul, atau ikuti kreator.",
+    en: "Browse published pixel art on PXLB — filter by size, search titles, or follow creators.",
   } satisfies Bi,
   filterAll: { id: "Semua", en: "All" } satisfies Bi,
   categoryAria: { id: "Saring ukuran", en: "Filter by size" } satisfies Bi,
@@ -123,8 +139,8 @@ export const copy = {
     en: "Shared canvas later.",
   } satisfies Bi,
   spaceMeta: {
-    id: "Kanvas bersama nanti.",
-    en: "Shared canvas later.",
+    id: "Ruang Bersama PXLB — kanvas kolaboratif (segera). Sementara jelajah galeri pixel art.",
+    en: "PXLB Common Space — collaborative canvas (soon). Meanwhile explore the pixel gallery.",
   } satisfies Bi,
   spaceLegacyKicker: { id: "Arsip", en: "Archive" } satisfies Bi,
   spaceLegacyNote: {
@@ -484,8 +500,8 @@ export const copy = {
     en: "Manage works",
   } satisfies Bi,
   createMeta: {
-    id: "Playground pixel art.",
-    en: "Pixel art playground.",
+    id: "Mulai karya pixel di PXLB — pilih ukuran kanvas lalu gambar di playground.",
+    en: "Start a pixel work on PXLB — pick a canvas size, then draw in the playground.",
   } satisfies Bi,
   createEmptyTitle: { id: "Belum ada karya", en: "No creations yet" } satisfies Bi,
   createEmptyBody: {
@@ -605,8 +621,12 @@ export const copy = {
   creationBack: { id: "Ke jelajah", en: "To explore" } satisfies Bi,
   creationNotFound: { id: "Tidak ditemukan.", en: "Not found." } satisfies Bi,
   creationMeta: {
-    id: "Karya terbit.",
-    en: "Published work.",
+    id: "Karya pixel art terbit di PXLB — lihat, apresiasi, remix, dan tulis catatan.",
+    en: "Published pixel art on PXLB — view, appreciate, remix, and leave a note.",
+  } satisfies Bi,
+  creationMetaBy: {
+    id: "Pixel art oleh @{username} di PXLB.",
+    en: "Pixel art by @{username} on PXLB.",
   } satisfies Bi,
 
   appreciate: { id: "Apresiasi", en: "Appreciate" } satisfies Bi,
@@ -1074,6 +1094,10 @@ export const copy = {
     en: "Publish your first work to bring this profile to life.",
   } satisfies Bi,
   profileNotFound: { id: "Tidak ditemukan.", en: "Not found." } satisfies Bi,
+  profileMetaBy: {
+    id: "Profil @{username} di PXLB — lihat karya pixel art terbit mereka.",
+    en: "@{username} on PXLB — browse their published pixel art.",
+  } satisfies Bi,
   memberSince: { id: "Anggota sejak", en: "Member since" } satisfies Bi,
 
   errors: {

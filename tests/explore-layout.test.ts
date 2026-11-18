@@ -47,8 +47,9 @@ describe("Explore gallery layout", () => {
     expect(gallery).toMatch(/hidden min-w-0 sm:block/)
     expect(explorePage).toMatch(/w-full min-w-0 max-w-6xl/)
     expect(explorePage).not.toMatch(/exploreIntro/)
-    expect(explorePage).toMatch(/pixel-title/)
+    expect(explorePage).toMatch(/PageHeader/)
   })
+
 
   it("shows page position with a distinct pagination landmark", () => {
     expect(gallery).toMatch(/explorePaginationAria/)

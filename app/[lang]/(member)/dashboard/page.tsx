@@ -7,6 +7,7 @@ import { PageTransition } from "@/components/layout/PageTransition"
 import { BackLink } from "@/components/ui/BackLink"
 import { EmptyState } from "@/components/ui/EmptyState"
 import { buttonClassName } from "@/components/ui/Button"
+import { PageHeader } from "@/components/ui/PageHeader"
 import { listOwnCreations } from "@/features/creations/queries"
 import { getCurrentProfile } from "@/lib/auth/session"
 import { copy } from "@/lib/copy"
@@ -50,23 +51,24 @@ export default async function DashboardPage({
     <PageTransition>
       <div className="mx-auto max-w-6xl px-5 py-10 sm:px-8 sm:py-12 lg:px-16">
         <BackLink href={href(lang, `/u/${profile.username}`)}>{copy.worksBack[lang]}</BackLink>
-        <div className="mt-6 flex flex-wrap items-end justify-between gap-4">
-          <div>
-            <h1 className="pixel-title">{copy.worksTitle[lang]}</h1>
-            <p className="mt-3 max-w-xl text-[15px] leading-relaxed text-muted">{copy.worksIntro[lang]}</p>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            <Link
-              href={href(lang, "/responses")}
-              className={buttonClassName({ size: "sm", variant: "outline" })}
-            >
-              {copy.nav.responses[lang]}
-            </Link>
-            <Link href={href(lang, "/create")} className={buttonClassName({ size: "sm" })}>
-              {copy.worksNew[lang]}
-            </Link>
-          </div>
-        </div>
+        <PageHeader
+          className="mt-6"
+          title={copy.worksTitle[lang]}
+          intro={copy.worksIntro[lang]}
+          actions={
+            <>
+              <Link
+                href={href(lang, "/responses")}
+                className={buttonClassName({ size: "sm", variant: "outline" })}
+              >
+                {copy.nav.responses[lang]}
+              </Link>
+              <Link href={href(lang, "/create")} className={buttonClassName({ size: "sm" })}>
+                {copy.worksNew[lang]}
+              </Link>
+            </>
+          }
+        />
 
         {own.length === 0 ? (
           <div className="mt-10">

@@ -4,6 +4,7 @@ import { connection } from "next/server"
 import { ResponsesInbox } from "@/components/community/ResponsesInbox"
 import { PageTransition } from "@/components/layout/PageTransition"
 import { BackLink } from "@/components/ui/BackLink"
+import { PageHeader } from "@/components/ui/PageHeader"
 import { listCreationResponses } from "@/features/community/activity"
 import { getCurrentProfile } from "@/lib/auth/session"
 import { copy } from "@/lib/copy"
@@ -46,10 +47,11 @@ export default async function ResponsesPage({
     <PageTransition>
       <div className="mx-auto max-w-3xl px-5 py-10 sm:px-8 sm:py-12 lg:px-16">
         <BackLink href={href(lang, "/dashboard")}>{copy.nav.dashboard[lang]}</BackLink>
-        <h1 className="pixel-title mt-6">{copy.responsesTitle[lang]}</h1>
-        <p className="mt-3 max-w-xl text-[15px] leading-relaxed text-muted">
-          {copy.responsesIntro[lang]}
-        </p>
+        <PageHeader
+          className="mt-6"
+          title={copy.responsesTitle[lang]}
+          intro={copy.responsesIntro[lang]}
+        />
         <ResponsesInbox lang={lang} items={items} />
       </div>
     </PageTransition>

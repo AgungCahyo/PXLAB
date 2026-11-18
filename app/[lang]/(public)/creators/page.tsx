@@ -4,8 +4,9 @@ import { notFound } from "next/navigation"
 import { PageTransition } from "@/components/layout/PageTransition"
 import { PixelArt } from "@/components/creations/PixelArt"
 import { ProfileAvatar } from "@/components/profiles/ProfileAvatar"
+import { BackLink } from "@/components/ui/BackLink"
 import { EmptyState } from "@/components/ui/EmptyState"
-import { PixelIcon } from "@/components/ui/PixelIcon"
+import { PageHeader } from "@/components/ui/PageHeader"
 import { listNewCreators } from "@/features/creations/queries"
 import { copy } from "@/lib/copy"
 import { formatDayMonthYear } from "@/lib/format"
@@ -44,18 +45,12 @@ export default async function CreatorsPage({
   return (
     <PageTransition>
       <div className="mx-auto w-full min-w-0 max-w-3xl px-5 py-8 sm:px-8 sm:py-10 lg:px-16">
-        <Link
-          href={href(lang, "/explore")}
-          className="inline-flex h-11 w-fit items-center gap-2 border-[3px] border-earth bg-card px-3 text-[14px] font-medium"
-        >
-          <PixelIcon name="back" />
-          {copy.exploreTitle[lang]}
-        </Link>
-
-        <h1 className="pixel-title mt-6">{copy.newCreatorsTitle[lang]}</h1>
-        <p className="mt-3 max-w-xl text-[15px] leading-relaxed text-muted">
-          {copy.newCreatorsIntro[lang]}
-        </p>
+        <BackLink href={href(lang, "/explore")}>{copy.exploreTitle[lang]}</BackLink>
+        <PageHeader
+          className="mt-6"
+          title={copy.newCreatorsTitle[lang]}
+          intro={copy.newCreatorsIntro[lang]}
+        />
 
         {result.failed ? (
           <div className="mt-8">

@@ -409,4 +409,4 @@ Ini **bukan** ajakan “kembalikan Classic Adventure buta”; ini sinyal bahwa k
 ---
 
 **Status dokumen:** dasar pengerjaan bertahap.  
-**Progress:** **PR-0 → PR-2 + polish (18 Nov 2026)** — DS + soft atmosphere; Landing/Create/Explore/Profile/Settings polish; Dashboard gallery; nav account consolidate; `CornerBusy` bottom-right loading mark. Next: **PR-3** (FilterChip/PageHeader, not-found/error, contract tests) / **PR-4** studio chrome.
+**Progress:** **PR-0 → PR-3 (18 Nov 2026)** — DS + soft atmosphere; Landing/Create/Explore/Profile/Settings/Detail polish; Dashboard gallery; nav consolidate; `CornerBusy`; `FilterChip`/`PageHeader`/`SectionHeader`; branded `not-found`/`error`; `robots.ts` + `sitemap.ts`; unique public meta. Next: **PR-4** studio chrome only / **PR-Launch** B7.

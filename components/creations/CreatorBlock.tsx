@@ -2,6 +2,7 @@ import Link from "next/link"
 import { FollowButton } from "@/components/community/FollowButton"
 import { CreationCard } from "@/components/creations/CreationCard"
 import { ProfileAvatar } from "@/components/profiles/ProfileAvatar"
+import { SectionHeader } from "@/components/ui/PageHeader"
 import { copy } from "@/lib/copy"
 import { href, type Lang } from "@/lib/i18n"
 import { cn } from "@/lib/utils"
@@ -105,9 +106,10 @@ export function CreatorOtherWorks({
       className="mt-10 border-t-[3px] border-earth pt-8"
       aria-labelledby="creator-other-works-heading"
     >
-      <h2 id="creator-other-works-heading" className="text-[15px] font-medium text-fg">
-        {copy.creatorOtherWorks[lang].replace("{username}", username)}
-      </h2>
+      <SectionHeader
+        id="creator-other-works-heading"
+        title={copy.creatorOtherWorks[lang].replace("{username}", username)}
+      />
       <ul className="mt-4 grid min-w-0 grid-cols-2 gap-3 sm:grid-cols-4">
         {items.map((item) => (
           <li key={item.id} className="min-w-0">

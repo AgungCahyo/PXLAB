@@ -6,6 +6,7 @@ import { Alert } from "@/components/ui/Alert"
 import { Button } from "@/components/ui/Button"
 import { Card } from "@/components/ui/Card"
 import { EmptyState } from "@/components/ui/EmptyState"
+import { FilterChip } from "@/components/ui/FilterChip"
 import { moderateReportAction, type ModerationActionState } from "@/features/moderation/actions"
 import type { AdminReport } from "@/features/moderation/queries"
 import { copy } from "@/lib/copy"
@@ -34,18 +35,14 @@ export function AdminReports({
     <div className="grid gap-8">
       <nav className="flex flex-wrap gap-2" aria-label={copy.adminFilter[lang]}>
         {FILTERS.map((item) => (
-          <Link
+          <FilterChip
             key={item.id}
+            size="sm"
             href={`${href(lang, "/admin")}${item.id === "pending" ? "" : `?status=${item.id}`}`}
-            className={
-              filter === item.id
-                ? "inline-flex min-h-9 items-center border-[3px] border-earth bg-brick px-3 text-[13px] text-white shadow-[4px_4px_0_0_var(--fg)]"
-                : "inline-flex min-h-9 items-center border-[3px] border-earth bg-card px-3 text-[13px] text-muted hover:bg-soft hover:text-fg"
-            }
-            aria-current={filter === item.id ? "page" : undefined}
+            selected={filter === item.id}
           >
             {item.label[lang]}
-          </Link>
+          </FilterChip>
         ))}
       </nav>
       {reports.length === 0 ? (

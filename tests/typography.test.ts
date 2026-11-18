@@ -35,8 +35,10 @@ describe("typography roles", () => {
   })
 
   it("uses pixel page titles and sans for long user content", () => {
-    expect(explore).toMatch(/pixel-title/)
-    expect(create).toMatch(/pixel-title/)
+    const pageHeader = read("components/ui/PageHeader.tsx")
+    expect(pageHeader).toMatch(/pixel-title/)
+    expect(explore).toMatch(/PageHeader/)
+    expect(create).toMatch(/PageHeader/)
     expect(dialog).toMatch(/pixel-title/)
     expect(detail).toMatch(/page-heading-sans/)
     expect(detail).not.toMatch(/pixel-title/)
@@ -45,3 +47,4 @@ describe("typography roles", () => {
     expect(community).toMatch(/pixel-title/)
   })
 })
+

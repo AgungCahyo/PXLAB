@@ -53,13 +53,15 @@ export async function generateMetadata({
     })
   }
   const metaCaption = creation.caption?.trim()
+  const fallbackMeta = copy.creationMetaBy[lang].replace(
+    "{username}",
+    creation.author.username,
+  )
   return pageMeta({
     lang,
     path: `/creation/${creation.id}`,
     title: displayTitle(creation.title, lang),
-    description: metaCaption
-      ? metaCaption.slice(0, 160)
-      : copy.creationMeta,
+    description: metaCaption ? metaCaption.slice(0, 160) : fallbackMeta,
     image:
       creation.type === "pixel"
         ? creation.cover_url || pixelCoverUrl(creation.id)

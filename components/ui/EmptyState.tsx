@@ -7,6 +7,8 @@ type EmptyStateProps = {
   icon?: ReactNode;
   action?: ReactNode;
   className?: string;
+  /** Page-level empty uses pixel title; section stays sans for long copy. */
+  tone?: "page" | "section";
 };
 
 export function EmptyState({
@@ -15,6 +17,7 @@ export function EmptyState({
   icon,
   action,
   className,
+  tone = "page",
 }: EmptyStateProps) {
   return (
     <div
@@ -28,7 +31,15 @@ export function EmptyState({
           {icon}
         </div>
       ) : null}
-      <h2 className="pixel-title">{title}</h2>
+      <h2
+        className={
+          tone === "section"
+            ? "text-[1.125rem] font-medium text-fg"
+            : "pixel-title"
+        }
+      >
+        {title}
+      </h2>
       <p className="max-w-lg text-[15px] leading-relaxed text-muted">{description}</p>
       {action ? <div className="mt-2 flex flex-wrap gap-3">{action}</div> : null}
     </div>

@@ -13,6 +13,7 @@ import { QuietRack } from "@/components/creations/QuietRack"
 import { PageTransition } from "@/components/layout/PageTransition"
 import { EmptyState } from "@/components/ui/EmptyState"
 import { buttonClassName } from "@/components/ui/Button"
+import { PageHeader } from "@/components/ui/PageHeader"
 import { listFollowingIds } from "@/features/community/follows"
 import {
   listNewCreators,
@@ -69,14 +70,16 @@ export default async function ExplorePage({
   return (
     <PageTransition>
       <div className="mx-auto w-full min-w-0 max-w-6xl px-5 py-8 sm:px-8 sm:py-10 lg:px-16">
-        <header className="flex min-w-0 flex-wrap items-end justify-between gap-3">
-          <h1 className="pixel-title min-w-0">{copy.exploreTitle[lang]}</h1>
-          {showDiscovery ? (
-            <Suspense fallback={null}>
-              <NewCreatorsSlot lang={lang} />
-            </Suspense>
-          ) : null}
-        </header>
+        <PageHeader
+          title={copy.exploreTitle[lang]}
+          actions={
+            showDiscovery ? (
+              <Suspense fallback={null}>
+                <NewCreatorsSlot lang={lang} />
+              </Suspense>
+            ) : null
+          }
+        />
 
         <div className="mt-5 min-w-0">
           <ExploreFilters lang={lang} category={category} q={q} feed={feed} />

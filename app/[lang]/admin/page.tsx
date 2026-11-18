@@ -2,6 +2,7 @@ import type { Metadata } from "next"
 import { notFound } from "next/navigation"
 import { connection } from "next/server"
 import { AdminReports } from "@/components/moderation/AdminReports"
+import { PageHeader } from "@/components/ui/PageHeader"
 import { listAdminReports, parseReportFilter } from "@/features/moderation/queries"
 import { copy } from "@/lib/copy"
 import { isLang } from "@/lib/i18n"
@@ -42,11 +43,11 @@ export default async function AdminPage({
 
   return (
     <div className="mx-auto max-w-3xl px-5 py-16 sm:px-8 lg:px-16">
-      <p className="pixel-kicker mb-3">
-        {copy.nav.admin[lang]}
-      </p>
-      <h1 className="pixel-title">{copy.adminTitle[lang]}</h1>
-      <p className="mt-4 max-w-2xl text-[15px] leading-relaxed text-muted">{copy.adminIntro[lang]}</p>
+      <PageHeader
+        kicker={copy.nav.admin[lang]}
+        title={copy.adminTitle[lang]}
+        intro={copy.adminIntro[lang]}
+      />
       <div className="mt-10">
         <AdminReports lang={lang} reports={reports} filter={filter} />
       </div>

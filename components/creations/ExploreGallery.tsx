@@ -2,6 +2,7 @@ import Link from "next/link"
 import { CreationCard } from "@/components/creations/CreationCard"
 import { EmptyState } from "@/components/ui/EmptyState"
 import { buttonClassName } from "@/components/ui/Button"
+import { FilterChip } from "@/components/ui/FilterChip"
 import { PixelIcon } from "@/components/ui/PixelIcon"
 import {
   exploreHref,
@@ -12,34 +13,7 @@ import { copy, creationCategoryLabels } from "@/lib/copy"
 import { href, type Lang } from "@/lib/i18n"
 import { loginHref } from "@/lib/paths"
 import { CREATION_CATEGORIES, EXPLORE_SEARCH_MAX } from "@/lib/site"
-import { cn } from "@/lib/utils"
 import type { CreationCard as CreationCardData } from "@/features/creations/queries"
-
-function FilterLink({
-  href: to,
-  selected,
-  label,
-}: {
-  href: string
-  selected: boolean
-  label: string
-}) {
-  return (
-    <Link
-      href={to}
-      aria-current={selected ? "page" : undefined}
-      className={cn(
-        "inline-flex min-h-11 items-center border-[3px] px-3 text-[14px]",
-        "whitespace-nowrap",
-        selected
-          ? "border-earth bg-brick text-white shadow-[4px_4px_0_0_var(--fg)]"
-          : "border-earth bg-card text-muted hover:bg-soft hover:text-fg",
-      )}
-    >
-      {label}
-    </Link>
-  )
-}
 
 function SizeFilterList({
   lang,
@@ -56,19 +30,21 @@ function SizeFilterList({
   return (
     <ul className="flex w-full min-w-0 gap-2 flex-nowrap overflow-x-auto pb-0.5 [-ms-overflow-style:none] [scrollbar-width:none] sm:flex-wrap sm:overflow-visible [&::-webkit-scrollbar]:hidden">
       <li className="shrink-0">
-        <FilterLink
+        <FilterChip
           href={exploreHref(lang, { ...base, category: "all", page: 1 })}
           selected={category === "all"}
-          label={copy.categoryAll[lang]}
-        />
+        >
+          {copy.categoryAll[lang]}
+        </FilterChip>
       </li>
       {CREATION_CATEGORIES.map((item) => (
         <li key={item} className="shrink-0">
-          <FilterLink
+          <FilterChip
             href={exploreHref(lang, { ...base, category: item, page: 1 })}
             selected={category === item}
-            label={creationCategoryLabels[item][lang]}
-          />
+          >
+            {creationCategoryLabels[item][lang]}
+          </FilterChip>
         </li>
       ))}
     </ul>
@@ -93,16 +69,18 @@ export function ExploreFilters({
           aria-label={copy.exploreFeedAria[lang]}
           className="flex shrink-0 flex-wrap gap-2"
         >
-          <FilterLink
+          <FilterChip
             href={exploreHref(lang, { feed: "all", category, q, page: 1 })}
             selected={feed === "all"}
-            label={copy.exploreFeedAll[lang]}
-          />
-          <FilterLink
+          >
+            {copy.exploreFeedAll[lang]}
+          </FilterChip>
+          <FilterChip
             href={exploreHref(lang, { feed: "following", category, q, page: 1 })}
             selected={feed === "following"}
-            label={copy.exploreFeedFollowing[lang]}
-          />
+          >
+            {copy.exploreFeedFollowing[lang]}
+          </FilterChip>
         </nav>
 
         <form

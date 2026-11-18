@@ -1,5 +1,6 @@
 import Link from "next/link"
 import { CreationCard } from "@/components/creations/CreationCard"
+import { SectionHeader } from "@/components/ui/PageHeader"
 import { copy } from "@/lib/copy"
 import { href, type Lang } from "@/lib/i18n"
 import type { CreationCard as CreationCardData } from "@/features/creations/queries"
@@ -37,9 +38,10 @@ export function RemixStrip({
       className="mt-10 border-t-[3px] border-earth pt-8"
       aria-labelledby="remix-strip-heading"
     >
-      <h2 id="remix-strip-heading" className="text-[15px] font-medium text-fg">
-        {copy.remixCount[lang].replace("{count}", String(total))}
-      </h2>
+      <SectionHeader
+        id="remix-strip-heading"
+        title={copy.remixCount[lang].replace("{count}", String(total))}
+      />
       <ul className="mt-4 grid min-w-0 grid-cols-2 gap-3 sm:grid-cols-4">
         {items.map((item) => (
           <li key={item.id} className="min-w-0">

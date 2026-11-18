@@ -25,7 +25,7 @@ export async function generateMetadata({
     lang,
     path: "/",
     title: `${SITE_NAME} — ${copy.tagline[lang]}`,
-    description: copy.description,
+    description: copy.landingMeta,
     absoluteTitle: true,
   })
 }
