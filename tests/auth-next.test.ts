@@ -81,6 +81,19 @@ describe("auth UX — R2", () => {
     expect(form).toMatch(/error=\{emailError\}/)
     expect(form).toMatch(/error=\{passwordError\}/)
   })
+
+  it("offers Google OAuth on login and register", () => {
+    const login = read("components/auth/LoginForm.tsx")
+    const register = read("components/auth/RegisterForm.tsx")
+    const actions = read("features/auth/actions.ts")
+    const callback = read("app/auth/callback/route.ts")
+    expect(login).toMatch(/GoogleAuthButton/)
+    expect(register).toMatch(/GoogleAuthButton/)
+    expect(actions).toMatch(/signInWithOAuth/)
+    expect(actions).toMatch(/provider: "google"/)
+    expect(callback).toMatch(/exchangeCodeForSession/)
+    expect(callback).toMatch(/error=oauth/)
+  })
 })
 
 describe("password recovery — R8", () => {

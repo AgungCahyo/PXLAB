@@ -85,7 +85,7 @@ export function StudioInspector({
     : (brushLabel ?? copy.pixelBrushSize[lang])
 
   const iconHit =
-    "inline-flex h-11 w-11 shrink-0 items-center justify-center border-[3px] border-earth bg-bg text-fg hover:bg-soft disabled:opacity-40"
+    "studio-hit border-earth bg-bg text-fg hover:bg-soft disabled:opacity-40"
 
   return (
     <aside
@@ -94,20 +94,20 @@ export function StudioInspector({
     >
       <details className="shrink-0 border-b-[3px] border-earth px-3 py-2">
         <summary
-          className="flex cursor-pointer items-center gap-2 py-1 text-fg"
+          className="flex cursor-pointer items-center gap-2 py-1 text-[13px] font-medium text-fg"
           title={copy.pixelShortcuts[lang]}
         >
           <PixelIcon name="keyboard" />
-          <span className="sr-only">{copy.pixelShortcuts[lang]}</span>
+          <span>{copy.pixelShortcuts[lang]}</span>
         </summary>
-        <p className="pb-2 pt-1 text-[12px] leading-relaxed text-muted">
+        <p className="pb-2 pt-1 text-[length:var(--studio-meta,0.75rem)] leading-relaxed text-muted">
           {copy.pixelStatusShortcuts[lang]}
         </p>
       </details>
 
       <div className="flex items-center gap-3 border-b-[3px] border-earth px-3 py-3">
         <span
-          className="h-11 w-11 shrink-0 border-[3px] border-earth"
+          className="studio-hit border-earth"
           style={{ backgroundColor: color }}
           title={color}
           aria-label={`${copy.pixelColor[lang]} ${color}`}
@@ -119,7 +119,7 @@ export function StudioInspector({
 
       <section className="border-b-[3px] border-earth px-3 py-3">
         <div className="mb-2 flex items-center justify-between gap-2">
-          <h3 className="sr-only">{copy.pixelPaletteMore[lang]}</h3>
+          <h3 className="text-[13px] font-medium text-fg">{copy.pixelPaletteMore[lang]}</h3>
           <button
             type="button"
             onClick={onPaletteMore}
@@ -147,7 +147,7 @@ export function StudioInspector({
                 title={swatch}
                 onClick={() => onColor(swatch)}
                 className={cn(
-                  "pixel-swatch h-8 w-8 border-[3px]",
+                  "pixel-swatch studio-thumb",
                   color === swatch ? "border-fg" : "border-earth",
                 )}
                 style={{ backgroundColor: swatch }}
@@ -245,7 +245,7 @@ export function StudioInspector({
                   onChange={(event) =>
                     onShapeWidth?.(Math.max(1, Math.round(Number(event.target.value) || 1)))
                   }
-                  className="h-11 border-[3px] border-earth bg-bg px-2 text-center text-[13px] font-medium text-fg"
+                  className="studio-control w-full border-earth bg-bg px-2 text-center text-[13px] font-medium text-fg"
                 />
                 <input
                   type="number"
@@ -257,7 +257,7 @@ export function StudioInspector({
                   onChange={(event) =>
                     onShapeHeight?.(Math.max(1, Math.round(Number(event.target.value) || 1)))
                   }
-                  className="h-11 border-[3px] border-earth bg-bg px-2 text-center text-[13px] font-medium text-fg"
+                  className="studio-control w-full border-earth bg-bg px-2 text-center text-[13px] font-medium text-fg"
                 />
               </div>
             ) : null}
@@ -363,7 +363,7 @@ export function StudioInspector({
                 onChange={(event) =>
                   setRotateAngle(Math.max(-180, Math.min(180, Number(event.target.value) || 0)))
                 }
-                className="h-11 w-14 border-[3px] border-earth bg-bg px-1 text-center text-[13px] font-medium text-fg"
+                className="studio-control w-14 border-earth bg-bg px-1 text-center text-[13px] font-medium text-fg"
               />
               <button
                 type="button"

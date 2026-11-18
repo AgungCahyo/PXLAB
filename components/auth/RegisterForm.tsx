@@ -2,6 +2,7 @@
 
 import { useActionState, useEffect, useState } from "react"
 import Link from "next/link"
+import { GoogleAuthButton } from "@/components/auth/GoogleAuthButton"
 import { Alert } from "@/components/ui/Alert"
 import { Button } from "@/components/ui/Button"
 import { Input } from "@/components/ui/Input"
@@ -109,59 +110,62 @@ export function RegisterForm({ lang, next }: { lang: Lang; next: string }) {
       : null
 
   return (
-    <form action={action} className="mt-8 grid gap-4">
-      <input type="hidden" name="lang" value={lang} />
-      <input type="hidden" name="next" value={next} />
-      {formError ? <Alert tone="error">{formError}</Alert> : null}
-      <Input
-        id="email"
-        name="email"
-        type="email"
-        autoComplete="email"
-        required
-        label={copy.emailLabel[lang]}
-        error={emailError}
-      />
-      <Input
-        id="displayName"
-        name="displayName"
-        type="text"
-        autoComplete="nickname"
-        required
-        maxLength={50}
-        label={copy.displayNameLabel[lang]}
-        error={displayNameError}
-      />
-      <Input
-        id="username"
-        name="username"
-        type="text"
-        autoComplete="username"
-        required
-        minLength={3}
-        maxLength={20}
-        pattern="[a-zA-Z0-9_]+"
-        label={copy.usernameLabel[lang]}
-        hint={copy.usernameHint[lang]}
-        error={usernameError}
-      />
-      <Input
-        id="password"
-        name="password"
-        type="password"
-        autoComplete="new-password"
-        required
-        minLength={8}
-        label={copy.passwordLabel[lang]}
-        hint={copy.passwordHint[lang]}
-        error={passwordError}
-      />
-      <Button type="submit" disabled={pending} aria-busy={pending || undefined}>
-        {pending ? copy.registerSubmitting[lang] : copy.registerSubmit[lang]}
-      </Button>
-      <Link href={loginHref(lang, next)} className="text-[14px] text-muted hover:text-fg">
-        {copy.registerToLogin[lang]}
-      </Link>
-    </form>
+    <div className="mt-8 grid gap-4">
+      <GoogleAuthButton lang={lang} next={next} />
+      <form action={action} className="grid gap-4">
+        <input type="hidden" name="lang" value={lang} />
+        <input type="hidden" name="next" value={next} />
+        {formError ? <Alert tone="error">{formError}</Alert> : null}
+        <Input
+          id="email"
+          name="email"
+          type="email"
+          autoComplete="email"
+          required
+          label={copy.emailLabel[lang]}
+          error={emailError}
+        />
+        <Input
+          id="displayName"
+          name="displayName"
+          type="text"
+          autoComplete="nickname"
+          required
+          maxLength={50}
+          label={copy.displayNameLabel[lang]}
+          error={displayNameError}
+        />
+        <Input
+          id="username"
+          name="username"
+          type="text"
+          autoComplete="username"
+          required
+          minLength={3}
+          maxLength={20}
+          pattern="[a-zA-Z0-9_]+"
+          label={copy.usernameLabel[lang]}
+          hint={copy.usernameHint[lang]}
+          error={usernameError}
+        />
+        <Input
+          id="password"
+          name="password"
+          type="password"
+          autoComplete="new-password"
+          required
+          minLength={8}
+          label={copy.passwordLabel[lang]}
+          hint={copy.passwordHint[lang]}
+          error={passwordError}
+        />
+        <Button type="submit" disabled={pending} aria-busy={pending || undefined}>
+          {pending ? copy.registerSubmitting[lang] : copy.registerSubmit[lang]}
+        </Button>
+        <Link href={loginHref(lang, next)} className="text-[14px] text-muted hover:text-fg">
+          {copy.registerToLogin[lang]}
+        </Link>
+      </form>
+    </div>
   )
 }

@@ -122,6 +122,23 @@ export async function resendRegisterEmailAction(
   return { ok: true, resent: true }
 }
 
+export async function signInWithGoogleAction(formData: FormData): Promise<AuthActionState> {
+  const lang = langOf(formData.get("lang"))
+  const supabase = await createServerSupabase()
+  if (!supabase) return { error: "not_configured" }
+
+  const destination = authDestination(lang, formData.get("next"))
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider: "google",
+    options: {
+      redirectTo: `${siteOrigin()}/auth/callback?next=${encodeURIComponent(destination)}`,
+    },
+  })
+
+  if (error || !data.url) return { error: "oauth_failed" }
+  redirect(data.url)
+}
+
 export async function loginAction(
   _prev: AuthActionState,
   formData: FormData,

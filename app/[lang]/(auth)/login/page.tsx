@@ -30,12 +30,12 @@ export default async function LoginPage({
   searchParams,
 }: {
   params: Promise<{ lang: string }>
-  searchParams: Promise<{ next?: string }>
+  searchParams: Promise<{ next?: string; error?: string }>
 }) {
   const { lang: raw } = await params
   if (!isLang(raw)) notFound()
   const lang = raw
-  const { next } = await searchParams
+  const { next, error } = await searchParams
   const destination = authDestination(lang, next)
   const profile = await getCurrentProfile()
   if (profile) redirect(destination)
@@ -44,7 +44,7 @@ export default async function LoginPage({
     <div className="mx-auto max-w-xl px-5 py-16 sm:px-8 lg:px-16">
       <h1 className="pixel-title">{copy.loginTitle[lang]}</h1>
       <p className="mt-3 text-[15px] text-muted">{copy.loginMeta[lang]}</p>
-      <LoginForm lang={lang} next={destination} />
+      <LoginForm lang={lang} next={destination} oauthError={error === "oauth"} />
     </div>
   )
 }

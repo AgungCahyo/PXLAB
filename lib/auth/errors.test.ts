@@ -2,9 +2,9 @@ import { describe, expect, it } from "vitest"
 import { mapAuthError, mapRegisterError } from "@/lib/auth/errors"
 
 describe("auth error mapping", () => {
-  it("does not expose whether an email is registered", () => {
+  it("keeps login generic and points register duplicates to sign-in", () => {
     expect(mapAuthError({ message: "Invalid login credentials" })).toBe("generic_auth")
-    expect(mapRegisterError({ message: "User already registered" })).toBe("generic_register")
+    expect(mapRegisterError({ message: "User already registered" })).toBe("email_taken")
   })
 
   it("keeps username collisions specific", () => {

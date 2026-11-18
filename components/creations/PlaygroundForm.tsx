@@ -712,7 +712,7 @@ export function PlaygroundForm({
         aria-pressed={symmetry !== "off"}
         onClick={cycleSymmetry}
         className={cn(
-          "studio-hit border-[3px]",
+          "studio-hit",
           symmetry !== "off" ? "border-fg bg-brick text-white" : "border-earth bg-card text-fg",
         )}
       >
@@ -732,7 +732,7 @@ export function PlaygroundForm({
         aria-pressed={tool === value}
         onClick={() => setTool(value)}
         className={cn(
-          "studio-hit border-[3px]",
+          "studio-hit",
           tool === value ? "border-fg bg-brick text-white" : "border-earth bg-card text-fg",
         )}
       >
@@ -742,10 +742,7 @@ export function PlaygroundForm({
   }
 
   const toolDivider = (
-    <div
-      className="editor-tool-divider mx-0.5 hidden h-[3px] w-8 shrink-0 bg-earth md:block"
-      aria-hidden="true"
-    />
+    <div className="editor-tool-divider hidden shrink-0 bg-earth md:block" aria-hidden="true" />
   )
   const toolDividerMobile = (
     <div
@@ -808,7 +805,7 @@ export function PlaygroundForm({
           <button
             type="button"
             className={cn(
-              "studio-hit border-[3px]",
+              "studio-hit",
               shapeDraft.mode === "stroke"
                 ? "border-fg bg-brick text-white"
                 : "border-earth bg-card text-fg",
@@ -823,7 +820,7 @@ export function PlaygroundForm({
           <button
             type="button"
             className={cn(
-              "studio-hit border-[3px]",
+              "studio-hit",
               shapeDraft.mode === "fill"
                 ? "border-fg bg-brick text-white"
                 : "border-earth bg-card text-fg",
@@ -841,7 +838,7 @@ export function PlaygroundForm({
           <button
             type="button"
             className={cn(
-              "studio-hit border-[3px]",
+              "studio-hit",
               !shapeDraft.filled
                 ? "border-fg bg-brick text-white"
                 : "border-earth bg-card text-fg",
@@ -856,7 +853,7 @@ export function PlaygroundForm({
           <button
             type="button"
             className={cn(
-              "studio-hit border-[3px]",
+              "studio-hit",
               shapeDraft.filled
                 ? "border-fg bg-brick text-white"
                 : "border-earth bg-card text-fg",
@@ -902,7 +899,7 @@ export function PlaygroundForm({
         <>
           <button
             type="button"
-            className="studio-hit border-[3px] border-fg bg-brick text-white"
+            className="studio-hit border-fg bg-brick text-white"
             aria-label={copy.pixelShapeApply[lang]}
             title={copy.pixelShapeApply[lang]}
             onClick={() => boardRef.current?.applyShapeDraft()}
@@ -911,7 +908,7 @@ export function PlaygroundForm({
           </button>
           <button
             type="button"
-            className="studio-hit border-[3px] border-earth bg-card text-fg"
+            className="studio-hit border-earth bg-card text-fg"
             aria-label={copy.pixelShapeCancel[lang]}
             title={copy.pixelShapeCancel[lang]}
             onClick={() => boardRef.current?.cancelShapeDraft()}
@@ -944,7 +941,7 @@ export function PlaygroundForm({
                 if (tool === "eraser") setTool("pencil")
               }}
               className={cn(
-                "pixel-swatch studio-hit border-[3px]",
+                "pixel-swatch studio-hit",
                 color === swatch ? "border-fg" : "border-earth",
               )}
               style={{ backgroundColor: swatch }}
@@ -958,7 +955,7 @@ export function PlaygroundForm({
           setPaletteFullAlert(false)
           setPaletteOpen(true)
         }}
-        className="studio-hit border-[3px] border-earth bg-card"
+        className="studio-hit border-earth bg-card"
       >
         <PixelIcon name="palette" />
       </button>
@@ -976,13 +973,13 @@ export function PlaygroundForm({
         aria-label={copy.pixelZoomOut[lang]}
         title={copy.pixelZoomOut[lang]}
         onClick={() => boardRef.current?.zoomBy(-1)}
-        className="studio-hit border-[3px] border-earth bg-bg text-fg"
+        className="studio-hit border-earth bg-bg text-fg"
       >
         <PixelIcon name="zoomOut" />
       </button>
       <button
         type="button"
-        className="min-w-[2.5rem] border-[3px] border-earth bg-card px-1 text-center text-[12px] font-medium text-fg md:min-w-[3.25rem] md:text-[13px]"
+        className="studio-control min-w-[2.5rem] border-earth bg-card px-1 text-center text-[length:var(--studio-meta,0.75rem)] font-medium text-fg md:min-w-[3.25rem] md:text-[13px]"
         aria-label={`${copy.pixelFit[lang]}: ${zoomLabel}`}
         title={zoomLabel}
         onClick={() => boardRef.current?.fit()}
@@ -994,7 +991,7 @@ export function PlaygroundForm({
         aria-label={copy.pixelZoomIn[lang]}
         title={copy.pixelZoomIn[lang]}
         onClick={() => boardRef.current?.zoomBy(1)}
-        className="studio-hit border-[3px] border-earth bg-bg text-fg"
+        className="studio-hit border-earth bg-bg text-fg"
       >
         <PixelIcon name="zoomIn" />
       </button>
@@ -1010,8 +1007,8 @@ export function PlaygroundForm({
         aria-pressed={gridVisible}
         onClick={() => setGridVisible((value) => !value)}
         className={cn(
-          "studio-hit border-[3px]",
-          gridVisible ? "border-fg bg-soft text-fg" : "border-earth bg-bg text-fg",
+          "studio-hit",
+          gridVisible ? "border-fg bg-brick text-white" : "border-earth bg-bg text-fg",
         )}
       >
         <PixelIcon name="grid" />
@@ -1022,7 +1019,7 @@ export function PlaygroundForm({
         title={`${copy.pixelUndo[lang]} (Ctrl+Z)`}
         disabled={!history.canUndo}
         onClick={() => boardRef.current?.undo()}
-        className="studio-hit border-[3px] border-earth bg-bg text-fg disabled:opacity-40"
+        className="studio-hit border-earth bg-bg text-fg disabled:opacity-40"
       >
         <PixelIcon name="undo" />
       </button>
@@ -1032,7 +1029,7 @@ export function PlaygroundForm({
         title={`${copy.pixelRedo[lang]} (Ctrl+Y)`}
         disabled={!history.canRedo}
         onClick={() => boardRef.current?.redo()}
-        className="studio-hit border-[3px] border-earth bg-bg text-fg disabled:opacity-40"
+        className="studio-hit border-earth bg-bg text-fg disabled:opacity-40"
       >
         <PixelIcon name="redo" />
       </button>
@@ -1042,7 +1039,7 @@ export function PlaygroundForm({
   const renderStatusBar = () =>
     preview ? null : (
       <div
-        className="editor-status flex shrink-0 flex-wrap items-center gap-x-2 gap-y-1 border-t-[3px] border-earth bg-card px-2 py-1 text-[12px] text-muted"
+        className="editor-status flex shrink-0 flex-wrap items-center gap-x-2 gap-y-1 border-t-[3px] border-earth bg-card px-2 py-1 text-[length:var(--studio-meta,0.75rem)] text-muted"
         role="status"
         aria-label={copy.pixelStatusBar[lang]}
       >
@@ -1061,15 +1058,17 @@ export function PlaygroundForm({
         </span>
         <span aria-hidden="true">·</span>
         <span
-          className="inline-flex items-center gap-1"
+          className={cn(
+            "inline-flex items-center gap-1",
+            saveStatus === "unsaved" ? "text-brick" : "text-fg",
+          )}
           title={saveLabel}
           aria-label={saveLabel}
         >
           <PixelIcon
             name={saveStatus === "saving" ? "save" : saveStatus === "unsaved" ? "clear" : "apply"}
-            className={saveStatus === "unsaved" ? "text-brick" : "text-fg"}
           />
-          <span className="sr-only">{saveLabel}</span>
+          <span>{saveLabel}</span>
         </span>
         {editFlash ? (
           <>
@@ -1095,7 +1094,7 @@ export function PlaygroundForm({
         <>
           <button
             type="button"
-            className="studio-hit border-[3px] border-earth bg-card text-fg"
+            className="studio-hit border-earth bg-card text-fg"
             aria-label={copy.pixelCopy[lang]}
             title={copy.pixelCopy[lang]}
             onClick={() => boardRef.current?.copySelection()}
@@ -1104,7 +1103,7 @@ export function PlaygroundForm({
           </button>
           <button
             type="button"
-            className="studio-hit border-[3px] border-earth bg-card text-fg"
+            className="studio-hit border-earth bg-card text-fg"
             aria-label={copy.pixelCut[lang]}
             title={copy.pixelCut[lang]}
             onClick={() => boardRef.current?.cutSelection()}
@@ -1113,7 +1112,7 @@ export function PlaygroundForm({
           </button>
           <button
             type="button"
-            className="studio-hit border-[3px] border-earth bg-card text-fg"
+            className="studio-hit border-earth bg-card text-fg"
             aria-label={copy.pixelRotate90[lang]}
             title={copy.pixelRotate90[lang]}
             onClick={() => boardRef.current?.rotateSelection(90)}
@@ -1124,7 +1123,7 @@ export function PlaygroundForm({
       ) : null}
       <button
         type="button"
-        className="studio-hit border-[3px] border-earth bg-card text-fg disabled:opacity-40"
+        className="studio-hit border-earth bg-card text-fg disabled:opacity-40"
         aria-label={copy.pixelPaste[lang]}
         title={copy.pixelPaste[lang]}
         disabled={!hasClipboard}
@@ -1135,7 +1134,7 @@ export function PlaygroundForm({
       {hasSelection ? (
         <button
           type="button"
-          className="studio-hit border-[3px] border-earth bg-card text-fg"
+          className="studio-hit border-earth bg-card text-fg"
           aria-label={copy.pixelDeleteSelection[lang]}
           title={copy.pixelDeleteSelection[lang]}
           onClick={() => boardRef.current?.deleteSelection()}
@@ -1250,7 +1249,7 @@ export function PlaygroundForm({
           aria-busy={leaving || undefined}
           aria-label={leaving ? copy.pixelLeaving[lang] : copy.pixelBack[lang]}
           title={leaving ? copy.pixelLeaving[lang] : copy.pixelBack[lang]}
-          className="studio-hit border-[3px] border-earth bg-card text-fg disabled:opacity-50"
+          className="studio-hit border-earth bg-card text-fg disabled:opacity-50"
         >
           <PixelIcon name="back" />
         </button>
@@ -1316,35 +1315,24 @@ export function PlaygroundForm({
               setRotateHint(false)
               setMoreOpen(true)
             }}
-            className="studio-hit border-[3px] border-earth bg-card text-fg"
+            className="studio-hit border-earth bg-card text-fg"
           >
             <PixelIcon name="more" />
           </button>
         </div>
       </header>
 
-      {loadBroken ? (
-        <div className="px-3 pt-2">
-          <Alert tone="error">{copy.pixelLoadError[lang]}</Alert>
-        </div>
-      ) : null}
-      {localDraftFailed ? (
-        <div className="px-3 pt-2">
-          <Alert tone="error">{copy.draftLocalSaveFailed[lang]}</Alert>
-        </div>
-      ) : null}
-      {offline ? (
-        <div className="px-3 pt-2">
-          <Alert>{copy.pixelOffline[lang]}</Alert>
-        </div>
-      ) : errorState ? (
-        <div className="px-3 pt-2">
-          <Alert tone="error">{copy.errors[errorState.error][lang]}</Alert>
-        </div>
-      ) : null}
-      {paletteFullAlert ? (
-        <div className="px-3 pt-2">
-          <Alert tone="error">{copy.pixelPaletteFullStroke[lang]}</Alert>
+      {loadBroken || localDraftFailed || offline || errorState || paletteFullAlert ? (
+        <div className="playground-chrome-alerts">
+          {loadBroken ? <Alert tone="error">{copy.pixelLoadError[lang]}</Alert> : null}
+          {localDraftFailed ? <Alert tone="error">{copy.draftLocalSaveFailed[lang]}</Alert> : null}
+          {offline ? <Alert>{copy.pixelOffline[lang]}</Alert> : null}
+          {!offline && errorState ? (
+            <Alert tone="error">{copy.errors[errorState.error][lang]}</Alert>
+          ) : null}
+          {paletteFullAlert ? (
+            <Alert tone="error">{copy.pixelPaletteFullStroke[lang]}</Alert>
+          ) : null}
         </div>
       ) : null}
 
@@ -1506,39 +1494,32 @@ export function PlaygroundForm({
         <div className="studio-stack">
           {!preview ? (
             <div
-              className="studio-row w-full overflow-x-auto pb-0.5"
+              className="editor-mobile-view"
               role="toolbar"
-              aria-label={copy.pixelTools[lang]}
+              aria-label={copy.pixelViewControls[lang]}
             >
               {renderZoomWell()}
               {toolDividerMobile}
               {renderHistoryButtons()}
-              {toolDividerMobile}
-              {toolButtons}
-              {showSymmetryControls ? (
-                <>
-                  {toolDividerMobile}
-                  {renderSymmetryButton()}
-                </>
-              ) : null}
             </div>
-          ) : (
-            <div
-              className="studio-row w-full overflow-x-auto pb-0.5"
-              role="toolbar"
-              aria-label={copy.pixelTools[lang]}
-            >
-              {toolButtons}
-              {showSymmetryControls ? (
-                <>
-                  {toolDividerMobile}
-                  {renderSymmetryButton()}
-                </>
-              ) : null}
-            </div>
-          )}
+          ) : null}
+          <div
+            className="flex w-full items-center gap-1.5 overflow-x-auto pb-0.5"
+            role="toolbar"
+            aria-label={copy.pixelTools[lang]}
+          >
+            {toolButtons}
+            {showSymmetryControls ? (
+              <>
+                {toolDividerMobile}
+                {renderSymmetryButton()}
+              </>
+            ) : null}
+          </div>
           {showBrushControls ? (
-            <div className="studio-row w-full flex-wrap">{brushSelect(mobileBrushId)}</div>
+            <div className="flex w-full flex-wrap items-center gap-1.5">
+              {brushSelect(mobileBrushId)}
+            </div>
           ) : null}
           {shapeMobileOptions}
           {selectionActions}
@@ -1566,6 +1547,7 @@ export function PlaygroundForm({
             disabled: !history.canRedo,
             onSelect: () => boardRef.current?.redo(),
           },
+          { id: "sep-edit", type: "separator" },
           {
             id: "select-all",
             label: copy.pixelSelectAll[lang],
@@ -1596,6 +1578,7 @@ export function PlaygroundForm({
             danger: true,
             onSelect: () => boardRef.current?.deleteSelection(),
           },
+          { id: "sep-view", type: "separator" },
           {
             id: "fit",
             label: copy.pixelFit[lang],
@@ -1683,172 +1666,187 @@ export function PlaygroundForm({
       />
 
       <Dialog open={moreOpen} onClose={() => setMoreOpen(false)} title={copy.pixelMore[lang]} closeLabel={copy.closeMenu[lang]}>
-        <div className="grid gap-3">
-          <div className="grid grid-cols-4 gap-1.5 sm:gap-2" role="toolbar" aria-label={copy.pixelMore[lang]}>
-            <button
-              type="button"
-              className="studio-hit border-[3px] border-earth bg-bg text-fg disabled:opacity-40"
-              disabled={pending}
-              aria-label={preview ? copy.createEdit[lang] : copy.createPreview[lang]}
-              title={preview ? copy.createEdit[lang] : copy.createPreview[lang]}
-              onClick={() => {
-                setMoreOpen(false)
-                void togglePreview()
-              }}
-            >
-              <PixelIcon name={preview ? "edit" : "eye"} />
-            </button>
-            <button
-              type="button"
-              className="studio-hit border-[3px] border-earth bg-bg text-fg"
-              aria-label={copy.createDetailsMenu[lang]}
-              title={copy.createDetailsMenu[lang]}
-              onClick={() => {
-                setMoreOpen(false)
-                setDetailsOpen(true)
-              }}
-            >
-              <PixelIcon name="text" />
-            </button>
-            <button
-              type="button"
-              className="studio-hit border-[3px] border-earth bg-bg text-fg"
-              aria-label={copy.pixelPaletteManage[lang]}
-              title={copy.pixelPaletteManage[lang]}
-              onClick={() => {
-                setMoreOpen(false)
-                setPaletteManageOpen(true)
-              }}
-            >
-              <PixelIcon name="sliders" />
-            </button>
-            <button
-              type="button"
-              className="studio-hit border-[3px] border-earth bg-bg text-fg disabled:opacity-40"
-              aria-label={copy.pixelImport[lang]}
-              title={copy.pixelImport[lang]}
-              disabled={layers.length >= PIXEL_LAYER_MAX}
-              onClick={() => importInputRef.current?.click()}
-            >
-              <PixelIcon name="image" />
-            </button>
-            <button
-              type="button"
-              className="studio-hit border-[3px] border-earth bg-bg text-fg"
-              aria-label={copy.pixelFlipH[lang]}
-              title={copy.pixelFlipH[lang]}
-              onClick={() => {
-                boardRef.current?.flipHorizontal()
-                setMoreOpen(false)
-              }}
-            >
-              <PixelIcon name="flip" />
-            </button>
-            <button
-              type="button"
-              className="studio-hit border-[3px] border-earth bg-bg text-fg"
-              aria-label={copy.pixelFlipV[lang]}
-              title={copy.pixelFlipV[lang]}
-              onClick={() => {
-                boardRef.current?.flipVertical()
-                setMoreOpen(false)
-              }}
-            >
-              <PixelIcon name="flipV" />
-            </button>
-            <button
-              type="button"
-              className="studio-hit border-[3px] border-earth bg-bg text-fg"
-              aria-label={copy.pixelRotate90[lang]}
-              title={copy.pixelRotate90[lang]}
-              onClick={() => {
-                const ok = boardRef.current?.rotate90Cw() ?? false
-                if (!ok) setRotateHint(true)
-                else {
-                  setRotateHint(false)
-                  setMoreOpen(false)
-                }
-              }}
-            >
-              <PixelIcon name="rotate" />
-            </button>
-            <button
-              type="button"
-              className="studio-hit border-[3px] border-earth bg-bg text-fg"
-              aria-label={copy.pixelClearCanvas[lang]}
-              title={copy.pixelClearCanvas[lang]}
-              onClick={() => {
-                boardRef.current?.clearCanvas()
-                setMoreOpen(false)
-              }}
-            >
-              <PixelIcon name="clear" />
-            </button>
-            {dirty || metadataDirty ? (
+        <div className="grid gap-4">
+          <div className="grid gap-1.5">
+            <p className="text-[12px] font-medium text-muted">{copy.pixelViewControls[lang]}</p>
+            <div className="grid grid-cols-4 gap-1.5 sm:gap-2" role="toolbar" aria-label={copy.pixelViewControls[lang]}>
               <button
                 type="button"
-                className="studio-hit border-[3px] border-earth bg-bg text-fg disabled:opacity-40"
-                disabled={pending || leaving}
-                aria-label={copy.pixelDiscard[lang]}
-                title={copy.pixelDiscard[lang]}
-                onClick={() => {
-                  setMoreOpen(false)
-                  setDiscardOpen(true)
-                }}
-              >
-                <PixelIcon name="minus" />
-              </button>
-            ) : null}
-            {published ? (
-              <button
-                type="button"
-                className="studio-hit border-[3px] border-earth bg-bg text-fg disabled:opacity-40"
+                className="studio-hit border-earth bg-bg text-fg disabled:opacity-40"
                 disabled={pending}
-                aria-busy={(pending && busyIntent === "unpublish") || undefined}
-                aria-label={
-                  pending && busyIntent === "unpublish"
-                    ? copy.pixelUnpublishing[lang]
-                    : copy.createUnpublish[lang]
-                }
-                title={
-                  pending && busyIntent === "unpublish"
-                    ? copy.pixelUnpublishing[lang]
-                    : copy.createUnpublish[lang]
-                }
+                aria-label={preview ? copy.createEdit[lang] : copy.createPreview[lang]}
+                title={preview ? copy.createEdit[lang] : copy.createPreview[lang]}
                 onClick={() => {
-                  void persist("unpublish")
+                  setMoreOpen(false)
+                  void togglePreview()
+                }}
+              >
+                <PixelIcon name={preview ? "edit" : "eye"} />
+              </button>
+              <button
+                type="button"
+                className="studio-hit border-earth bg-bg text-fg"
+                aria-label={copy.createDetailsMenu[lang]}
+                title={copy.createDetailsMenu[lang]}
+                onClick={() => {
+                  setMoreOpen(false)
+                  setDetailsOpen(true)
+                }}
+              >
+                <PixelIcon name="text" />
+              </button>
+              <button
+                type="button"
+                className="studio-hit border-earth bg-bg text-fg"
+                aria-label={copy.pixelPaletteManage[lang]}
+                title={copy.pixelPaletteManage[lang]}
+                onClick={() => {
+                  setMoreOpen(false)
+                  setPaletteManageOpen(true)
+                }}
+              >
+                <PixelIcon name="sliders" />
+              </button>
+              <button
+                type="button"
+                className="studio-hit border-earth bg-bg text-fg disabled:opacity-40"
+                aria-label={copy.pixelImport[lang]}
+                title={copy.pixelImport[lang]}
+                disabled={layers.length >= PIXEL_LAYER_MAX}
+                onClick={() => importInputRef.current?.click()}
+              >
+                <PixelIcon name="image" />
+              </button>
+            </div>
+          </div>
+
+          <div className="grid gap-1.5">
+            <p className="text-[12px] font-medium text-muted">{copy.pixelCanvasSize[lang]}</p>
+            <div className="grid grid-cols-4 gap-1.5 sm:gap-2" role="toolbar" aria-label={copy.pixelCanvasSize[lang]}>
+              <button
+                type="button"
+                className="studio-hit border-earth bg-bg text-fg"
+                aria-label={copy.pixelFlipH[lang]}
+                title={copy.pixelFlipH[lang]}
+                onClick={() => {
+                  boardRef.current?.flipHorizontal()
                   setMoreOpen(false)
                 }}
               >
-                <PixelIcon name="download" />
+                <PixelIcon name="flip" />
               </button>
-            ) : null}
-            {published ? (
-              <a
-                href={href(lang, `/creation/${creation.id}`)}
-                className="studio-hit inline-flex items-center justify-center border-[3px] border-earth bg-bg text-fg"
-                aria-label={copy.createViewPublic[lang]}
-                title={copy.createViewPublic[lang]}
+              <button
+                type="button"
+                className="studio-hit border-earth bg-bg text-fg"
+                aria-label={copy.pixelFlipV[lang]}
+                title={copy.pixelFlipV[lang]}
+                onClick={() => {
+                  boardRef.current?.flipVertical()
+                  setMoreOpen(false)
+                }}
               >
-                <PixelIcon name="share" />
-              </a>
+                <PixelIcon name="flipV" />
+              </button>
+              <button
+                type="button"
+                className="studio-hit border-earth bg-bg text-fg"
+                aria-label={copy.pixelRotate90[lang]}
+                title={copy.pixelRotate90[lang]}
+                onClick={() => {
+                  const ok = boardRef.current?.rotate90Cw() ?? false
+                  if (!ok) setRotateHint(true)
+                  else {
+                    setRotateHint(false)
+                    setMoreOpen(false)
+                  }
+                }}
+              >
+                <PixelIcon name="rotate" />
+              </button>
+              <button
+                type="button"
+                className="studio-hit border-earth bg-bg text-fg"
+                aria-label={copy.pixelClearCanvas[lang]}
+                title={copy.pixelClearCanvas[lang]}
+                onClick={() => {
+                  boardRef.current?.clearCanvas()
+                  setMoreOpen(false)
+                }}
+              >
+                <PixelIcon name="clear" />
+              </button>
+            </div>
+            {rotateHint ? (
+              <p className="text-[13px] text-brick">{copy.pixelRotateNeedSquare[lang]}</p>
             ) : null}
-            <button
-              type="button"
-              className="studio-hit border-[3px] border-earth bg-bg text-brick"
-              aria-label={copy.createDelete[lang]}
-              title={copy.createDelete[lang]}
-              onClick={() => {
-                setMoreOpen(false)
-                setConfirmDelete(true)
-              }}
-            >
-              <PixelIcon name="trash" />
-            </button>
           </div>
-          {rotateHint ? (
-            <p className="text-[13px] text-brick">{copy.pixelRotateNeedSquare[lang]}</p>
-          ) : null}
+
+          <div className="grid gap-1.5">
+            <p className="text-[12px] font-medium text-muted">{copy.share[lang]}</p>
+            <div className="grid grid-cols-4 gap-1.5 sm:gap-2" role="toolbar" aria-label={copy.share[lang]}>
+              {dirty || metadataDirty ? (
+                <button
+                  type="button"
+                  className="studio-hit border-earth bg-bg text-fg disabled:opacity-40"
+                  disabled={pending || leaving}
+                  aria-label={copy.pixelDiscard[lang]}
+                  title={copy.pixelDiscard[lang]}
+                  onClick={() => {
+                    setMoreOpen(false)
+                    setDiscardOpen(true)
+                  }}
+                >
+                  <PixelIcon name="minus" />
+                </button>
+              ) : null}
+              {published ? (
+                <button
+                  type="button"
+                  className="studio-hit border-earth bg-bg text-fg disabled:opacity-40"
+                  disabled={pending}
+                  aria-busy={(pending && busyIntent === "unpublish") || undefined}
+                  aria-label={
+                    pending && busyIntent === "unpublish"
+                      ? copy.pixelUnpublishing[lang]
+                      : copy.createUnpublish[lang]
+                  }
+                  title={
+                    pending && busyIntent === "unpublish"
+                      ? copy.pixelUnpublishing[lang]
+                      : copy.createUnpublish[lang]
+                  }
+                  onClick={() => {
+                    void persist("unpublish")
+                    setMoreOpen(false)
+                  }}
+                >
+                  <PixelIcon name="download" />
+                </button>
+              ) : null}
+              {published ? (
+                <a
+                  href={href(lang, `/creation/${creation.id}`)}
+                  className="studio-hit border-earth bg-bg text-fg"
+                  aria-label={copy.createViewPublic[lang]}
+                  title={copy.createViewPublic[lang]}
+                >
+                  <PixelIcon name="share" />
+                </a>
+              ) : null}
+              <button
+                type="button"
+                className="studio-hit border-earth bg-bg text-brick"
+                aria-label={copy.createDelete[lang]}
+                title={copy.createDelete[lang]}
+                onClick={() => {
+                  setMoreOpen(false)
+                  setConfirmDelete(true)
+                }}
+              >
+                <PixelIcon name="trash" />
+              </button>
+            </div>
+          </div>
           <CreationMoreMenu
             lang={lang}
             creationId={creation.id}
@@ -2085,13 +2083,17 @@ export function PlaygroundForm({
         {!captionRef.current.trim() ? (
           <p className="mt-2 text-[13px] text-muted">{copy.worksPublishAddCaptionHint[lang]}</p>
         ) : null}
-        <div className="mt-4 flex flex-wrap gap-3">
-          <a href={href(lang, `/creation/${creation.id}`)} className={buttonClassName()}>
+        <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+          <a
+            href={href(lang, `/creation/${creation.id}`)}
+            className={buttonClassName({ className: "w-full justify-center sm:w-auto" })}
+          >
             {copy.worksViewWork[lang]}
           </a>
           <Button
             type="button"
             variant="outline"
+            className="w-full justify-center sm:w-auto"
             onClick={() => {
               const url =
                 typeof window !== "undefined"
@@ -2103,7 +2105,12 @@ export function PlaygroundForm({
             <PixelIcon name="share" />
             {copy.share[lang]}
           </Button>
-          <Button type="button" variant="secondary" onClick={() => setPublishDoneOpen(false)}>
+          <Button
+            type="button"
+            variant="secondary"
+            className="w-full justify-center sm:w-auto"
+            onClick={() => setPublishDoneOpen(false)}
+          >
             {copy.worksKeepEditing[lang]}
           </Button>
         </div>

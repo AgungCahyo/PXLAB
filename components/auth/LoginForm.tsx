@@ -2,6 +2,7 @@
 
 import { useActionState } from "react"
 import Link from "next/link"
+import { GoogleAuthButton } from "@/components/auth/GoogleAuthButton"
 import { Alert } from "@/components/ui/Alert"
 import { Button } from "@/components/ui/Button"
 import { Input } from "@/components/ui/Input"
@@ -19,7 +20,15 @@ function fieldMessage(
   return copy.errors[state.fields[field]][lang]
 }
 
-export function LoginForm({ lang, next }: { lang: Lang; next: string }) {
+export function LoginForm({
+  lang,
+  next,
+  oauthError = false,
+}: {
+  lang: Lang
+  next: string
+  oauthError?: boolean
+}) {
   const [state, action, pending] = useActionState<AuthActionState, FormData>(loginAction, null)
   const emailError = fieldMessage(state, "email", lang)
   const passwordError = fieldMessage(state, "password", lang)
@@ -29,37 +38,41 @@ export function LoginForm({ lang, next }: { lang: Lang; next: string }) {
       : null
 
   return (
-    <form action={action} className="mt-8 grid gap-4">
-      <input type="hidden" name="lang" value={lang} />
-      <input type="hidden" name="next" value={next} />
-      {formError ? <Alert tone="error">{formError}</Alert> : null}
-      <Input
-        id="email"
-        name="email"
-        type="email"
-        autoComplete="email"
-        required
-        label={copy.emailLabel[lang]}
-        error={emailError}
-      />
-      <Input
-        id="password"
-        name="password"
-        type="password"
-        autoComplete="current-password"
-        required
-        label={copy.passwordLabel[lang]}
-        error={passwordError}
-      />
-      <Button type="submit" disabled={pending} aria-busy={pending || undefined}>
-        {pending ? copy.loginSubmitting[lang] : copy.loginSubmit[lang]}
-      </Button>
-      <Link href={forgotPasswordHref(lang, next)} className="text-[14px] text-muted hover:text-fg">
-        {copy.loginForgotPassword[lang]}
-      </Link>
-      <Link href={registerHref(lang, next)} className="text-[14px] text-muted hover:text-fg">
-        {copy.loginToRegister[lang]}
-      </Link>
-    </form>
+    <div className="mt-8 grid gap-4">
+      {oauthError ? <Alert tone="error">{copy.errors.oauth_failed[lang]}</Alert> : null}
+      <GoogleAuthButton lang={lang} next={next} />
+      <form action={action} className="grid gap-4">
+        <input type="hidden" name="lang" value={lang} />
+        <input type="hidden" name="next" value={next} />
+        {formError ? <Alert tone="error">{formError}</Alert> : null}
+        <Input
+          id="email"
+          name="email"
+          type="email"
+          autoComplete="email"
+          required
+          label={copy.emailLabel[lang]}
+          error={emailError}
+        />
+        <Input
+          id="password"
+          name="password"
+          type="password"
+          autoComplete="current-password"
+          required
+          label={copy.passwordLabel[lang]}
+          error={passwordError}
+        />
+        <Button type="submit" disabled={pending} aria-busy={pending || undefined}>
+          {pending ? copy.loginSubmitting[lang] : copy.loginSubmit[lang]}
+        </Button>
+        <Link href={forgotPasswordHref(lang, next)} className="text-[14px] text-muted hover:text-fg">
+          {copy.loginForgotPassword[lang]}
+        </Link>
+        <Link href={registerHref(lang, next)} className="text-[14px] text-muted hover:text-fg">
+          {copy.loginToRegister[lang]}
+        </Link>
+      </form>
+    </div>
   )
 }

@@ -198,6 +198,28 @@ body:has([data-chrome="playground"]) .site-header {
   overscroll-behavior: contain;
 }
 
+/* Vertical rail: short earth rules between tool groups. */
+.playground-tool-rail .editor-tool-divider {
+  width: 1.75rem;
+  height: var(--studio-border, 3px);
+  margin-block: 0.15rem;
+}
+
+.editor-mobile-view {
+  display: flex;
+  align-items: center;
+  gap: var(--studio-gap, 0.375rem);
+  width: 100%;
+  overflow-x: auto;
+  padding-bottom: 0.125rem;
+}
+
+.playground-chrome-alerts {
+  display: grid;
+  gap: 0.35rem;
+  padding: 0.35rem 0.75rem 0;
+}
+
 .app-tabbar {
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }

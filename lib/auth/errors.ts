@@ -2,6 +2,8 @@ export type AuthErrorCode =
   | "generic_auth"
   | "generic_register"
   | "email_not_confirmed"
+  | "email_taken"
+  | "oauth_failed"
   | "invalid_input"
   | "invalid_email"
   | "invalid_password"
@@ -43,6 +45,16 @@ export function mapAuthError(error: { message?: string; code?: string } | null |
 }
 
 export function mapRegisterError(error: { message?: string; code?: string } | null | undefined): AuthErrorCode {
+  const message = (error?.message ?? "").toLowerCase()
+  const code = (error?.code ?? "").toLowerCase()
+  if (
+    code === "user_already_exists" ||
+    message.includes("already registered") ||
+    message.includes("already been registered") ||
+    message.includes("user already exists")
+  ) {
+    return "email_taken"
+  }
   const mapped = mapAuthError(error)
   if (mapped === "username_taken" || mapped === "username_format") return mapped
   return "generic_register"

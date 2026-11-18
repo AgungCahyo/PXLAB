@@ -4,13 +4,18 @@ import { useEffect, useRef } from "react"
 import { copy } from "@/lib/copy"
 import type { Lang } from "@/lib/i18n"
 
-export type StudioContextMenuItem = {
-  id: string
-  label: string
-  disabled?: boolean
-  danger?: boolean
-  onSelect: () => void
-}
+export type StudioContextMenuItem =
+  | {
+      id: string
+      label: string
+      disabled?: boolean
+      danger?: boolean
+      onSelect: () => void
+    }
+  | {
+      id: string
+      type: "separator"
+    }
 
 export function StudioContextMenu({
   lang,
@@ -70,26 +75,35 @@ export function StudioContextMenu({
       className="fixed z-[80] min-w-[12rem] border-[3px] border-earth bg-card py-1 shadow-[4px_4px_0_0_var(--fg)]"
       style={{ left: x, top: y }}
     >
-      {items.map((item) => (
-        <button
-          key={item.id}
-          type="button"
-          role="menuitem"
-          disabled={item.disabled}
-          onClick={() => {
-            if (item.disabled) return
-            item.onSelect()
-            onClose()
-          }}
-          className={
-            item.danger
-              ? "flex w-full px-3 py-2.5 text-left text-[14px] text-brick hover:bg-soft disabled:opacity-40"
-              : "flex w-full px-3 py-2.5 text-left text-[14px] text-fg hover:bg-soft disabled:opacity-40"
-          }
-        >
-          {item.label}
-        </button>
-      ))}
+      {items.map((item) =>
+        "type" in item && item.type === "separator" ? (
+          <div
+            key={item.id}
+            role="separator"
+            className="my-1 h-[3px] bg-earth"
+            aria-hidden="true"
+          />
+        ) : "label" in item ? (
+          <button
+            key={item.id}
+            type="button"
+            role="menuitem"
+            disabled={item.disabled}
+            onClick={() => {
+              if (item.disabled) return
+              item.onSelect()
+              onClose()
+            }}
+            className={
+              item.danger
+                ? "flex w-full px-3 py-2.5 text-left text-[14px] text-brick hover:bg-soft focus-visible:bg-soft disabled:opacity-40"
+                : "flex w-full px-3 py-2.5 text-left text-[14px] text-fg hover:bg-soft focus-visible:bg-soft disabled:opacity-40"
+            }
+          >
+            {item.label}
+          </button>
+        ) : null,
+      )}
     </div>
   )
 }

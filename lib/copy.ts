@@ -841,13 +841,16 @@ export const copy = {
 
   loginTitle: { id: "Masuk", en: "Sign in" } satisfies Bi,
   loginMeta: {
-    id: "Masuk dengan email.",
-    en: "Sign in with email.",
+    id: "Masuk dengan Google atau email.",
+    en: "Sign in with Google or email.",
   } satisfies Bi,
   loginSubmit: { id: "Masuk", en: "Sign in" } satisfies Bi,
   loginSubmitting: { id: "Masuk…", en: "Signing in…" } satisfies Bi,
   loginToRegister: { id: "Gabung", en: "Join" } satisfies Bi,
   loginForgotPassword: { id: "Lupa kata sandi?", en: "Forgot password?" } satisfies Bi,
+  authContinueGoogle: { id: "Lanjut dengan Google", en: "Continue with Google" } satisfies Bi,
+  authContinueGoogleWorking: { id: "Mengalihkan…", en: "Redirecting…" } satisfies Bi,
+  authOrEmail: { id: "atau email", en: "or email" } satisfies Bi,
 
   forgotPasswordTitle: { id: "Lupa kata sandi", en: "Forgot password" } satisfies Bi,
   forgotPasswordMeta: {
@@ -884,8 +887,8 @@ export const copy = {
 
   registerTitle: { id: "Gabung", en: "Join" } satisfies Bi,
   registerMeta: {
-    id: "Buat akun anggota.",
-    en: "Create a member account.",
+    id: "Gabung dengan Google atau email.",
+    en: "Join with Google or email.",
   } satisfies Bi,
   registerSubmit: { id: "Buat akun", en: "Create account" } satisfies Bi,
   registerSubmitting: { id: "Membuat akun…", en: "Creating account…" } satisfies Bi,
@@ -1112,6 +1115,14 @@ export const copy = {
     email_not_confirmed: {
       id: "Konfirmasi email dulu.",
       en: "Confirm email first.",
+    } satisfies Bi,
+    email_taken: {
+      id: "Email sudah terdaftar. Masuk saja.",
+      en: "Email already registered. Sign in instead.",
+    } satisfies Bi,
+    oauth_failed: {
+      id: "Login Google gagal. Coba lagi.",
+      en: "Google sign-in failed. Try again.",
     } satisfies Bi,
     invalid_input: {
       id: "Periksa isian.",
