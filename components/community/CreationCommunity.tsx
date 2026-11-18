@@ -9,6 +9,7 @@ import { Button, buttonClassName } from "@/components/ui/Button"
 import { PixelIcon } from "@/components/ui/PixelIcon"
 import { Textarea } from "@/components/ui/Textarea"
 import { ReportButton } from "@/components/community/ReportDialog"
+import { CreationShareDialog } from "@/components/share/CreationShareDialog"
 import {
   addCommentAction,
   deleteCommentAction,
@@ -659,6 +660,10 @@ export function CreationEngagement({
   lang,
   creationId,
   title,
+  creatorLabel,
+  coverUrl = null,
+  allowArtworkDownload = false,
+  isPixel = true,
   appreciated,
   appreciateCount,
   remixCount = 0,
@@ -668,6 +673,10 @@ export function CreationEngagement({
   lang: Lang
   creationId: string
   title: string
+  creatorLabel: string
+  coverUrl?: string | null
+  allowArtworkDownload?: boolean
+  isPixel?: boolean
   appreciated: boolean
   appreciateCount: number
   remixCount?: number
@@ -697,7 +706,15 @@ export function CreationEngagement({
           {copy.remixCount[lang].replace("{count}", String(remixCount))}
         </span>
       ) : null}
-      <ShareButton lang={lang} creationId={creationId} title={title} />
+      <ShareButton
+        lang={lang}
+        creationId={creationId}
+        title={title}
+        creatorLabel={creatorLabel}
+        coverUrl={coverUrl}
+        allowArtworkDownload={allowArtworkDownload}
+        isPixel={isPixel}
+      />
     </div>
   )
 }
@@ -791,40 +808,39 @@ function ShareButton({
   lang,
   creationId,
   title,
+  creatorLabel,
+  coverUrl,
+  allowArtworkDownload,
+  isPixel,
 }: {
   lang: Lang
   creationId: string
   title: string
+  creatorLabel: string
+  coverUrl: string | null
+  allowArtworkDownload: boolean
+  isPixel: boolean
 }) {
-  const [copied, setCopied] = useState(false)
-
-  async function share() {
-    const url = `${window.location.origin}${href(lang, `/creation/${creationId}`)}`
-    if (typeof navigator.share === "function") {
-      try {
-        await navigator.share({ title, url })
-        return
-      } catch {
-        // Fall through to clipboard when the share sheet is dismissed or unavailable.
-      }
-    }
-    try {
-      await navigator.clipboard.writeText(url)
-      setCopied(true)
-      window.setTimeout(() => setCopied(false), 2000)
-    } catch {
-      setCopied(false)
-    }
-  }
+  const [open, setOpen] = useState(false)
 
   return (
-    <div className="flex flex-wrap items-center gap-2">
-      <Button type="button" size="sm" variant="outline" onClick={share}>
+    <>
+      <Button type="button" size="sm" variant="outline" onClick={() => setOpen(true)}>
         <PixelIcon name="share" />
         {copy.share[lang]}
       </Button>
-      {copied ? <span className="text-[13px] text-muted">{copy.shareCopied[lang]}</span> : null}
-    </div>
+      <CreationShareDialog
+        open={open}
+        onClose={() => setOpen(false)}
+        lang={lang}
+        creationId={creationId}
+        title={title}
+        creatorLabel={creatorLabel}
+        coverUrl={coverUrl}
+        allowArtworkDownload={allowArtworkDownload}
+        isPixel={isPixel}
+      />
+    </>
   )
 }
 

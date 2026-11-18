@@ -10,6 +10,9 @@ export function pageMeta({
   absoluteTitle = false,
   noIndex = false,
   image,
+  imageWidth = 1200,
+  imageHeight = 630,
+  ogType = "website",
 }: {
   lang: Lang;
   path: string;
@@ -17,7 +20,11 @@ export function pageMeta({
   description: Bi | string;
   absoluteTitle?: boolean;
   noIndex?: boolean;
+  /** Absolute or site-relative image URL for og:image / twitter:image. */
   image?: string;
+  imageWidth?: number;
+  imageHeight?: number;
+  ogType?: "website" | "article";
 }): Metadata {
   const resolvedTitle = typeof title === "string" ? title : title[lang];
   const resolvedDescription = typeof description === "string" ? description : description[lang];
@@ -41,8 +48,19 @@ export function pageMeta({
       url: canonical,
       siteName: SITE_NAME,
       locale: lang === "id" ? "id_ID" : "en_US",
-      type: "website",
-      ...(imageUrl ? { images: [{ url: imageUrl, alt: resolvedTitle }] } : {}),
+      type: ogType,
+      ...(imageUrl
+        ? {
+            images: [
+              {
+                url: imageUrl,
+                width: imageWidth,
+                height: imageHeight,
+                alt: resolvedTitle,
+              },
+            ],
+          }
+        : {}),
     },
     twitter: {
       card: imageUrl ? "summary_large_image" : "summary",

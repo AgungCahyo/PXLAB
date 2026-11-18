@@ -31,6 +31,7 @@ import { copy, creationCategoryLabels, creationTypeLabels } from "@/lib/copy"
 import { formatDayMonthYear } from "@/lib/format"
 import { href, isLang, type Lang } from "@/lib/i18n"
 import { pageMeta } from "@/lib/meta"
+import { creationSocialPreviewPath } from "@/lib/share"
 import { pixelCoverUrl } from "@/lib/site"
 import { creationIdSchema, pixelContentSchema } from "@/lib/validations/creation"
 
@@ -58,15 +59,23 @@ export async function generateMetadata({
     "{username}",
     creation.author.username,
   )
+  const description = metaCaption
+    ? `${metaCaption.slice(0, 120)} — @${creation.author.username}`
+    : fallbackMeta
+  const cacheBust = encodeURIComponent(creation.updated_at)
+  const socialImage =
+    creation.type === "pixel"
+      ? `${creationSocialPreviewPath(creation.id)}?v=${cacheBust}`
+      : creation.cover_url || undefined
   return pageMeta({
     lang,
     path: `/creation/${creation.id}`,
     title: displayTitle(creation.title, lang),
-    description: metaCaption ? metaCaption.slice(0, 160) : fallbackMeta,
-    image:
-      creation.type === "pixel"
-        ? creation.cover_url || pixelCoverUrl(creation.id)
-        : undefined,
+    description,
+    image: socialImage,
+    imageWidth: 1200,
+    imageHeight: 630,
+    ogType: "article",
   })
 }
 
@@ -160,6 +169,17 @@ export default async function CreationDetailPage({
           lang={lang}
           creationId={creation.id}
           title={title}
+          creatorLabel={
+            creation.author.displayName?.trim()
+              ? `${creation.author.displayName} · @${creation.author.username}`
+              : `@${creation.author.username}`
+          }
+          coverUrl={coverUrl}
+          allowArtworkDownload={
+            isPixel &&
+            (isOwner || creation.allow_png_download)
+          }
+          isPixel={isPixel}
           appreciated={reaction.appreciated}
           appreciateCount={reaction.count}
           remixCount={remixCount}
