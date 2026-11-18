@@ -8,8 +8,6 @@ import {
 import { SocialCardMarkup, socialCardSize } from "@/lib/share-card"
 import { loadPublishedSharePayload } from "@/lib/share-server"
 
-export const runtime = "nodejs"
-
 /**
  * Social Media Export Studio formats (published only).
  * Query: format=og|square|story, brand=0|1, credit=0|1

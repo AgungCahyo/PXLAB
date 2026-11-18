@@ -4,8 +4,6 @@ import { SocialCardMarkup, socialCardSize } from "@/lib/share-card"
 import { shareCacheControl } from "@/lib/share"
 import { loadPublishedSharePayload } from "@/lib/share-server"
 
-export const runtime = "nodejs"
-
 /**
  * Default Open Graph / Twitter preview: 1200×630.
  * Published creations only — drafts return 404 (no metadata leak).

@@ -4,8 +4,6 @@ import { getPublishedCreation } from "@/features/creations/queries"
 import { creationCanonicalUrl, shareCacheControl } from "@/lib/share"
 import { creationIdSchema } from "@/lib/validations/creation"
 
-export const runtime = "nodejs"
-
 /**
  * QR for the canonical creation URL (no UTM).
  * Published only — drafts return 404.
