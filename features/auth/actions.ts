@@ -122,7 +122,10 @@ export async function resendRegisterEmailAction(
   return { ok: true, resent: true }
 }
 
-export async function signInWithGoogleAction(formData: FormData): Promise<AuthActionState> {
+export async function signInWithGoogleAction(
+  _prev: AuthActionState,
+  formData: FormData,
+): Promise<AuthActionState> {
   const lang = langOf(formData.get("lang"))
   const supabase = await createServerSupabase()
   if (!supabase) return { error: "not_configured" }
