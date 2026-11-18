@@ -38,6 +38,17 @@ export async function generateMetadata({
     title: { default: defaultTitle(lang, copy.tagline), template: `%s — ${SITE_NAME}` },
     description: copy.description[lang],
     applicationName: SITE_NAME,
+    appleWebApp: {
+      capable: true,
+      title: SITE_NAME,
+      statusBarStyle: "default",
+    },
+    icons: {
+      apple: [{ url: "/icons/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
+    },
+    other: {
+      "mobile-web-app-capable": "yes",
+    },
   };
 }
 

@@ -4,6 +4,8 @@ import { PixelWorldBackdrop } from "@/components/layout/PixelWorldBackdrop"
 import { SiteFooter } from "@/components/layout/SiteFooter"
 import { SiteHeader } from "@/components/layout/SiteHeader"
 import { ViewTransitionGuard } from "@/components/layout/ViewTransitionGuard"
+import { PwaInstall } from "@/components/pwa/PwaInstall"
+import { PwaRegister } from "@/components/pwa/PwaRegister"
 import { hasUnseenCreationResponses } from "@/features/community/activity"
 import { getCurrentProfile } from "@/lib/auth/session"
 import type { Lang } from "@/lib/i18n"
@@ -31,6 +33,8 @@ export function PublicShell({
       <Suspense fallback={null}>
         <CornerBusy lang={lang} />
       </Suspense>
+      <PwaRegister />
+      <PwaInstall lang={lang} variant="banner" />
     </div>
   )
 }

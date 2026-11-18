@@ -1182,6 +1182,30 @@ export const copy = {
     en: "Sign out here.",
   } satisfies Bi,
 
+  pwaInstallTitle: { id: "Pasang PXLB", en: "Install PXLB" } satisfies Bi,
+  pwaInstallHint: {
+    id: "Tambahkan ke layar utama untuk akses cepat seperti aplikasi.",
+    en: "Add to your home screen for quick app-like access.",
+  } satisfies Bi,
+  pwaInstallAction: { id: "Pasang", en: "Install" } satisfies Bi,
+  pwaInstallAccepted: {
+    id: "PXLB siap dipasang.",
+    en: "PXLB is ready on your device.",
+  } satisfies Bi,
+  pwaInstalled: {
+    id: "PXLB sudah terpasang di perangkat ini.",
+    en: "PXLB is installed on this device.",
+  } satisfies Bi,
+  pwaIosHint: {
+    id: "Di Safari: ketuk Bagikan, lalu “Tambah ke Layar Utama”.",
+    en: "In Safari: tap Share, then “Add to Home Screen”.",
+  } satisfies Bi,
+  pwaDismiss: { id: "Tutup", en: "Dismiss" } satisfies Bi,
+  pwaUnavailable: {
+    id: "Pemasangan cepat tidak tersedia di browser ini. Di iPhone, gunakan Safari → Bagikan → Tambah ke Layar Utama.",
+    en: "Quick install isn’t available in this browser. On iPhone, use Safari → Share → Add to Home Screen.",
+  } satisfies Bi,
+
   profileTitle: { id: "Profil", en: "Profile" } satisfies Bi,
   profileWorksHeading: { id: "Karya terbit", en: "Published works" } satisfies Bi,
   profileWorksCount: {

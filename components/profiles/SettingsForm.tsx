@@ -12,6 +12,7 @@ import { useRouter } from "next/navigation"
 import { LogoutButton } from "@/components/auth/LogoutButton"
 import { LanguageSwitch } from "@/components/layout/LanguageSwitch"
 import { ProfileAvatar } from "@/components/profiles/ProfileAvatar"
+import { PwaInstall } from "@/components/pwa/PwaInstall"
 import { Alert } from "@/components/ui/Alert"
 import { Button } from "@/components/ui/Button"
 import { Input } from "@/components/ui/Input"
@@ -281,6 +282,10 @@ export function SettingsForm({ lang, profile }: { lang: Lang; profile: MemberPro
         <div className="flex flex-wrap items-center justify-end gap-3">
           <LanguageSwitch lang={lang} />
         </div>
+      </SettingsSection>
+
+      <SettingsSection title={copy.pwaInstallTitle[lang]} hint={copy.pwaInstallHint[lang]}>
+        <PwaInstall lang={lang} variant="panel" />
       </SettingsSection>
 
       <SettingsSection title={copy.nav.signOut[lang]}>
