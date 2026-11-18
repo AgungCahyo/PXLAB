@@ -1,16 +1,29 @@
 import { getPublishedCreation } from "@/features/creations/queries"
 import { displayTitle } from "@/lib/creations"
 import type { Lang } from "@/lib/i18n"
+import {
+  socialArtAspect,
+  socialCardPalette,
+  type SocialArtAspect,
+  type SocialCardPalette,
+} from "@/lib/share-palette"
 import { PIXEL_BUCKET, pixelObjectPath } from "@/lib/site"
 import { createPublicSupabase } from "@/lib/supabase/public"
-import { creationIdSchema } from "@/lib/validations/creation"
+import { creationIdSchema, pixelContentSchema } from "@/lib/validations/creation"
 
 export type PublishedSharePayload = {
   id: string
   title: string
   updatedAt: string
+  displayName: string
+  username: string
+  /** Combined label for older call sites / QR text. */
   creatorLabel: string
   artworkDataUrl: string | null
+  aspect: SocialArtAspect
+  artWidth: number
+  artHeight: number
+  palette: SocialCardPalette
 }
 
 /** Published-only share payload. Drafts / hidden never resolve. */
@@ -22,9 +35,23 @@ export async function loadPublishedSharePayload(
   const creation = await getPublishedCreation(id)
   if (!creation) return null
 
-  const display =
-    creation.author.displayName?.trim() || creation.author.username
-  const creatorLabel = `${display} · @${creation.author.username}`
+  const username = creation.author.username || "member"
+  const displayName = creation.author.displayName?.trim() || username
+  const creatorLabel = `${displayName} · @${username}`
+
+  let aspect: SocialArtAspect = "square"
+  let artWidth = 64
+  let artHeight = 64
+  if (creation.type === "pixel") {
+    const parsed = pixelContentSchema.safeParse(creation.content)
+    if (parsed.success) {
+      artWidth = parsed.data.width
+      artHeight = parsed.data.height
+      aspect = socialArtAspect(artWidth, artHeight)
+    }
+  }
+
+  const palette = socialCardPalette(creation.color_usage)
 
   let artworkDataUrl: string | null = null
   if (creation.type === "pixel") {
@@ -37,8 +64,14 @@ export async function loadPublishedSharePayload(
     id: creation.id,
     title: displayTitle(creation.title, lang),
     updatedAt: creation.updated_at,
+    displayName,
+    username,
     creatorLabel,
     artworkDataUrl,
+    aspect,
+    artWidth,
+    artHeight,
+    palette,
   }
 }
 

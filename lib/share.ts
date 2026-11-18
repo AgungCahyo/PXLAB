@@ -6,6 +6,7 @@ export const SHARE_INTENT_PLATFORMS = [
   "whatsapp",
   "facebook",
   "x",
+  "threads",
   "telegram",
 ] as const
 
@@ -72,6 +73,8 @@ export function platformShareUrl(
       return `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(tracked)}`
     case "x":
       return `https://twitter.com/intent/tweet?url=${encodeURIComponent(tracked)}&text=${encodeURIComponent(args.title)}`
+    case "threads":
+      return `https://www.threads.net/intent/post?text=${encodeURIComponent(`${args.title}\n${tracked}`)}`
     case "telegram":
       return `https://t.me/share/url?url=${encodeURIComponent(tracked)}&text=${encodeURIComponent(args.title)}`
   }

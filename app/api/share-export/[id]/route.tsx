@@ -40,8 +40,13 @@ export async function GET(
       <SocialCardMarkup
         format={format}
         title={payload.title}
-        creatorLabel={payload.creatorLabel}
+        displayName={payload.displayName}
+        username={payload.username}
         artworkDataUrl={payload.artworkDataUrl}
+        aspect={payload.aspect}
+        artWidth={payload.artWidth}
+        artHeight={payload.artHeight}
+        palette={payload.palette}
         showBrand={showBrand}
         showCredit={showCredit}
       />

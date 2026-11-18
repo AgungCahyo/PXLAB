@@ -42,6 +42,10 @@ describe("share URL helpers", () => {
     const x = platformShareUrl("x", { url: base, title: "Hello" })
     expect(x).toContain("twitter.com/intent/tweet")
 
+    const threads = platformShareUrl("threads", { url: base, title: "Hello" })
+    expect(threads).toContain("threads.net/intent/post")
+    expect(decodeURIComponent(threads)).toContain("utm_source=threads")
+
     const tg = platformShareUrl("telegram", { url: base, title: "Hello" })
     expect(tg).toContain("t.me/share")
   })
@@ -88,19 +92,21 @@ describe("social sharing architecture", () => {
     expect(qr).toMatch(/format === "svg"/)
   })
 
-  it("provides a share dialog with platforms, QR, and export studio", () => {
+  it("keeps a compact share dialog with primary platforms and collapsed more options", () => {
     const dialog = read("components/share/CreationShareDialog.tsx")
     const community = read("components/community/CreationCommunity.tsx")
     expect(community).toMatch(/CreationShareDialog/)
     expect(dialog).toMatch(/navigator\.share/)
     expect(dialog).toMatch(/AbortError/)
     expect(dialog).toMatch(/whatsapp/)
+    expect(dialog).toMatch(/instagram/)
     expect(dialog).toMatch(/facebook/)
+    expect(dialog).toMatch(/shareMoreOptions/)
     expect(dialog).toMatch(/telegram/)
-    expect(dialog).toMatch(/shareDiscord/)
-    expect(dialog).toMatch(/shareExportStudio/)
-    expect(dialog).toMatch(/shareInstagramNote/)
+    expect(dialog).toMatch(/discord/)
     expect(dialog).toMatch(/creationQrPath/)
+    expect(dialog).toMatch(/shareExportSocial/)
+    expect(dialog).toMatch(/shareInstagramHint/)
   })
 
   it("does not invent a second cover pipeline — reuses storage via share-server", () => {
@@ -110,4 +116,14 @@ describe("social sharing architecture", () => {
     expect(server).toMatch(/pixelObjectPath/)
     expect(server).toMatch(/cover\.png/)
   })
+
+  it("uses an artwork-first OG split card with palette adaptation", () => {
+    const card = read("lib/share-card.tsx")
+    expect(card).toMatch(/OgSplitCard/)
+    expect(card).toMatch(/artShare/)
+    expect(card).toMatch(/imageRendering:\s*"pixelated"/)
+    expect(card).not.toMatch(/#fffdf7/)
+    expect(card).toMatch(/intrinsicArtSize|artWidth/)
+  })
 })
+
