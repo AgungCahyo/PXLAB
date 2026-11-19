@@ -48,6 +48,7 @@ import { href, type Lang } from "@/lib/i18n"
 import { PIXEL_IMPORT_ACCEPT, validateImportFile } from "@/lib/pixel-import"
 import {
   buildPixelSourceV2,
+  clampFillTolerance,
   createEmptyLayer,
   filledPixelIndices,
   formatPixelSize,
@@ -151,6 +152,8 @@ export function PlaygroundForm({
   const [zoom, setZoom] = useState<PixelZoom>("fit")
   const [hasSelection, setHasSelection] = useState(false)
   const [hasClipboard, setHasClipboard] = useState(false)
+  const [fillTolerance, setFillTolerance] = useState(0)
+  const [selectShape, setSelectShape] = useState<"rect" | "ellipse">("rect")
   const [editFlash, setEditFlash] = useState<string | null>(null)
   const editFlashTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [rotateHint, setRotateHint] = useState(false)
@@ -691,6 +694,7 @@ export function PlaygroundForm({
     showShapeOptions
   const showSymmetryControls = tool === "pencil" || tool === "circle" || tool === "eraser"
   const mobileBrushId = useId()
+  const fillToleranceId = useId()
   const symmetryModes: PixelSymmetry[] = ["off", "x", "y", "xy"]
   const symmetryModeLabel =
     symmetry === "x"
@@ -1144,6 +1148,31 @@ export function PlaygroundForm({
           <PixelIcon name="trash" />
         </button>
       ) : null}
+      {hasSelection ? (
+        <>
+          <button
+            type="button"
+            className="studio-control inline-flex items-center border-earth bg-card px-2 text-[12px] font-medium text-fg"
+            onClick={() => boardRef.current?.invertSelection()}
+          >
+            {copy.pixelSelectInvert[lang]}
+          </button>
+          <button
+            type="button"
+            className="studio-control inline-flex items-center border-earth bg-card px-2 text-[12px] font-medium text-fg"
+            onClick={() => boardRef.current?.expandSelection()}
+          >
+            {copy.pixelSelectExpand[lang]}
+          </button>
+          <button
+            type="button"
+            className="studio-control inline-flex items-center border-earth bg-card px-2 text-[12px] font-medium text-fg"
+            onClick={() => boardRef.current?.contractSelection()}
+          >
+            {copy.pixelSelectContract[lang]}
+          </button>
+        </>
+      ) : null}
     </div>
   ) : null
 
@@ -1396,6 +1425,8 @@ export function PlaygroundForm({
                 brushSize={brushSize}
                 gridVisible={gridVisible}
                 symmetry={symmetry}
+                fillTolerance={fillTolerance}
+                selectShape={selectShape}
                 onToolChange={setTool}
                 onColorChange={setColor}
                 onBrushSizeChange={setBrushSize}
@@ -1478,6 +1509,14 @@ export function PlaygroundForm({
             onPaste={() => boardRef.current?.pasteClipboard()}
             onDelete={() => boardRef.current?.deleteSelection()}
             onRotateSelection={(degrees) => boardRef.current?.rotateSelection(degrees)}
+            tool={tool}
+            fillTolerance={fillTolerance}
+            onFillTolerance={(value) => setFillTolerance(clampFillTolerance(value))}
+            selectShape={selectShape}
+            onSelectShape={setSelectShape}
+            onInvertSelection={() => boardRef.current?.invertSelection()}
+            onExpandSelection={() => boardRef.current?.expandSelection()}
+            onContractSelection={() => boardRef.current?.contractSelection()}
             onShapeFilled={(filled) => boardRef.current?.updateShapeDraft({ filled })}
             onShapeMode={(mode) => boardRef.current?.updateShapeDraft({ mode })}
             onShapeSize={(size) => {
@@ -1525,6 +1564,51 @@ export function PlaygroundForm({
               {brushSelect(mobileBrushId)}
             </div>
           ) : null}
+          {tool === "fill" ? (
+            <div className="flex w-full items-center gap-2">
+              <label className="shrink-0 text-[12px] font-medium text-fg" htmlFor={fillToleranceId}>
+                {copy.pixelFillTolerance[lang]}
+              </label>
+              <input
+                id={fillToleranceId}
+                type="range"
+                min={0}
+                max={255}
+                step={1}
+                value={fillTolerance}
+                aria-label={copy.pixelFillTolerance[lang]}
+                onChange={(event) => setFillTolerance(clampFillTolerance(Number(event.target.value)))}
+                className="min-w-0 flex-1"
+              />
+              <span className="w-8 text-right text-[12px] tabular-nums text-fg">{fillTolerance}</span>
+            </div>
+          ) : null}
+          {tool === "select" ? (
+            <div className="flex flex-wrap gap-1.5" role="group" aria-label={copy.pixelSelectShape[lang]}>
+              <button
+                type="button"
+                className={cn(
+                  "studio-control inline-flex items-center border-earth px-2 text-[12px] font-medium",
+                  selectShape === "rect" ? "border-fg bg-brick text-white" : "bg-card text-fg",
+                )}
+                aria-pressed={selectShape === "rect"}
+                onClick={() => setSelectShape("rect")}
+              >
+                {copy.pixelSelectRect[lang]}
+              </button>
+              <button
+                type="button"
+                className={cn(
+                  "studio-control inline-flex items-center border-earth px-2 text-[12px] font-medium",
+                  selectShape === "ellipse" ? "border-fg bg-brick text-white" : "bg-card text-fg",
+                )}
+                aria-pressed={selectShape === "ellipse"}
+                onClick={() => setSelectShape("ellipse")}
+              >
+                {copy.pixelSelectEllipse[lang]}
+              </button>
+            </div>
+          ) : null}
           {shapeMobileOptions}
           {selectionActions}
           {layerActions}
@@ -1556,6 +1640,24 @@ export function PlaygroundForm({
             id: "select-all",
             label: copy.pixelSelectAll[lang],
             onSelect: () => boardRef.current?.selectAll(),
+          },
+          {
+            id: "invert",
+            label: copy.pixelSelectInvert[lang],
+            disabled: !hasSelection,
+            onSelect: () => boardRef.current?.invertSelection(),
+          },
+          {
+            id: "expand",
+            label: copy.pixelSelectExpand[lang],
+            disabled: !hasSelection,
+            onSelect: () => boardRef.current?.expandSelection(),
+          },
+          {
+            id: "contract",
+            label: copy.pixelSelectContract[lang],
+            disabled: !hasSelection,
+            onSelect: () => boardRef.current?.contractSelection(),
           },
           {
             id: "copy",

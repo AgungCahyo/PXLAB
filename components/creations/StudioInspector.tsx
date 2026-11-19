@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, type ComponentProps } from "react"
+import { useId, useState, type ComponentProps } from "react"
 import { copy } from "@/lib/copy"
 import type { Lang } from "@/lib/i18n"
 import { PIXEL_PAPER, type PixelBrushSize } from "@/lib/pixel"
@@ -36,6 +36,14 @@ export function StudioInspector({
   onPaste,
   onDelete,
   onRotateSelection,
+  tool,
+  fillTolerance = 0,
+  onFillTolerance,
+  selectShape = "rect",
+  onSelectShape,
+  onInvertSelection,
+  onExpandSelection,
+  onContractSelection,
   onShapeFilled,
   onShapeMode,
   onShapeSize,
@@ -68,6 +76,14 @@ export function StudioInspector({
   onPaste?: () => void
   onDelete: () => void
   onRotateSelection?: (degrees: number) => void
+  tool?: string
+  fillTolerance?: number
+  onFillTolerance?: (value: number) => void
+  selectShape?: "rect" | "ellipse"
+  onSelectShape?: (shape: "rect" | "ellipse") => void
+  onInvertSelection?: () => void
+  onExpandSelection?: () => void
+  onContractSelection?: () => void
   onShapeFilled?: (filled: boolean) => void
   onShapeMode?: (mode: "stroke" | "fill") => void
   onShapeSize?: (size: number) => void
@@ -77,6 +93,7 @@ export function StudioInspector({
   onShapeCancel?: () => void
 }) {
   const [rotateAngle, setRotateAngle] = useState(0)
+  const fillToleranceId = useId()
   const inkCount = documentPalette.filter((swatch) => swatch !== PIXEL_PAPER).length
   const allColors = copy.pixelAllColors[lang].replace("{n}", String(inkCount))
   const isPathShape = shapeKind === "bezier" || shapeKind === "polygon"
@@ -286,6 +303,58 @@ export function StudioInspector({
           </div>
         ) : null}
 
+        {tool === "fill" ? (
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <label className="min-w-0 flex-1 text-[13px] font-medium text-fg" htmlFor={fillToleranceId}>
+                {copy.pixelFillTolerance[lang]}
+              </label>
+              <span className="w-8 text-right text-[13px] tabular-nums text-fg">{fillTolerance}</span>
+            </div>
+            <input
+              id={fillToleranceId}
+              type="range"
+              min={0}
+              max={255}
+              step={1}
+              value={fillTolerance}
+              aria-label={copy.pixelFillTolerance[lang]}
+              onChange={(event) => onFillTolerance?.(Number(event.target.value))}
+              className="w-full"
+            />
+            <p className="text-[length:var(--studio-meta,0.75rem)] leading-relaxed text-muted">
+              {copy.pixelFillGlobalHint[lang]}
+            </p>
+          </div>
+        ) : null}
+
+        {tool === "select" ? (
+          <div className="flex flex-wrap gap-1.5" role="group" aria-label={copy.pixelSelectShape[lang]}>
+            <button
+              type="button"
+              className={cn(
+                "studio-control inline-flex items-center border-earth bg-bg px-2 text-[12px] font-medium text-fg",
+                selectShape === "rect" && "border-fg bg-brick text-white",
+              )}
+              aria-pressed={selectShape === "rect"}
+              onClick={() => onSelectShape?.("rect")}
+            >
+              {copy.pixelSelectRect[lang]}
+            </button>
+            <button
+              type="button"
+              className={cn(
+                "studio-control inline-flex items-center border-earth bg-bg px-2 text-[12px] font-medium text-fg",
+                selectShape === "ellipse" && "border-fg bg-brick text-white",
+              )}
+              aria-pressed={selectShape === "ellipse"}
+              onClick={() => onSelectShape?.("ellipse")}
+            >
+              {copy.pixelSelectEllipse[lang]}
+            </button>
+          </div>
+        ) : null}
+
         {hasSelection || hasClipboard ? (
           <div className="flex flex-wrap gap-1.5 pt-1" role="group" aria-label={copy.pixelSelectBox[lang]}>
             {hasSelection ? (
@@ -331,6 +400,34 @@ export function StudioInspector({
                 <PixelIcon name="trash" />
               </button>
             ) : null}
+          </div>
+        ) : null}
+
+        {hasSelection ? (
+          <div className="flex flex-wrap gap-1.5">
+            <button
+              type="button"
+              className="studio-control inline-flex items-center border-earth bg-bg px-2 text-[12px] font-medium text-fg"
+              onClick={onInvertSelection}
+            >
+              {copy.pixelSelectInvert[lang]}
+            </button>
+            <button
+              type="button"
+              className="studio-control inline-flex items-center border-earth bg-bg px-2 text-[12px] font-medium text-fg"
+              title="Shift+]"
+              onClick={onExpandSelection}
+            >
+              {copy.pixelSelectExpand[lang]}
+            </button>
+            <button
+              type="button"
+              className="studio-control inline-flex items-center border-earth bg-bg px-2 text-[12px] font-medium text-fg"
+              title="Shift+["
+              onClick={onContractSelection}
+            >
+              {copy.pixelSelectContract[lang]}
+            </button>
           </div>
         ) : null}
 

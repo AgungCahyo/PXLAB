@@ -1,5 +1,6 @@
 "use client"
 
+import { PixelHistory, type HistoryFrame } from "@/lib/pixel-history"
 import {
   forwardRef,
   useCallback,
@@ -28,6 +29,7 @@ import {
   buildPaletteRgbIndex,
   buildPixelSourceV2,
   clampStrokeWidth,
+  clampFillTolerance,
   clearCanvasToPaper,
   clearRectToPaper,
   copyRgbaWithCanvasChecker,
@@ -45,6 +47,9 @@ import {
   ensurePaletteColor,
   extractRect,
   fillLinearGradient,
+  contractSelection,
+  expandSelection,
+  fillBoundsRect,
   fillPaper,
   fillRect,
   fitOrigin,
@@ -56,6 +61,7 @@ import {
   flipRectVertical,
   floodFill,
   getPixelRgb,
+  invertSelection,
   hexToRgb,
   indicesToRgba,
   normalizePixelHex,
@@ -73,6 +79,7 @@ import {
   rgbaToIndices,
   rgbToHex,
   removeDocumentColor,
+  replaceMatchingColor,
   replaceRgbInPixels,
   rotateCanvas90Cw,
   rotateClipboardNearest,
@@ -81,6 +88,7 @@ import {
   scaleClipboard,
   selectionCombineModeFromModifiers,
   selectionFromColor,
+  selectionFromEllipse,
   selectionFromFlood,
   selectionFromPolygon,
   type SelectionCombineMode,
@@ -92,9 +100,11 @@ import {
   strokeBrushLine,
   strokeBrushLineSymmetric,
   strokeRectBrush,
+  writeRgbaRectToIndices,
   zoomToward,
   type BezierAnchor,
   type PixelBrushSize,
+  type FillBounds,
   type PixelClipboard,
   type PixelDrawTool,
   type PixelLayerRuntime,
@@ -107,13 +117,13 @@ import {
 } from "@/lib/pixel"
 import { PIXEL_FONT_H, PIXEL_FONT_LEADING, PIXEL_FONT_W } from "@/lib/pixel-font"
 import { mergeImportIntoDocumentPalette } from "@/lib/pixel-import"
+import { clampDirtyRect, dirtyRectForSegment, unionDirtyRect } from "@/lib/pixel-dirty"
 import { cn } from "@/lib/utils"
 
 export type Tool = PixelDrawTool
 
 type Camera = { originX: number; originY: number; scale: number }
 
-const HISTORY_LIMIT = 32
 const SHAPE_TOOLS = new Set<Tool>(["line", "rect", "ellipse", "gradient"])
 const DRAFT_SHAPE_TOOLS = new Set<Tool>(["rect", "ellipse"])
 const SELECT_TOOLS = new Set<Tool>(["select", "selectContiguous", "selectColor", "lasso"])
@@ -186,17 +196,6 @@ export type PixelLayerInfo = {
   active: boolean
 }
 
-type LayerHistoryFrame = {
-  layers: Array<{
-    id: string
-    name: string
-    visible: boolean
-    locked: boolean
-    indices: Uint8Array
-  }>
-  active: number
-}
-
 function cloneLayers(layers: PixelLayerRuntime[]): PixelLayerRuntime[] {
   return layers.map((layer) => ({
     id: layer.id,
@@ -236,6 +235,9 @@ export type PixelBoardHandle = {
   rotateSelection: (degrees: number) => boolean
   selectAll: () => void
   clearSelection: () => void
+  invertSelection: () => void
+  expandSelection: () => void
+  contractSelection: () => void
   hasSelection: () => boolean
   copySelection: () => boolean
   cutSelection: () => boolean
@@ -306,6 +308,10 @@ export type PixelBoardProps = {
   brushSize?: PixelBrushSize
   gridVisible?: boolean
   symmetry?: PixelSymmetry
+  /** Max channel delta for the fill tool. 0 matches the clicked color exactly. */
+  fillTolerance?: number
+  /** Marquee shape for the box-select tool. */
+  selectShape?: "rect" | "ellipse"
   onToolChange?: (tool: Tool) => void
   onColorChange?: (color: string) => void
   onPaletteChange?: (palette: string[]) => void
@@ -340,6 +346,8 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
     brushSize: brushSizeProp,
     gridVisible: gridVisibleProp,
     symmetry: symmetryProp,
+    fillTolerance: fillToleranceProp,
+    selectShape: selectShapeProp,
     onToolChange,
     onColorChange,
     onPaletteChange,
@@ -390,7 +398,12 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
   const cameraRef = useRef<Camera>({ originX: 0, originY: 0, scale: 1 })
   const sizeRef = useRef({ width: 1, height: 1 })
   const devicePixelSizeRef = useRef<{ width: number; height: number } | null>(null)
-  const pixelsDirtyRef = useRef(true)
+  /** `full` recomposites every cell. `rect` recomposites only that region. `clean` skips it. */
+  const dirtyRef = useRef<{ mode: "full" } | { mode: "rect"; rect: PixelRect } | { mode: "clean" }>({
+    mode: "full",
+  })
+  /** Previous line/gradient preview bounds, so the next move also clears the old stroke. */
+  const shapePreviewDirtyRef = useRef<PixelRect | null>(null)
   const zoomRef = useRef<PixelZoom>("fit")
   const toolRef = useRef<Tool>(toolProp ?? "pencil")
   const colorRef = useRef(colorProp ?? PIXEL_INK)
@@ -499,8 +512,16 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
   } | null>(null)
   const rafRef = useRef<number>(0)
   const observerRef = useRef<ResizeObserver | null>(null)
-  const undoRef = useRef<LayerHistoryFrame[]>([])
-  const redoRef = useRef<LayerHistoryFrame[]>([])
+  const historyRef = useRef(new PixelHistory())
+  const pushUndoRef = useRef<() => void>(() => {})
+  const selectionUndoOpenRef = useRef(false)
+  const selectAllRef = useRef<() => void>(() => {})
+  const deselectRef = useRef<() => void>(() => {})
+  const invertSelectionRef = useRef<() => void>(() => {})
+  const expandSelectionRef = useRef<() => void>(() => {})
+  const contractSelectionRef = useRef<() => void>(() => {})
+  const fillToleranceRef = useRef(0)
+  const selectShapeRef = useRef<"rect" | "ellipse">("rect")
   const canvasWidthRef = useRef(width)
   const canvasHeightRef = useRef(height)
   canvasWidthRef.current = width
@@ -514,13 +535,14 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
     paletteIndexMapRef.current = buildPaletteRgbIndex(paletteRef.current)
   }
 
-  const adoptColor = useCallback((hex: string) => {
+  const adoptColor = useCallback((hex: string, recordHistory = false) => {
     const result = ensurePaletteColor(paletteRef.current, hex)
     if ("error" in result) {
       if (result.error === "palette_full") onPaletteFullRef.current?.()
       return false
     }
     if (result.palette.length !== paletteRef.current.length) {
+      if (recordHistory) pushUndoRef.current()
       paletteRef.current = result.palette
       syncPaletteIndexMap()
       onPaletteChangeRef.current?.(result.palette)
@@ -535,6 +557,8 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
   const [internalSymmetry, setInternalSymmetry] = useState<PixelSymmetry>("off")
   const [zoom, setZoom] = useState<PixelZoom>("fit")
   const [historyTick, setHistoryTick] = useState(0)
+  const [fillToleranceUi, setFillToleranceUi] = useState(0)
+  const [selectShapeUi, setSelectShapeUi] = useState<"rect" | "ellipse">("rect")
   const applyZoomRef = useRef<(next: PixelZoom, focusX?: number, focusY?: number) => void>(() => {})
   const scheduleRef = useRef<() => void>(() => {})
 
@@ -549,6 +573,8 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
   brushRef.current = brushSize
   gridRef.current = gridVisible
   symmetryRef.current = symmetry
+  fillToleranceRef.current = clampFillTolerance(fillToleranceProp ?? fillToleranceUi)
+  selectShapeRef.current = selectShapeProp ?? selectShapeUi
 
   const emitLayers = () => {
     const active = activeLayerIndexRef.current
@@ -563,14 +589,28 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
     )
   }
 
-  const syncActiveFromImage = () => {
+  const syncActiveFromImage = (rect?: PixelRect | null) => {
     const layers = layersRef.current
     const active = layers[activeLayerIndexRef.current]
     if (!active || !imageRef.current) return
+    const w = canvasWidthRef.current
+    const h = canvasHeightRef.current
+    if (rect && active.indices.length === w * h) {
+      writeRgbaRectToIndices(
+        imageRef.current.data,
+        active.indices,
+        w,
+        h,
+        rect,
+        paletteRef.current,
+        paletteIndexMapRef.current,
+      )
+      return
+    }
     active.indices = rgbaToIndices(
       imageRef.current.data,
-      canvasWidthRef.current,
-      canvasHeightRef.current,
+      w,
+      h,
       paletteRef.current,
       paletteIndexMapRef.current,
     )
@@ -603,40 +643,72 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
     return Boolean(layer && !layer.locked)
   }
 
-  const snapshotHistory = (): LayerHistoryFrame => {
+  const currentHistoryState = () => {
     syncActiveFromImage()
     return {
-      layers: cloneLayers(layersRef.current),
+      layers: layersRef.current,
       active: activeLayerIndexRef.current,
+      palette: paletteRef.current,
+      selection: selectionRef.current,
+      floating: selectionFloatingRef.current ? selectionFloatRef.current : null,
     }
   }
 
-  const applyHistoryFrame = (frame: LayerHistoryFrame) => {
+  const applyHistoryFrame = (frame: HistoryFrame) => {
     layersRef.current = cloneLayers(frame.layers)
     activeLayerIndexRef.current = Math.max(
       0,
       Math.min(frame.active, layersRef.current.length - 1),
     )
-    selectionFloatRef.current = null
-    selectionFloatingRef.current = false
+    const paletteChanged =
+      frame.palette.length !== paletteRef.current.length ||
+      frame.palette.some((color, index) => color !== paletteRef.current[index])
+    if (paletteChanged) {
+      paletteRef.current = [...frame.palette]
+      syncPaletteIndexMap()
+      onPaletteChangeRef.current?.(paletteRef.current)
+    }
+    selectionRef.current = frame.selection
+      ? {
+          x: frame.selection.x,
+          y: frame.selection.y,
+          width: frame.selection.width,
+          height: frame.selection.height,
+          mask: frame.selection.mask ? new Uint8Array(frame.selection.mask) : undefined,
+        }
+      : null
+    if (frame.floating) {
+      selectionFloatingRef.current = true
+      selectionFloatRef.current = {
+        width: frame.floating.width,
+        height: frame.floating.height,
+        data: new Uint8ClampedArray(frame.floating.data),
+        mask: frame.floating.mask ? new Uint8Array(frame.floating.mask) : undefined,
+      }
+    } else {
+      selectionFloatRef.current = null
+      selectionFloatingRef.current = false
+    }
     loadActiveIntoImage()
     emitLayers()
+    emitSelection()
     schedule()
   }
 
-  const compositeImage = () => {
+  const compositeImage = (rect?: PixelRect | null) => {
     const w = canvasWidthRef.current
     const h = canvasHeightRef.current
     if (!compositeRef.current || compositeRef.current.width !== w || compositeRef.current.height !== h) {
       compositeRef.current = new ImageData(w, h)
     }
-    syncActiveFromImage()
+    syncActiveFromImage(rect)
     compositeLayersToRgba(
       layersRef.current,
       compositeRef.current.data,
       paletteRef.current,
       w,
       h,
+      rect,
     )
     return compositeRef.current
   }
@@ -657,9 +729,35 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
     })
   }
 
-  /** Mark pixels dirty and redraw (strokes, undo, palette bake). */
+  /** Mark every cell dirty and redraw (undo, palette, layer structure). */
   const schedule = () => {
-    pixelsDirtyRef.current = true
+    dirtyRef.current = { mode: "full" }
+    shapePreviewDirtyRef.current = null
+    scheduleView()
+  }
+
+  /** Mark a cell rectangle dirty. A full invalidation already pending stays full. */
+  const scheduleRect = (rect: PixelRect | null) => {
+    const clamped = rect ? clampDirtyRect(rect, canvasWidthRef.current, canvasHeightRef.current) : null
+    if (!clamped) {
+      scheduleView()
+      return
+    }
+    const current = dirtyRef.current
+    if (current.mode !== "full") {
+      const area = clamped.width * clamped.height
+      if (area >= canvasWidthRef.current * canvasHeightRef.current) {
+        dirtyRef.current = { mode: "full" }
+      } else if (current.mode === "rect") {
+        const next = unionDirtyRect(current.rect, clamped)
+        dirtyRef.current =
+          next.width * next.height >= canvasWidthRef.current * canvasHeightRef.current
+            ? { mode: "full" }
+            : { mode: "rect", rect: next }
+      } else {
+        dirtyRef.current = { mode: "rect", rect: clamped }
+      }
+    }
     scheduleView()
   }
 
@@ -695,8 +793,7 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
     emitZoom(next)
     if (next === "fit") {
       applyFit()
-      // Camera-only: never mutate layer pixels; refresh full-stack composite under the new viewport.
-      schedule()
+      scheduleView()
       return
     }
     const fx = focusX ?? viewW / 2
@@ -713,9 +810,7 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
       scale: nextScale,
       ...snapOriginToDevicePixels(zoomed.originX, zoomed.originY, dpr),
     }
-    // Recomposite all layers into the buffer, then draw with the shared viewport transform.
-    // Zoom must not target the active layer alone.
-    schedule()
+    scheduleView()
   }
 
   const draw = () => {
@@ -730,20 +825,21 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
     if (buffer.width !== canvasW || buffer.height !== canvasH) {
       buffer.width = canvasW
       buffer.height = canvasH
-      pixelsDirtyRef.current = true
+      dirtyRef.current = { mode: "full" }
     }
 
     // Buffer = opaque Paper composite (export). Display = Paper as light cell colors.
-    if (pixelsDirtyRef.current) {
-      const composite = compositeImage()
-      bufferCtx.putImageData(composite, 0, 0)
+    if (dirtyRef.current.mode !== "clean") {
+      const region = dirtyRef.current.mode === "rect" ? dirtyRef.current.rect : null
+      const composite = compositeImage(region)
 
       let display = displayRef.current
       if (!display) {
         display = document.createElement("canvas")
         displayRef.current = display
       }
-      if (display.width !== canvasW || display.height !== canvasH) {
+      const displayResized = display.width !== canvasW || display.height !== canvasH
+      if (displayResized) {
         display.width = canvasW
         display.height = canvasH
       }
@@ -754,17 +850,26 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
       ) {
         displayImageRef.current = new ImageData(canvasW, canvasH)
       }
+      const blit = region && !displayResized ? region : null
+      if (!blit) bufferCtx.putImageData(composite, 0, 0)
+      else bufferCtx.putImageData(composite, 0, 0, blit.x, blit.y, blit.width, blit.height)
       copyRgbaWithCanvasChecker(
         composite.data,
         displayImageRef.current.data,
         canvasW,
         canvasH,
         paperRgbRef.current,
+        undefined,
+        undefined,
+        blit,
       )
       const displayCtx = display.getContext("2d")
-      if (displayCtx) displayCtx.putImageData(displayImageRef.current, 0, 0)
+      if (displayCtx) {
+        if (!blit) displayCtx.putImageData(displayImageRef.current, 0, 0)
+        else displayCtx.putImageData(displayImageRef.current, 0, 0, blit.x, blit.y, blit.width, blit.height)
+      }
 
-      pixelsDirtyRef.current = false
+      dirtyRef.current = { mode: "clean" }
     }
 
     const dpr = currentDpr()
@@ -1126,8 +1231,7 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
       canvasWidthRef.current,
       canvasHeightRef.current,
     )
-    pixelsDirtyRef.current = true
-    schedule()
+    scheduleRect(selection)
     onStrokeEnd?.()
     return true
   }
@@ -1145,12 +1249,26 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
     emitSelection()
   }
 
+  const beginSelectionUndo = () => {
+    if (selectionUndoOpenRef.current) return
+    selectionUndoOpenRef.current = true
+    pushUndoRef.current()
+  }
+
+  const endSelectionUndo = () => {
+    selectionUndoOpenRef.current = false
+  }
+
   const commitSelection = (next: PixelSelection | null) => {
     const mode = selectCombineRef.current
     if (!next) {
-      if (mode === "replace") setSelection(null)
+      if (mode === "replace" && selectionRef.current) {
+        beginSelectionUndo()
+        setSelection(null)
+      }
       return
     }
+    beginSelectionUndo()
     setSelection(
       combineSelections(
         selectionRef.current,
@@ -1242,11 +1360,14 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
       if (draft.mode === "fill" && draft.points.length < 3) return false
       if (draft.mode === "stroke" && draft.points.length < 2) return false
     }
-    if (!adoptColor(colorRef.current)) {
+    const adoption = ensurePaletteColor(paletteRef.current, colorRef.current)
+    if ("error" in adoption) {
+      if (adoption.error === "palette_full") onPaletteFullRef.current?.()
       cancelShapeDraft()
       return false
     }
     pushUndo()
+    adoptColor(colorRef.current)
     const rgb = hexToRgb(colorRef.current)
     const w = canvasWidthRef.current
     const h = canvasHeightRef.current
@@ -1387,7 +1508,11 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
     })
     cancelTextFrame()
     if (!measured.text) return
-    if (!adoptColor(colorRef.current)) return
+    const adoption = ensurePaletteColor(paletteRef.current, colorRef.current)
+    if ("error" in adoption) {
+      if (adoption.error === "palette_full") onPaletteFullRef.current?.()
+      return
+    }
     const canvasW = canvasWidthRef.current
     const canvasH = canvasHeightRef.current
     const width = wrap
@@ -1408,6 +1533,7 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
       placed,
     ]
     runBufferOp(() => {
+      adoptColor(colorRef.current)
       stampTextBitmap(image().data, placed.x, placed.y, placed.text, hexToRgb(color), canvasW, canvasH, {
         width: placed.width,
         scale,
@@ -1518,23 +1644,94 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
 
   const emitHistory = () => {
     onHistoryChange?.({
-      canUndo: undoRef.current.length > 0,
-      canRedo: redoRef.current.length > 0,
+      canUndo: historyRef.current.canUndo,
+      canRedo: historyRef.current.canRedo,
     })
   }
 
   const pushUndo = () => {
-    undoRef.current.push(snapshotHistory())
-    if (undoRef.current.length > HISTORY_LIMIT) undoRef.current.shift()
-    redoRef.current = []
+    historyRef.current.push(currentHistoryState())
     setHistoryTick((value) => value + 1)
     emitHistory()
   }
+  pushUndoRef.current = pushUndo
+
+  const selectAll = () => {
+    const w = canvasWidthRef.current
+    const h = canvasHeightRef.current
+    const current = selectionRef.current
+    if (
+      !selectionFloatingRef.current &&
+      current &&
+      !current.mask &&
+      current.x === 0 &&
+      current.y === 0 &&
+      current.width === w &&
+      current.height === h
+    ) {
+      chooseTool("select")
+      return
+    }
+    if (selectionFloatingRef.current) ensureSelectionCommitted()
+    pushUndo()
+    setSelection({ x: 0, y: 0, width: w, height: h })
+    chooseTool("select")
+  }
+  selectAllRef.current = selectAll
+
+  const deselect = () => {
+    if (selectionFloatingRef.current) ensureSelectionCommitted()
+    if (!selectionRef.current) return
+    pushUndo()
+    setSelection(null)
+  }
+  deselectRef.current = deselect
+
+  const selectionsEqual = (a: PixelSelection | null, b: PixelSelection | null) => {
+    if (a === b) return true
+    if (!a || !b) return false
+    if (a.x !== b.x || a.y !== b.y || a.width !== b.width || a.height !== b.height) return false
+    if (!a.mask && !b.mask) return true
+    if (!a.mask || !b.mask || a.mask.length !== b.mask.length) return false
+    for (let i = 0; i < a.mask.length; i += 1) if (a.mask[i] !== b.mask[i]) return false
+    return true
+  }
+
+  const replaceSelection = (next: PixelSelection | null) => {
+    ensureSelectionCommitted()
+    if (selectionsEqual(selectionRef.current, next)) return
+    beginSelectionUndo()
+    setSelection(next)
+    endSelectionUndo()
+  }
+
+  const invertActiveSelection = () => {
+    replaceSelection(
+      invertSelection(selectionRef.current, canvasWidthRef.current, canvasHeightRef.current),
+    )
+  }
+  const expandActiveSelection = () => {
+    replaceSelection(
+      expandSelection(selectionRef.current, canvasWidthRef.current, canvasHeightRef.current, 1),
+    )
+  }
+  const contractActiveSelection = () => {
+    replaceSelection(
+      contractSelection(selectionRef.current, canvasWidthRef.current, canvasHeightRef.current, 1),
+    )
+  }
+  invertSelectionRef.current = invertActiveSelection
+  expandSelectionRef.current = expandActiveSelection
+  contractSelectionRef.current = contractActiveSelection
+
+  const selectionFromMarquee = (x0: number, y0: number, x1: number, y1: number) =>
+    selectShapeRef.current === "ellipse"
+      ? selectionFromEllipse(x0, y0, x1, y1)
+      : normalizePixelRect(x0, y0, x1, y1)
 
   const undo = () => {
-    const previous = undoRef.current.pop()
+    const previous = historyRef.current.undo(currentHistoryState())
     if (!previous) return
-    redoRef.current.push(snapshotHistory())
     placedTextsRef.current = []
     applyHistoryFrame(previous)
     setHistoryTick((value) => value + 1)
@@ -1543,9 +1740,8 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
   }
 
   const redo = () => {
-    const next = redoRef.current.pop()
+    const next = historyRef.current.redo(currentHistoryState())
     if (!next) return
-    undoRef.current.push(snapshotHistory())
     placedTextsRef.current = []
     applyHistoryFrame(next)
     setHistoryTick((value) => value + 1)
@@ -1587,7 +1783,8 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
     const selection = selectionRef.current
     if (!selection) return false
     if (selectionFloatingRef.current) {
-      // Already lifted — drop the float; hole stays.
+      // Already lifted — drop the float; hole stays. Undo restores the float.
+      pushUndo()
       setSelection(null)
       onStrokeEnd?.()
       scheduleView()
@@ -1614,6 +1811,7 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
         emitSelection()
       })
     } else {
+      pushUndo()
       selectionFloatingRef.current = false
       selectionFloatRef.current = null
       selectionRef.current = null
@@ -1687,8 +1885,9 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
       pushUndo()
       clearRectToPaper(image().data, selection, w, h)
       selectionFloatingRef.current = true
-      pixelsDirtyRef.current = true
-      schedule()
+      scheduleRect(selection)
+    } else {
+      pushUndo()
     }
     const rotated = rotateClipboardNearest(floating, degrees)
     const cx = selection.x + (selection.width - 1) / 2
@@ -1737,7 +1936,7 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
         buffer.height = canvasHeightRef.current
       }
       ctx.putImageData(compositeImage(), 0, 0)
-      pixelsDirtyRef.current = false
+      dirtyRef.current = { mode: "clean" }
       return new Promise<Blob>((resolve, reject) => {
         buffer.toBlob((blob) => (blob ? resolve(blob) : reject(new Error("png"))), "image/png")
       })
@@ -1802,14 +2001,11 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
       return true
     },
     rotateSelection: (degrees) => rotateSelectionByDegrees(degrees),
-    selectAll: () => {
-      setSelection({ x: 0, y: 0, width: canvasWidthRef.current, height: canvasHeightRef.current })
-      chooseTool("select")
-    },
-    clearSelection: () => {
-      ensureSelectionCommitted()
-      setSelection(null)
-    },
+    selectAll: () => selectAllRef.current(),
+    clearSelection: () => deselectRef.current(),
+    invertSelection: () => invertSelectionRef.current(),
+    expandSelection: () => expandSelectionRef.current(),
+    contractSelection: () => contractSelectionRef.current(),
     hasSelection: () => selectionRef.current !== null,
     copySelection,
     cutSelection,
@@ -1819,8 +2015,13 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
     stampText: (x, y, text, box) => {
       const next = text.replace(/\r/g, "")
       if (!next.trim()) return
-      if (!adoptColor(colorRef.current)) return
+      const adoption = ensurePaletteColor(paletteRef.current, colorRef.current)
+      if ("error" in adoption) {
+        if (adoption.error === "palette_full") onPaletteFullRef.current?.()
+        return
+      }
       runBufferOp(() => {
+        adoptColor(colorRef.current)
         stampTextBitmap(
           image().data,
           x,
@@ -1834,8 +2035,7 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
       })
     },
     clearHistory: () => {
-      undoRef.current = []
-      redoRef.current = []
+      historyRef.current.clear()
       placedTextsRef.current = []
       setHistoryTick((value) => value + 1)
       emitHistory()
@@ -2110,21 +2310,26 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
       return count
     },
     ensureColors: (hexes) => {
+      let next = paletteRef.current
       let added = 0
       let truncated = false
       for (const raw of hexes) {
         const hex = normalizePixelHex(raw)
         if (!hex || hex === PIXEL_PAPER) continue
-        const result = ensurePaletteColor(paletteRef.current, hex)
+        const result = ensurePaletteColor(next, hex)
         if ("error" in result) {
           if (result.error === "palette_full") truncated = true
           break
         }
-        if (result.palette.length > paletteRef.current.length) added += 1
-        paletteRef.current = result.palette
+        if (result.palette.length > next.length) added += 1
+        next = result.palette
       }
-      if (added > 0 || truncated) {
+      if (added > 0) {
+        pushUndo()
+        paletteRef.current = next
         syncPaletteIndexMap()
+        onPaletteChangeRef.current?.([...paletteRef.current])
+      } else if (truncated) {
         onPaletteChangeRef.current?.([...paletteRef.current])
       }
       return { palette: [...paletteRef.current], added, truncated }
@@ -2135,6 +2340,7 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
       if (normalized === PIXEL_PAPER) return { ok: false, error: "paper" as const }
       const removedIndex = paletteIndexOf(paletteRef.current, normalized)
       if (removedIndex < 1) return { ok: false, error: "missing" as const }
+      pushUndo()
       const result = removeDocumentColor(
         image().data,
         paletteRef.current,
@@ -2155,10 +2361,6 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
       syncPaletteIndexMap()
       loadActiveIntoImage()
       onPaletteChangeRef.current?.(result.palette)
-      undoRef.current = []
-      redoRef.current = []
-      setHistoryTick((value) => value + 1)
-      emitHistory()
       schedule()
       onStrokeEnd?.()
       return { ok: true, replaced: result.replaced }
@@ -2232,8 +2434,10 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
     emitLayers()
   }, [])
 
+  const paletteHistoryLiveRef = useRef(false)
   useEffect(() => {
-    adoptColor(color)
+    adoptColor(color, paletteHistoryLiveRef.current)
+    paletteHistoryLiveRef.current = true
   }, [adoptColor, color])
 
   const cellFromEvent = (event: { clientX: number; clientY: number }) => {
@@ -2285,7 +2489,7 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
   }
 
   const chooseColor = (next: string) => {
-    adoptColor(next)
+    adoptColor(next, true)
     colorRef.current = next
     if (onColorChange) onColorChange(next)
     else setInternalColor(next)
@@ -2326,8 +2530,12 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
         }
         if (key === "a") {
           event.preventDefault()
-          setSelection({ x: 0, y: 0, width: canvasWidthRef.current, height: canvasHeightRef.current })
-          chooseToolRef.current("select")
+          selectAllRef.current()
+          return
+        }
+        if (key === "i" && event.shiftKey) {
+          event.preventDefault()
+          invertSelectionRef.current()
           return
         }
         if (key === "c") {
@@ -2362,8 +2570,6 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
           event.preventDefault()
           moveRef.current = null
           selectMutatedRef.current = false
-          selectionFloatingRef.current = false
-          selectionFloatRef.current = null
           undoFnRef.current()
           selectionRef.current = null
           emitSelection()
@@ -2374,37 +2580,22 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
           event.preventDefault()
           selectResizeRef.current = null
           selectMutatedRef.current = false
-          selectionFloatingRef.current = false
-          selectionFloatRef.current = null
           undoFnRef.current()
-          selectionRef.current = null
-          emitSelection()
-          schedule()
           return
         }
         if (selectRotateRef.current) {
           event.preventDefault()
           selectRotateRef.current = null
           selectMutatedRef.current = false
-          selectionFloatingRef.current = false
-          selectionFloatRef.current = null
           undoFnRef.current()
-          selectionRef.current = null
-          emitSelection()
-          schedule()
           return
         }
         if (selectionFloatingRef.current) {
           event.preventDefault()
-          selectionFloatingRef.current = false
-          selectionFloatRef.current = null
           undoFnRef.current()
-          selectionRef.current = null
-          emitSelection()
-          schedule()
           return
         }
-        setSelection(null)
+        deselectRef.current()
         return
       }
       if (
@@ -2468,7 +2659,13 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
       else if (key === "w") chooseToolRef.current("selectContiguous")
       else if (key === "k") chooseToolRef.current("selectColor")
       else if (key === "s") chooseToolRef.current("lasso")
-      else if (key === "[") {
+      else if (event.shiftKey && event.code === "BracketLeft") {
+        event.preventDefault()
+        contractSelectionRef.current()
+      } else if (event.shiftKey && event.code === "BracketRight") {
+        event.preventDefault()
+        expandSelectionRef.current()
+      } else if (key === "[") {
         chooseBrushRef.current(stepBrushSize(brushRef.current, -1))
       } else if (key === "]") {
         chooseBrushRef.current(stepBrushSize(brushRef.current, 1))
@@ -2527,11 +2724,29 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
   /** Stamp freehand through ordered cell samples; one composite at the end. */
   const paintStrokeCells = (cells: PixelPoint[]) => {
     if (cells.length === 0) return
+    const w = canvasWidthRef.current
+    const h = canvasHeightRef.current
+    let dirty: PixelRect | null = null
+    const note = (from: PixelPoint, to: PixelPoint) => {
+      const rect = dirtyRectForSegment(
+        from.x,
+        from.y,
+        to.x,
+        to.y,
+        brushRef.current,
+        w,
+        h,
+        symmetryRef.current,
+      )
+      if (!rect) return
+      dirty = dirty ? unionDirtyRect(dirty, rect) : rect
+    }
     let prev = drawRef.current
     for (const cell of cells) {
       if (!prev) {
         stampStrokeSegment(cell, cell)
         appendStrokeTrail(cell)
+        note(cell, cell)
         prev = cell
         continue
       }
@@ -2541,11 +2756,12 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
         if (prev.x === point.x && prev.y === point.y) continue
         stampStrokeSegment(prev, point)
         appendStrokeTrail(point)
+        note(prev, point)
         prev = point
       }
     }
     drawRef.current = prev
-    schedule()
+    if (dirty) scheduleRect(dirty)
   }
 
   const paintStrokeFromPointerEvent = (event: {
@@ -2586,12 +2802,17 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
     const h = canvasHeightRef.current
     const pixels = image().data
     const clip = selectionRef.current
+    const strokeSize = toolRef.current === "gradient" ? 1 : brushRef.current
     if (toolRef.current === "line") {
       strokeBrushLine(pixels, start.x, start.y, x1, y1, rgb, brushRef.current, w, h, "circle", clip)
     } else if (toolRef.current === "gradient") {
       strokeBrushLine(pixels, start.x, start.y, x1, y1, rgb, 1, w, h, "square", clip)
     }
-    schedule()
+    const next = dirtyRectForSegment(start.x, start.y, x1, y1, strokeSize, w, h)
+    const prev = shapePreviewDirtyRef.current
+    const dirty = next && prev ? unionDirtyRect(prev, next) : (next ?? prev)
+    shapePreviewDirtyRef.current = next
+    if (dirty) scheduleRect(dirty)
   }
 
   const hitShapeCorner = (
@@ -2647,8 +2868,9 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
       pushUndo()
       clearRectToPaper(image().data, selection, w, h)
       selectionFloatingRef.current = true
-      pixelsDirtyRef.current = true
-      schedule()
+      scheduleRect(selection)
+    } else {
+      pushUndo()
     }
     rememberSelectionFloat(floating)
     const centerX = selection.x + (selection.width - 1) / 2
@@ -2685,8 +2907,9 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
       pushUndo()
       clearRectToPaper(image().data, selection, w, h)
       selectionFloatingRef.current = true
-      pixelsDirtyRef.current = true
-      schedule()
+      scheduleRect(selection)
+    } else {
+      pushUndo()
     }
     rememberSelectionFloat(floating)
     setSelection({ ...selection, x: nextX, y: nextY, mask: floating.mask })
@@ -2704,8 +2927,9 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
       pushUndo()
       clearRectToPaper(image().data, selection, w, h)
       selectionFloatingRef.current = true
-      pixelsDirtyRef.current = true
-      schedule()
+      scheduleRect(selection)
+    } else {
+      pushUndo()
     }
     rememberSelectionFloat(floating)
     selectResizeRef.current = {
@@ -2757,8 +2981,9 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
       pushUndo()
       clearRectToPaper(image().data, selection, canvasWidthRef.current, canvasHeightRef.current)
       selectionFloatingRef.current = true
-      pixelsDirtyRef.current = true
-      schedule()
+      scheduleRect(selection)
+    } else {
+      pushUndo()
     }
     rememberSelectionFloat(floating)
     moveRef.current = {
@@ -2839,19 +3064,45 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
 
     if (toolRef.current === "fill") {
       if (!activeLayerEditable()) return
-      pushUndo()
+      const before = currentHistoryState()
+      const paletteBefore = paletteRef.current
       adoptColor(colorRef.current)
-      floodFill(
-        image().data,
-        cell.x,
-        cell.y,
-        hexToRgb(colorRef.current),
-        canvasWidthRef.current,
-        canvasHeightRef.current,
-        selectionRef.current,
-      )
-      schedule()
-      onStrokeEnd?.()
+      const bounds: FillBounds = { minX: 0, minY: 0, maxX: -1, maxY: -1 }
+      const rgb = hexToRgb(colorRef.current)
+      const clip = selectionRef.current
+      const tolerance = fillToleranceRef.current
+      const painted = event.shiftKey
+        ? replaceMatchingColor(
+            image().data,
+            cell.x,
+            cell.y,
+            rgb,
+            canvasWidthRef.current,
+            canvasHeightRef.current,
+            clip,
+            tolerance,
+            bounds,
+          )
+        : floodFill(
+            image().data,
+            cell.x,
+            cell.y,
+            rgb,
+            canvasWidthRef.current,
+            canvasHeightRef.current,
+            clip,
+            tolerance,
+            bounds,
+          )
+      if (painted > 0 || paletteRef.current !== paletteBefore) {
+        historyRef.current.push(before)
+        setHistoryTick((value) => value + 1)
+        emitHistory()
+      }
+      if (painted > 0) {
+        scheduleRect(fillBoundsRect(bounds))
+        onStrokeEnd?.()
+      }
       return
     }
 
@@ -2987,7 +3238,10 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
         lassoRef.current = [cell]
         if (!combining) {
           ensureSelectionCommitted()
+          if (selectionRef.current) beginSelectionUndo()
           setSelection(null)
+        } else {
+          beginSelectionUndo()
         }
         return
       }
@@ -2996,7 +3250,10 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
       moveRef.current = null
       if (!combining) {
         ensureSelectionCommitted()
+        if (selectionRef.current) beginSelectionUndo()
         setSelection(null)
+      } else {
+        beginSelectionUndo()
       }
       return
     }
@@ -3191,7 +3448,8 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
       const end = cellFromEvent(event)
       selectMarqueeEndRef.current = end
       if (selectCombineRef.current === "replace") {
-        setSelection(normalizePixelRect(start.x, start.y, end.x, end.y))
+        beginSelectionUndo()
+        setSelection(selectionFromMarquee(start.x, start.y, end.x, end.y))
       } else {
         scheduleView()
       }
@@ -3340,7 +3598,7 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
     if (selectStartRef.current && selectCombineRef.current !== "replace") {
       const start = selectStartRef.current
       const end = selectMarqueeEndRef.current ?? cell
-      commitSelection(normalizePixelRect(start.x, start.y, end.x, end.y))
+      commitSelection(selectionFromMarquee(start.x, start.y, end.x, end.y))
     }
     if (textCreateRef.current) finishTextCreateRef.current(cell)
     const wasStroke = Boolean(drawRef.current) || Boolean(shapeStartRef.current)
@@ -3365,6 +3623,7 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
       pinchRef.current = null
     }
     if (pointersRef.current.size === 0) {
+      endSelectionUndo()
       if (moveRef.current) {
         rememberSelectionFloat(moveRef.current.floating)
         selectionFloatingRef.current = true
@@ -3387,6 +3646,7 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
       strokeTrailRef.current = []
       panRef.current = null
       shapeStartRef.current = null
+      shapePreviewDirtyRef.current = null
       shapeDragRef.current = null
       shapeBaseRef.current = null
       selectStartRef.current = null
@@ -3746,6 +4006,43 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
           {copy.pixelFit[lang]}
         </Button>
       </div>
+
+      {tool === "fill" ? (
+        <label className="flex max-w-xs items-center gap-3 text-[13px] text-fg">
+          <span className="shrink-0">{copy.pixelFillTolerance[lang]}</span>
+          <input
+            type="range"
+            min={0}
+            max={255}
+            step={1}
+            value={fillToleranceUi}
+            aria-label={copy.pixelFillTolerance[lang]}
+            onChange={(event) => setFillToleranceUi(clampFillTolerance(Number(event.target.value)))}
+            className="min-w-0 flex-1"
+          />
+          <span className="w-8 text-right tabular-nums">{fillToleranceUi}</span>
+        </label>
+      ) : null}
+      {tool === "select" ? (
+        <div className="flex flex-wrap gap-2" role="group" aria-label={copy.pixelSelectShape[lang]}>
+          <Button
+            size="sm"
+            variant={selectShapeUi === "rect" ? "primary" : "outline"}
+            aria-pressed={selectShapeUi === "rect"}
+            onClick={() => setSelectShapeUi("rect")}
+          >
+            {copy.pixelSelectRect[lang]}
+          </Button>
+          <Button
+            size="sm"
+            variant={selectShapeUi === "ellipse" ? "primary" : "outline"}
+            aria-pressed={selectShapeUi === "ellipse"}
+            onClick={() => setSelectShapeUi("ellipse")}
+          >
+            {copy.pixelSelectEllipse[lang]}
+          </Button>
+        </div>
+      ) : null}
 
       <div className="flex flex-wrap items-center gap-2" role="radiogroup" aria-label={copy.pixelColor[lang]}>
         {PIXEL_SWATCHES.map((swatch) => (

@@ -28,8 +28,12 @@ import {
   fitScale,
   flattenLayersToIndices,
   flipRectHorizontal,
+  contractSelection,
+  expandSelection,
+  fillBoundsRect,
   floodFill,
   hexToRgb,
+  invertSelection,
   inCanvas,
   indicesToRgba,
   isPixelCanvasSize,
@@ -42,6 +46,7 @@ import {
   rgbToPaletteIndex,
   rgbaToIndices,
   removeDocumentColor,
+  replaceMatchingColor,
   replaceRgbInPixels,
   rotateClipboardNearest,
   rotateRect90Cw,
@@ -69,6 +74,7 @@ import {
   scaleClipboard,
   selectionCombineModeFromModifiers,
   selectionFromColor,
+  selectionFromEllipse,
   selectionFromFlood,
   selectionFromPolygon,
   walkLine,
@@ -523,6 +529,79 @@ describe("pixel buffer", () => {
     expect([pixels[(1 * w + 1) * 4], pixels[(1 * w + 2) * 4], pixels[(2 * w + 1) * 4]]).toEqual([
       5, 5, 4,
     ])
+  })
+
+  it("flood-fills within tolerance and stops when the fill color still matches", () => {
+    const w = 6
+    const h = 3
+    const pixels = new Uint8ClampedArray(w * h * 4)
+    fillPaper(pixels)
+    setPixel(pixels, 1, 1, [100, 100, 100], w, h)
+    setPixel(pixels, 2, 1, [108, 108, 108], w, h)
+    setPixel(pixels, 4, 1, [108, 108, 108], w, h)
+    const bounds = { minX: 0, minY: 0, maxX: -1, maxY: -1 }
+    expect(floodFill(pixels, 1, 1, [102, 102, 102], w, h, null, 10, bounds)).toBe(2)
+    expect(fillBoundsRect(bounds)).toEqual({ x: 1, y: 1, width: 2, height: 1 })
+    expect([pixels[(1 * w + 1) * 4], pixels[(1 * w + 2) * 4], pixels[(1 * w + 4) * 4]]).toEqual([
+      102, 102, 108,
+    ])
+    expect(pixels[(1 * w + 0) * 4]).toBe(255)
+  })
+
+  it("replaces every match, including through a gap, and still clips", () => {
+    const w = 6
+    const h = 3
+    const pixels = new Uint8ClampedArray(w * h * 4)
+    fillPaper(pixels)
+    setPixel(pixels, 0, 0, [9, 0, 0], w, h)
+    setPixel(pixels, 0, 2, [9, 0, 0], w, h)
+    setPixel(pixels, 3, 0, [12, 0, 0], w, h)
+    expect(floodFill(pixels, 0, 0, [0, 0, 1], w, h)).toBe(1)
+    fillPaper(pixels)
+    setPixel(pixels, 0, 0, [9, 0, 0], w, h)
+    setPixel(pixels, 0, 2, [9, 0, 0], w, h)
+    setPixel(pixels, 3, 0, [12, 0, 0], w, h)
+    const bounds = { minX: 0, minY: 0, maxX: -1, maxY: -1 }
+    expect(replaceMatchingColor(pixels, 0, 0, [0, 0, 1], w, h, null, 4, bounds)).toBe(3)
+    expect(fillBoundsRect(bounds)).toEqual({ x: 0, y: 0, width: 4, height: 3 })
+    const mask = new Uint8Array(2)
+    mask[0] = 1
+    const clip = { x: 0, y: 0, width: 1, height: 2, mask }
+    fillPaper(pixels)
+    setPixel(pixels, 0, 0, [9, 0, 0], w, h)
+    setPixel(pixels, 0, 1, [9, 0, 0], w, h)
+    expect(replaceMatchingColor(pixels, 0, 0, [0, 0, 1], w, h, clip, 0)).toBe(1)
+    expect(pixels[(1 * w + 0) * 4]).toBe(9)
+  })
+
+  it("inverts, expands, and contracts selections", () => {
+    expect(invertSelection(null, 4, 4)).toEqual({ x: 0, y: 0, width: 4, height: 4 })
+    expect(invertSelection({ x: 0, y: 0, width: 4, height: 4 }, 4, 4)).toBeNull()
+    const dot = { x: 0, y: 0, width: 1, height: 1 }
+    const inverted = invertSelection(dot, 2, 2)
+    expect(inverted?.width).toBe(2)
+    expect(inverted?.height).toBe(2)
+    expect(inverted?.mask).toEqual(new Uint8Array([0, 1, 1, 1]))
+    const block = { x: 1, y: 1, width: 3, height: 3 }
+    expect(contractSelection(block, 8, 8)).toEqual({ x: 2, y: 2, width: 1, height: 1 })
+    expect(expandSelection({ x: 2, y: 2, width: 1, height: 1 }, 8, 8)).toEqual(block)
+    expect(expandSelection({ x: 0, y: 0, width: 1, height: 1 }, 4, 4)).toEqual({
+      x: 0,
+      y: 0,
+      width: 2,
+      height: 2,
+    })
+    expect(contractSelection({ x: 0, y: 0, width: 2, height: 2 }, 4, 4)).toBeNull()
+  })
+
+  it("rasterizes an elliptical marquee and keeps a flat drag as a rect", () => {
+    const ellipse = selectionFromEllipse(0, 0, 4, 4)
+    expect(ellipse.x).toBe(0)
+    expect(ellipse.width).toBe(5)
+    expect(ellipse.mask?.[0]).toBe(0)
+    expect(ellipse.mask?.[2]).toBe(1)
+    expect(ellipse.mask?.[12]).toBe(1)
+    expect(selectionFromEllipse(1, 2, 4, 2)).toEqual({ x: 1, y: 2, width: 4, height: 1 })
   })
 })
 

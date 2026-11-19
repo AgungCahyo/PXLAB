@@ -218,15 +218,13 @@ export function copyRgbaWithCanvasChecker(
   paperRgb: readonly [number, number, number] = hexToRgb(PIXEL_PAPER),
   lightRgb: readonly [number, number, number] = hexToRgb(PIXEL_CANVAS_CHECKER_A),
   darkRgb: readonly [number, number, number] = hexToRgb(PIXEL_CANVAS_CHECKER_B),
+  rect?: PixelRect | null,
 ) {
   const [pr, pg, pb] = paperRgb
-  const cellCount = width * height
-  for (let i = 0; i < cellCount; i += 1) {
-    const p = i * 4
+  const paint = (x: number, y: number) => {
+    const p = (y * width + x) * 4
     const isPaper = source[p] === pr && source[p + 1] === pg && source[p + 2] === pb
     if (isPaper) {
-      const x = i % width
-      const y = (i / width) | 0
       const [r, g, b] = (x + y) % 2 === 0 ? lightRgb : darkRgb
       dest[p] = r
       dest[p + 1] = g
@@ -238,6 +236,18 @@ export function copyRgbaWithCanvasChecker(
       dest[p + 2] = source[p + 2]!
       dest[p + 3] = source[p + 3]!
     }
+  }
+  if (!rect) {
+    const cellCount = width * height
+    for (let i = 0; i < cellCount; i += 1) paint(i % width, (i / width) | 0)
+    return
+  }
+  const x0 = Math.max(0, rect.x)
+  const y0 = Math.max(0, rect.y)
+  const x1 = Math.min(width, rect.x + rect.width)
+  const y1 = Math.min(height, rect.y + rect.height)
+  for (let y = y0; y < y1; y += 1) {
+    for (let x = x0; x < x1; x += 1) paint(x, y)
   }
 }
 
@@ -560,9 +570,68 @@ export function paintEllipse(
   }
 }
 
+/** Inclusive bounds of pixels a fill actually wrote. Seed with maxX/maxY = -1. */
+export type FillBounds = {
+  minX: number
+  minY: number
+  maxX: number
+  maxY: number
+}
+
+export function clampFillTolerance(value: number) {
+  if (!Number.isFinite(value)) return 0
+  return Math.max(0, Math.min(255, Math.round(value)))
+}
+
+function withinFillTolerance(
+  pixels: Uint8ClampedArray,
+  offset: number,
+  tr: number,
+  tg: number,
+  tb: number,
+  tolerance: number,
+) {
+  const dr = pixels[offset] - tr
+  const dg = pixels[offset + 1] - tg
+  const db = pixels[offset + 2] - tb
+  const ar = dr < 0 ? -dr : dr
+  const ag = dg < 0 ? -dg : dg
+  const ab = db < 0 ? -db : db
+  const max = ar > ag ? (ar > ab ? ar : ab) : ag > ab ? ag : ab
+  return max <= tolerance
+}
+
+function noteFillBounds(bounds: FillBounds | null | undefined, x: number, y: number) {
+  if (!bounds) return
+  if (bounds.maxX < bounds.minX) {
+    bounds.minX = x
+    bounds.maxX = x
+    bounds.minY = y
+    bounds.maxY = y
+    return
+  }
+  if (x < bounds.minX) bounds.minX = x
+  else if (x > bounds.maxX) bounds.maxX = x
+  if (y < bounds.minY) bounds.minY = y
+  else if (y > bounds.maxY) bounds.maxY = y
+}
+
+export function fillBoundsRect(bounds: FillBounds): PixelRect | null {
+  if (bounds.maxX < bounds.minX || bounds.maxY < bounds.minY) return null
+  return {
+    x: bounds.minX,
+    y: bounds.minY,
+    width: bounds.maxX - bounds.minX + 1,
+    height: bounds.maxY - bounds.minY + 1,
+  }
+}
+
 /**
- * Contiguous 4-connected flood fill. No-op if target equals fill color.
- * Caps visits at width*height.
+ * Contiguous 4-connected flood fill.
+ * Tolerance 0 matches the target RGB exactly and treats the new color as the visited set.
+ * Tolerance > 0 matches the max channel delta and uses an explicit visited bitmap, so a fill
+ * color that is still inside the tolerance cannot be re-entered.
+ * `bounds`, when passed, receives the inclusive rectangle of painted cells (seed maxX = -1).
  */
 export function floodFill(
   pixels: Uint8ClampedArray,
@@ -572,24 +641,120 @@ export function floodFill(
   width = PIXEL_CANVAS_SIZE,
   height = PIXEL_CANVAS_SIZE,
   clip?: PixelSelection | null,
+  tolerance = 0,
+  bounds?: FillBounds | null,
 ) {
+  if (!inCanvas(startX, startY, width, height)) return 0
   if (clip && !pointInSelection(startX, startY, clip)) return 0
-  const target = getPixelRgb(pixels, startX, startY, width, height)
-  if (!target || rgbEqual(target, rgb)) return 0
-  const stack: number[] = [startX, startY]
+  const s = (startY * width + startX) * 4
+  const tr = pixels[s]
+  const tg = pixels[s + 1]
+  const tb = pixels[s + 2]
+  const [r, g, b] = rgb
+  const tol = clampFillTolerance(tolerance)
+  if (tol === 0 && tr === r && tg === g && tb === b) return 0
+
+  const visited = tol > 0 ? new Uint8Array(width * height) : null
+  const matches = (x: number, y: number) => {
+    const index = y * width + x
+    if (visited && visited[index]) return false
+    if (clip && !pointInSelection(x, y, clip)) return false
+    const i = index * 4
+    if (tol === 0) return pixels[i] === tr && pixels[i + 1] === tg && pixels[i + 2] === tb
+    return withinFillTolerance(pixels, i, tr, tg, tb, tol)
+  }
+  let stack = new Int32Array(1024)
+  let top = 0
+  const push = (x: number, y: number) => {
+    if (top + 2 > stack.length) {
+      const grown = new Int32Array(stack.length * 2)
+      grown.set(stack)
+      stack = grown
+    }
+    stack[top++] = x
+    stack[top++] = y
+  }
   let painted = 0
-  const max = width * height
-  while (stack.length > 0 && painted < max) {
-    const y = stack.pop()
-    const x = stack.pop()
-    if (x === undefined || y === undefined) break
-    if (!inCanvas(x, y, width, height)) continue
-    if (clip && !pointInSelection(x, y, clip)) continue
-    const current = getPixelRgb(pixels, x, y, width, height)
-    if (!current || !rgbEqual(current, target)) continue
-    setPixel(pixels, x, y, rgb, width, height, clip)
-    painted += 1
-    stack.push(x + 1, y, x - 1, y, x, y + 1, x, y - 1)
+  push(startX, startY)
+  while (top > 0) {
+    const y = stack[--top]
+    let x = stack[--top]
+    if (!matches(x, y)) continue
+    while (x > 0 && matches(x - 1, y)) x -= 1
+    let spanUp = false
+    let spanDown = false
+    while (x < width && matches(x, y)) {
+      const index = y * width + x
+      if (visited) visited[index] = 1
+      const i = index * 4
+      pixels[i] = r
+      pixels[i + 1] = g
+      pixels[i + 2] = b
+      pixels[i + 3] = 255
+      noteFillBounds(bounds, x, y)
+      painted += 1
+      if (y > 0) {
+        const up = matches(x, y - 1)
+        if (up && !spanUp) push(x, y - 1)
+        spanUp = up
+      }
+      if (y < height - 1) {
+        const down = matches(x, y + 1)
+        if (down && !spanDown) push(x, y + 1)
+        spanDown = down
+      }
+      x += 1
+    }
+  }
+  return painted
+}
+
+/**
+ * Replace every pixel within tolerance of the start color. Not contiguous.
+ * Still clipped by `clip`. Tolerance is the max channel delta (0 = exact).
+ */
+export function replaceMatchingColor(
+  pixels: Uint8ClampedArray,
+  startX: number,
+  startY: number,
+  rgb: readonly [number, number, number],
+  width = PIXEL_CANVAS_SIZE,
+  height = PIXEL_CANVAS_SIZE,
+  clip?: PixelSelection | null,
+  tolerance = 0,
+  bounds?: FillBounds | null,
+) {
+  if (!inCanvas(startX, startY, width, height)) return 0
+  if (clip && !pointInSelection(startX, startY, clip)) return 0
+  const s = (startY * width + startX) * 4
+  const tr = pixels[s]
+  const tg = pixels[s + 1]
+  const tb = pixels[s + 2]
+  const [r, g, b] = rgb
+  const tol = clampFillTolerance(tolerance)
+  if (tol === 0 && tr === r && tg === g && tb === b) return 0
+  const x0 = clip ? Math.max(0, clip.x) : 0
+  const y0 = clip ? Math.max(0, clip.y) : 0
+  const x1 = clip ? Math.min(width, clip.x + clip.width) : width
+  const y1 = clip ? Math.min(height, clip.y + clip.height) : height
+  let painted = 0
+  for (let y = y0; y < y1; y += 1) {
+    for (let x = x0; x < x1; x += 1) {
+      if (clip && !pointInSelection(x, y, clip)) continue
+      const i = (y * width + x) * 4
+      const hit =
+        tol === 0
+          ? pixels[i] === tr && pixels[i + 1] === tg && pixels[i + 2] === tb
+          : withinFillTolerance(pixels, i, tr, tg, tb, tol)
+      if (!hit) continue
+      if (pixels[i] === r && pixels[i + 1] === g && pixels[i + 2] === b) continue
+      pixels[i] = r
+      pixels[i + 1] = g
+      pixels[i + 2] = b
+      pixels[i + 3] = 255
+      noteFillBounds(bounds, x, y)
+      painted += 1
+    }
   }
   return painted
 }
@@ -1120,6 +1285,128 @@ export function selectionFromPolygon(
     if (dummy[i * 4] === 1) full[i] = 1
   }
   return compactSelection(full, width, height)
+}
+
+function selectionMask(selection: PixelSelection, width: number, height: number) {
+  const full = new Uint8Array(width * height)
+  const x0 = Math.max(0, selection.x)
+  const y0 = Math.max(0, selection.y)
+  const x1 = Math.min(width, selection.x + selection.width)
+  const y1 = Math.min(height, selection.y + selection.height)
+  for (let y = y0; y < y1; y += 1) {
+    for (let x = x0; x < x1; x += 1) {
+      if (pointInSelection(x, y, selection)) full[y * width + x] = 1
+    }
+  }
+  return full
+}
+
+/** Invert the selection. No selection becomes the whole canvas; a full canvas becomes none. */
+export function invertSelection(
+  selection: PixelSelection | null,
+  width: number,
+  height: number,
+): PixelSelection | null {
+  if (width < 1 || height < 1) return null
+  if (!selection) return { x: 0, y: 0, width, height }
+  const full = selectionMask(selection, width, height)
+  for (let i = 0; i < full.length; i += 1) full[i] = full[i] ? 0 : 1
+  return compactSelection(full, width, height)
+}
+
+/**
+ * Grow the selection by `radius` pixels (Chebyshev, so corners grow too).
+ * Stops at the canvas edge.
+ */
+export function expandSelection(
+  selection: PixelSelection | null,
+  width: number,
+  height: number,
+  radius = 1,
+): PixelSelection | null {
+  if (!selection) return null
+  const r = Math.max(0, Math.round(radius))
+  if (r === 0) return selection
+  const full = selectionMask(selection, width, height)
+  const next = new Uint8Array(width * height)
+  for (let y = 0; y < height; y += 1) {
+    for (let x = 0; x < width; x += 1) {
+      if (!full[y * width + x]) continue
+      const y0 = Math.max(0, y - r)
+      const y1 = Math.min(height - 1, y + r)
+      const x0 = Math.max(0, x - r)
+      const x1 = Math.min(width - 1, x + r)
+      for (let yy = y0; yy <= y1; yy += 1) {
+        next.fill(1, yy * width + x0, yy * width + x1 + 1)
+      }
+    }
+  }
+  return compactSelection(next, width, height)
+}
+
+/** Shrink the selection by `radius` pixels. A pixel stays only when its whole neighborhood is selected. */
+export function contractSelection(
+  selection: PixelSelection | null,
+  width: number,
+  height: number,
+  radius = 1,
+): PixelSelection | null {
+  if (!selection) return null
+  const r = Math.max(0, Math.round(radius))
+  if (r === 0) return selection
+  const full = selectionMask(selection, width, height)
+  const next = new Uint8Array(width * height)
+  for (let y = 0; y < height; y += 1) {
+    for (let x = 0; x < width; x += 1) {
+      if (!full[y * width + x]) continue
+      let keep = true
+      for (let yy = y - r; yy <= y + r && keep; yy += 1) {
+        if (yy < 0 || yy >= height) {
+          keep = false
+          break
+        }
+        for (let xx = x - r; xx <= x + r; xx += 1) {
+          if (xx < 0 || xx >= width || !full[yy * width + xx]) {
+            keep = false
+            break
+          }
+        }
+      }
+      if (keep) next[y * width + x] = 1
+    }
+  }
+  return compactSelection(next, width, height)
+}
+
+/**
+ * Elliptical marquee inside the drag box. Matches the filled-ellipse cover test (v <= 1.02)
+ * so the selection and the ellipse tool agree. A flat box is a plain rectangle.
+ */
+export function selectionFromEllipse(x0: number, y0: number, x1: number, y1: number): PixelSelection {
+  const rect = normalizePixelRect(x0, y0, x1, y1)
+  if (rect.width <= 1 || rect.height <= 1) return rect
+  const rx = (rect.width - 1) / 2
+  const ry = (rect.height - 1) / 2
+  const cx = rect.x + rx
+  const cy = rect.y + ry
+  const rx2 = rx * rx
+  const ry2 = ry * ry
+  const mask = new Uint8Array(rect.width * rect.height)
+  let holes = false
+  let any = false
+  for (let row = 0; row < rect.height; row += 1) {
+    for (let col = 0; col < rect.width; col += 1) {
+      const px = rect.x + col
+      const py = rect.y + row
+      const v = ((px - cx) * (px - cx)) / rx2 + ((py - cy) * (py - cy)) / ry2
+      if (v <= 1.02) {
+        mask[row * rect.width + col] = 1
+        any = true
+      } else holes = true
+    }
+  }
+  if (!any || !holes) return rect
+  return { ...rect, mask }
 }
 
 /** Constrain shape end so width === height (square / circle bounds). */
@@ -1835,6 +2122,30 @@ export function rgbaToIndices(
   return out
 }
 
+/** Write one rectangle of RGBA back into an existing index buffer. */
+export function writeRgbaRectToIndices(
+  pixels: Uint8ClampedArray,
+  indices: Uint8Array,
+  width: number,
+  height: number,
+  rect: PixelRect,
+  palette: readonly string[] = PIXEL_PALETTE,
+  indexMap?: Map<number, number>,
+) {
+  const map = indexMap ?? buildPaletteRgbIndex(palette)
+  const x0 = Math.max(0, rect.x)
+  const y0 = Math.max(0, rect.y)
+  const x1 = Math.min(width, rect.x + rect.width)
+  const y1 = Math.min(height, rect.y + rect.height)
+  for (let y = y0; y < y1; y += 1) {
+    for (let x = x0; x < x1; x += 1) {
+      const i = y * width + x
+      const p = i * 4
+      indices[i] = map.get(rgb24Key(pixels[p]!, pixels[p + 1]!, pixels[p + 2]!)) ?? 0
+    }
+  }
+}
+
 export function indicesToRgba(
   indices: Uint8Array,
   pixels: Uint8ClampedArray,
@@ -1975,9 +2286,45 @@ export function createEmptyLayer(
   }
 }
 
+function paletteLut(palette: readonly string[]) {
+  const [paperR, paperG, paperB] = hexToRgb(PIXEL_PAPER)
+  const lut = new Uint8Array(palette.length * 3)
+  for (let c = 0; c < palette.length; c += 1) {
+    const [r, g, b] = hexToRgb(palette[c] ?? PIXEL_PAPER)
+    lut[c * 3] = r
+    lut[c * 3 + 1] = g
+    lut[c * 3 + 2] = b
+  }
+  return { lut, paperR, paperG, paperB }
+}
+
+function writeCompositeCell(
+  pixels: Uint8ClampedArray,
+  p: number,
+  index: number,
+  paletteLength: number,
+  lut: Uint8Array,
+  paperR: number,
+  paperG: number,
+  paperB: number,
+) {
+  if (index < paletteLength) {
+    const l = index * 3
+    pixels[p] = lut[l]
+    pixels[p + 1] = lut[l + 1]
+    pixels[p + 2] = lut[l + 2]
+  } else {
+    pixels[p] = paperR
+    pixels[p + 1] = paperG
+    pixels[p + 2] = paperB
+  }
+  pixels[p + 3] = 255
+}
+
 /**
  * Composite layers bottom→top into RGBA.
  * Bottom layer: index 0 = paper. Upper layers: index 0 = transparent.
+ * `rect` recomposites only that region and leaves every other cell untouched.
  */
 export function compositeLayersToRgba(
   layers: readonly PixelLayerRuntime[],
@@ -1985,23 +2332,52 @@ export function compositeLayersToRgba(
   palette: readonly string[],
   width: number,
   height: number,
+  rect?: PixelRect | null,
 ) {
+  const { lut, paperR, paperG, paperB } = paletteLut(palette)
+  if (rect) {
+    const x0 = Math.max(0, rect.x)
+    const y0 = Math.max(0, rect.y)
+    const x1 = Math.min(width, rect.x + rect.width)
+    const y1 = Math.min(height, rect.y + rect.height)
+    if (x1 <= x0 || y1 <= y0) return
+    for (let y = y0; y < y1; y += 1) {
+      for (let x = x0; x < x1; x += 1) {
+        const p = (y * width + x) * 4
+        pixels[p] = paperR
+        pixels[p + 1] = paperG
+        pixels[p + 2] = paperB
+        pixels[p + 3] = 255
+      }
+    }
+    for (let layerIndex = 0; layerIndex < layers.length; layerIndex += 1) {
+      const layer = layers[layerIndex]
+      if (!layer.visible) continue
+      const transparentZero = layerIndex > 0
+      const indices = layer.indices
+      for (let y = y0; y < y1; y += 1) {
+        for (let x = x0; x < x1; x += 1) {
+          const i = y * width + x
+          const index = indices[i] ?? 0
+          if (transparentZero && index === 0) continue
+          writeCompositeCell(pixels, i * 4, index, palette.length, lut, paperR, paperG, paperB)
+        }
+      }
+    }
+    return
+  }
+
   fillPaper(pixels)
   const cellCount = width * height
   for (let layerIndex = 0; layerIndex < layers.length; layerIndex += 1) {
     const layer = layers[layerIndex]
     if (!layer.visible) continue
     const transparentZero = layerIndex > 0
+    const indices = layer.indices
     for (let i = 0; i < cellCount; i += 1) {
-      const index = layer.indices[i] ?? 0
+      const index = indices[i] ?? 0
       if (transparentZero && index === 0) continue
-      const color = palette[index] ?? PIXEL_PAPER
-      const [r, g, b] = hexToRgb(color)
-      const p = i * 4
-      pixels[p] = r
-      pixels[p + 1] = g
-      pixels[p + 2] = b
-      pixels[p + 3] = 255
+      writeCompositeCell(pixels, i * 4, index, palette.length, lut, paperR, paperG, paperB)
     }
   }
 }
