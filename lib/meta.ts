@@ -2,6 +2,11 @@ import type { Metadata } from "next";
 import { href, type Bi, type Lang } from "@/lib/i18n";
 import { SITE_NAME, SITE_URL } from "@/lib/site";
 
+const defaultIcons: Metadata["icons"] = {
+  icon: [{ url: "/icon", sizes: "32x32", type: "image/png" }],
+  apple: [{ url: "/icons/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
+};
+
 export function pageMeta({
   lang,
   path,
@@ -35,6 +40,7 @@ export function pageMeta({
     title: absoluteTitle ? { absolute: resolvedTitle } : resolvedTitle,
     description: resolvedDescription,
     ...(noIndex ? { robots: { index: false, follow: false } } : {}),
+    icons: defaultIcons,
     alternates: {
       canonical,
       languages: {
