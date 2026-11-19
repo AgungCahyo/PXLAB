@@ -51,10 +51,12 @@ import {
   createEmptyLayer,
   filledPixelIndices,
   formatPixelSize,
+  PIXEL_DOCUMENT_PALETTE_MAX,
   PIXEL_INK,
   PIXEL_LAYER_MAX,
   PIXEL_PALETTE,
   PIXEL_PAPER,
+  normalizePixelHex,
   type PixelBrushSize,
   type PixelSource,
   type PixelSymmetry,
@@ -1331,7 +1333,9 @@ export function PlaygroundForm({
             <Alert tone="error">{copy.errors[errorState.error][lang]}</Alert>
           ) : null}
           {paletteFullAlert ? (
-            <Alert tone="error">{copy.pixelPaletteFullStroke[lang]}</Alert>
+            <Alert tone="error">
+              {copy.pixelPaletteFullStroke[lang].replace("{n}", String(PIXEL_DOCUMENT_PALETTE_MAX))}
+            </Alert>
           ) : null}
         </div>
       ) : null}
@@ -1875,6 +1879,21 @@ export function PlaygroundForm({
           setColor(hex)
           if (tool === "eraser") setTool("pencil")
         }}
+        onEnsureColors={(colors) => {
+          const result = boardRef.current?.ensureColors(colors) ?? {
+            palette: documentPalette,
+            added: 0,
+            truncated: true,
+          }
+          setDocumentPalette(result.palette)
+          if (result.truncated) setPaletteFullAlert(true)
+          else setPaletteFullAlert(false)
+          return result
+        }}
+        onOpenManage={() => {
+          setPaletteOpen(false)
+          setPaletteManageOpen(true)
+        }}
       />
 
       <LayerMobileSheet
@@ -1913,8 +1932,18 @@ export function PlaygroundForm({
         }}
         onRemove={(hex) => {
           boardRef.current?.removeColor(hex)
-          setDocumentPalette(boardRef.current?.getPalette() ?? documentPalette)
-          if (color === hex) setColor(PIXEL_INK)
+          const nextPalette = boardRef.current?.getPalette() ?? documentPalette
+          setDocumentPalette(nextPalette)
+          const removed = normalizePixelHex(hex)
+          const active = normalizePixelHex(color)
+          const activeMissing =
+            active === removed ||
+            !nextPalette.some((item) => normalizePixelHex(item) === active)
+          if (activeMissing) {
+            const fallback =
+              nextPalette.find((item) => normalizePixelHex(item) !== PIXEL_PAPER) ?? PIXEL_INK
+            setColor(fallback)
+          }
           setPaletteFullAlert(false)
         }}
       />

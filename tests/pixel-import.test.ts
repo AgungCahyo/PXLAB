@@ -1,14 +1,20 @@
+import { readFileSync } from "node:fs"
+import path from "node:path"
 import { describe, expect, it } from "vitest"
-import { PIXEL_PAPER, hexToRgb, rgbToHex } from "@/lib/pixel"
+import { PIXEL_PAPER, PIXEL_PALETTE, hexToRgb, rgbToHex } from "@/lib/pixel"
 import {
   convertRgbaToPixelArt,
   fitInside,
+  indexedImportToRgba,
   mergeImportIntoDocumentPalette,
   quantizeColorsMedianCut,
   resizeRgbaNearest,
+  resolveImportForDocument,
   resolveImportOutputSize,
   validateImportFile,
 } from "@/lib/pixel-import"
+
+const read = (file: string) => readFileSync(path.resolve(__dirname, "..", file), "utf8")
 
 function rgbaFromPattern(
   width: number,
@@ -151,5 +157,112 @@ describe("quantize + convert", () => {
     expect(merged.palette.length).toBe(3)
     expect(merged.indices[0]).toBe(1)
     expect(merged.indices[1]).toBe(0)
+  })
+})
+
+describe("preview RGBA === layer import RGBA", () => {
+  it("indexedImportToRgba matches palette hex bytes and keeps transparency", () => {
+    const red = rgbToHex([233, 75, 60])
+    const ink = rgbToHex([40, 43, 53])
+    const palette = [PIXEL_PAPER, red, ink]
+    const indices = new Uint8Array([1, 0, 2, 1])
+    const rgba = indexedImportToRgba(indices, 2, 2, palette)
+    expect([...rgba.slice(0, 4)]).toEqual([233, 75, 60, 255])
+    expect([...rgba.slice(4, 8)]).toEqual([0, 0, 0, 0])
+    expect([...rgba.slice(8, 12)]).toEqual([40, 43, 53, 255])
+    expect([...rgba.slice(12, 16)]).toEqual([233, 75, 60, 255])
+  })
+
+  it("resolveImportForDocument preview bytes equal board commit merge bytes", () => {
+    const data = rgbaFromPattern(8, 8, (x, y) => {
+      if ((x + y) % 5 === 0) return [0, 0, 0, 0]
+      if (x < 4) return [233, 75, 60, 255]
+      if (y < 4) return [55, 184, 255, 255]
+      return [40, 43, 53, 255]
+    })
+    const local = convertRgbaToPixelArt(
+      { data, width: 8, height: 8 },
+      {
+        width: 8,
+        height: 8,
+        maintainAspect: false,
+        colorCount: 8,
+        paletteMode: "reduce",
+        dither: "none",
+      },
+      64,
+      64,
+    )
+    const doc = [...PIXEL_PALETTE]
+    // Dialog preview path.
+    const preview = resolveImportForDocument(local, doc)
+    const previewRgba = indexedImportToRgba(
+      preview.indices,
+      preview.width,
+      preview.height,
+      preview.palette,
+    )
+    // Board.importPixelArtLayer path (confirm still sends local convert result).
+    const boardMerge = mergeImportIntoDocumentPalette(doc, local.palette, local.indices)
+    expect(boardMerge.ok).toBe(true)
+    if (!boardMerge.ok) return
+    const layerRgba = indexedImportToRgba(
+      boardMerge.indices,
+      local.width,
+      local.height,
+      boardMerge.palette,
+    )
+    expect(previewRgba.length).toBe(layerRgba.length)
+    expect([...previewRgba]).toEqual([...layerRgba])
+  })
+
+  it("preserves exact RGBA through convert → resolve for opaque and transparent pixels", () => {
+    const data = rgbaFromPattern(4, 4, (x, y) => {
+      if (x === 0 && y === 0) return [255, 92, 92, 255]
+      if (x === 1 && y === 0) return [0, 0, 0, 0]
+      if (x === 2 && y === 0) return [168, 224, 95, 255]
+      return [32, 32, 42, 255]
+    })
+    const local = convertRgbaToPixelArt(
+      { data, width: 4, height: 4 },
+      {
+        width: 4,
+        height: 4,
+        maintainAspect: false,
+        colorCount: 8,
+        paletteMode: "reduce",
+        dither: "none",
+      },
+      64,
+      64,
+      [...PIXEL_PALETTE],
+    )
+    const resolved = resolveImportForDocument(local, [...PIXEL_PALETTE])
+    const rgba = indexedImportToRgba(
+      resolved.indices,
+      resolved.width,
+      resolved.height,
+      resolved.palette,
+    )
+    for (let i = 0; i < resolved.indices.length; i += 1) {
+      const index = resolved.indices[i]!
+      const p = i * 4
+      if (index === 0) {
+        expect(rgba[p + 3]).toBe(0)
+        continue
+      }
+      const [r, g, b] = hexToRgb(resolved.palette[index]!)
+      expect([rgba[p], rgba[p + 1], rgba[p + 2], rgba[p + 3]]).toEqual([r, g, b, 255])
+    }
+  })
+
+  it("dialog preview and board commit share resolveImportForDocument; preview avoids drawImage upscale", () => {
+    const dialog = read("components/creations/ImportPixelArtDialog.tsx")
+    const lib = read("lib/pixel-import.ts")
+    expect(dialog).toMatch(/resolveImportForDocument/)
+    expect(dialog).toMatch(/indicesToPreviewDataUrl/)
+    expect(lib).toMatch(/indexedImportToRgba/)
+    expect(lib).toMatch(/putImageData/)
+    expect(lib).not.toMatch(/drawImage\(temp/)
   })
 })

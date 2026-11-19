@@ -13,6 +13,7 @@ import {
   decodeImportImage,
   defaultImportSettings,
   indicesToPreviewDataUrl,
+  resolveImportForDocument,
   resolveImportOutputSize,
   sizeFromPreset,
   type DecodedImportImage,
@@ -90,17 +91,24 @@ export function ImportPixelArtDialog({
     const timer = window.setTimeout(() => {
       startTransition(() => {
         try {
-          const result = convertRgbaToPixelArt(
+          const local = convertRgbaToPixelArt(
             decoded,
             settings,
             canvasWidth,
             canvasHeight,
             documentPalette,
           )
+          // Preview uses the same document merge as PixelBoard.importPixelArtLayer.
+          const preview = resolveImportForDocument(local, documentPalette)
           if (gen !== convertGen.current) return
-          setConverted(result)
+          setConverted(local)
           setPreviewUrl(
-            indicesToPreviewDataUrl(result.indices, result.width, result.height, result.palette, 4),
+            indicesToPreviewDataUrl(
+              preview.indices,
+              preview.width,
+              preview.height,
+              preview.palette,
+            ),
           )
           setError(null)
         } catch (err) {

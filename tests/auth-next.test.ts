@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs"
 import path from "node:path"
 import { describe, expect, it } from "vitest"
-import { authDestination, loginHref, safeInternalPath } from "@/lib/paths"
+import { authDestination, homeMemberPath, loginHref, safeInternalPath } from "@/lib/paths"
 
 const read = (file: string) => readFileSync(path.resolve(__dirname, "..", file), "utf8")
 
@@ -31,6 +31,25 @@ describe("safe return after sign-in", () => {
     expect(member).toMatch(/x-pathname/)
     expect(community).toMatch(/loginHref/)
     expect(callback).toMatch(/safeInternalPath/)
+  })
+})
+
+describe("landing redirects authenticated members", () => {
+  it("sends finished members to dashboard and unfinished to welcome", () => {
+    expect(homeMemberPath("id", { onboarding_completed_at: "2026-01-01" })).toBe("/dashboard")
+    expect(homeMemberPath("en", { onboarding_completed_at: "2026-01-01" })).toBe("/en/dashboard")
+    expect(homeMemberPath("id", { onboarding_completed_at: null })).toContain("/welcome")
+    expect(homeMemberPath("id", { onboarding_completed_at: null })).toContain("next=")
+  })
+
+  it("gates the landing page on the server before paint", () => {
+    const landing = read("app/[lang]/(public)/page.tsx")
+    expect(landing).toMatch(/homeMemberPath/)
+    expect(landing).toMatch(/redirect\(/)
+    expect(landing).toMatch(/getCurrentProfile/)
+    expect(landing).toMatch(/landingJoin/)
+    // Member Create CTA removed from hero; guests only reach this page.
+    expect(landing).toMatch(/if \(member\) redirect/)
   })
 })
 

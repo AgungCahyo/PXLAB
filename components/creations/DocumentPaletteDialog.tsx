@@ -1,12 +1,12 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/Button"
 import { Dialog } from "@/components/ui/Dialog"
 import { Input } from "@/components/ui/Input"
 import { copy } from "@/lib/copy"
 import type { Lang } from "@/lib/i18n"
-import { PIXEL_PAPER, normalizePixelHex } from "@/lib/pixel"
+import { PIXEL_INK, PIXEL_PAPER, normalizePixelHex } from "@/lib/pixel"
 import { cn } from "@/lib/utils"
 
 export function DocumentPaletteDialog({
@@ -33,6 +33,7 @@ export function DocumentPaletteDialog({
   const [replaceDraft, setReplaceDraft] = useState("#20202A")
   const [error, setError] = useState<string | null>(null)
   const [openTick, setOpenTick] = useState(open)
+  const [notice, setNotice] = useState<string | null>(null)
 
   if (open !== openTick) {
     setOpenTick(open)
@@ -40,8 +41,23 @@ export function DocumentPaletteDialog({
       setSelected(normalizePixelHex(activeColor) ?? activeColor)
       setReplaceDraft("#20202A")
       setError(null)
+      setNotice(null)
     }
   }
+
+  // Keep selection valid after parent palette mutations (multi-delete).
+  useEffect(() => {
+    if (!open) return
+    const inks = palette.filter((hex) => normalizePixelHex(hex) !== PIXEL_PAPER)
+    const selectedNorm = normalizePixelHex(selected)
+    if (inks.some((hex) => normalizePixelHex(hex) === selectedNorm)) return
+    const activeNorm = normalizePixelHex(activeColor)
+    if (activeNorm && inks.some((hex) => normalizePixelHex(hex) === activeNorm)) {
+      setSelected(activeNorm)
+      return
+    }
+    setSelected(normalizePixelHex(inks[0] ?? "") ?? PIXEL_INK)
+  }, [open, palette, activeColor, selected])
 
   return (
     <Dialog
@@ -53,9 +69,13 @@ export function DocumentPaletteDialog({
     >
       <div className="grid gap-4">
         <p className="text-[14px] text-muted">{copy.pixelPaletteManageHint[lang]}</p>
-        <div className="flex flex-wrap gap-1.5" role="listbox" aria-label={copy.pixelPaletteManage[lang]}>
+        <div
+          className="grid max-h-[min(40vh,16rem)] grid-cols-6 gap-1.5 overflow-y-auto overscroll-contain sm:grid-cols-8"
+          role="listbox"
+          aria-label={copy.pixelPaletteManage[lang]}
+        >
           {swatches.length === 0 ? (
-            <p className="text-[13px] text-muted">{copy.pixelPaletteEmpty[lang]}</p>
+            <p className="col-span-full text-[13px] text-muted">{copy.pixelPaletteEmpty[lang]}</p>
           ) : (
             swatches.map((hex) => (
               <button
@@ -68,10 +88,13 @@ export function DocumentPaletteDialog({
                   setSelected(hex)
                   onSelect(hex)
                   setError(null)
+                  setNotice(null)
                 }}
                 className={cn(
-                  "pixel-swatch h-11 w-11 border-[3px]",
-                  normalizePixelHex(selected) === normalizePixelHex(hex) ? "border-fg" : "border-earth",
+                  "pixel-swatch aspect-square w-full min-h-10 border-[3px]",
+                  normalizePixelHex(selected) === normalizePixelHex(hex)
+                    ? "border-fg ring-2 ring-fg/30"
+                    : "border-earth",
                 )}
                 style={{ backgroundColor: hex }}
               />
@@ -89,12 +112,21 @@ export function DocumentPaletteDialog({
             onChange={(event) => setReplaceDraft(event.target.value.toUpperCase())}
           />
         </label>
-        {error ? <p className="text-[13px] text-brick">{error}</p> : null}
+        {error ? (
+          <p className="text-[13px] text-brick" role="alert">
+            {error}
+          </p>
+        ) : null}
+        {notice ? (
+          <p className="text-[13px] text-muted" role="status">
+            {notice}
+          </p>
+        ) : null}
 
         <div className="flex flex-wrap gap-3">
           <Button
             type="button"
-            disabled={!selected || selected === PIXEL_PAPER}
+            disabled={!selected || selected === PIXEL_PAPER || swatches.length === 0}
             onClick={() => {
               const to = normalizePixelHex(replaceDraft)
               if (!to) {
@@ -102,8 +134,10 @@ export function DocumentPaletteDialog({
                 return
               }
               onReplace(selected, to)
+              setSelected(to)
               setError(null)
-              onClose()
+              setNotice(copy.pixelReplaceColor[lang])
+              // Stay open for further edits.
             }}
           >
             {copy.pixelReplaceColor[lang]}
@@ -111,17 +145,19 @@ export function DocumentPaletteDialog({
           <Button
             type="button"
             variant="outline"
-            disabled={!selected || selected === PIXEL_PAPER}
+            disabled={!selected || selected === PIXEL_PAPER || swatches.length === 0}
             onClick={() => {
-              onRemove(selected)
+              const removing = selected
+              onRemove(removing)
               setError(null)
-              onClose()
+              setNotice(copy.pixelRemoveColor[lang])
+              // Stay open — selection syncs from updated palette prop.
             }}
           >
             {copy.pixelRemoveColor[lang]}
           </Button>
           <Button type="button" variant="ghost" onClick={onClose}>
-            {copy.createCancel[lang]}
+            {copy.closeMenu[lang]}
           </Button>
         </div>
       </div>

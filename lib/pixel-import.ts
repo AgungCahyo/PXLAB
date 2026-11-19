@@ -549,46 +549,85 @@ export function mergeImportIntoDocumentPalette(
   return { ok: true, palette, indices, colorsAdded }
 }
 
+/**
+ * Canonical RGBA for an import patch / non-base layer:
+ * index 0 → transparent; other indices → opaque palette RGB.
+ * Shared by preview and final layer commit so both read the same bytes.
+ */
+export function indexedImportToRgba(
+  indices: Uint8Array,
+  width: number,
+  height: number,
+  palette: readonly string[],
+): Uint8ClampedArray {
+  const count = Math.max(0, Math.floor(width) * Math.floor(height))
+  const out = new Uint8ClampedArray(count * 4)
+  for (let i = 0; i < count; i += 1) {
+    const index = indices[i] ?? 0
+    const p = i * 4
+    if (index === 0) {
+      out[p] = 0
+      out[p + 1] = 0
+      out[p + 2] = 0
+      out[p + 3] = 0
+      continue
+    }
+    const hex = normalizePixelHex(palette[index] ?? "") ?? PIXEL_PAPER
+    const [r, g, b] = hexToRgb(hex)
+    out[p] = r
+    out[p + 1] = g
+    out[p + 2] = b
+    out[p + 3] = 255
+  }
+  return out
+}
+
+/**
+ * Resolve the exact indices + palette that `importPixelArtLayer` will stamp
+ * (after document merge). Preview and confirm must both use this result.
+ */
+export function resolveImportForDocument(
+  converted: PixelArtImportResult,
+  documentPalette: readonly string[],
+): PixelArtImportResult {
+  const merged = mergeImportIntoDocumentPalette(
+    documentPalette,
+    converted.palette,
+    converted.indices,
+  )
+  if (!merged.ok) return converted
+  return {
+    indices: merged.indices,
+    width: converted.width,
+    height: converted.height,
+    palette: merged.palette,
+  }
+}
+
+/**
+ * Preview data URL from the same RGBA used for the layer patch.
+ * Native 1× putImageData only — no drawImage upscale (avoids color drift).
+ * CSS `image-rendering: pixelated` scales the img for display.
+ */
 export function indicesToPreviewDataUrl(
   indices: Uint8Array,
   width: number,
   height: number,
   palette: readonly string[],
-  scale = 4,
+  _scale = 1,
 ): string | null {
   if (typeof document === "undefined") return null
-  const s = Math.max(1, Math.min(16, Math.floor(scale)))
+  const w = Math.max(1, Math.floor(width))
+  const h = Math.max(1, Math.floor(height))
+  const rgba = indexedImportToRgba(indices, w, h, palette)
   const canvas = document.createElement("canvas")
-  canvas.width = width * s
-  canvas.height = height * s
+  canvas.width = w
+  canvas.height = h
   const ctx = canvas.getContext("2d")
   if (!ctx) return null
-  ctx.imageSmoothingEnabled = false
-  const image = ctx.createImageData(width, height)
-  for (let i = 0; i < width * height; i += 1) {
-    const index = indices[i] ?? 0
-    const hex = palette[index] ?? PIXEL_PAPER
-    const [r, g, b] = hexToRgb(hex)
-    const p = i * 4
-    if (index === 0) {
-      image.data[p] = 0
-      image.data[p + 1] = 0
-      image.data[p + 2] = 0
-      image.data[p + 3] = 0
-    } else {
-      image.data[p] = r
-      image.data[p + 1] = g
-      image.data[p + 2] = b
-      image.data[p + 3] = 255
-    }
-  }
-  const temp = document.createElement("canvas")
-  temp.width = width
-  temp.height = height
-  const tempCtx = temp.getContext("2d")
-  if (!tempCtx) return null
-  tempCtx.putImageData(image, 0, 0)
-  ctx.drawImage(temp, 0, 0, width * s, height * s)
+  const image = ctx.createImageData(w, h)
+  image.data.set(rgba)
+  ctx.putImageData(image, 0, 0)
   try {
     return canvas.toDataURL("image/png")
   } catch {

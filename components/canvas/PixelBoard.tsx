@@ -61,6 +61,7 @@ import {
   normalizePixelHex,
   normalizePixelRect,
   paintEllipse,
+  paletteIndexOf,
   parsePixelSource,
   measurePixelTextBox,
   PIXEL_LAYER_MAX,
@@ -249,6 +250,15 @@ export type PixelBoardHandle = {
   ) => void
   replaceColor: (fromHex: string, toHex: string) => number
   removeColor: (hex: string) => { ok: true; replaced: number } | { ok: false; error: "paper" | "missing" }
+  /**
+   * Append colors to the document palette. Never remaps indices or rewrites pixels.
+   * Stops early when the palette is full.
+   */
+  ensureColors: (hexes: readonly string[]) => {
+    palette: string[]
+    added: number
+    truncated: boolean
+  }
   clearHistory: () => void
   getPalette: () => string[]
   getLayers: () => PixelLayerInfo[]
@@ -2099,10 +2109,32 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
       })
       return count
     },
+    ensureColors: (hexes) => {
+      let added = 0
+      let truncated = false
+      for (const raw of hexes) {
+        const hex = normalizePixelHex(raw)
+        if (!hex || hex === PIXEL_PAPER) continue
+        const result = ensurePaletteColor(paletteRef.current, hex)
+        if ("error" in result) {
+          if (result.error === "palette_full") truncated = true
+          break
+        }
+        if (result.palette.length > paletteRef.current.length) added += 1
+        paletteRef.current = result.palette
+      }
+      if (added > 0 || truncated) {
+        syncPaletteIndexMap()
+        onPaletteChangeRef.current?.([...paletteRef.current])
+      }
+      return { palette: [...paletteRef.current], added, truncated }
+    },
     removeColor: (hex) => {
       const normalized = normalizePixelHex(hex)
       if (!normalized) return { ok: false, error: "missing" as const }
       if (normalized === PIXEL_PAPER) return { ok: false, error: "paper" as const }
+      const removedIndex = paletteIndexOf(paletteRef.current, normalized)
+      if (removedIndex < 1) return { ok: false, error: "missing" as const }
       const result = removeDocumentColor(
         image().data,
         paletteRef.current,
@@ -2111,8 +2143,17 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
         canvasHeightRef.current,
       )
       if ("error" in result) return { ok: false, error: result.error }
+      // Remap stored layer indices after the palette slot is removed (Paper ← removed).
+      for (const layer of layersRef.current) {
+        for (let i = 0; i < layer.indices.length; i += 1) {
+          const value = layer.indices[i] ?? 0
+          if (value === removedIndex) layer.indices[i] = 0
+          else if (value > removedIndex) layer.indices[i] = value - 1
+        }
+      }
       paletteRef.current = result.palette
       syncPaletteIndexMap()
+      loadActiveIntoImage()
       onPaletteChangeRef.current?.(result.palette)
       undoRef.current = []
       redoRef.current = []

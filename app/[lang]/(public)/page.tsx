@@ -1,6 +1,6 @@
 import type { Metadata } from "next"
 import Link from "next/link"
-import { notFound } from "next/navigation"
+import { notFound, redirect } from "next/navigation"
 import { Suspense } from "react"
 import { CreationCard } from "@/components/creations/CreationCard"
 import { GallerySkeleton } from "@/components/creations/GallerySkeleton"
@@ -10,6 +10,7 @@ import { getCurrentProfile } from "@/lib/auth/session"
 import { copy } from "@/lib/copy"
 import { href, isLang, type Lang } from "@/lib/i18n"
 import { pageMeta } from "@/lib/meta"
+import { homeMemberPath } from "@/lib/paths"
 import { SITE_NAME } from "@/lib/site"
 
 export const instant = false
@@ -39,6 +40,8 @@ export default async function LandingPage({
   if (!isLang(raw)) notFound()
   const lang = raw
   const member = await getCurrentProfile()
+  // Guests see the landing; members never paint it (no client flash).
+  if (member) redirect(homeMemberPath(lang, member))
 
   return (
     <div className="mx-auto max-w-6xl px-5 pb-12 pt-8 sm:px-8 sm:pb-16 sm:pt-12 lg:px-16">
@@ -53,15 +56,9 @@ export default async function LandingPage({
           <Link href={href(lang, "/explore")} className={buttonClassName()}>
             {copy.landingExplore[lang]}
           </Link>
-          {member ? (
-            <Link href={href(lang, "/create")} className={buttonClassName({ variant: "secondary" })}>
-              {copy.landingCreate[lang]}
-            </Link>
-          ) : (
-            <Link href={href(lang, "/register")} className={buttonClassName({ variant: "secondary" })}>
-              {copy.landingJoin[lang]}
-            </Link>
-          )}
+          <Link href={href(lang, "/register")} className={buttonClassName({ variant: "secondary" })}>
+            {copy.landingJoin[lang]}
+          </Link>
         </div>
         <p className="mt-4 max-w-xl text-[13px] leading-relaxed text-muted">
           <Link href={href(lang, "/space")} className="underline decoration-earth underline-offset-4 hover:text-fg">

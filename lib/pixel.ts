@@ -177,7 +177,12 @@ export const PIXEL_SOURCE_VERSION = 1
 export const PIXEL_SOURCE_VERSION_V2 = 2
 export const PIXEL_SOURCE_ENCODING = "rle-index" as const
 export const PIXEL_LAYER_MAX = 8
-export const PIXEL_DOCUMENT_PALETTE_MAX = 64
+/**
+ * Max palette entries including Paper at index 0.
+ * Indices are Uint8 (0–255); 256 is the hard architectural ceiling without a format change.
+ * Older documents with ≤64 colors remain valid.
+ */
+export const PIXEL_DOCUMENT_PALETTE_MAX = 256
 export const PIXEL_RECENT_MAX = 12
 export const PIXEL_FAVORITE_MAX = 24
 const PIXEL_HEX = /^#[0-9A-Fa-f]{6}$/

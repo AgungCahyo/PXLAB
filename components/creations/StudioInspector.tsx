@@ -124,8 +124,8 @@ export function StudioInspector({
             type="button"
             onClick={onPaletteMore}
             className={iconHit}
-            aria-label={allColors}
-            title={allColors}
+            aria-label={`${copy.pixelPaletteBrowse[lang]} · ${allColors}`}
+            title={copy.pixelPaletteBrowse[lang]}
           >
             <PixelIcon name="palette" />
           </button>

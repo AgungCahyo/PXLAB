@@ -867,7 +867,7 @@ describe("pixel editor source", () => {
     expect(again.palette).toHaveLength(2)
   })
 
-  it("refuses a 65th unique color", () => {
+  it("refuses a color beyond PIXEL_DOCUMENT_PALETTE_MAX", () => {
     const palette = [PIXEL_PAPER]
     for (let i = 1; i < PIXEL_DOCUMENT_PALETTE_MAX; i += 1) {
       const hex = `#${i.toString(16).padStart(6, "0")}`.toUpperCase()
@@ -877,6 +877,12 @@ describe("pixel editor source", () => {
     }
     expect(palette).toHaveLength(PIXEL_DOCUMENT_PALETTE_MAX)
     expect(ensurePaletteColor(palette, "#ABCDEF")).toEqual({ error: "palette_full" })
+  })
+
+  it("accepts colors up to the Uint8 architectural ceiling", () => {
+    expect(PIXEL_DOCUMENT_PALETTE_MAX).toBe(256)
+    const mid = ensurePaletteColor([PIXEL_PAPER], "#112233")
+    expect("palette" in mid).toBe(true)
   })
 })
 

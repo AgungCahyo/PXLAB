@@ -54,3 +54,16 @@ export function postAuthPath(
   if (!profile?.onboarding_completed_at) return welcomeHref(lang, destination)
   return destination
 }
+
+/**
+ * Logged-in visit to `/`: unfinished onboarding → /welcome; else /dashboard.
+ * Server-only gate for the landing page (not middleware) so other public routes stay open.
+ */
+export function homeMemberPath(
+  lang: Lang,
+  profile: { onboarding_completed_at: string | null } | null | undefined,
+) {
+  const dashboard = href(lang, "/dashboard")
+  if (!profile?.onboarding_completed_at) return welcomeHref(lang, dashboard)
+  return dashboard
+}
