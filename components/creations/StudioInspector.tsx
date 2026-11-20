@@ -1,6 +1,6 @@
 "use client"
 
-import { useId, useState, type ComponentProps } from "react"
+import { useId, useState, type ComponentProps, type ReactNode } from "react"
 import { copy } from "@/lib/copy"
 import type { Lang } from "@/lib/i18n"
 import { PIXEL_PAPER, type PixelBrushSize } from "@/lib/pixel"
@@ -39,6 +39,7 @@ export function StudioInspector({
   tool,
   fillTolerance = 0,
   onFillTolerance,
+  brushOptionsPanel,
   selectShape = "rect",
   onSelectShape,
   onInvertSelection,
@@ -79,6 +80,8 @@ export function StudioInspector({
   tool?: string
   fillTolerance?: number
   onFillTolerance?: (value: number) => void
+  /** Opacity/flow/hardness/spacing/pressure/tip controls for freehand brushes. */
+  brushOptionsPanel?: ReactNode
   selectShape?: "rect" | "ellipse"
   onSelectShape?: (shape: "rect" | "ellipse") => void
   onInvertSelection?: () => void
@@ -94,6 +97,7 @@ export function StudioInspector({
 }) {
   const [rotateAngle, setRotateAngle] = useState(0)
   const fillToleranceId = useId()
+  const toleranceLabel = tool === "fill" ? copy.pixelFillTolerance[lang] : copy.pixelSelectTolerance[lang]
   const inkCount = documentPalette.filter((swatch) => swatch !== PIXEL_PAPER).length
   const allColors = copy.pixelAllColors[lang].replace("{n}", String(inkCount))
   const isPathShape = shapeKind === "bezier" || shapeKind === "polygon"
@@ -303,11 +307,13 @@ export function StudioInspector({
           </div>
         ) : null}
 
-        {tool === "fill" ? (
+        {brushOptionsPanel && (tool === "pencil" || tool === "circle" || tool === "eraser") ? brushOptionsPanel : null}
+
+        {tool === "fill" || tool === "selectContiguous" || tool === "selectColor" ? (
           <div className="space-y-2">
             <div className="flex items-center gap-2">
               <label className="min-w-0 flex-1 text-[13px] font-medium text-fg" htmlFor={fillToleranceId}>
-                {copy.pixelFillTolerance[lang]}
+                {toleranceLabel}
               </label>
               <span className="w-8 text-right text-[13px] tabular-nums text-fg">{fillTolerance}</span>
             </div>
@@ -318,13 +324,15 @@ export function StudioInspector({
               max={255}
               step={1}
               value={fillTolerance}
-              aria-label={copy.pixelFillTolerance[lang]}
+              aria-label={toleranceLabel}
               onChange={(event) => onFillTolerance?.(Number(event.target.value))}
               className="w-full"
             />
-            <p className="text-[length:var(--studio-meta,0.75rem)] leading-relaxed text-muted">
-              {copy.pixelFillGlobalHint[lang]}
-            </p>
+            {tool === "fill" ? (
+              <p className="text-[length:var(--studio-meta,0.75rem)] leading-relaxed text-muted">
+                {copy.pixelFillGlobalHint[lang]}
+              </p>
+            ) : null}
           </div>
         ) : null}
 

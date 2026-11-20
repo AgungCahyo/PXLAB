@@ -1,6 +1,7 @@
 "use client"
 
 import { useCallback, useEffect, useId, useRef, useState } from "react"
+import { DEFAULT_BRUSH_OPTIONS, type BrushOptions } from "@/lib/pixel-brush"
 import { useFormStatus } from "react-dom"
 import { useRouter } from "next/navigation"
 import {
@@ -9,6 +10,7 @@ import {
   type ShapeDraftInfo,
   type Tool,
 } from "@/components/canvas/PixelBoard"
+import { BrushOptionsPanel } from "@/components/creations/BrushOptionsPanel"
 import { ColorPicker } from "@/components/creations/ColorPicker"
 import { CreationMoreMenu } from "@/components/creations/CreationMoreMenu"
 import { DocumentPaletteDialog } from "@/components/creations/DocumentPaletteDialog"
@@ -153,6 +155,7 @@ export function PlaygroundForm({
   const [hasSelection, setHasSelection] = useState(false)
   const [hasClipboard, setHasClipboard] = useState(false)
   const [fillTolerance, setFillTolerance] = useState(0)
+  const [brushOptions, setBrushOptions] = useState<BrushOptions>(DEFAULT_BRUSH_OPTIONS)
   const [selectShape, setSelectShape] = useState<"rect" | "ellipse">("rect")
   const [editFlash, setEditFlash] = useState<string | null>(null)
   const editFlashTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -682,6 +685,15 @@ export function PlaygroundForm({
     selectColor: "colorSelect",
     lasso: "lasso",
   }
+  const brushPanel = (
+    <BrushOptionsPanel
+      lang={lang}
+      options={brushOptions}
+      onChange={setBrushOptions}
+      onTipFromSelection={() => boardRef.current?.getBrushTip("selection") ?? null}
+      onTipFromClipboard={() => boardRef.current?.getBrushTip("clipboard") ?? null}
+    />
+  )
   const showShapeOptions =
     tool === "rect" || tool === "ellipse" || tool === "bezier" || tool === "polygon"
   const showBrushControls =
@@ -1069,7 +1081,8 @@ export function PlaygroundForm({
             saveStatus === "unsaved" ? "text-brick" : "text-fg",
           )}
           title={saveLabel}
-          aria-label={saveLabel}
+          role="status"
+          aria-live="polite"
         >
           <PixelIcon
             name={saveStatus === "saving" ? "save" : saveStatus === "unsaved" ? "clear" : "apply"}
@@ -1426,6 +1439,7 @@ export function PlaygroundForm({
                 gridVisible={gridVisible}
                 symmetry={symmetry}
                 fillTolerance={fillTolerance}
+                brushOptions={brushOptions}
                 selectShape={selectShape}
                 onToolChange={setTool}
                 onColorChange={setColor}
@@ -1512,6 +1526,7 @@ export function PlaygroundForm({
             tool={tool}
             fillTolerance={fillTolerance}
             onFillTolerance={(value) => setFillTolerance(clampFillTolerance(value))}
+            brushOptionsPanel={brushPanel}
             selectShape={selectShape}
             onSelectShape={setSelectShape}
             onInvertSelection={() => boardRef.current?.invertSelection()}
@@ -1564,10 +1579,18 @@ export function PlaygroundForm({
               {brushSelect(mobileBrushId)}
             </div>
           ) : null}
-          {tool === "fill" ? (
+          {brushPanel && (tool === "pencil" || tool === "circle" || tool === "eraser") ? (
+            <details className="w-full">
+              <summary className="studio-control inline-flex cursor-pointer items-center border-earth bg-card px-2 text-[12px] font-medium text-fg">
+                {copy.pixelBrushOptions[lang]}
+              </summary>
+              <div className="pt-2">{brushPanel}</div>
+            </details>
+          ) : null}
+          {tool === "fill" || tool === "selectContiguous" || tool === "selectColor" ? (
             <div className="flex w-full items-center gap-2">
               <label className="shrink-0 text-[12px] font-medium text-fg" htmlFor={fillToleranceId}>
-                {copy.pixelFillTolerance[lang]}
+                {tool === "fill" ? copy.pixelFillTolerance[lang] : copy.pixelSelectTolerance[lang]}
               </label>
               <input
                 id={fillToleranceId}
@@ -1576,7 +1599,7 @@ export function PlaygroundForm({
                 max={255}
                 step={1}
                 value={fillTolerance}
-                aria-label={copy.pixelFillTolerance[lang]}
+                aria-label={tool === "fill" ? copy.pixelFillTolerance[lang] : copy.pixelSelectTolerance[lang]}
                 onChange={(event) => setFillTolerance(clampFillTolerance(Number(event.target.value)))}
                 className="min-w-0 flex-1"
               />

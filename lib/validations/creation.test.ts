@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest"
 import { normalizeCreationTag } from "@/lib/creations"
+import { PIXEL_DOCUMENT_PALETTE_MAX } from "@/lib/pixel"
 import { CREATION_CAPTION_MAX } from "@/lib/site"
 import {
   creationCaptionSchema,
@@ -144,12 +145,17 @@ describe("pixel header", () => {
     expect(result.success).toBe(false)
   })
 
-  it("rejects a header palette longer than 64", () => {
-    const palette = Array.from({ length: 65 }, (_, index) =>
-      index === 0 ? "#FFFDF7" : `#${index.toString(16).padStart(6, "0")}`,
-    )
-    const result = parseCreationContent("pixel", { ...header, palette }, "draft")
-    expect(result.success).toBe(false)
+  it("accepts a header palette at the document maximum and rejects one beyond it", () => {
+    const make = (length: number) =>
+      Array.from({ length }, (_, index) =>
+        index === 0 ? "#FFFDF7" : `#${index.toString(16).padStart(6, "0")}`,
+      )
+    expect(
+      parseCreationContent("pixel", { ...header, palette: make(PIXEL_DOCUMENT_PALETTE_MAX) }, "draft").success,
+    ).toBe(true)
+    expect(
+      parseCreationContent("pixel", { ...header, palette: make(PIXEL_DOCUMENT_PALETTE_MAX + 1) }, "draft").success,
+    ).toBe(false)
   })
 })
 

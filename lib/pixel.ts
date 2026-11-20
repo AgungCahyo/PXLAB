@@ -1228,46 +1228,81 @@ export function compactSelection(full: Uint8Array, width: number, height: number
   return { x: minX, y: minY, width: boxW, height: boxH, mask: holes ? mask : undefined }
 }
 
+function withinTolerance(
+  pixels: Uint8ClampedArray,
+  i: number,
+  tr: number,
+  tg: number,
+  tb: number,
+  tolerance: number,
+) {
+  return (
+    Math.abs(pixels[i]! - tr) <= tolerance &&
+    Math.abs(pixels[i + 1]! - tg) <= tolerance &&
+    Math.abs(pixels[i + 2]! - tb) <= tolerance
+  )
+}
+
+/** Contiguous (4-connected) magic wand. Tolerance is the max channel delta, 0-255. */
 export function selectionFromFlood(
   pixels: Uint8ClampedArray,
   startX: number,
   startY: number,
   width: number,
   height: number,
+  tolerance = 0,
 ): PixelSelection | null {
-  const target = getPixelRgb(pixels, startX, startY, width, height)
-  if (!target) return null
+  if (!inCanvas(startX, startY, width, height)) return null
+  const tol = clampFillTolerance(tolerance)
+  const s = (startY * width + startX) * 4
+  const tr = pixels[s]!
+  const tg = pixels[s + 1]!
+  const tb = pixels[s + 2]!
   const full = new Uint8Array(width * height)
-  const stack = [startX, startY]
-  while (stack.length > 0) {
-    const y = stack.pop()
-    const x = stack.pop()
-    if (x === undefined || y === undefined || !inCanvas(x, y, width, height)) continue
+  let stack = new Int32Array(1024)
+  let top = 0
+  const push = (x: number, y: number) => {
+    if (top + 2 > stack.length) {
+      const grown = new Int32Array(stack.length * 2)
+      grown.set(stack)
+      stack = grown
+    }
+    stack[top++] = x
+    stack[top++] = y
+  }
+  push(startX, startY)
+  while (top > 0) {
+    const y = stack[--top]!
+    const x = stack[--top]!
     const index = y * width + x
-    if (full[index]) continue
-    const current = getPixelRgb(pixels, x, y, width, height)
-    if (!current || !rgbEqual(current, target)) continue
+    if (full[index] || !withinTolerance(pixels, index * 4, tr, tg, tb, tol)) continue
     full[index] = 1
-    stack.push(x + 1, y, x - 1, y, x, y + 1, x, y - 1)
+    if (x + 1 < width) push(x + 1, y)
+    if (x > 0) push(x - 1, y)
+    if (y + 1 < height) push(x, y + 1)
+    if (y > 0) push(x, y - 1)
   }
   return compactSelection(full, width, height)
 }
 
+/** Every pixel whose colour is within tolerance of the clicked pixel. */
 export function selectionFromColor(
   pixels: Uint8ClampedArray,
   startX: number,
   startY: number,
   width: number,
   height: number,
+  tolerance = 0,
 ): PixelSelection | null {
-  const target = getPixelRgb(pixels, startX, startY, width, height)
-  if (!target) return null
+  if (!inCanvas(startX, startY, width, height)) return null
+  const tol = clampFillTolerance(tolerance)
+  const s = (startY * width + startX) * 4
+  const tr = pixels[s]!
+  const tg = pixels[s + 1]!
+  const tb = pixels[s + 2]!
   const full = new Uint8Array(width * height)
-  for (let y = 0; y < height; y += 1) {
-    for (let x = 0; x < width; x += 1) {
-      const current = getPixelRgb(pixels, x, y, width, height)
-      if (current && rgbEqual(current, target)) full[y * width + x] = 1
-    }
+  for (let i = 0; i < width * height; i += 1) {
+    if (withinTolerance(pixels, i * 4, tr, tg, tb, tol)) full[i] = 1
   }
   return compactSelection(full, width, height)
 }

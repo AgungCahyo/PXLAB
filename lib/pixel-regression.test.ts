@@ -75,3 +75,35 @@ describe("compositeLayersToRgba regression", () => {
     expect(Array.from(out.slice(0, 4))).toEqual([255, 253, 247, 255])
   })
 })
+
+import { selectionFromColor, selectionFromFlood } from "@/lib/pixel"
+
+describe("wand and colour selection tolerance", () => {
+  const w = 6
+  const h = 1
+  const row = (...vals: number[]) => {
+    const a = new Uint8ClampedArray(w * h * 4)
+    vals.forEach((v, i) => a.set([v, v, v, 255], i * 4))
+    return a
+  }
+  const count = (sel: ReturnType<typeof selectionFromFlood>) => {
+    if (!sel) return 0
+    let n = 0
+    for (let x = 0; x < w; x += 1) if (x >= sel.x && x < sel.x + sel.width && (!sel.mask || sel.mask[x - sel.x] === 1)) n += 1
+    return n
+  }
+  it("tolerance 0 stays exact; higher tolerance widens the match", () => {
+    const px = row(100, 104, 100, 200, 100, 110)
+    expect(count(selectionFromFlood(px, 0, 0, w, h))).toBe(1)
+    expect(count(selectionFromFlood(px, 0, 0, w, h, 5))).toBe(3)
+    expect(count(selectionFromColor(px, 0, 0, w, h))).toBe(3)
+    expect(count(selectionFromColor(px, 0, 0, w, h, 10))).toBe(5)
+  })
+  it("contiguous wand does not leap over a different colour", () => {
+    expect(count(selectionFromFlood(row(10, 10, 99, 10, 10, 10), 0, 0, w, h, 3))).toBe(2)
+  })
+  it("rejects an out-of-canvas start", () => {
+    expect(selectionFromFlood(row(1, 1, 1, 1, 1, 1), -1, 0, w, h)).toBeNull()
+    expect(selectionFromColor(row(1, 1, 1, 1, 1, 1), 0, 9, w, h)).toBeNull()
+  })
+})

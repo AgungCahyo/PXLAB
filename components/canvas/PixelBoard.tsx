@@ -1,5 +1,18 @@
 "use client"
 
+import {
+  BrushStroke,
+  brushMaskFromClipboard,
+  brushMaskFromSelection,
+  brushOptionsExtent,
+  clampBrushOptions,
+  DEFAULT_BRUSH_OPTIONS,
+  isPlainBrush,
+  listPointerSamples,
+  normalizePointerPressure,
+  type BrushMask,
+  type BrushOptions,
+} from "@/lib/pixel-brush"
 import { PixelHistory, type HistoryFrame } from "@/lib/pixel-history"
 import {
   forwardRef,
@@ -54,7 +67,6 @@ import {
   fillRect,
   fitOrigin,
   flattenLayersToIndices,
-  listPointerClientSamples,
   flipCanvasHorizontal,
   flipCanvasVertical,
   flipRectHorizontal,
@@ -239,6 +251,8 @@ export type PixelBoardHandle = {
   expandSelection: () => void
   contractSelection: () => void
   hasSelection: () => boolean
+  /** Brush tip silhouette from the current selection or clipboard (max 64x64). */
+  getBrushTip: (source: "selection" | "clipboard") => BrushMask | null
   copySelection: () => boolean
   cutSelection: () => boolean
   pasteClipboard: () => boolean
@@ -312,6 +326,8 @@ export type PixelBoardProps = {
   fillTolerance?: number
   /** Marquee shape for the box-select tool. */
   selectShape?: "rect" | "ellipse"
+  /** Opacity, flow, hardness, spacing, pressure and custom tip for pencil/circle/eraser. */
+  brushOptions?: BrushOptions
   onToolChange?: (tool: Tool) => void
   onColorChange?: (color: string) => void
   onPaletteChange?: (palette: string[]) => void
@@ -348,6 +364,7 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
     symmetry: symmetryProp,
     fillTolerance: fillToleranceProp,
     selectShape: selectShapeProp,
+    brushOptions: brushOptionsProp,
     onToolChange,
     onColorChange,
     onPaletteChange,
@@ -521,6 +538,10 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
   const expandSelectionRef = useRef<() => void>(() => {})
   const contractSelectionRef = useRef<() => void>(() => {})
   const fillToleranceRef = useRef(0)
+  const brushOptionsRef = useRef<BrushOptions>(DEFAULT_BRUSH_OPTIONS)
+  const brushStrokeRef = useRef<BrushStroke | null>(null)
+  const strokePressureRef = useRef(1)
+  const lastStampPressureRef = useRef(1)
   const selectShapeRef = useRef<"rect" | "ellipse">("rect")
   const canvasWidthRef = useRef(width)
   const canvasHeightRef = useRef(height)
@@ -574,6 +595,7 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
   gridRef.current = gridVisible
   symmetryRef.current = symmetry
   fillToleranceRef.current = clampFillTolerance(fillToleranceProp ?? fillToleranceUi)
+  brushOptionsRef.current = brushOptionsProp ? clampBrushOptions(brushOptionsProp) : DEFAULT_BRUSH_OPTIONS
   selectShapeRef.current = selectShapeProp ?? selectShapeUi
 
   const emitLayers = () => {
@@ -2007,6 +2029,10 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
     expandSelection: () => expandSelectionRef.current(),
     contractSelection: () => contractSelectionRef.current(),
     hasSelection: () => selectionRef.current !== null,
+    getBrushTip: (source) =>
+      source === "selection"
+        ? brushMaskFromSelection(selectionRef.current)
+        : brushMaskFromClipboard(sessionClipboard),
     copySelection,
     cutSelection,
     pasteClipboard,
@@ -2689,14 +2715,44 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
     }
   }, [variant, onGridVisibleChange])
 
+  const beginBrushStroke = () => {
+    const w = canvasWidthRef.current
+    const h = canvasHeightRef.current
+    let stroke = brushStrokeRef.current
+    if (!stroke || !stroke.matches(w, h)) {
+      stroke = new BrushStroke(w, h)
+      brushStrokeRef.current = stroke
+    }
+    stroke.begin(brushOptionsRef.current)
+  }
+
   const stampStrokeSegment = (
     from: { x: number; y: number },
     to: { x: number; y: number },
+    start = false,
   ) => {
     if (toolRef.current !== "eraser") {
       if (!adoptColor(colorRef.current)) return
     }
     const shape = toolRef.current === "circle" ? "circle" : "square"
+    const options = brushOptionsRef.current
+    if (!isPlainBrush(options) && brushStrokeRef.current) {
+      const pressure = strokePressureRef.current
+      brushStrokeRef.current.paint(
+        image().data,
+        start ? null : { x: from.x, y: from.y, pressure: lastStampPressureRef.current },
+        { x: to.x, y: to.y, pressure },
+        {
+          rgb: paintColor(),
+          size: brushRef.current,
+          shape,
+          clip: selectionRef.current,
+          symmetry: symmetryRef.current,
+        },
+      )
+      lastStampPressureRef.current = pressure
+      return
+    }
     strokeBrushLineSymmetric(
       image().data,
       from.x,
@@ -2722,7 +2778,7 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
   }
 
   /** Stamp freehand through ordered cell samples; one composite at the end. */
-  const paintStrokeCells = (cells: PixelPoint[]) => {
+  const paintStrokeCells = (cells: Array<PixelPoint & { pressure?: number }>) => {
     if (cells.length === 0) return
     const w = canvasWidthRef.current
     const h = canvasHeightRef.current
@@ -2733,7 +2789,7 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
         from.y,
         to.x,
         to.y,
-        brushRef.current,
+        brushOptionsExtent(brushRef.current, brushOptionsRef.current),
         w,
         h,
         symmetryRef.current,
@@ -2743,8 +2799,10 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
     }
     let prev = drawRef.current
     for (const cell of cells) {
+      if (cell.pressure !== undefined) strokePressureRef.current = cell.pressure
       if (!prev) {
-        stampStrokeSegment(cell, cell)
+        if (!isPlainBrush(brushOptionsRef.current)) beginBrushStroke()
+        stampStrokeSegment(cell, cell, true)
         appendStrokeTrail(cell)
         note(cell, cell)
         prev = cell
@@ -2773,8 +2831,8 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
       event.nativeEvent && "clientX" in event.nativeEvent
         ? (event.nativeEvent as PointerEvent)
         : event
-    const samples = listPointerClientSamples(source)
-    const cells = samples.map((sample) => cellFromEvent(sample))
+    const samples = listPointerSamples(source as PointerEvent)
+    const cells = samples.map((sample) => ({ ...cellFromEvent(sample), pressure: sample.pressure }))
     paintStrokeCells(cells)
   }
 
@@ -3223,14 +3281,28 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
       if (toolRef.current === "selectContiguous") {
         ensureSelectionCommitted()
         commitSelection(
-          selectionFromFlood(image().data, cell.x, cell.y, canvasWidthRef.current, canvasHeightRef.current),
+          selectionFromFlood(
+            image().data,
+            cell.x,
+            cell.y,
+            canvasWidthRef.current,
+            canvasHeightRef.current,
+            fillToleranceRef.current,
+          ),
         )
         return
       }
       if (toolRef.current === "selectColor") {
         ensureSelectionCommitted()
         commitSelection(
-          selectionFromColor(image().data, cell.x, cell.y, canvasWidthRef.current, canvasHeightRef.current),
+          selectionFromColor(
+            image().data,
+            cell.x,
+            cell.y,
+            canvasWidthRef.current,
+            canvasHeightRef.current,
+            fillToleranceRef.current,
+          ),
         )
         return
       }
@@ -3299,7 +3371,10 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
     pushUndo()
     strokeTrailRef.current = []
     drawRef.current = null
-    paintStrokeCells([cell])
+    const downPressure = normalizePointerPressure(event.pointerType, event.pressure)
+    strokePressureRef.current = downPressure
+    lastStampPressureRef.current = downPressure
+    paintStrokeCells([{ ...cell, pressure: downPressure }])
   }
 
   const emitHover = (event: { clientX: number; clientY: number }) => {
