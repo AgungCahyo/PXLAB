@@ -12,7 +12,7 @@ import { langOf } from "@/lib/i18n"
 import { forgotPasswordHref, resetPasswordHref } from "@/lib/paths"
 import { createServerSupabase } from "@/lib/supabase/server"
 
-/** Recovery-only callback: exchanges the emailed code, then drops the session. */
+/** Recovery-only callback: verifies the emailed token, then drops the session. */
 export async function GET(request: Request) {
   const url = new URL(request.url)
   const { searchParams, origin } = url
@@ -27,30 +27,56 @@ export async function GET(request: Request) {
       new URL(`${fallback}${fallback.includes("?") ? "&" : "?"}error=recovery_invalid`, origin),
     )
 
+  if (!state) return invalid()
+
+  const tokenHash = searchParams.get("token_hash")
+  const otpType = searchParams.get("type")
   const code = searchParams.get("code")
   const providerError = searchParams.get("error") ?? searchParams.get("error_description")
-  if (providerError || !code || !state) return invalid()
+  if (providerError) return invalid()
 
   const supabase = await createServerSupabase()
   if (!supabase) return invalid()
 
-  const { data, error } = await supabase.auth.exchangeCodeForSession(code)
-  if (error || !data.session?.refresh_token) return invalid()
+  // The signed state above is required for both paths, so only a link minted by
+  // requestPasswordResetAction() can ever reach this exchange.
+  let exchange: { userId: string; accessToken: string; refreshToken: string } | null = null
 
-  // auth-js tags PKCE exchanges with the email link type; older projects may
-  // only expose recovery_sent_at. Either signal proves this was a recovery link.
-  const redirectType = (data as { redirectType?: string | null }).redirectType
-  const { data: userData, error: userError } = await supabase.auth.getUser()
-  if (userError || (redirectType !== "recovery" && !userData.user?.recovery_sent_at)) {
-    return invalid()
+  if (tokenHash && otpType === "recovery") {
+    // Primary path: `token_hash` is device-independent. The email link points
+    // straight here, so no PKCE verifier cookie from the requesting browser is
+    // needed — essential when the mail is opened in another browser or app.
+    const { data, error } = await supabase.auth.verifyOtp({
+      token_hash: tokenHash,
+      type: "recovery",
+    })
+    if (error || !data.session?.refresh_token || !data.user) return invalid()
+    exchange = {
+      userId: data.user.id,
+      accessToken: data.session.access_token,
+      refreshToken: data.session.refresh_token,
+    }
+  } else if (code) {
+    // Legacy path for links already sent with the default ConfirmationURL.
+    // PKCE requires the verifier cookie from the browser that started the flow.
+    const { data, error } = await supabase.auth.exchangeCodeForSession(code)
+    if (error || !data.session?.refresh_token) return invalid()
+
+    const redirectType = (data as { redirectType?: string | null }).redirectType
+    const { data: userData, error: userError } = await supabase.auth.getUser()
+    if (userError || !userData.user) return invalid()
+    if (redirectType !== "recovery" && !userData.user.recovery_sent_at) return invalid()
+
+    exchange = {
+      userId: userData.user.id,
+      accessToken: data.session.access_token,
+      refreshToken: data.session.refresh_token,
+    }
   }
 
-  const ticket = createRecoveryTicket({
-    state,
-    userId: userData.user.id,
-    accessToken: data.session.access_token,
-    refreshToken: data.session.refresh_token,
-  })
+  if (!exchange) return invalid()
+
+  const ticket = createRecoveryTicket({ state, ...exchange })
   if (!ticket || !markRecoveryNonceUsed(state.nonce)) return invalid()
 
   // The exchanged session is deliberately not kept: only the encrypted ticket

@@ -22,6 +22,25 @@ describe("AUTH-03 recovery hardening", () => {
     expect(generic).not.toMatch(/reset-password/)
   })
 
+  it("uses a device-independent token_hash exchange for reset links", () => {
+    const callback = read("app/auth/recovery/route.ts")
+    const template = read("supabase/templates/reset-password.html")
+    const example = read(".env.example")
+
+    expect(callback).toMatch(/searchParams\.get\("token_hash"\)/)
+    expect(callback).toMatch(/otpType === "recovery"/)
+    expect(callback).toMatch(/verifyOtp\(\{[\s\S]*?token_hash: tokenHash,[\s\S]*?type: "recovery"/)
+    expect(callback).toMatch(/if \(!state\) return invalid\(\)/)
+    expect(callback).toMatch(/else if \(code\)/)
+
+    expect(template).toContain("{{ .RedirectTo }}")
+    expect(template).toContain("{{ .TokenHash }}")
+    expect(template).toContain("type=recovery")
+    expect(template).not.toContain("{{ .ConfirmationURL }}")
+    expect(example).toMatch(/templates\/reset-password\.html/)
+    expect(example).toMatch(/token_hash/)
+  })
+
   it("gates the reset page and password mutation on a recovery ticket", () => {
     const page = read("app/[lang]/(auth)/reset-password/page.tsx")
     const form = read("components/auth/ResetPasswordForm.tsx")
