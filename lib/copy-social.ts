@@ -39,6 +39,13 @@ export const socialCopy = {
     end: { id: "Kamu sudah sampai di akhir.", en: "You’ve reached the end." } satisfies Bi,
     newBadge: { id: "Baru", en: "New" } satisfies Bi,
     emptyCta: { id: "Buat karya", en: "Create a work" } satisfies Bi,
+    noComments: { id: "Belum ada komentar", en: "No comments yet" } satisfies Bi,
+    commentsAria: { id: "komentar", en: "comments" } satisfies Bi,
+    quietTitle: { id: "Tulis catatan pertama", en: "Be the first to comment" } satisfies Bi,
+    quietHint: { id: "Karya baru yang menunggu komentar pertama.", en: "New works waiting for a first comment." } satisfies Bi,
+    creatorsTitle: { id: "Kreator baru", en: "New creators" } satisfies Bi,
+    searchPlaceholder: { id: "Cari karya, kreator, atau tag", en: "Search works, creators or tags" } satisfies Bi,
+    searchSubmit: { id: "Cari", en: "Search" } satisfies Bi,
   },
   feed: {
     title: { id: "Beranda", en: "Home" } satisfies Bi,

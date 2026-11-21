@@ -1,7 +1,7 @@
 import type { Metadata } from "next"
 import Link from "next/link"
 import { notFound } from "next/navigation"
-import { Suspense } from "react"
+import { Suspense, type ReactNode } from "react"
 import {
   ExploreFilters,
   ExploreFollowingGuest,
@@ -13,7 +13,6 @@ import { PageTransition } from "@/components/layout/PageTransition"
 import { TileGridSkeleton } from "@/components/social/Skeleton"
 import { SocialEmptyState } from "@/components/social/SocialEmptyState"
 import { socialButtonClass } from "@/components/social/socialButton"
-import { PageHeader } from "@/components/ui/PageHeader"
 import { listFollowingIds } from "@/features/community/follows"
 import {
   listNewCreators,
@@ -67,37 +66,47 @@ export default async function ExplorePage({
   const page = Math.max(1, Number.parseInt(query.page ?? "1", 10) || 1)
   const showDiscovery = page === 1 && feed === "all" && category === "all" && !q
 
-  return (
-    <PageTransition>
-      <div className="mx-auto w-full min-w-0 max-w-6xl px-5 py-8 sm:px-8 sm:py-10 lg:px-16">
-        <PageHeader
-          title={copy.exploreTitle[lang]}
-          actions={
-            showDiscovery ? (
-              <Suspense fallback={null}>
-                <NewCreatorsSlot lang={lang} />
-              </Suspense>
-            ) : null
-          }
-        />
-
-        <div className="mt-4 min-w-0">
-          <ExploreFilters lang={lang} category={category} q={q} feed={feed} />
-        </div>
-
-        <div className="mt-4 min-w-0">
-          <Suspense fallback={<TileGridSkeleton />}>
-            <ExploreResults lang={lang} category={category} q={q} page={page} feed={feed} />
-          </Suspense>
-        </div>
-
-        {showDiscovery ? (
-          <div className="mt-10 min-w-0 border-t border-[color:var(--soc-hairline)] pt-8">
+  // Bands that live inside the feed (never below it: an infinite feed has no "below").
+  const interludes = showDiscovery
+    ? [
+        {
+          at: 5,
+          node: (
+            <Suspense fallback={null}>
+              <NewCreatorsSlot lang={lang} />
+            </Suspense>
+          ),
+        },
+        {
+          at: 15,
+          node: (
             <Suspense fallback={null}>
               <QuietRackSlot lang={lang} />
             </Suspense>
-          </div>
-        ) : null}
+          ),
+        },
+      ]
+    : undefined
+
+  return (
+    <PageTransition>
+      <div className="mx-auto w-full min-w-0 max-w-6xl px-3 py-4 sm:px-6 sm:py-6 lg:px-10">
+        <h1 className="sr-only">{copy.exploreTitle[lang]}</h1>
+
+        <ExploreFilters lang={lang} category={category} q={q} feed={feed} />
+
+        <div className="mt-3 min-w-0 sm:mt-4">
+          <Suspense fallback={<TileGridSkeleton />}>
+            <ExploreResults
+              lang={lang}
+              category={category}
+              q={q}
+              page={page}
+              feed={feed}
+              interludes={interludes}
+            />
+          </Suspense>
+        </div>
       </div>
     </PageTransition>
   )
@@ -109,12 +118,14 @@ async function ExploreResults({
   q,
   page,
   feed,
+  interludes,
 }: {
   lang: Lang
   category: ExploreCategoryFilter
   q: string
   page: number
   feed: ExploreFeed
+  interludes?: { at: number; node: ReactNode }[]
 }) {
   if (feed === "following") {
     const profile = await getCurrentProfile()
@@ -193,6 +204,7 @@ async function ExploreResults({
       page={result.page}
       pageCount={result.pageCount}
       items={result.items}
+      interludes={interludes}
     />
   )
 }

@@ -6,7 +6,7 @@ import { FollowButton } from "@/components/community/FollowButton"
 import { PageTransition } from "@/components/layout/PageTransition"
 import { ProfileAvatar } from "@/components/profiles/ProfileAvatar"
 import { Grid2x22 } from "pixelarticons/react"
-import { TileGridSkeleton } from "@/components/social/Skeleton"
+import { ProfileGridSkeleton } from "@/components/social/Skeleton"
 import { SocialEmptyState } from "@/components/social/SocialEmptyState"
 import { socialButtonClass } from "@/components/social/socialButton"
 import { WorkTile } from "@/components/social/WorkTile"
@@ -150,7 +150,7 @@ export default async function PublicProfilePage({
           </div>
 
           <div className="mt-3">
-            <Suspense fallback={<TileGridSkeleton count={9} />}>
+            <Suspense fallback={<ProfileGridSkeleton />}>
               <ProfileWorks
                 lang={lang}
                 username={profile.username}

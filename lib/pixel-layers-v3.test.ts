@@ -239,7 +239,7 @@ describe("V3 source format", () => {
 
   it("still rejects unknown versions and corrupt pixel data", () => {
     const good = JSON.parse(JSON.stringify(buildPixelSourceV2(randomLayers(9, 1), W, H, palette)))
-    expect(parsePixelSource({ ...good, version: 4 })).toEqual({ ok: false, error: "unsupported_version" })
+    expect(parsePixelSource({ ...good, version: 5 })).toEqual({ ok: false, error: "unsupported_version" })
     const bad = JSON.parse(JSON.stringify(good))
     bad.layers[0].runs = [1, 2]
     expect(parsePixelSource(bad).ok).toBe(false)
@@ -255,6 +255,7 @@ describe("V3 source format", () => {
       source_path: "u/c/source.json",
     }
     expect(pixelContentSchema.safeParse(header).success).toBe(true)
-    expect(pixelContentSchema.safeParse({ ...header, version: 4 }).success).toBe(false)
+    expect(pixelContentSchema.safeParse({ ...header, version: 4 }).success).toBe(true)
+    expect(pixelContentSchema.safeParse({ ...header, version: 5 }).success).toBe(false)
   })
 })

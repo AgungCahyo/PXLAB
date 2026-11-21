@@ -6,10 +6,13 @@ import { cn } from "@/lib/utils"
 export function Pill({
   href,
   selected,
+  tone = "default",
   children,
 }: {
   href: string
   selected: boolean
+  /** "brand" marks the primary switch (feed); "default" is a plain filter. */
+  tone?: "default" | "brand"
   children: ReactNode
 }) {
   return (
@@ -18,7 +21,7 @@ export function Pill({
       aria-current={selected ? "true" : undefined}
       className={cn(
         "inline-flex min-h-9 items-center whitespace-nowrap px-3.5 text-[13px] font-semibold transition-colors",
-        selected ? "bg-fg text-bg" : "bg-soft text-muted hover:text-fg",
+        selected ? (tone === "brand" ? "bg-brick text-white" : "bg-fg text-bg") : "bg-soft text-muted hover:text-fg",
       )}
     >
       {children}

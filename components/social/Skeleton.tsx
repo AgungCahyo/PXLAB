@@ -1,3 +1,5 @@
+import { MosaicGrid } from "@/components/social/MosaicGrid"
+import { mosaicSlot, mosaicTileClass } from "@/lib/social-mosaic"
 import { cn } from "@/lib/utils"
 
 export function Skeleton({ className }: { className?: string }) {
@@ -31,15 +33,25 @@ export function FeedSkeleton({ count = 3 }: { count?: number }) {
   )
 }
 
-/** Same grid as the Explore feed so the page does not jump when tiles arrive. */
-export function TileGridSkeleton({ count = 12 }: { count?: number }) {
+/** Same mosaic as the Explore feed so the page does not jump when tiles arrive. */
+export function TileGridSkeleton({ count = 10 }: { count?: number }) {
   return (
-    <div
-      className="grid grid-cols-2 gap-1 sm:grid-cols-3 sm:gap-1.5 lg:grid-cols-4"
-      role="status"
-      aria-busy="true"
-      aria-label="Loading"
-    >
+    <div role="status" aria-busy="true" aria-label="Loading">
+      <MosaicGrid>
+        {Array.from({ length: count }, (_, i) => (
+          <li key={i} className={mosaicTileClass(i, mosaicSlot(i).large)}>
+            <Skeleton className="h-full w-full" />
+          </li>
+        ))}
+      </MosaicGrid>
+    </div>
+  )
+}
+
+/** 3-column square grid placeholder for the profile. */
+export function ProfileGridSkeleton({ count = 9 }: { count?: number }) {
+  return (
+    <div className="grid grid-cols-3 gap-0.5 sm:gap-1" role="status" aria-busy="true" aria-label="Loading">
       {Array.from({ length: count }, (_, i) => (
         <Skeleton key={i} className="aspect-square" />
       ))}
@@ -65,7 +77,7 @@ export function ProfileLoadingSkeleton() {
         </div>
       </div>
       <div className="mt-10">
-        <TileGridSkeleton count={9} />
+        <ProfileGridSkeleton />
       </div>
     </div>
   )

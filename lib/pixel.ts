@@ -1,6 +1,7 @@
 /** Shared pixel math for the Playground and the local Space prototype. */
 import { glyphRows, PIXEL_FONT_H, PIXEL_FONT_LEADING, PIXEL_FONT_TRACK, PIXEL_FONT_W } from "@/lib/pixel-font"
 import {
+  blendChannel,
   blendOverPixel,
   clampLayerOpacity,
   isPixelBlendMode,
@@ -8,6 +9,14 @@ import {
   PIXEL_OPACITY_MAX,
   type PixelBlendMode,
 } from "@/lib/pixel-blend"
+import {
+  clampGroupName,
+  createGroupId,
+  layerEffectivelyHidden,
+  layerSegments,
+  normalizeGroups,
+  type PixelGroupRuntime,
+} from "@/lib/pixel-groups"
 import { PIXEL_SOURCE_MAX_BYTES } from "@/lib/site"
 
 /** Prototype / classic square reference. Playground documents use their own width × height. */
@@ -190,6 +199,8 @@ export const PIXEL_SOURCE_VERSION_V2 = 2
  * layer actually uses one of these; otherwise it stays V2 so older readers keep opening it.
  */
 export const PIXEL_SOURCE_VERSION_V3 = 3
+/** V3 plus layer groups (`groups` list and `layer.group`). Written only when a group exists. */
+export const PIXEL_SOURCE_VERSION_V4 = 4
 export const PIXEL_SOURCE_ENCODING = "rle-index" as const
 export const PIXEL_LAYER_MAX = 8
 /**
@@ -2437,7 +2448,28 @@ export type PixelSourceV3 = {
   layers: PixelLayerV3[]
 }
 
-export type PixelSource = PixelSourceV1 | PixelSourceV2 | PixelSourceV3
+export type PixelGroupV4 = {
+  id: string
+  name: string
+  visible: boolean
+  opacity: number
+  blend: PixelBlendMode
+  collapsed: boolean
+}
+
+export type PixelLayerV4 = PixelLayerV3 & { group: string | null }
+
+export type PixelSourceV4 = {
+  version: typeof PIXEL_SOURCE_VERSION_V4
+  width: number
+  height: number
+  palette: string[]
+  encoding: typeof PIXEL_SOURCE_ENCODING
+  layers: PixelLayerV4[]
+  groups: PixelGroupV4[]
+}
+
+export type PixelSource = PixelSourceV1 | PixelSourceV2 | PixelSourceV3 | PixelSourceV4
 
 export type PixelLayerRuntime = {
   id: string
@@ -2451,6 +2483,8 @@ export type PixelLayerRuntime = {
   blend?: PixelBlendMode
   /** Missing means false. */
   lockAlpha?: boolean
+  /** Id of the group this layer belongs to; missing or null means ungrouped. */
+  group?: string | null
 }
 
 export function layerOpacity(layer: Pick<PixelLayerRuntime, "opacity">) {
@@ -2482,6 +2516,8 @@ export type ParsedPixelSource = {
   /** Flattened composite indices (paper where empty). */
   indices: Uint8Array
   layers: PixelLayerRuntime[]
+  /** Layer groups (empty before V4). */
+  groups: PixelGroupRuntime[]
 }
 
 function parseSharedPalette(value: unknown): string[] | null {
@@ -2555,6 +2591,8 @@ function writeCompositeCell(
  * Bottom layer: index 0 = paper. Upper layers: index 0 = transparent.
  * `rect` recomposites only that region and leaves every other cell untouched.
  */
+let groupScratch = new Float32Array(0)
+
 export function compositeLayersToRgba(
   layers: readonly PixelLayerRuntime[],
   pixels: Uint8ClampedArray,
@@ -2562,6 +2600,7 @@ export function compositeLayersToRgba(
   width: number,
   height: number,
   rect?: PixelRect | null,
+  groups: readonly PixelGroupRuntime[] = [],
 ) {
   const { lut, paperR, paperG, paperB } = paletteLut(palette)
   let x0 = 0
@@ -2589,11 +2628,12 @@ export function compositeLayersToRgba(
       }
     }
   }
-  for (let layerIndex = 0; layerIndex < layers.length; layerIndex += 1) {
-    const layer = layers[layerIndex]
-    if (!layer.visible) continue
+
+  const drawLayer = (layerIndex: number) => {
+    const layer = layers[layerIndex]!
+    if (!layer.visible) return
     const opacity = layerOpacity(layer)
-    if (opacity === 0) continue
+    if (opacity === 0) return
     const mode = layerBlend(layer)
     const plain = isPlainBlend(opacity, mode)
     const transparentZero = layerIndex > 0
@@ -2616,6 +2656,101 @@ export function compositeLayersToRgba(
       }
     }
   }
+
+  /**
+   * A group composites in isolation into an RGB + alpha buffer (alpha 0 = nothing painted),
+   * then lands on the backdrop with the group's opacity and blend mode. Alpha is not binary here
+   * because a member at 50% over an empty area is half transparent.
+   */
+  const drawGroup = (group: PixelGroupRuntime, start: number, end: number) => {
+    if (!group.visible || group.opacity <= 0) return
+    const groupPlain = isPlainBlend(group.opacity, group.blend)
+    let allPlain = groupPlain
+    for (let i = start; i <= end && allPlain; i += 1) {
+      const layer = layers[i]!
+      if (layer.visible && !isPlainBlend(layerOpacity(layer), layerBlend(layer))) allPlain = false
+    }
+    if (allPlain) {
+      // Normal 100% group of plain layers is indistinguishable from the flat stack.
+      for (let i = start; i <= end; i += 1) drawLayer(i)
+      return
+    }
+    const rw = x1 - x0
+    const rh = y1 - y0
+    const cells = rw * rh
+    if (groupScratch.length < cells * 4) groupScratch = new Float32Array(cells * 4)
+    const buf = groupScratch
+    buf.fill(0, 0, cells * 4)
+    for (let li = start; li <= end; li += 1) {
+      const layer = layers[li]!
+      if (!layer.visible) continue
+      const opacity = layerOpacity(layer)
+      if (opacity === 0) continue
+      const mode = layerBlend(layer)
+      const as = opacity / PIXEL_OPACITY_MAX
+      const transparentZero = li > 0
+      for (let y = y0; y < y1; y += 1) {
+        for (let x = x0; x < x1; x += 1) {
+          const index = layer.indices[y * width + x] ?? 0
+          if (transparentZero && index === 0) continue
+          let sr = paperR
+          let sg = paperG
+          let sb = paperB
+          if (index < palette.length) {
+            const l = index * 3
+            sr = lut[l]!
+            sg = lut[l + 1]!
+            sb = lut[l + 2]!
+          }
+          const j = ((y - y0) * rw + (x - x0)) * 4
+          const ab = buf[j + 3]!
+          const ar = as + ab * (1 - as)
+          if (ar <= 0) continue
+          const br = buf[j]!
+          const bg = buf[j + 1]!
+          const bb = buf[j + 2]!
+          const mr = mode === "normal" ? sr : (1 - ab) * sr + ab * blendChannel(mode, br / 255, sr / 255) * 255
+          const mg = mode === "normal" ? sg : (1 - ab) * sg + ab * blendChannel(mode, bg / 255, sg / 255) * 255
+          const mb = mode === "normal" ? sb : (1 - ab) * sb + ab * blendChannel(mode, bb / 255, sb / 255) * 255
+          const k = as / ar
+          buf[j] = (1 - k) * br + k * mr
+          buf[j + 1] = (1 - k) * bg + k * mg
+          buf[j + 2] = (1 - k) * bb + k * mb
+          buf[j + 3] = ar
+        }
+      }
+    }
+    const go = group.opacity / PIXEL_OPACITY_MAX
+    for (let y = y0; y < y1; y += 1) {
+      for (let x = x0; x < x1; x += 1) {
+        const j = ((y - y0) * rw + (x - x0)) * 4
+        const a = buf[j + 3]! * go
+        if (a <= 0) continue
+        const p = (y * width + x) * 4
+        const cr = buf[j]!
+        const cg = buf[j + 1]!
+        const cb = buf[j + 2]!
+        const br = pixels[p]!
+        const bg = pixels[p + 1]!
+        const bb = pixels[p + 2]!
+        const tr = group.blend === "normal" ? cr : blendChannel(group.blend, br / 255, cr / 255) * 255
+        const tg = group.blend === "normal" ? cg : blendChannel(group.blend, bg / 255, cg / 255) * 255
+        const tb = group.blend === "normal" ? cb : blendChannel(group.blend, bb / 255, cb / 255) * 255
+        pixels[p] = Math.round(br + (tr - br) * a)
+        pixels[p + 1] = Math.round(bg + (tg - bg) * a)
+        pixels[p + 2] = Math.round(bb + (tb - bb) * a)
+      }
+    }
+  }
+
+  if (groups.length === 0) {
+    for (let i = 0; i < layers.length; i += 1) drawLayer(i)
+    return
+  }
+  for (const segment of layerSegments(layers, groups)) {
+    if (segment.kind === "layer") drawLayer(segment.index)
+    else drawGroup(segment.group, segment.start, segment.end)
+  }
 }
 
 /** Flatten visible layers to palette indices (paper where empty). */
@@ -2623,12 +2758,13 @@ export function flattenLayersToIndices(
   layers: readonly PixelLayerRuntime[],
   width: number,
   height: number,
+  groups: readonly PixelGroupRuntime[] = [],
 ): Uint8Array {
   const out = emptyPixelIndices(width, height)
   const cellCount = width * height
   for (let layerIndex = 0; layerIndex < layers.length; layerIndex += 1) {
     const layer = layers[layerIndex]
-    if (!layer.visible || layerOpacity(layer) === 0) continue
+    if (layerEffectivelyHidden(layer, groups) || layerOpacity(layer) === 0) continue
     const transparentZero = layerIndex > 0
     for (let i = 0; i < cellCount; i += 1) {
       const index = layer.indices[i] ?? 0
@@ -2743,7 +2879,8 @@ export function buildPixelSourceV2(
   width: number,
   height: number,
   palette: readonly string[] = PIXEL_PALETTE,
-): PixelSourceV2 | PixelSourceV3 {
+  groups: readonly PixelGroupRuntime[] = [],
+): PixelSourceV2 | PixelSourceV3 | PixelSourceV4 {
   const safe = layers.slice(0, PIXEL_LAYER_MAX)
   const list =
     safe.length > 0
@@ -2757,6 +2894,35 @@ export function buildPixelSourceV2(
     runs: encodeRle(layer.indices),
   })
   const normalizedPalette = palette.map((color) => normalizePixelHex(color) ?? PIXEL_PAPER)
+  const cleanGroups = normalizeGroups(
+    list.map((layer) => ({ ...layer })),
+    groups,
+  )
+  if (cleanGroups.length > 0) {
+    const ids = new Set(cleanGroups.map((group) => group.id))
+    return {
+      version: PIXEL_SOURCE_VERSION_V4,
+      width,
+      height,
+      palette: normalizedPalette,
+      encoding: PIXEL_SOURCE_ENCODING,
+      layers: list.map((layer, index) => ({
+        ...base(layer, index),
+        opacity: layerOpacity(layer),
+        blend: layerBlend(layer),
+        lockAlpha: Boolean(layer.lockAlpha),
+        group: layer.group && ids.has(layer.group) ? layer.group : null,
+      })),
+      groups: cleanGroups.map((group) => ({
+        id: group.id,
+        name: clampGroupName(group.name) || "Group",
+        visible: group.visible !== false,
+        opacity: clampLayerOpacity(group.opacity),
+        blend: isPixelBlendMode(group.blend) ? group.blend : "normal",
+        collapsed: Boolean(group.collapsed),
+      })),
+    }
+  }
   if (layersNeedV3(list)) {
     return {
       version: PIXEL_SOURCE_VERSION_V3,
@@ -2791,7 +2957,8 @@ export function parsePixelSource(
   if (
     version !== PIXEL_SOURCE_VERSION &&
     version !== PIXEL_SOURCE_VERSION_V2 &&
-    version !== PIXEL_SOURCE_VERSION_V3
+    version !== PIXEL_SOURCE_VERSION_V3 &&
+    version !== PIXEL_SOURCE_VERSION_V4
   ) {
     return { ok: false, error: "unsupported_version" }
   }
@@ -2823,15 +2990,16 @@ export function parsePixelSource(
     const indices = decodeRle(data.runs, expected, data.palette.length)
     if (!indices) return { ok: false, error: "integrity" }
     const layers = layersFromSourceV1(indices)
-    return { ok: true, data, indices, layers }
+    return { ok: true, data, indices, layers, groups: [] }
   }
 
   if (!Array.isArray(value.layers) || value.layers.length < 1 || value.layers.length > PIXEL_LAYER_MAX) {
     return { ok: false, error: "invalid_source" }
   }
-  const isV3 = version === PIXEL_SOURCE_VERSION_V3
+  const isV4 = version === PIXEL_SOURCE_VERSION_V4
+  const isV3 = version === PIXEL_SOURCE_VERSION_V3 || isV4
   const layers: PixelLayerRuntime[] = []
-  const stored: Array<PixelLayerV2 | PixelLayerV3> = []
+  const stored: Array<PixelLayerV2 | PixelLayerV3 | PixelLayerV4> = []
   for (let i = 0; i < value.layers.length; i += 1) {
     const raw = value.layers[i]
     if (!raw || typeof raw !== "object") return { ok: false, error: "invalid_source" }
@@ -2865,7 +3033,13 @@ export function parsePixelSource(
       const opacity = clampLayerOpacity(row.opacity)
       const blend = isPixelBlendMode(row.blend) ? row.blend : "normal"
       const lockAlpha = row.lockAlpha === true
-      stored.push({ ...layer, opacity, blend, lockAlpha })
+      if (isV4) {
+        const group = typeof row.group === "string" && row.group ? row.group : null
+        stored.push({ ...layer, opacity, blend, lockAlpha, group })
+        runtime.group = group
+      } else {
+        stored.push({ ...layer, opacity, blend, lockAlpha })
+      }
       runtime.opacity = opacity
       runtime.blend = blend
       runtime.lockAlpha = lockAlpha
@@ -2875,32 +3049,55 @@ export function parsePixelSource(
     layers.push(runtime)
   }
 
-  const data = (
-    isV3
-      ? {
-          version: PIXEL_SOURCE_VERSION_V3,
-          width: value.width,
-          height: value.height,
-          palette,
-          encoding: PIXEL_SOURCE_ENCODING,
-          layers: stored as PixelLayerV3[],
-        }
-      : {
-          version: PIXEL_SOURCE_VERSION_V2,
-          width: value.width,
-          height: value.height,
-          palette,
-          encoding: PIXEL_SOURCE_ENCODING,
-          layers: stored as PixelLayerV2[],
-        }
-  ) satisfies PixelSourceV2 | PixelSourceV3
+  let groups: PixelGroupRuntime[] = []
+  if (isV4) {
+    // Lenient: skip malformed group records, then repair the layout (unknown references,
+    // split runs, empty groups) so the document always opens.
+    const rawGroups = Array.isArray(value.groups) ? value.groups.slice(0, PIXEL_LAYER_MAX) : []
+    const parsedGroups: PixelGroupRuntime[] = []
+    for (const raw of rawGroups) {
+      if (!raw || typeof raw !== "object") continue
+      const g = raw as Record<string, unknown>
+      if (typeof g.id !== "string" || !g.id) continue
+      parsedGroups.push({
+        id: g.id,
+        name: typeof g.name === "string" ? clampGroupName(g.name) || "Group" : "Group",
+        visible: g.visible !== false,
+        opacity: clampLayerOpacity(g.opacity),
+        blend: isPixelBlendMode(g.blend) ? g.blend : "normal",
+        collapsed: g.collapsed === true,
+      })
+    }
+    groups = normalizeGroups(layers, parsedGroups)
+    stored.forEach((row, index) => {
+      ;(row as PixelLayerV4).group = layers[index]!.group ?? null
+    })
+  }
+
+  const header = {
+    width: value.width,
+    height: value.height,
+    palette,
+    encoding: PIXEL_SOURCE_ENCODING,
+  }
+  const data: PixelSourceV2 | PixelSourceV3 | PixelSourceV4 = isV4
+    ? {
+        version: PIXEL_SOURCE_VERSION_V4,
+        ...header,
+        layers: stored as PixelLayerV4[],
+        groups: groups.map((group) => ({ ...group })),
+      }
+    : isV3
+      ? { version: PIXEL_SOURCE_VERSION_V3, ...header, layers: stored as PixelLayerV3[] }
+      : { version: PIXEL_SOURCE_VERSION_V2, ...header, layers: stored as PixelLayerV2[] }
   const encoded = JSON.stringify(data)
   if (encoded.length > PIXEL_SOURCE_MAX_BYTES) return { ok: false, error: "payload_too_large" }
   return {
     ok: true,
     data,
-    indices: flattenLayersToIndices(layers, value.width, value.height),
+    indices: flattenLayersToIndices(layers, value.width, value.height, groups),
     layers,
+    groups,
   }
 }
 

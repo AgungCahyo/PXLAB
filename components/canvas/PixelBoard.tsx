@@ -15,6 +15,22 @@ import {
 } from "@/lib/pixel-brush"
 import { clampLayerOpacity, isPixelBlendMode, type PixelBlendMode } from "@/lib/pixel-blend"
 import { PixelHistory, type HistoryFrame } from "@/lib/pixel-history"
+import {
+  assignLayerToGroup as assignLayerToGroupModel,
+  cloneGroups,
+  createGroupFromLayer,
+  findGroup,
+  layerEffectivelyHidden,
+  moveGroup as moveGroupModel,
+  moveLayerInStack,
+  normalizeGroups,
+  pruneEmptyGroups,
+  removeLayerFromGroup as removeLayerFromGroupModel,
+  ungroup as ungroupModel,
+  updateGroupStyle,
+  type PixelGroupRuntime,
+  type PixelGroupStylePatch,
+} from "@/lib/pixel-groups"
 import { bakeMergeDown, bakeVisibleLayers, createPaletteResolver } from "@/lib/pixel-merge"
 import {
   forwardRef,
@@ -218,7 +234,20 @@ export type PixelLayerInfo = {
   blend: PixelBlendMode
   /** Transparency lock: painting cannot change which cells are empty. */
   lockAlpha: boolean
+  /** Id of the group this layer is in, or null. */
+  group: string | null
 }
+
+export type PixelGroupInfo = {
+  id: string
+  name: string
+  visible: boolean
+  opacity: number
+  blend: PixelBlendMode
+  collapsed: boolean
+}
+
+export type { PixelGroupStylePatch }
 
 export type PixelLayerStylePatch = {
   opacity?: number
@@ -235,6 +264,7 @@ function cloneLayers(layers: PixelLayerRuntime[]): PixelLayerRuntime[] {
     opacity: layer.opacity,
     blend: layer.blend,
     lockAlpha: layer.lockAlpha,
+    group: layer.group ?? null,
     indices: new Uint8Array(layer.indices),
   }))
 }
@@ -245,6 +275,16 @@ function layersFromInitialSource(source: PixelSource | null, width: number, heig
     if (parsed.ok) return cloneLayers(parsed.layers)
   }
   return [createEmptyLayer(width, height, "Layer 1")]
+}
+
+function groupsFromInitialSource(source: PixelSource | null) {
+  if (!source) return []
+  const parsed = parsePixelSource(source)
+  return parsed.ok ? cloneGroups(parsed.groups) : []
+}
+
+function groupInfoList(groups: readonly PixelGroupRuntime[]): PixelGroupInfo[] {
+  return groups.map((group) => ({ ...group }))
 }
 
 function paletteFromSource(source: PixelSource | null) {
@@ -309,6 +349,18 @@ export type PixelBoardHandle = {
   setActiveLayer: (id: string) => boolean
   setLayerVisible: (id: string, visible: boolean) => boolean
   setLayerLocked: (id: string, locked: boolean) => boolean
+  /** New group wrapping one ungrouped layer. Returns the group id. */
+  createGroup: (layerId: string, name?: string) => string | null
+  /** Move a layer into an existing group (next to its run). */
+  assignLayerToGroup: (layerId: string, groupId: string) => boolean
+  removeLayerFromGroup: (layerId: string) => boolean
+  /** Dissolve a group; its layers stay where they are. */
+  ungroup: (groupId: string) => boolean
+  /** Name, visibility, opacity, blend, collapsed. Repeated changes to one property coalesce into one undo step. */
+  setGroupStyle: (groupId: string, patch: PixelGroupStylePatch) => boolean
+  /** Swap the whole group with the layer or group above (+1) or below (-1). */
+  moveGroup: (groupId: string, direction: 1 | -1) => boolean
+  getGroups: () => PixelGroupInfo[]
   /** Opacity, blend mode and transparency lock. Repeated changes to one property coalesce into one undo step. */
   setLayerStyle: (id: string, patch: PixelLayerStylePatch) => boolean
   renameLayer: (id: string, name: string) => boolean
@@ -363,6 +415,7 @@ export type PixelBoardProps = {
   onSelectionChange?: (hasSelection: boolean) => void
   onClipboardChange?: (hasClipboard: boolean) => void
   onLayersChange?: (layers: PixelLayerInfo[]) => void
+  onGroupsChange?: (groups: PixelGroupInfo[]) => void
   onEditFeedback?: (kind: "copied" | "cut" | "pasted" | "clipboard-empty") => void
   onShapeDraftChange?: (info: ShapeDraftInfo) => void
   onPaletteFull?: () => void
@@ -400,6 +453,7 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
     onSelectionChange,
     onClipboardChange,
     onLayersChange,
+    onGroupsChange,
     onEditFeedback,
     onShapeDraftChange,
     onPaletteFull,
@@ -425,6 +479,7 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
   const layersRef = useRef<PixelLayerRuntime[]>(
     layersFromInitialSource(initialSource, width, height),
   )
+  const groupsRef = useRef<PixelGroupRuntime[]>(groupsFromInitialSource(initialSource))
   const activeLayerIndexRef = useRef(0)
   const selectRotateRef = useRef<{
     origin: PixelSelection
@@ -527,6 +582,8 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
   onClipboardChangeRef.current = onClipboardChange
   const onLayersChangeRef = useRef(onLayersChange)
   onLayersChangeRef.current = onLayersChange
+  const onGroupsChangeRef = useRef(onGroupsChange)
+  onGroupsChangeRef.current = onGroupsChange
   const onEditFeedbackRef = useRef(onEditFeedback)
   onEditFeedbackRef.current = onEditFeedback
   const editActionRef = useRef({
@@ -640,8 +697,10 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
         opacity: layerOpacity(layer),
         blend: layerBlend(layer),
         lockAlpha: Boolean(layer.lockAlpha),
+        group: layer.group ?? null,
       })),
     )
+    onGroupsChangeRef.current?.(groupInfoList(groupsRef.current))
   }
 
   const syncActiveFromImage = (rect?: PixelRect | null) => {
@@ -709,6 +768,7 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
     syncActiveFromImage()
     return {
       layers: layersRef.current,
+      groups: groupsRef.current,
       active: activeLayerIndexRef.current,
       palette: paletteRef.current,
       selection: selectionRef.current,
@@ -728,6 +788,7 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
 
   const applyHistoryFrame = (frame: HistoryFrame) => {
     layersRef.current = cloneLayers(frame.layers)
+    groupsRef.current = cloneGroups(frame.groups)
     activeLayerIndexRef.current = Math.max(
       0,
       Math.min(frame.active, layersRef.current.length - 1),
@@ -781,6 +842,7 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
       w,
       h,
       rect,
+      groupsRef.current,
     )
     return compositeRef.current
   }
@@ -2053,6 +2115,7 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
       opacity: layerOpacity(layer),
       blend: layerBlend(layer),
       lockAlpha: Boolean(layer.lockAlpha),
+      group: layer.group ?? null,
     }))
   }
 
@@ -2104,6 +2167,7 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
         canvasWidthRef.current,
         canvasHeightRef.current,
         paletteRef.current,
+        groupsRef.current,
       )
     },
     exportPng: () => {
@@ -2291,6 +2355,7 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
       pushUndo()
       syncActiveFromImage()
       layersRef.current.splice(index, 1)
+      pruneEmptyGroups(layersRef.current, groupsRef.current)
       if (activeLayerIndexRef.current >= layersRef.current.length) {
         activeLayerIndexRef.current = layersRef.current.length - 1
       } else if (activeLayerIndexRef.current > index) {
@@ -2309,8 +2374,7 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
       if (target < 0 || target >= layersRef.current.length) return false
       pushUndo()
       syncActiveFromImage()
-      const [layer] = layersRef.current.splice(index, 1)
-      layersRef.current.splice(target, 0, layer)
+      moveLayerInStack(layersRef.current, groupsRef.current, index, target)
       if (activeLayerIndexRef.current === index) activeLayerIndexRef.current = target
       else if (index < activeLayerIndexRef.current && target >= activeLayerIndexRef.current) {
         activeLayerIndexRef.current -= 1
@@ -2374,6 +2438,101 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
       onStrokeEnd?.()
       return true
     },
+    getGroups: () => groupInfoList(groupsRef.current),
+    createGroup: (layerId, name) => {
+      const target = layersRef.current.find((layer) => layer.id === layerId)
+      if (!target || target.group) return null
+      pushUndo()
+      syncActiveFromImage()
+      const group = createGroupFromLayer(
+        layersRef.current,
+        groupsRef.current,
+        layerId,
+        name ?? `Group ${groupsRef.current.length + 1}`,
+      )
+      emitLayers()
+      schedule()
+      onStrokeEnd?.()
+      return group ? group.id : null
+    },
+    assignLayerToGroup: (layerId, groupId) => {
+      const layer = layersRef.current.find((item) => item.id === layerId)
+      if (!layer || !findGroup(groupsRef.current, groupId) || layer.group === groupId) return false
+      pushUndo()
+      syncActiveFromImage()
+      const activeId = layersRef.current[activeLayerIndexRef.current]?.id
+      const ok = assignLayerToGroupModel(layersRef.current, groupsRef.current, layerId, groupId)
+      // The layer moved inside the stack, so keep the same layer active.
+      const at = layersRef.current.findIndex((item) => item.id === activeId)
+      if (at >= 0) activeLayerIndexRef.current = at
+      loadActiveIntoImage()
+      emitLayers()
+      schedule()
+      onStrokeEnd?.()
+      return ok
+    },
+    removeLayerFromGroup: (layerId) => {
+      const layer = layersRef.current.find((item) => item.id === layerId)
+      if (!layer || !layer.group) return false
+      pushUndo()
+      syncActiveFromImage()
+      const activeId = layersRef.current[activeLayerIndexRef.current]?.id
+      const ok = removeLayerFromGroupModel(layersRef.current, groupsRef.current, layerId)
+      const at = layersRef.current.findIndex((item) => item.id === activeId)
+      if (at >= 0) activeLayerIndexRef.current = at
+      loadActiveIntoImage()
+      emitLayers()
+      schedule()
+      onStrokeEnd?.()
+      return ok
+    },
+    ungroup: (groupId) => {
+      if (!findGroup(groupsRef.current, groupId)) return false
+      pushUndo()
+      syncActiveFromImage()
+      const ok = ungroupModel(layersRef.current, groupsRef.current, groupId)
+      emitLayers()
+      schedule()
+      onStrokeEnd?.()
+      return ok
+    },
+    setGroupStyle: (groupId, patch) => {
+      const group = findGroup(groupsRef.current, groupId)
+      if (!group) return false
+      const probe = { ...group }
+      if (!updateGroupStyle(probe, patch)) return false
+      // Collapsing is view state, not worth an undo step. Slider drags coalesce per property.
+      const onlyCollapse = Object.keys(patch).every((key) => key === "collapsed")
+      if (!onlyCollapse) {
+        const key = `group:${groupId}:${Object.keys(patch).sort().join(",")}`
+        const now = Date.now()
+        const last = styleUndoRef.current
+        if (!last || last.key !== key || now - last.at > 900) pushUndo()
+        styleUndoRef.current = { key, at: now }
+        syncActiveFromImage()
+      }
+      updateGroupStyle(group, patch)
+      emitLayers()
+      schedule()
+      if (!onlyCollapse) onStrokeEnd?.()
+      return true
+    },
+    moveGroup: (groupId, direction) => {
+      if (!findGroup(groupsRef.current, groupId)) return false
+      const preview = layersRef.current.map((layer) => ({ ...layer }))
+      if (!moveGroupModel(preview, cloneGroups(groupsRef.current), groupId, direction)) return false
+      pushUndo()
+      syncActiveFromImage()
+      const activeId = layersRef.current[activeLayerIndexRef.current]?.id
+      moveGroupModel(layersRef.current, groupsRef.current, groupId, direction)
+      const at = layersRef.current.findIndex((item) => item.id === activeId)
+      if (at >= 0) activeLayerIndexRef.current = at
+      loadActiveIntoImage()
+      emitLayers()
+      schedule()
+      onStrokeEnd?.()
+      return true
+    },
     setLayerLocked: (id, locked) => {
       const layer = layersRef.current.find((item) => item.id === id)
       if (!layer || layer.locked === locked) return false
@@ -2411,6 +2570,7 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
         opacity: source.opacity,
         blend: source.blend,
         lockAlpha: source.lockAlpha,
+        group: source.group ?? null,
         indices: new Uint8Array(source.indices),
       }
       layersRef.current.splice(index + 1, 0, clone)
@@ -2427,12 +2587,15 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
       const upper = layersRef.current[index]!
       const lower = layersRef.current[index - 1]!
       if (lower.locked) return false
+      // Layers in different groups (or one in, one out) cannot be baked together.
+      if ((lower.group ?? null) !== (upper.group ?? null)) return false
       pushUndo()
       syncActiveFromImage()
       const resolver = createPaletteResolver(paletteRef.current)
       lower.indices = bakeMergeDown(lower, upper, index - 1 === 0, paletteRef.current, resolver)
       growPaletteFromMerge(resolver)
       layersRef.current.splice(index, 1)
+      pruneEmptyGroups(layersRef.current, groupsRef.current)
       activeLayerIndexRef.current = index - 1
       loadActiveIntoImage()
       emitLayers()
@@ -2443,29 +2606,42 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
     mergeVisible: () => {
       syncActiveFromImage()
       const layers = layersRef.current
-      const visible = layers.filter((layer) => layer.visible)
+      const groups = groupsRef.current
+      const shown = (layer: PixelLayerRuntime) => !layerEffectivelyHidden(layer, groups)
+      const visible = layers.filter(shown)
       if (visible.length < 2) return false
       if (visible.some((layer) => layer.locked)) return false
       const w = canvasWidthRef.current
       const h = canvasHeightRef.current
-      const firstVisible = layers.findIndex((layer) => layer.visible)
+      const firstVisible = layers.findIndex(shown)
       if (firstVisible < 0) return false
       pushUndo()
       const resolver = createPaletteResolver(paletteRef.current)
-      const mergedIndices = bakeVisibleLayers(layers, w, h, paletteRef.current, resolver)
+      const mergedIndices = bakeVisibleLayers(layers, w, h, paletteRef.current, resolver, groups)
       growPaletteFromMerge(resolver)
-      const hidden = layers.filter((layer) => !layer.visible)
+      const hidden = layers.filter((layer) => !shown(layer))
       const merged: PixelLayerRuntime = {
         id: createLayerId(),
         name: "Merged",
         visible: true,
         locked: false,
+        group: null,
         indices: mergedIndices,
       }
-      const insertAt = Math.min(firstVisible, hidden.length)
+      let insertAt = Math.min(firstVisible, hidden.length)
+      // Never drop the merged layer into the middle of a group run.
+      while (
+        insertAt > 0 &&
+        insertAt < hidden.length &&
+        hidden[insertAt - 1]!.group &&
+        hidden[insertAt - 1]!.group === hidden[insertAt]!.group
+      ) {
+        insertAt += 1
+      }
       const next = [...hidden]
       next.splice(insertAt, 0, merged)
       layersRef.current = next.slice(0, PIXEL_LAYER_MAX)
+      groupsRef.current = normalizeGroups(layersRef.current, groupsRef.current)
       activeLayerIndexRef.current = Math.min(
         insertAt,
         layersRef.current.length - 1,
@@ -2483,8 +2659,7 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
       if (target === index) return false
       pushUndo()
       syncActiveFromImage()
-      const [layer] = layersRef.current.splice(index, 1)
-      layersRef.current.splice(target, 0, layer)
+      moveLayerInStack(layersRef.current, groupsRef.current, index, target)
       if (activeLayerIndexRef.current === index) activeLayerIndexRef.current = target
       else if (index < activeLayerIndexRef.current && target >= activeLayerIndexRef.current) {
         activeLayerIndexRef.current -= 1

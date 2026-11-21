@@ -37,7 +37,8 @@ describe("typography roles", () => {
   it("uses pixel page titles and sans for long user content", () => {
     const pageHeader = read("components/ui/PageHeader.tsx")
     expect(pageHeader).toMatch(/pixel-title/)
-    expect(explore).toMatch(/PageHeader/)
+    // Explore is search-led: an accessible h1, no visible title bar.
+    expect(explore).toMatch(/<h1 className="sr-only">/)
     expect(create).toMatch(/PageHeader/)
     expect(dialog).toMatch(/pixel-title/)
     expect(detail).toMatch(/page-heading-sans/)

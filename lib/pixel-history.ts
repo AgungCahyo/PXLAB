@@ -1,4 +1,5 @@
 import type { PixelClipboard, PixelLayerRuntime, PixelSelection } from "@/lib/pixel"
+import type { PixelGroupRuntime } from "@/lib/pixel-groups"
 
 /**
  * Layer-stack history with structural sharing.
@@ -18,6 +19,7 @@ export type HistoryLayer = {
   opacity?: number
   blend?: PixelLayerRuntime["blend"]
   lockAlpha?: boolean
+  group?: string | null
   indices: Uint8Array
 }
 
@@ -28,10 +30,13 @@ export type HistoryFrame = {
   selection: PixelSelection | null
   /** Lifted pixels. Null when the selection is not floating. */
   floating: PixelClipboard | null
+  /** Layer groups (small metadata, copied per frame). */
+  groups: PixelGroupRuntime[]
 }
 
 export type HistoryDocument = {
   layers: readonly PixelLayerRuntime[]
+  groups?: readonly PixelGroupRuntime[]
   active: number
   palette: readonly string[]
   selection: PixelSelection | null
@@ -108,6 +113,7 @@ export function captureFrame(doc: HistoryDocument, reference?: HistoryFrame | nu
     palette: reference && samePalette(reference.palette, doc.palette) ? reference.palette : doc.palette.slice(),
     selection,
     floating: captureFloating(doc.floating, reference, selection?.mask),
+    groups: (doc.groups ?? []).map((group) => ({ ...group })),
     layers: doc.layers.map((layer) => {
       const prior = refById.get(layer.id)
       const indices =
@@ -120,6 +126,7 @@ export function captureFrame(doc: HistoryDocument, reference?: HistoryFrame | nu
         opacity: layer.opacity,
         blend: layer.blend,
         lockAlpha: layer.lockAlpha,
+        group: layer.group ?? null,
         indices,
       }
     }),

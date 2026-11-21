@@ -31,8 +31,14 @@ describe("Explore gallery layout", () => {
     expect(card).toMatch(/ProfileAvatar/)
   })
 
-  it("uses a dense 2 / sm:3 / lg:4 tile grid", () => {
-    expect(infinite).toMatch(/grid-cols-2 gap-1 sm:grid-cols-3 sm:gap-1\.5 lg:grid-cols-4/)
+  it("uses a dense 2 / sm:4 square-cell mosaic with large tiles", () => {
+    const mosaic = read("components/social/MosaicGrid.tsx")
+    expect(mosaic).toMatch(/grid-flow-dense grid-cols-2/)
+    expect(mosaic).toMatch(/sm:grid-cols-4/)
+    expect(mosaic).toMatch(/100cqw/) // row height from container width, never from tile content
+    expect(infinite).toMatch(/MosaicGrid/)
+    expect(infinite).toMatch(/isLargeTile/)
+    expect(infinite).toMatch(/segmentWithBands/)
     expect(gallery).toMatch(/role="search"/)
     expect(gallery).toMatch(/name="q"/)
     expect(gallery).not.toMatch(/masonry/)
@@ -47,7 +53,10 @@ describe("Explore gallery layout", () => {
     expect(gallery).not.toMatch(/<details/)
     expect(explorePage).toMatch(/w-full min-w-0 max-w-6xl/)
     expect(explorePage).not.toMatch(/exploreIntro/)
-    expect(explorePage).toMatch(/PageHeader/)
+    // Search leads the page; the title stays for assistive tech but is not a visible control.
+    expect(explorePage).not.toMatch(/<PageHeader/)
+    expect(explorePage).toMatch(/<h1 className="sr-only">/)
+    expect(gallery).toMatch(/min-h-12/)
   })
 
 

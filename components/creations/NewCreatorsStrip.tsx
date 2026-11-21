@@ -1,12 +1,16 @@
 import Link from "next/link"
 import { ProfileAvatar } from "@/components/profiles/ProfileAvatar"
+import { socialCopy } from "@/lib/copy-social"
 import { copy } from "@/lib/copy"
 import { href, type Lang } from "@/lib/i18n"
 import type { NewCreatorCard } from "@/features/creations/queries"
 
-const VISIBLE = 5
+const VISIBLE = 12
 
-/** Compact overlapping avatar stack for the Explore header → /creators. */
+/**
+ * "New creators" band inside the Explore feed: a stories-style row of avatars.
+ * Each avatar goes to the profile; "See all" goes to /creators.
+ */
 export function NewCreatorsStrip({
   lang,
   items,
@@ -15,61 +19,47 @@ export function NewCreatorsStrip({
   items: NewCreatorCard[]
 }) {
   if (items.length === 0) return null
-
-  const faces = items.slice(0, VISIBLE)
-  const overflow = Math.max(0, items.length - faces.length)
   const creatorsHref = href(lang, "/creators")
 
   return (
-    <div className="flex shrink-0 items-center gap-3">
-      <ul className="flex items-center ps-1" aria-label={copy.newCreatorsTitle[lang]}>
-        {faces.map((creator, index) => {
+    <section aria-labelledby="new-creators-heading" className="min-w-0 py-2">
+      <div className="flex items-baseline justify-between gap-3 px-0.5">
+        <h2 id="new-creators-heading" className="text-[15px] font-semibold text-fg">
+          {socialCopy.explore.creatorsTitle[lang]}
+        </h2>
+        <Link
+          href={creatorsHref}
+          className="inline-flex min-h-9 shrink-0 items-center text-[13px] text-muted hover:text-fg"
+        >
+          {copy.newCreatorsSeeAll[lang]}
+        </Link>
+      </div>
+      <ul
+        aria-label={copy.newCreatorsTitle[lang]}
+        className="-mx-3 mt-1 flex min-w-0 flex-nowrap gap-4 overflow-x-auto px-3 pb-1 sm:mx-0 sm:px-0 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+      >
+        {items.slice(0, VISIBLE).map((creator) => {
           const name = creator.displayName?.trim() || creator.username
           return (
-            <li
-              key={creator.username}
-              className="relative transition-transform duration-200 ease-out hover:z-20 hover:-translate-y-1 focus-within:z-20 focus-within:-translate-y-1"
-              style={{ marginInlineStart: index === 0 ? 0 : -14, zIndex: index + 1 }}
-            >
+            <li key={creator.username} className="w-[4.5rem] shrink-0">
               <Link
                 href={href(lang, `/u/${creator.username}`)}
-                className="block outline-offset-2 focus-visible:outline focus-visible:outline-3 focus-visible:outline-brick"
-                title={`@${creator.username}`}
+                className="flex flex-col items-center gap-1.5 text-center"
+                title={name}
               >
                 <ProfileAvatar
                   src={creator.avatarUrl}
                   avatarConfig={creator.avatarConfig}
                   userId={creator.id}
-                  alt={name}
+                  alt=""
                   size="sm"
-                  className="ring-[3px] ring-bg shadow-[3px_3px_0_0_var(--earth)]"
                 />
+                <span className="w-full truncate text-[12px] text-fg">@{creator.username}</span>
               </Link>
             </li>
           )
         })}
-        {overflow > 0 ? (
-          <li
-            className="relative z-10"
-            style={{ marginInlineStart: -14, zIndex: faces.length + 1 }}
-          >
-            <Link
-              href={creatorsHref}
-              className="flex h-10 w-10 items-center justify-center border-[3px] border-earth bg-brick text-[11px] font-medium text-white shadow-[3px_3px_0_0_var(--fg)] ring-[3px] ring-bg outline-offset-2 focus-visible:outline focus-visible:outline-3 focus-visible:outline-brick"
-              aria-label={copy.newCreatorsMore[lang].replace("{count}", String(overflow))}
-              title={copy.newCreatorsSeeAll[lang]}
-            >
-              +{overflow}
-            </Link>
-          </li>
-        ) : null}
       </ul>
-      <Link
-        href={creatorsHref}
-        className="text-[13px] text-muted hover:text-fg"
-      >
-        {copy.newCreatorsSeeAll[lang]}
-      </Link>
-    </div>
+    </section>
   )
 }

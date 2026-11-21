@@ -1,4 +1,5 @@
 import { blendOverPixel, isPlainBlend } from "@/lib/pixel-blend"
+import { layerEffectivelyHidden, type PixelGroupRuntime } from "@/lib/pixel-groups"
 import {
   compositeLayersToRgba,
   flattenLayersToIndices,
@@ -127,17 +128,19 @@ export function bakeVisibleLayers(
   height: number,
   palette: readonly string[],
   resolver: PaletteResolver,
+  groups: readonly PixelGroupRuntime[] = [],
 ): Uint8Array {
-  const visible = layers.filter((layer) => layer.visible && layerOpacity(layer) > 0)
-  if (visible.every((layer) => isPlainBlend(layerOpacity(layer), layerBlend(layer)))) {
-    return flattenLayersToIndices(layers, width, height)
+  const visible = layers.filter((layer) => !layerEffectivelyHidden(layer, groups) && layerOpacity(layer) > 0)
+  const groupsPlain = groups.every((group) => isPlainBlend(group.opacity, group.blend))
+  if (groupsPlain && visible.every((layer) => isPlainBlend(layerOpacity(layer), layerBlend(layer)))) {
+    return flattenLayersToIndices(layers, width, height, groups)
   }
   const rgba = new Uint8ClampedArray(width * height * 4)
-  compositeLayersToRgba(layers, rgba, palette, width, height)
+  compositeLayersToRgba(layers, rgba, palette, width, height, null, groups)
   const out = new Uint8Array(width * height)
   const painted = new Uint8Array(width * height)
   layers.forEach((layer, layerIndex) => {
-    if (!layer.visible || layerOpacity(layer) === 0) return
+    if (layerEffectivelyHidden(layer, groups) || layerOpacity(layer) === 0) return
     for (let i = 0; i < painted.length; i += 1) {
       if (layerIndex === 0 || layer.indices[i] !== 0) painted[i] = 1
     }

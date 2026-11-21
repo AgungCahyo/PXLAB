@@ -1,7 +1,8 @@
 "use client"
 
 import Link from "next/link"
-import { useCallback, useEffect, useRef, useSyncExternalStore } from "react"
+import { useCallback, useEffect, useRef, useSyncExternalStore, type ReactNode } from "react"
+import { MosaicGrid } from "@/components/social/MosaicGrid"
 import { TileGridSkeleton } from "@/components/social/Skeleton"
 import { useInfiniteList } from "@/components/social/useInfiniteList"
 import { socialButtonClass } from "@/components/social/socialButton"
@@ -12,6 +13,7 @@ import { copy } from "@/lib/copy"
 import { socialCopy } from "@/lib/copy-social"
 import { exploreHref, type ExploreCategoryFilter, type ExploreFeed as Feed } from "@/lib/creations"
 import type { Lang } from "@/lib/i18n"
+import { isLargeTile, mosaicTileClass, segmentWithBands } from "@/lib/social-mosaic"
 import { cn } from "@/lib/utils"
 
 type Saved = { items: CreationCard[]; page: number; pageCount: number; y: number; at: number }
@@ -42,6 +44,7 @@ export function ExploreInfinite({
   initialItems,
   initialPage,
   pageCount: initialPageCount,
+  interludes,
 }: {
   lang: Lang
   category: ExploreCategoryFilter
@@ -50,6 +53,8 @@ export function ExploreInfinite({
   initialItems: CreationCard[]
   initialPage: number
   pageCount: number
+  /** Server-rendered bands placed inside the feed after `at` works (`at` must be a multiple of 5). */
+  interludes?: { at: number; node: ReactNode }[]
 }) {
   const fetchPage = useCallback(
     (page: number) => loadMoreExploreAction({ category, q, feed, page }),
@@ -128,6 +133,8 @@ export function ExploreInfinite({
     } catch {}
   }
 
+  const segments = segmentWithBands(items, interludes ?? [], !hasMore)
+
   const prevHref = initialPage > 1 ? exploreHref(lang, { ...query, page: initialPage - 1 }) : null
   const nextHref = hasMore ? exploreHref(lang, { ...query, page: lastPage + 1 }) : null
   const t = socialCopy.explore
@@ -143,18 +150,32 @@ export function ExploreInfinite({
         </Link>
       ) : null}
 
-      <ul
+      <div
         onClickCapture={(event) => {
           if ((event.target as Element).closest("a[href]")) markResume()
         }}
-        className="grid min-w-0 grid-cols-2 gap-1 sm:grid-cols-3 sm:gap-1.5 lg:grid-cols-4"
+        className="grid min-w-0 gap-2 sm:gap-3"
       >
-        {items.map((item) => (
-          <li key={item.id} className="min-w-0">
-            <WorkTile creation={item} lang={lang} />
-          </li>
-        ))}
-      </ul>
+        {segments.map((segment) =>
+          segment.kind === "tiles" ? (
+            <MosaicGrid key={`tiles-${segment.start}`}>
+              {segment.items.map((item, offset) => {
+                const index = segment.start + offset
+                const large = isLargeTile(index, items.length, !hasMore)
+                return (
+                  <li key={item.id} className={cn("min-w-0", mosaicTileClass(index, large))}>
+                    <WorkTile creation={item} lang={lang} size={large ? "large" : "default"} />
+                  </li>
+                )
+              })}
+            </MosaicGrid>
+          ) : (
+            <div key={`band-${segment.at}`} className="min-w-0">
+              {segment.node}
+            </div>
+          ),
+        )}
+      </div>
 
       {status === "loading" ? <TileGridSkeleton count={4} /> : null}
 

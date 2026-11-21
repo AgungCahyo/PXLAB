@@ -1,6 +1,7 @@
 "use client"
 
 import {
+  Fragment,
   useEffect,
   useRef,
   useState,
@@ -8,6 +9,7 @@ import {
   type PointerEvent as ReactPointerEvent,
 } from "react"
 import type { PixelLayerInfo, PixelLayerStylePatch } from "@/components/canvas/PixelBoard"
+import { LayerGroupControls, type LayerGroupApi } from "@/components/creations/LayerGroupControls"
 import { LayerStyleControls } from "@/components/creations/LayerStyleControls"
 import { Dialog } from "@/components/ui/Dialog"
 import { PixelIcon } from "@/components/ui/PixelIcon"
@@ -43,6 +45,7 @@ type LayerPanelProps = {
   onRename: (id: string, name: string) => boolean
   onMove: (id: string, toStackIndex: number) => boolean
   onStyle: (id: string, patch: PixelLayerStylePatch) => boolean
+  groupApi: LayerGroupApi
   onFeedback?: (kind: LayerPanelFeedback) => void
 }
 
@@ -72,6 +75,7 @@ export function LayerPanel({
   onRename,
   onMove,
   onStyle,
+  groupApi,
   onFeedback,
 }: LayerPanelProps) {
   const [thumbs, setThumbs] = useState<Record<string, string>>({})
@@ -153,7 +157,8 @@ export function LayerPanel({
 
   const menuLayer = menu ? layers.find((layer) => layer.id === menu.id) : null
   const menuStack = menuLayer ? stackIndexOf(layers, menuLayer.id) : -1
-  const canMergeDown = menuStack > 0
+  // A layer can only bake into the one below when both are in the same group (or both outside one).
+  const canMergeDown = menuStack > 0 && menuLayer !== null && menuLayer !== undefined && (layers[menuStack - 1]?.group ?? null) === (menuLayer.group ?? null)
   const canMergeVisible = layers.filter((layer) => layer.visible).length >= 2
 
   return (
@@ -190,12 +195,46 @@ export function LayerPanel({
       </div>
 
       <ul className="flex flex-col gap-1">
-        {displayLayers(layers).map((layer) => {
-          const hidden = !layer.visible
+        {displayLayers(layers).map((layer, displayIndex, list) => {
+          const group = layer.group ? groupApi.groups.find((item) => item.id === layer.group) : undefined
+          const startsGroup = Boolean(group) && list[displayIndex - 1]?.group !== layer.group
+          if (group && group.collapsed && !startsGroup) return null
+          const hidden = !layer.visible || Boolean(group && (!group.visible || group.opacity === 0))
           const isDrop = dropId === layer.id && dragId !== layer.id
           return (
+            <Fragment key={layer.id}>
+              {group && startsGroup ? (
+                <li
+                  className={cn(
+                    "flex items-center gap-1.5 border-[3px] border-earth bg-soft px-1.5 py-1",
+                    !group.visible && "opacity-55",
+                  )}
+                  aria-label={`${copy.pixelGroup[lang]}: ${group.name}`}
+                >
+                  <button
+                    type="button"
+                    className="inline-flex h-8 w-8 items-center justify-center text-fg hover:bg-bg"
+                    aria-expanded={!group.collapsed}
+                    aria-label={group.collapsed ? copy.pixelGroupExpand[lang] : copy.pixelGroupCollapse[lang]}
+                    title={group.collapsed ? copy.pixelGroupExpand[lang] : copy.pixelGroupCollapse[lang]}
+                    onClick={() => groupApi.onStyle(group.id, { collapsed: !group.collapsed })}
+                  >
+                    <PixelIcon name={group.collapsed ? "plus" : "minus"} />
+                  </button>
+                  <PixelIcon name="folder" />
+                  <span className="min-w-0 flex-1 truncate text-[13px] font-medium text-fg">{group.name}</span>
+                  <button
+                    type="button"
+                    className="inline-flex h-8 w-8 items-center justify-center text-muted hover:text-fg"
+                    aria-label={group.visible ? copy.pixelLayerHide[lang] : copy.pixelGroupVisible[lang]}
+                    title={group.visible ? copy.pixelLayerHide[lang] : copy.pixelGroupVisible[lang]}
+                    onClick={() => groupApi.onStyle(group.id, { visible: !group.visible })}
+                  >
+                    <PixelIcon name={group.visible ? "eye" : "eyeOff"} />
+                  </button>
+                </li>
+              ) : null}
             <li
-              key={layer.id}
               draggable
               onDragStart={() => onDragStart(layer.id)}
               onDragOver={(event) => onDragOver(event, layer.id)}
@@ -210,6 +249,7 @@ export function LayerPanel({
               }}
               className={cn(
                 "flex items-center gap-1.5 border-[3px] border-earth px-1.5 py-1.5",
+                group && "ml-4",
                 layer.active ? "border-fg bg-soft" : "bg-card",
                 hidden && "opacity-55",
                 isDrop && "border-dashed border-fg",
@@ -301,6 +341,7 @@ export function LayerPanel({
                 <PixelIcon name="more" />
               </button>
             </li>
+            </Fragment>
           )
         })}
       </ul>
@@ -315,6 +356,10 @@ export function LayerPanel({
             onStyle={onStyle}
           />
         ) : null
+      })()}
+      {(() => {
+        const activeLayer = layers.find((layer) => layer.active)
+        return activeLayer ? <LayerGroupControls lang={lang} layer={activeLayer} api={groupApi} /> : null
       })()}
 
       {menu && menuLayer ? (
@@ -510,6 +555,7 @@ export function LayerMobileSheet({
   onRename,
   onMove,
   onStyle,
+  groupApi,
   onFeedback,
 }: {
   lang: Lang
@@ -527,6 +573,7 @@ export function LayerMobileSheet({
   onRename: (id: string, name: string) => boolean
   onMove: (id: string, toStackIndex: number) => boolean
   onStyle: (id: string, patch: PixelLayerStylePatch) => boolean
+  groupApi: LayerGroupApi
   onFeedback?: (kind: LayerPanelFeedback) => void
 }) {
   const layer = layerId ? layers.find((item) => item.id === layerId) : null
@@ -623,7 +670,7 @@ export function LayerMobileSheet({
           className="studio-hit border-[3px] border-earth bg-bg text-fg disabled:opacity-40"
           aria-label={copy.pixelLayerMergeDown[lang]}
           title={copy.pixelLayerMergeDown[lang]}
-          disabled={stack <= 0}
+          disabled={stack <= 0 || (layers[stack - 1]?.group ?? null) !== (layer.group ?? null)}
           onClick={() => {
             if (onMergeDown(layer.id)) {
               onFeedback?.("merged")
@@ -666,6 +713,7 @@ export function LayerMobileSheet({
       </div>
 
       <LayerStyleControls lang={lang} layer={layer} isBase={stack === 0} onStyle={onStyle} />
+      <LayerGroupControls lang={lang} layer={layer} api={groupApi} />
     </Dialog>
   )
 }

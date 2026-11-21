@@ -11,6 +11,8 @@ import {
   type Tool,
 } from "@/components/canvas/PixelBoard"
 import { BrushOptionsPanel } from "@/components/creations/BrushOptionsPanel"
+import type { LayerGroupApi } from "@/components/creations/LayerGroupControls"
+import type { PixelGroupStylePatch } from "@/lib/pixel-groups"
 import { ColorPicker } from "@/components/creations/ColorPicker"
 import { CreationMoreMenu } from "@/components/creations/CreationMoreMenu"
 import { DocumentPaletteDialog } from "@/components/creations/DocumentPaletteDialog"
@@ -65,7 +67,7 @@ import {
   type PixelSymmetry,
   type PixelZoom,
 } from "@/lib/pixel"
-import type { PixelLayerInfo, PixelLayerStylePatch } from "@/components/canvas/PixelBoard"
+import type { PixelGroupInfo, PixelLayerInfo, PixelLayerStylePatch } from "@/components/canvas/PixelBoard"
 import {
   LayerMobileSheet,
   LayerMobileStrip,
@@ -184,6 +186,7 @@ export function PlaygroundForm({
   const [documentPalette, setDocumentPalette] = useState<string[]>(serverPalette)
   const [boardSource, setBoardSource] = useState<PixelSource | null>(initialSource)
   const [layers, setLayers] = useState<PixelLayerInfo[]>([])
+  const [groups, setGroups] = useState<PixelGroupInfo[]>([])
   const [layerSheetId, setLayerSheetId] = useState<string | null>(null)
   const [layerThumbEpoch, setLayerThumbEpoch] = useState(0)
   const [boardReady, setBoardReady] = useState(false)
@@ -1255,6 +1258,15 @@ export function PlaygroundForm({
     onRename: (id: string, name: string) => boardRef.current?.renameLayer(id, name) ?? false,
     onMove: (id: string, toStackIndex: number) => boardRef.current?.moveLayer(id, toStackIndex) ?? false,
     onStyle: (id: string, patch: PixelLayerStylePatch) => boardRef.current?.setLayerStyle(id, patch) ?? false,
+    groupApi: {
+      groups,
+      onCreate: (layerId: string) => boardRef.current?.createGroup(layerId) != null,
+      onAssign: (layerId: string, groupId: string) => boardRef.current?.assignLayerToGroup(layerId, groupId) ?? false,
+      onRemove: (layerId: string) => boardRef.current?.removeLayerFromGroup(layerId) ?? false,
+      onUngroup: (groupId: string) => boardRef.current?.ungroup(groupId) ?? false,
+      onStyle: (groupId: string, patch: PixelGroupStylePatch) => boardRef.current?.setGroupStyle(groupId, patch) ?? false,
+      onMove: (groupId: string, direction: 1 | -1) => boardRef.current?.moveGroup(groupId, direction) ?? false,
+    } satisfies LayerGroupApi,
     onFeedback: flashLayer,
   }
 
@@ -1454,6 +1466,7 @@ export function PlaygroundForm({
                 onSelectionChange={setHasSelection}
                 onClipboardChange={setHasClipboard}
                 onLayersChange={setLayers}
+                onGroupsChange={setGroups}
                 onEditFeedback={(kind) => {
                   if (kind === "copied") flashEdit(copy.pixelCopied[lang])
                   else if (kind === "cut") flashEdit(copy.pixelCutDone[lang])
@@ -2044,6 +2057,7 @@ export function PlaygroundForm({
         onRename={layerApi.onRename}
         onMove={layerApi.onMove}
         onStyle={layerApi.onStyle}
+        groupApi={layerApi.groupApi}
         onFeedback={flashLayer}
       />
 
