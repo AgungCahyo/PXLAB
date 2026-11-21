@@ -15,6 +15,9 @@ export type HistoryLayer = {
   name: string
   visible: boolean
   locked: boolean
+  opacity?: number
+  blend?: PixelLayerRuntime["blend"]
+  lockAlpha?: boolean
   indices: Uint8Array
 }
 
@@ -114,6 +117,9 @@ export function captureFrame(doc: HistoryDocument, reference?: HistoryFrame | nu
         name: layer.name,
         visible: layer.visible,
         locked: layer.locked,
+        opacity: layer.opacity,
+        blend: layer.blend,
+        lockAlpha: layer.lockAlpha,
         indices,
       }
     }),

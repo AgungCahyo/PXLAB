@@ -10,6 +10,7 @@ import {
   PIXEL_SOURCE_ENCODING,
   PIXEL_SOURCE_VERSION,
   PIXEL_SOURCE_VERSION_V2,
+  PIXEL_SOURCE_VERSION_V3,
   PIXEL_STAGE_GROUNDS,
   isPixelCanvasSize,
   isPixelHexColor,
@@ -170,7 +171,11 @@ const pixelSide = z.number().int().min(PIXEL_CANVAS_MIN).max(PIXEL_CANVAS_MAX)
 
 export const pixelContentSchema = z
   .object({
-    version: z.union([z.literal(PIXEL_SOURCE_VERSION), z.literal(PIXEL_SOURCE_VERSION_V2)]),
+    version: z.union([
+      z.literal(PIXEL_SOURCE_VERSION),
+      z.literal(PIXEL_SOURCE_VERSION_V2),
+      z.literal(PIXEL_SOURCE_VERSION_V3),
+    ]),
     width: pixelSide,
     height: pixelSide,
     palette: z.array(z.string()).min(1).max(PIXEL_DOCUMENT_PALETTE_MAX),

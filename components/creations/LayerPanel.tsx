@@ -7,7 +7,8 @@ import {
   type ComponentProps,
   type PointerEvent as ReactPointerEvent,
 } from "react"
-import type { PixelLayerInfo } from "@/components/canvas/PixelBoard"
+import type { PixelLayerInfo, PixelLayerStylePatch } from "@/components/canvas/PixelBoard"
+import { LayerStyleControls } from "@/components/creations/LayerStyleControls"
 import { Dialog } from "@/components/ui/Dialog"
 import { PixelIcon } from "@/components/ui/PixelIcon"
 import { copy } from "@/lib/copy"
@@ -41,6 +42,7 @@ type LayerPanelProps = {
   onLocked: (id: string, locked: boolean) => boolean
   onRename: (id: string, name: string) => boolean
   onMove: (id: string, toStackIndex: number) => boolean
+  onStyle: (id: string, patch: PixelLayerStylePatch) => boolean
   onFeedback?: (kind: LayerPanelFeedback) => void
 }
 
@@ -69,6 +71,7 @@ export function LayerPanel({
   onLocked,
   onRename,
   onMove,
+  onStyle,
   onFeedback,
 }: LayerPanelProps) {
   const [thumbs, setThumbs] = useState<Record<string, string>>({})
@@ -302,6 +305,18 @@ export function LayerPanel({
         })}
       </ul>
 
+      {(() => {
+        const activeLayer = layers.find((layer) => layer.active)
+        return activeLayer ? (
+          <LayerStyleControls
+            lang={lang}
+            layer={activeLayer}
+            isBase={stackIndexOf(layers, activeLayer.id) === 0}
+            onStyle={onStyle}
+          />
+        ) : null
+      })()}
+
       {menu && menuLayer ? (
         <div
           role="menu"
@@ -494,6 +509,7 @@ export function LayerMobileSheet({
   onLocked,
   onRename,
   onMove,
+  onStyle,
   onFeedback,
 }: {
   lang: Lang
@@ -510,6 +526,7 @@ export function LayerMobileSheet({
   onLocked: (id: string, locked: boolean) => boolean
   onRename: (id: string, name: string) => boolean
   onMove: (id: string, toStackIndex: number) => boolean
+  onStyle: (id: string, patch: PixelLayerStylePatch) => boolean
   onFeedback?: (kind: LayerPanelFeedback) => void
 }) {
   const layer = layerId ? layers.find((item) => item.id === layerId) : null
@@ -647,6 +664,8 @@ export function LayerMobileSheet({
           <PixelIcon name="trash" />
         </button>
       </div>
+
+      <LayerStyleControls lang={lang} layer={layer} isBase={stack === 0} onStyle={onStyle} />
     </Dialog>
   )
 }

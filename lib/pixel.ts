@@ -1,5 +1,13 @@
 /** Shared pixel math for the Playground and the local Space prototype. */
 import { glyphRows, PIXEL_FONT_H, PIXEL_FONT_LEADING, PIXEL_FONT_TRACK, PIXEL_FONT_W } from "@/lib/pixel-font"
+import {
+  blendOverPixel,
+  clampLayerOpacity,
+  isPixelBlendMode,
+  isPlainBlend,
+  PIXEL_OPACITY_MAX,
+  type PixelBlendMode,
+} from "@/lib/pixel-blend"
 import { PIXEL_SOURCE_MAX_BYTES } from "@/lib/site"
 
 /** Prototype / classic square reference. Playground documents use their own width × height. */
@@ -176,6 +184,12 @@ export type PixelPaletteColor = (typeof PIXEL_PALETTE)[number]
 export const PIXEL_SOURCE_VERSION = 1
 /** Multi-layer source documents. */
 export const PIXEL_SOURCE_VERSION_V2 = 2
+/**
+ * Multi-layer source with per-layer opacity, blend mode and transparency lock.
+ * Pixel storage is unchanged (palette indices). A document is written as V3 only when some
+ * layer actually uses one of these; otherwise it stays V2 so older readers keep opening it.
+ */
+export const PIXEL_SOURCE_VERSION_V3 = 3
 export const PIXEL_SOURCE_ENCODING = "rle-index" as const
 export const PIXEL_LAYER_MAX = 8
 /**
@@ -2244,6 +2258,82 @@ export function writeRgbaRectToIndices(
   }
 }
 
+export type IndexRectSnapshot = {
+  x0: number
+  y0: number
+  x1: number
+  y1: number
+  data: Uint8Array
+}
+
+/** Copy of one rectangle of a layer, taken before an edit so the transparency lock can compare. */
+export function snapshotIndicesRect(
+  indices: Uint8Array,
+  width: number,
+  height: number,
+  rect?: PixelRect | null,
+): IndexRectSnapshot {
+  const x0 = rect ? Math.max(0, rect.x) : 0
+  const y0 = rect ? Math.max(0, rect.y) : 0
+  const x1 = rect ? Math.min(width, rect.x + rect.width) : width
+  const y1 = rect ? Math.min(height, rect.y + rect.height) : height
+  const w = Math.max(0, x1 - x0)
+  const h = Math.max(0, y1 - y0)
+  const data = new Uint8Array(w * h)
+  for (let y = 0; y < h; y += 1) {
+    const from = (y0 + y) * width + x0
+    data.set(indices.subarray(from, from + w), y * w)
+  }
+  return { x0, y0, x1, y1, data }
+}
+
+/**
+ * Transparency lock: after an edit, put back whatever changed *which cells are painted*.
+ * A cell that was empty stays empty (nothing can be painted there); a painted cell cannot be
+ * erased. Recolouring painted cells is allowed. Returns true if anything was reverted.
+ */
+export function applyAlphaLock(
+  indices: Uint8Array,
+  before: IndexRectSnapshot,
+  width: number,
+): boolean {
+  const w = before.x1 - before.x0
+  let reverted = false
+  for (let y = before.y0; y < before.y1; y += 1) {
+    for (let x = before.x0; x < before.x1; x += 1) {
+      const old = before.data[(y - before.y0) * w + (x - before.x0)]!
+      const i = y * width + x
+      const now = indices[i]!
+      if (old === 0 ? now !== 0 : now === 0) {
+        indices[i] = old
+        reverted = true
+      }
+    }
+  }
+  return reverted
+}
+
+/** Refresh one rectangle of an RGBA buffer from layer indices. */
+export function writeIndicesRectToRgba(
+  indices: Uint8Array,
+  pixels: Uint8ClampedArray,
+  width: number,
+  rect: IndexRectSnapshot,
+  palette: readonly string[],
+) {
+  for (let y = rect.y0; y < rect.y1; y += 1) {
+    for (let x = rect.x0; x < rect.x1; x += 1) {
+      const i = y * width + x
+      const [r, g, b] = hexToRgb(palette[indices[i]!] ?? PIXEL_PAPER)
+      const p = i * 4
+      pixels[p] = r
+      pixels[p + 1] = g
+      pixels[p + 2] = b
+      pixels[p + 3] = 255
+    }
+  }
+}
+
 export function indicesToRgba(
   indices: Uint8Array,
   pixels: Uint8ClampedArray,
@@ -2329,7 +2419,25 @@ export type PixelSourceV2 = {
   layers: PixelLayerV2[]
 }
 
-export type PixelSource = PixelSourceV1 | PixelSourceV2
+export type PixelLayerV3 = PixelLayerV2 & {
+  /** 0-100, default 100. */
+  opacity: number
+  /** Default "normal". */
+  blend: PixelBlendMode
+  /** Painting cannot change which cells are transparent. Default false. */
+  lockAlpha: boolean
+}
+
+export type PixelSourceV3 = {
+  version: typeof PIXEL_SOURCE_VERSION_V3
+  width: number
+  height: number
+  palette: string[]
+  encoding: typeof PIXEL_SOURCE_ENCODING
+  layers: PixelLayerV3[]
+}
+
+export type PixelSource = PixelSourceV1 | PixelSourceV2 | PixelSourceV3
 
 export type PixelLayerRuntime = {
   id: string
@@ -2337,6 +2445,29 @@ export type PixelLayerRuntime = {
   visible: boolean
   locked: boolean
   indices: Uint8Array
+  /** 0-100. Missing means 100. */
+  opacity?: number
+  /** Missing means "normal". */
+  blend?: PixelBlendMode
+  /** Missing means false. */
+  lockAlpha?: boolean
+}
+
+export function layerOpacity(layer: Pick<PixelLayerRuntime, "opacity">) {
+  return clampLayerOpacity(layer.opacity ?? PIXEL_OPACITY_MAX)
+}
+
+export function layerBlend(layer: Pick<PixelLayerRuntime, "blend">): PixelBlendMode {
+  return layer.blend ?? "normal"
+}
+
+/** True when the layer uses any V3 feature. */
+export function layerUsesV3(layer: PixelLayerRuntime) {
+  return !isPlainBlend(layerOpacity(layer), layerBlend(layer)) || Boolean(layer.lockAlpha)
+}
+
+export function layersNeedV3(layers: readonly PixelLayerRuntime[]) {
+  return layers.some(layerUsesV3)
 }
 
 export type PixelSourceError =
@@ -2433,12 +2564,21 @@ export function compositeLayersToRgba(
   rect?: PixelRect | null,
 ) {
   const { lut, paperR, paperG, paperB } = paletteLut(palette)
+  let x0 = 0
+  let y0 = 0
+  let x1 = width
+  let y1 = height
   if (rect) {
-    const x0 = Math.max(0, rect.x)
-    const y0 = Math.max(0, rect.y)
-    const x1 = Math.min(width, rect.x + rect.width)
-    const y1 = Math.min(height, rect.y + rect.height)
+    x0 = Math.max(0, rect.x)
+    y0 = Math.max(0, rect.y)
+    x1 = Math.min(width, rect.x + rect.width)
+    y1 = Math.min(height, rect.y + rect.height)
     if (x1 <= x0 || y1 <= y0) return
+  }
+  const full = x0 === 0 && y0 === 0 && x1 === width && y1 === height
+  if (full) {
+    fillPaper(pixels)
+  } else {
     for (let y = y0; y < y1; y += 1) {
       for (let x = x0; x < x1; x += 1) {
         const p = (y * width + x) * 4
@@ -2448,34 +2588,32 @@ export function compositeLayersToRgba(
         pixels[p + 3] = 255
       }
     }
-    for (let layerIndex = 0; layerIndex < layers.length; layerIndex += 1) {
-      const layer = layers[layerIndex]
-      if (!layer.visible) continue
-      const transparentZero = layerIndex > 0
-      const indices = layer.indices
-      for (let y = y0; y < y1; y += 1) {
-        for (let x = x0; x < x1; x += 1) {
-          const i = y * width + x
-          const index = indices[i] ?? 0
-          if (transparentZero && index === 0) continue
-          writeCompositeCell(pixels, i * 4, index, palette.length, lut, paperR, paperG, paperB)
-        }
-      }
-    }
-    return
   }
-
-  fillPaper(pixels)
-  const cellCount = width * height
   for (let layerIndex = 0; layerIndex < layers.length; layerIndex += 1) {
     const layer = layers[layerIndex]
     if (!layer.visible) continue
+    const opacity = layerOpacity(layer)
+    if (opacity === 0) continue
+    const mode = layerBlend(layer)
+    const plain = isPlainBlend(opacity, mode)
     const transparentZero = layerIndex > 0
     const indices = layer.indices
-    for (let i = 0; i < cellCount; i += 1) {
-      const index = indices[i] ?? 0
-      if (transparentZero && index === 0) continue
-      writeCompositeCell(pixels, i * 4, index, palette.length, lut, paperR, paperG, paperB)
+    for (let y = y0; y < y1; y += 1) {
+      const row = y * width
+      for (let x = x0; x < x1; x += 1) {
+        const i = row + x
+        const index = indices[i] ?? 0
+        if (transparentZero && index === 0) continue
+        const p = i * 4
+        if (plain) {
+          writeCompositeCell(pixels, p, index, palette.length, lut, paperR, paperG, paperB)
+        } else if (index < palette.length) {
+          const l = index * 3
+          blendOverPixel(pixels, p, lut[l]!, lut[l + 1]!, lut[l + 2]!, opacity, mode)
+        } else {
+          blendOverPixel(pixels, p, paperR, paperG, paperB, opacity, mode)
+        }
+      }
     }
   }
 }
@@ -2490,7 +2628,7 @@ export function flattenLayersToIndices(
   const cellCount = width * height
   for (let layerIndex = 0; layerIndex < layers.length; layerIndex += 1) {
     const layer = layers[layerIndex]
-    if (!layer.visible) continue
+    if (!layer.visible || layerOpacity(layer) === 0) continue
     const transparentZero = layerIndex > 0
     for (let i = 0; i < cellCount; i += 1) {
       const index = layer.indices[i] ?? 0
@@ -2595,30 +2733,52 @@ export function buildPixelSource(
   }
 }
 
+/**
+ * Serialises a layered document. Writes V3 only when a layer uses opacity, a blend mode or the
+ * transparency lock; otherwise V2, so documents that do not use the new features stay readable
+ * by older clients. (Name kept for compatibility.)
+ */
 export function buildPixelSourceV2(
   layers: readonly PixelLayerRuntime[],
   width: number,
   height: number,
   palette: readonly string[] = PIXEL_PALETTE,
-): PixelSourceV2 {
+): PixelSourceV2 | PixelSourceV3 {
   const safe = layers.slice(0, PIXEL_LAYER_MAX)
   const list =
     safe.length > 0
       ? safe
       : [createEmptyLayer(width, height, "Layer 1")]
+  const base = (layer: PixelLayerRuntime, index: number): PixelLayerV2 => ({
+    id: layer.id || createLayerId(),
+    name: layer.name || `Layer ${index + 1}`,
+    visible: layer.visible !== false,
+    locked: Boolean(layer.locked),
+    runs: encodeRle(layer.indices),
+  })
+  const normalizedPalette = palette.map((color) => normalizePixelHex(color) ?? PIXEL_PAPER)
+  if (layersNeedV3(list)) {
+    return {
+      version: PIXEL_SOURCE_VERSION_V3,
+      width,
+      height,
+      palette: normalizedPalette,
+      encoding: PIXEL_SOURCE_ENCODING,
+      layers: list.map((layer, index) => ({
+        ...base(layer, index),
+        opacity: layerOpacity(layer),
+        blend: layerBlend(layer),
+        lockAlpha: Boolean(layer.lockAlpha),
+      })),
+    }
+  }
   return {
     version: PIXEL_SOURCE_VERSION_V2,
     width,
     height,
-    palette: palette.map((color) => normalizePixelHex(color) ?? PIXEL_PAPER),
+    palette: normalizedPalette,
     encoding: PIXEL_SOURCE_ENCODING,
-    layers: list.map((layer, index) => ({
-      id: layer.id || createLayerId(),
-      name: layer.name || `Layer ${index + 1}`,
-      visible: layer.visible !== false,
-      locked: Boolean(layer.locked),
-      runs: encodeRle(layer.indices),
-    })),
+    layers: list.map(base),
   }
 }
 
@@ -2628,7 +2788,11 @@ export function parsePixelSource(
   if (!input || typeof input !== "object") return { ok: false, error: "invalid_source" }
   const value = input as Record<string, unknown>
   const version = value.version
-  if (version !== PIXEL_SOURCE_VERSION && version !== PIXEL_SOURCE_VERSION_V2) {
+  if (
+    version !== PIXEL_SOURCE_VERSION &&
+    version !== PIXEL_SOURCE_VERSION_V2 &&
+    version !== PIXEL_SOURCE_VERSION_V3
+  ) {
     return { ok: false, error: "unsupported_version" }
   }
   if (typeof value.width !== "number" || typeof value.height !== "number") {
@@ -2665,8 +2829,9 @@ export function parsePixelSource(
   if (!Array.isArray(value.layers) || value.layers.length < 1 || value.layers.length > PIXEL_LAYER_MAX) {
     return { ok: false, error: "invalid_source" }
   }
+  const isV3 = version === PIXEL_SOURCE_VERSION_V3
   const layers: PixelLayerRuntime[] = []
-  const stored: PixelLayerV2[] = []
+  const stored: Array<PixelLayerV2 | PixelLayerV3> = []
   for (let i = 0; i < value.layers.length; i += 1) {
     const raw = value.layers[i]
     if (!raw || typeof raw !== "object") return { ok: false, error: "invalid_source" }
@@ -2687,24 +2852,48 @@ export function parsePixelSource(
       locked: row.locked,
       runs: row.runs as number[],
     }
-    stored.push(layer)
-    layers.push({
+    const runtime: PixelLayerRuntime = {
       id: layer.id,
       name: layer.name,
       visible: layer.visible,
       locked: layer.locked,
       indices,
-    })
+    }
+    if (isV3) {
+      // Lenient on purpose: a missing or unknown value degrades to the default instead of
+      // rejecting the whole document (a newer client may add blend modes).
+      const opacity = clampLayerOpacity(row.opacity)
+      const blend = isPixelBlendMode(row.blend) ? row.blend : "normal"
+      const lockAlpha = row.lockAlpha === true
+      stored.push({ ...layer, opacity, blend, lockAlpha })
+      runtime.opacity = opacity
+      runtime.blend = blend
+      runtime.lockAlpha = lockAlpha
+    } else {
+      stored.push(layer)
+    }
+    layers.push(runtime)
   }
 
-  const data: PixelSourceV2 = {
-    version: PIXEL_SOURCE_VERSION_V2,
-    width: value.width,
-    height: value.height,
-    palette,
-    encoding: PIXEL_SOURCE_ENCODING,
-    layers: stored,
-  }
+  const data = (
+    isV3
+      ? {
+          version: PIXEL_SOURCE_VERSION_V3,
+          width: value.width,
+          height: value.height,
+          palette,
+          encoding: PIXEL_SOURCE_ENCODING,
+          layers: stored as PixelLayerV3[],
+        }
+      : {
+          version: PIXEL_SOURCE_VERSION_V2,
+          width: value.width,
+          height: value.height,
+          palette,
+          encoding: PIXEL_SOURCE_ENCODING,
+          layers: stored as PixelLayerV2[],
+        }
+  ) satisfies PixelSourceV2 | PixelSourceV3
   const encoded = JSON.stringify(data)
   if (encoded.length > PIXEL_SOURCE_MAX_BYTES) return { ok: false, error: "payload_too_large" }
   return {

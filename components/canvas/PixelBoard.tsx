@@ -13,7 +13,9 @@ import {
   type BrushMask,
   type BrushOptions,
 } from "@/lib/pixel-brush"
+import { clampLayerOpacity, isPixelBlendMode, type PixelBlendMode } from "@/lib/pixel-blend"
 import { PixelHistory, type HistoryFrame } from "@/lib/pixel-history"
+import { bakeMergeDown, bakeVisibleLayers, createPaletteResolver } from "@/lib/pixel-merge"
 import {
   forwardRef,
   useCallback,
@@ -54,7 +56,6 @@ import {
   createLayerId,
   inCanvas,
   layerThumbnailDataUrl,
-  mergeLayerIndices,
   constrainSquareEnd,
   densifyStrokeSegment,
   ensurePaletteColor,
@@ -66,7 +67,6 @@ import {
   fillPaper,
   fillRect,
   fitOrigin,
-  flattenLayersToIndices,
   flipCanvasHorizontal,
   flipCanvasVertical,
   flipRectHorizontal,
@@ -81,6 +81,11 @@ import {
   paintEllipse,
   paletteIndexOf,
   parsePixelSource,
+  layerBlend,
+  layerOpacity,
+  applyAlphaLock,
+  snapshotIndicesRect,
+  writeIndicesRectToRgba,
   measurePixelTextBox,
   PIXEL_LAYER_MAX,
   pointInPixelRect,
@@ -208,6 +213,17 @@ export type PixelLayerInfo = {
   visible: boolean
   locked: boolean
   active: boolean
+  /** 0-100. */
+  opacity: number
+  blend: PixelBlendMode
+  /** Transparency lock: painting cannot change which cells are empty. */
+  lockAlpha: boolean
+}
+
+export type PixelLayerStylePatch = {
+  opacity?: number
+  blend?: PixelBlendMode
+  lockAlpha?: boolean
 }
 
 function cloneLayers(layers: PixelLayerRuntime[]): PixelLayerRuntime[] {
@@ -216,6 +232,9 @@ function cloneLayers(layers: PixelLayerRuntime[]): PixelLayerRuntime[] {
     name: layer.name,
     visible: layer.visible,
     locked: layer.locked,
+    opacity: layer.opacity,
+    blend: layer.blend,
+    lockAlpha: layer.lockAlpha,
     indices: new Uint8Array(layer.indices),
   }))
 }
@@ -290,6 +309,8 @@ export type PixelBoardHandle = {
   setActiveLayer: (id: string) => boolean
   setLayerVisible: (id: string, visible: boolean) => boolean
   setLayerLocked: (id: string, locked: boolean) => boolean
+  /** Opacity, blend mode and transparency lock. Repeated changes to one property coalesce into one undo step. */
+  setLayerStyle: (id: string, patch: PixelLayerStylePatch) => boolean
   renameLayer: (id: string, name: string) => boolean
   getLayerThumbnail: (id: string, size?: number) => string | null
   applyShapeDraft: () => boolean
@@ -538,6 +559,7 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
   const rafRef = useRef<number>(0)
   const observerRef = useRef<ResizeObserver | null>(null)
   const historyRef = useRef(new PixelHistory())
+  const styleUndoRef = useRef<{ key: string; at: number } | null>(null)
   const pushUndoRef = useRef<() => void>(() => {})
   const selectionUndoOpenRef = useRef(false)
   const selectAllRef = useRef<() => void>(() => {})
@@ -615,6 +637,9 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
         visible: layer.visible,
         locked: layer.locked,
         active: index === active,
+        opacity: layerOpacity(layer),
+        blend: layerBlend(layer),
+        lockAlpha: Boolean(layer.lockAlpha),
       })),
     )
   }
@@ -625,6 +650,9 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
     if (!active || !imageRef.current) return
     const w = canvasWidthRef.current
     const h = canvasHeightRef.current
+    // Transparency lock only means something on layers above the base (the base has no empty cells).
+    const locked = Boolean(active.lockAlpha) && activeLayerIndexRef.current > 0 && active.indices.length === w * h
+    const before = locked ? snapshotIndicesRect(active.indices, w, h, rect ?? null) : null
     if (rect && active.indices.length === w * h) {
       writeRgbaRectToIndices(
         imageRef.current.data,
@@ -635,15 +663,19 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
         paletteRef.current,
         paletteIndexMapRef.current,
       )
-      return
+    } else {
+      active.indices = rgbaToIndices(
+        imageRef.current.data,
+        w,
+        h,
+        paletteRef.current,
+        paletteIndexMapRef.current,
+      )
     }
-    active.indices = rgbaToIndices(
-      imageRef.current.data,
-      w,
-      h,
-      paletteRef.current,
-      paletteIndexMapRef.current,
-    )
+    if (before && applyAlphaLock(active.indices, before, w)) {
+      // Keep the editing buffer in step with what the lock kept.
+      writeIndicesRectToRgba(active.indices, imageRef.current.data, w, before, paletteRef.current)
+    }
   }
 
   const loadActiveIntoImage = () => {
@@ -682,6 +714,16 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
       selection: selectionRef.current,
       floating: selectionFloatingRef.current ? selectionFloatRef.current : null,
     }
+  }
+
+  /** Adopt colours a merge had to add (undo already captured the old palette). */
+  const growPaletteFromMerge = (resolver: { palette: string[]; added: number; approximated: number }) => {
+    if (resolver.added > 0) {
+      paletteRef.current = [...resolver.palette]
+      syncPaletteIndexMap()
+      onPaletteChangeRef.current?.(paletteRef.current)
+    }
+    if (resolver.approximated > 0) onPaletteFullRef.current?.()
   }
 
   const applyHistoryFrame = (frame: HistoryFrame) => {
@@ -2008,6 +2050,9 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
       visible: layer.visible,
       locked: layer.locked,
       active: index === active,
+      opacity: layerOpacity(layer),
+      blend: layerBlend(layer),
+      lockAlpha: Boolean(layer.lockAlpha),
     }))
   }
 
@@ -2302,6 +2347,33 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
       onStrokeEnd?.()
       return true
     },
+    setLayerStyle: (id, patch) => {
+      const layer = layersRef.current.find((item) => item.id === id)
+      if (!layer) return false
+      const next: PixelLayerStylePatch = {}
+      if (patch.opacity !== undefined) next.opacity = clampLayerOpacity(patch.opacity)
+      if (patch.blend !== undefined && isPixelBlendMode(patch.blend)) next.blend = patch.blend
+      if (patch.lockAlpha !== undefined) next.lockAlpha = Boolean(patch.lockAlpha)
+      const changed =
+        (next.opacity !== undefined && next.opacity !== layerOpacity(layer)) ||
+        (next.blend !== undefined && next.blend !== layerBlend(layer)) ||
+        (next.lockAlpha !== undefined && next.lockAlpha !== Boolean(layer.lockAlpha))
+      if (!changed) return false
+      // A slider drag emits many values; keep it to one undo step per layer+property burst.
+      const key = `${id}:${Object.keys(next).sort().join(",")}`
+      const now = Date.now()
+      const last = styleUndoRef.current
+      if (!last || last.key !== key || now - last.at > 900) pushUndo()
+      styleUndoRef.current = { key, at: now }
+      syncActiveFromImage()
+      if (next.opacity !== undefined) layer.opacity = next.opacity
+      if (next.blend !== undefined) layer.blend = next.blend
+      if (next.lockAlpha !== undefined) layer.lockAlpha = next.lockAlpha
+      emitLayers()
+      schedule()
+      onStrokeEnd?.()
+      return true
+    },
     setLayerLocked: (id, locked) => {
       const layer = layersRef.current.find((item) => item.id === id)
       if (!layer || layer.locked === locked) return false
@@ -2336,6 +2408,9 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
         name: `${source.name} copy`.slice(0, 32),
         visible: source.visible,
         locked: false,
+        opacity: source.opacity,
+        blend: source.blend,
+        lockAlpha: source.lockAlpha,
         indices: new Uint8Array(source.indices),
       }
       layersRef.current.splice(index + 1, 0, clone)
@@ -2354,7 +2429,9 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
       if (lower.locked) return false
       pushUndo()
       syncActiveFromImage()
-      lower.indices = mergeLayerIndices(lower.indices, upper.indices, true)
+      const resolver = createPaletteResolver(paletteRef.current)
+      lower.indices = bakeMergeDown(lower, upper, index - 1 === 0, paletteRef.current, resolver)
+      growPaletteFromMerge(resolver)
       layersRef.current.splice(index, 1)
       activeLayerIndexRef.current = index - 1
       loadActiveIntoImage()
@@ -2374,7 +2451,9 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
       const firstVisible = layers.findIndex((layer) => layer.visible)
       if (firstVisible < 0) return false
       pushUndo()
-      const mergedIndices = flattenLayersToIndices(layers, w, h)
+      const resolver = createPaletteResolver(paletteRef.current)
+      const mergedIndices = bakeVisibleLayers(layers, w, h, paletteRef.current, resolver)
+      growPaletteFromMerge(resolver)
       const hidden = layers.filter((layer) => !layer.visible)
       const merged: PixelLayerRuntime = {
         id: createLayerId(),

@@ -430,6 +430,18 @@ export const copy = {
     id: "Opasitas dan aliran memakai dither terurut agar palet tidak bertambah.",
     en: "Opacity and flow use ordered dithering so the palette never grows.",
   } satisfies Bi,
+  pixelLayerStyle: { id: "Gaya layer", en: "Layer style" } satisfies Bi,
+  pixelLayerOpacity: { id: "Opasitas layer", en: "Layer opacity" } satisfies Bi,
+  pixelLayerBlend: { id: "Mode blend", en: "Blend mode" } satisfies Bi,
+  pixelLayerLockAlpha: { id: "Kunci transparansi", en: "Lock transparency" } satisfies Bi,
+  pixelLayerLockAlphaBase: {
+    id: "Layer dasar tidak punya sel transparan.",
+    en: "The base layer has no transparent cells.",
+  } satisfies Bi,
+  pixelLayerStyleHint: {
+    id: "Opasitas dan blend dihitung saat tampil. Piksel tetap memakai warna palet.",
+    en: "Opacity and blend apply when displayed. Pixels keep their palette colours.",
+  } satisfies Bi,
   pixelFillTolerance: { id: "Toleransi isi", en: "Fill tolerance" } satisfies Bi,
   pixelSelectTolerance: { id: "Toleransi seleksi", en: "Selection tolerance" } satisfies Bi,
   pixelFillGlobalHint: {
@@ -1440,3 +1452,20 @@ export const creationCategoryLabels: Record<CreationCategory, Bi> = {
   ),
   custom: { id: "Kustom", en: "Custom" },
 } as Record<CreationCategory, Bi>;
+
+export const pixelBlendLabels = {
+  normal: { id: "Normal", en: "Normal" },
+  multiply: { id: "Perkalian", en: "Multiply" },
+  screen: { id: "Layar", en: "Screen" },
+  overlay: { id: "Overlay", en: "Overlay" },
+  darken: { id: "Gelapkan", en: "Darken" },
+  lighten: { id: "Terangkan", en: "Lighten" },
+  add: { id: "Tambah", en: "Add" },
+  difference: { id: "Selisih", en: "Difference" },
+  "color-dodge": { id: "Pencerah warna", en: "Color dodge" },
+  "color-burn": { id: "Pembakar warna", en: "Color burn" },
+  "hard-light": { id: "Cahaya keras", en: "Hard light" },
+  "soft-light": { id: "Cahaya lembut", en: "Soft light" },
+  exclusion: { id: "Eksklusi", en: "Exclusion" },
+  subtract: { id: "Kurangi", en: "Subtract" },
+} as const satisfies Record<string, { id: string; en: string }>

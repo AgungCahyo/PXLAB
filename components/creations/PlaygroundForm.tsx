@@ -65,7 +65,7 @@ import {
   type PixelSymmetry,
   type PixelZoom,
 } from "@/lib/pixel"
-import type { PixelLayerInfo } from "@/components/canvas/PixelBoard"
+import type { PixelLayerInfo, PixelLayerStylePatch } from "@/components/canvas/PixelBoard"
 import {
   LayerMobileSheet,
   LayerMobileStrip,
@@ -1254,6 +1254,7 @@ export function PlaygroundForm({
     onLocked: (id: string, locked: boolean) => boardRef.current?.setLayerLocked(id, locked) ?? false,
     onRename: (id: string, name: string) => boardRef.current?.renameLayer(id, name) ?? false,
     onMove: (id: string, toStackIndex: number) => boardRef.current?.moveLayer(id, toStackIndex) ?? false,
+    onStyle: (id: string, patch: PixelLayerStylePatch) => boardRef.current?.setLayerStyle(id, patch) ?? false,
     onFeedback: flashLayer,
   }
 
@@ -2042,6 +2043,7 @@ export function PlaygroundForm({
         onLocked={layerApi.onLocked}
         onRename={layerApi.onRename}
         onMove={layerApi.onMove}
+        onStyle={layerApi.onStyle}
         onFeedback={flashLayer}
       />
 
