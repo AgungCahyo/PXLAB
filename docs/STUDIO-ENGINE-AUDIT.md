@@ -50,7 +50,7 @@ Audited commit: `main` (shallow clone, Nov 19 2026). Baseline: 340/342 tests pas
 | M3 | Undo memory: structural sharing, 48 MiB budget, palette + selection (and floating clipboard) in every frame | **Done** |
 | M4 | Dirty-rect compositing + render invalidation | **Done** |
 | M5 | Fill: tolerance, global replace, selection clip; selection invert/expand/contract/ellipse | **Done** |
-| M6 | Brush engine: opacity/flow/spacing, pressure, custom shapes | |
+| M6 | Brush engine: opacity/flow/hardness/spacing, pressure, custom tips | **Done** (not browser-verified) |
 | M7 | Layer alpha/blend/groups (needs §3 approval; V3 schema + migration tests) | |
 | M8 | Export: JPEG/WebP, per-layer, spritesheet, previews | |
 | M9 | Transform: scale/rotate preview, resize/crop with interpolation options | |
@@ -89,3 +89,44 @@ Tests: 344 pass, same 2 pre-existing failures. `tsc --noEmit` clean.
 - Box select can be a rectangle or an ellipse (the ellipse mask uses the same cover test as the filled ellipse tool). Invert (Ctrl+Shift+I), expand (Shift+]), and contract (Shift+[) are one undo step each. Feather is not included; it needs per-pixel alpha.
 - Suite: 367 pass, same 2 pre-existing failures. `tsc` clean.
 - Not yet verified in a browser.
+
+## 10. M5 review and fixes
+
+Gaps found against the original spec and what happened:
+
+| Gap | Result |
+|---|---|
+| Wand and colour select were exact-match only | Fixed: both take a tolerance (same slider as fill), typed-array stack, bounds-checked start. |
+| Stale test: header palette "longer than 64" | Fixed: asserts the real 256 limit (accepts 256, rejects 257). |
+| Save status not announced (test failure) | Fixed: the save label is now `role="status" aria-live="polite"`. |
+| Polygonal (click-vertex) selection | **Done** (section 12). |
+| Pattern fill | **Open.** Not implemented. |
+| Feather | **Not planned** while layers are indexed (needs per-pixel alpha, see section 3). |
+
+## 11. M6 brush engine (`lib/pixel-brush.ts`)
+
+Design choice: layers are palette indices, so real blending would add a palette entry per blend. Opacity, flow, hardness and pressure are therefore a 0..1 coverage resolved with an 8x8 Bayer dither: deterministic, no palette growth.
+
+- **Opacity** is a ceiling for the whole stroke; overlapping the stroke on itself never exceeds it.
+- **Flow** accumulates per stamp inside one stroke; a new stroke starts at zero.
+- **Hardness** is a falloff from centre to edge (circle and square). At 100 the footprint matches the legacy brush cell for cell (tested for sizes 1-12).
+- **Spacing** is % of brush size; 0 keeps exact Bresenham with no double-stamped joints. Spacing carries across segments, so splitting a stroke into samples does not change the result.
+- **Pressure** from pen only (mouse and touch are full pressure), read from coalesced events; scales size (floor 15%) and/or flow.
+- **Custom tip** from the selection silhouette or the clipboard (max 64x64), 1:1 (size slider is ignored).
+- Default options use the old code path unchanged. The new path allocates one float buffer per canvas size and clears only the touched rectangle between strokes.
+- UI: `BrushOptionsPanel` in the inspector (desktop) and a collapsible panel on mobile, pencil, circle and eraser.
+- Bench (512x512, 300 strokes of ~500 cells, size 8): legacy 130 ms, soft dithered engine 517 ms (~1.7 ms per stroke), after removing `Math.hypot` and the per-stamp symmetry allocation (865 ms before).
+- Suite: 391 pass, 0 fail. `tsc` clean. Lint: no new errors (PixelBoard, PlaygroundForm, StudioInspector keep their 15 existing React-compiler errors).
+- Not verified in a browser or with a real pen. Please test pen pressure on a tablet.
+
+## 12. Polygon select tool (`selectPolygon`)
+
+- **Use:** click adds a vertex. Click the first vertex, or the last vertex again, to close. Enter closes. Backspace/Delete and undo remove the last vertex. Esc cancels. Switching tool drops an unfinished polygon. Shift adds to and Alt subtracts from the selection (mode is fixed at the first click). Shortcut `Y`.
+- **Touch:** close by tapping the first or last point again; the undo button removes the last vertex.
+- **Rasterizer:** `selectionFromPolygonVertices` in `lib/pixel.ts`. Vertices are cell centres; a cell is selected if its centre is inside (even-odd) or it lies on an outline edge (Bresenham). Every clicked vertex and every thin sliver is selected with no gaps, and the result does not depend on zoom or on vertex order. Off-canvas vertices are clipped. Fewer than 3 distinct vertices leaves the selection untouched.
+- **History:** one undo step per closed polygon, through the same selection history as the other tools.
+- **Preview:** dashed outline, vertex handles, rubber-band segment to the cursor, first handle highlights when a click would close.
+- **Known behaviour:** as with the lasso, a first click inside an existing selection (no Shift) moves that selection instead of starting a polygon.
+- **Tests:** 9 new unit tests (rectangle, order independence, thin slivers, concave notch, self-crossing, clipping, degenerate input). Suite: 400 pass, 0 fail; `tsc` clean; lint unchanged at the existing 15 errors.
+- **Icon:** pixelarticons has no polygon-select glyph, so `PixelIcon.tsx` has a small inline SVG. Swap it if you have a preferred icon.
+- Not verified in a browser.

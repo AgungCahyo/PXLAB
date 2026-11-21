@@ -211,6 +211,11 @@ export const copy = {
   pixelSelectContiguous: { id: "Seleksi contiguous", en: "Contiguous select" } satisfies Bi,
   pixelSelectColor: { id: "Seleksi warna", en: "Select by color" } satisfies Bi,
   pixelSelectLasso: { id: "Lasso", en: "Lasso select" } satisfies Bi,
+  pixelSelectPolygon: { id: "Seleksi poligon", en: "Polygon select" } satisfies Bi,
+  pixelSelectPolygonHint: {
+    id: "Klik untuk menambah titik. Klik titik awal, klik titik terakhir lagi, atau tekan Enter untuk menutup. Backspace menghapus titik terakhir, Esc membatalkan. Shift menambah, Alt mengurangi.",
+    en: "Click to add points. Click the first point, click the last point again, or press Enter to close. Backspace removes the last point, Esc cancels. Shift adds, Alt subtracts.",
+  } satisfies Bi,
   pixelToolComing: { id: "Menyusul", en: "Coming soon" } satisfies Bi,
   pixelClearCanvas: { id: "Kosongkan kanvas", en: "Clear canvas" } satisfies Bi,
   pixelFlipH: { id: "Cermin H", en: "Flip H" } satisfies Bi,

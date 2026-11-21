@@ -1,5 +1,5 @@
-import { ProfileSkeleton } from "@/components/creations/PageSkeletons"
+import { ProfileLoadingSkeleton } from "@/components/social/Skeleton"
 
 export default function ProfileLoading() {
-  return <ProfileSkeleton />
+  return <ProfileLoadingSkeleton />
 }

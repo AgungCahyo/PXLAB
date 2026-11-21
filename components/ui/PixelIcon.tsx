@@ -65,6 +65,28 @@ import { cn } from "@/lib/utils"
 
 type IconComponent = ComponentType<SVGProps<SVGSVGElement>>
 
+/** Dashed pentagon with vertex handles (pixelarticons has no polygon-select glyph). */
+function PolygonSelectIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" {...props}>
+      <path
+        d="M12 4.5 20 10.5 17 19.5H7L4 10.5Z"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeDasharray="3 2"
+        strokeLinejoin="miter"
+      />
+      <g fill="currentColor">
+        <rect x="10.5" y="3" width="3" height="3" />
+        <rect x="18.5" y="9" width="3" height="3" />
+        <rect x="15.5" y="18" width="3" height="3" />
+        <rect x="5.5" y="18" width="3" height="3" />
+        <rect x="2.5" y="9" width="3" height="3" />
+      </g>
+    </svg>
+  )
+}
+
 /** Maps app icon names → pixelarticons (MIT, 24×24 grid). */
 const icons = {
   menu: Menu,
@@ -112,6 +134,7 @@ const icons = {
   wand: Wand,
   colorSelect: ColorsSwatch,
   lasso: Lasso,
+  polygonSelect: PolygonSelectIcon,
   flip: FlipHorizontal2,
   flipV: FlipVertical2,
   rotate: Reload,

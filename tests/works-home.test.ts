@@ -43,11 +43,11 @@ describe("Create and My Works stay separate", () => {
   })
 
   it("keeps a minimal public profile header with avatar and works grid", () => {
-    expect(profile).toMatch(/w-full min-w-0 max-w-6xl/)
+    expect(profile).toMatch(/w-full min-w-0 max-w-4xl/)
     expect(profile).toMatch(/ProfileAvatar/)
     expect(profile).toMatch(/avatar_url/)
     expect(profile).toMatch(/showAuthor=\{false\}/)
-    expect(profile).toMatch(/grid-cols-2 gap-3 lg:grid-cols-3 lg:gap-4 xl:grid-cols-4/)
+    expect(profile).toMatch(/grid-cols-3 gap-0\.5 sm:gap-1/)
     expect(profile).toMatch(/nav\.dashboard/)
     expect(profile).toMatch(/nav\.settings/)
     expect(profile).toMatch(/memberSince/)

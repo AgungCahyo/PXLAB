@@ -5,6 +5,7 @@ import { SiteFooter } from "@/components/layout/SiteFooter"
 import { SiteHeader } from "@/components/layout/SiteHeader"
 import { ViewTransitionGuard } from "@/components/layout/ViewTransitionGuard"
 import { PwaInstall } from "@/components/pwa/PwaInstall"
+import { ToastProvider } from "@/components/social/Toast"
 import { PwaRegister } from "@/components/pwa/PwaRegister"
 import { hasUnseenCreationResponses } from "@/features/community/activity"
 import { getCurrentProfile } from "@/lib/auth/session"
@@ -18,10 +19,11 @@ export function PublicShell({
   lang: Lang
 }) {
   return (
+    <ToastProvider>
     <div className="relative flex min-h-dvh flex-col pb-[calc(4rem+env(safe-area-inset-bottom,0px))] md:pb-0">
       <ViewTransitionGuard />
       <PixelWorldBackdrop />
-      <div className="relative z-10 flex min-h-dvh flex-col">
+      <div className="shell-content relative z-10 flex min-h-dvh flex-col">
         <Suspense fallback={<SiteHeader lang={lang} member={null} />}>
           <AuthHeader lang={lang} />
         </Suspense>
@@ -36,6 +38,7 @@ export function PublicShell({
       <PwaRegister />
       <PwaInstall lang={lang} variant="banner" />
     </div>
+    </ToastProvider>
   )
 }
 

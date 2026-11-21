@@ -7,12 +7,12 @@ import {
   ExploreFollowingGuest,
   ExploreGallery,
 } from "@/components/creations/ExploreGallery"
-import { GallerySkeleton } from "@/components/creations/GallerySkeleton"
 import { NewCreatorsStrip } from "@/components/creations/NewCreatorsStrip"
 import { QuietRack } from "@/components/creations/QuietRack"
 import { PageTransition } from "@/components/layout/PageTransition"
-import { EmptyState } from "@/components/ui/EmptyState"
-import { buttonClassName } from "@/components/ui/Button"
+import { TileGridSkeleton } from "@/components/social/Skeleton"
+import { SocialEmptyState } from "@/components/social/SocialEmptyState"
+import { socialButtonClass } from "@/components/social/socialButton"
 import { PageHeader } from "@/components/ui/PageHeader"
 import { listFollowingIds } from "@/features/community/follows"
 import {
@@ -81,18 +81,18 @@ export default async function ExplorePage({
           }
         />
 
-        <div className="mt-5 min-w-0">
+        <div className="mt-4 min-w-0">
           <ExploreFilters lang={lang} category={category} q={q} feed={feed} />
         </div>
 
-        <div className="mt-8 min-w-0">
-          <Suspense fallback={<GallerySkeleton />}>
+        <div className="mt-4 min-w-0">
+          <Suspense fallback={<TileGridSkeleton />}>
             <ExploreResults lang={lang} category={category} q={q} page={page} feed={feed} />
           </Suspense>
         </div>
 
         {showDiscovery ? (
-          <div className="mt-10 min-w-0 border-t border-line pt-8">
+          <div className="mt-10 min-w-0 border-t border-[color:var(--soc-hairline)] pt-8">
             <Suspense fallback={null}>
               <QuietRackSlot lang={lang} />
             </Suspense>
@@ -132,13 +132,13 @@ async function ExploreResults({
 
     if (result.failed) {
       return (
-        <EmptyState
+        <SocialEmptyState
           title={copy.exploreLoadError[lang]}
           description={copy.exploreLoadHint[lang]}
           action={
             <Link
               href={exploreHref(lang, { category, q, page, feed })}
-              className={buttonClassName({ size: "sm" })}
+              className={socialButtonClass({ variant: "solid" })}
             >
               {copy.exploreRetry[lang]}
             </Link>
@@ -169,13 +169,13 @@ async function ExploreResults({
 
   if (result.failed) {
     return (
-      <EmptyState
+      <SocialEmptyState
         title={copy.exploreLoadError[lang]}
         description={copy.exploreLoadHint[lang]}
         action={
           <Link
             href={exploreHref(lang, { category, q, page, feed })}
-            className={buttonClassName({ size: "sm" })}
+            className={socialButtonClass({ variant: "solid" })}
           >
             {copy.exploreRetry[lang]}
           </Link>

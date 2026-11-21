@@ -1,9 +1,9 @@
 import Link from "next/link"
-import { CreationCard } from "@/components/creations/CreationCard"
-import { EmptyState } from "@/components/ui/EmptyState"
-import { buttonClassName } from "@/components/ui/Button"
-import { FilterChip } from "@/components/ui/FilterChip"
-import { PixelIcon } from "@/components/ui/PixelIcon"
+import { Search } from "pixelarticons/react"
+import { ExploreInfinite } from "@/components/social/ExploreInfinite"
+import { Pill, TabLink } from "@/components/social/Pill"
+import { SocialEmptyState } from "@/components/social/SocialEmptyState"
+import { socialButtonClass } from "@/components/social/socialButton"
 import {
   exploreHref,
   type ExploreCategoryFilter,
@@ -14,42 +14,6 @@ import { href, type Lang } from "@/lib/i18n"
 import { loginHref } from "@/lib/paths"
 import { CREATION_CATEGORIES, EXPLORE_SEARCH_MAX } from "@/lib/site"
 import type { CreationCard as CreationCardData } from "@/features/creations/queries"
-
-function SizeFilterList({
-  lang,
-  category,
-  q,
-  feed,
-}: {
-  lang: Lang
-  category: ExploreCategoryFilter
-  q: string
-  feed: ExploreFeed
-}) {
-  const base = { category, q, feed }
-  return (
-    <ul className="flex w-full min-w-0 gap-2 flex-nowrap overflow-x-auto pb-0.5 [-ms-overflow-style:none] [scrollbar-width:none] sm:flex-wrap sm:overflow-visible [&::-webkit-scrollbar]:hidden">
-      <li className="shrink-0">
-        <FilterChip
-          href={exploreHref(lang, { ...base, category: "all", page: 1 })}
-          selected={category === "all"}
-        >
-          {copy.categoryAll[lang]}
-        </FilterChip>
-      </li>
-      {CREATION_CATEGORIES.map((item) => (
-        <li key={item} className="shrink-0">
-          <FilterChip
-            href={exploreHref(lang, { ...base, category: item, page: 1 })}
-            selected={category === item}
-          >
-            {creationCategoryLabels[item][lang]}
-          </FilterChip>
-        </li>
-      ))}
-    </ul>
-  )
-}
 
 export function ExploreFilters({
   lang,
@@ -62,75 +26,66 @@ export function ExploreFilters({
   q: string
   feed?: ExploreFeed
 }) {
+  const base = { category, q, feed }
   return (
-    <div className="min-w-0 border-b border-line pb-4">
-      <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
-        <nav
-          aria-label={copy.exploreFeedAria[lang]}
-          className="flex shrink-0 flex-wrap gap-2"
-        >
-          <FilterChip
-            href={exploreHref(lang, { feed: "all", category, q, page: 1 })}
-            selected={feed === "all"}
-          >
-            {copy.exploreFeedAll[lang]}
-          </FilterChip>
-          <FilterChip
-            href={exploreHref(lang, { feed: "following", category, q, page: 1 })}
-            selected={feed === "following"}
-          >
-            {copy.exploreFeedFollowing[lang]}
-          </FilterChip>
-        </nav>
+    <div className="grid min-w-0 gap-3">
+      <form action={href(lang, "/explore")} method="get" role="search" className="flex min-w-0 gap-2">
+        {feed === "following" ? <input type="hidden" name="feed" value="following" /> : null}
+        {category !== "all" ? <input type="hidden" name="category" value={category} /> : null}
+        <label className="relative block min-w-0 flex-1">
+          <span className="sr-only">{copy.exploreSearchLabel[lang]}</span>
+          <Search
+            width={18}
+            height={18}
+            aria-hidden="true"
+            className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted"
+          />
+          <input
+            type="search"
+            name="q"
+            defaultValue={q}
+            maxLength={EXPLORE_SEARCH_MAX}
+            enterKeyHint="search"
+            placeholder={copy.exploreSearchPlaceholder[lang]}
+            className="min-h-11 w-full min-w-0 border border-transparent bg-soft py-2 pl-10 pr-3 text-[15px] text-fg placeholder:text-muted focus-visible:border-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky"
+          />
+        </label>
+        <button type="submit" className={socialButtonClass({ variant: "solid", className: "shrink-0" })}>
+          {copy.exploreSearchSubmit[lang]}
+        </button>
+      </form>
 
-        <form
-          action={href(lang, "/explore")}
-          method="get"
-          role="search"
-          className="flex min-w-0 flex-1 gap-2"
+      <nav
+        aria-label={copy.exploreFeedAria[lang]}
+        className="flex border-b border-[color:var(--soc-hairline)]"
+      >
+        <TabLink href={exploreHref(lang, { ...base, feed: "all", page: 1 })} selected={feed === "all"}>
+          {copy.exploreFeedAll[lang]}
+        </TabLink>
+        <TabLink
+          href={exploreHref(lang, { ...base, feed: "following", page: 1 })}
+          selected={feed === "following"}
         >
-          {feed === "following" ? <input type="hidden" name="feed" value="following" /> : null}
-          {category !== "all" ? <input type="hidden" name="category" value={category} /> : null}
-          <label className="relative block min-w-0 flex-1">
-            <span className="sr-only">{copy.exploreSearchLabel[lang]}</span>
-            <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-muted">
-              <PixelIcon name="search" className="h-4 w-4" />
-            </span>
-            <input
-              type="search"
-              name="q"
-              defaultValue={q}
-              maxLength={EXPLORE_SEARCH_MAX}
-              placeholder={copy.exploreSearchPlaceholder[lang]}
-              className="min-h-11 w-full min-w-0 border-[3px] border-earth bg-bg py-2 pl-10 pr-3 text-[15px] text-fg placeholder:text-muted"
-            />
-          </label>
-          <button
-            type="submit"
-            className="inline-flex h-11 shrink-0 items-center justify-center border-[3px] border-earth bg-brick px-3 text-[14px] text-white sm:px-4"
-          >
-            {copy.exploreSearchSubmit[lang]}
-          </button>
-        </form>
-      </div>
+          {copy.exploreFeedFollowing[lang]}
+        </TabLink>
+      </nav>
 
-      <div className="mt-3 min-w-0 max-w-full">
-        <details className="group sm:hidden">
-          <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 border-[3px] border-earth bg-card px-3 text-[14px] font-medium text-fg [&::-webkit-details-marker]:hidden">
-            <span>{copy.categoryFilterSummary[lang]}</span>
-            <span className="truncate text-muted group-open:hidden">
-              {category === "all" ? copy.categoryAll[lang] : creationCategoryLabels[category][lang]}
-            </span>
-            <span className="sr-only">{copy.categoryAria[lang]}</span>
-          </summary>
-          <nav aria-label={copy.categoryAria[lang]} className="mt-2 min-w-0">
-            <SizeFilterList lang={lang} category={category} q={q} feed={feed} />
-          </nav>
-        </details>
-        <nav aria-label={copy.categoryAria[lang]} className="hidden min-w-0 sm:block">
-          <SizeFilterList lang={lang} category={category} q={q} feed={feed} />
-        </nav>
-      </div>
+      <nav aria-label={copy.categoryAria[lang]} className="min-w-0">
+        <ul className="flex w-full min-w-0 flex-nowrap gap-1.5 overflow-x-auto pb-0.5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <li className="shrink-0">
+            <Pill href={exploreHref(lang, { ...base, category: "all", page: 1 })} selected={category === "all"}>
+              {copy.categoryAll[lang]}
+            </Pill>
+          </li>
+          {CREATION_CATEGORIES.map((item) => (
+            <li key={item} className="shrink-0">
+              <Pill href={exploreHref(lang, { ...base, category: item, page: 1 })} selected={category === item}>
+                {creationCategoryLabels[item][lang]}
+              </Pill>
+            </li>
+          ))}
+        </ul>
+      </nav>
     </div>
   )
 }
@@ -152,7 +107,6 @@ export function ExploreGallery({
   pageCount: number
   items: CreationCardData[]
 }) {
-  const query = { category, q, feed }
   const emptyDescription =
     feed === "following"
       ? copy.exploreFollowingEmpty[lang]
@@ -162,65 +116,34 @@ export function ExploreGallery({
           ? copy.exploreEmptySize[lang]
           : copy.exploreEmptyAll[lang]
 
-  return (
-    <div className="grid min-w-0 gap-6">
-      {items.length === 0 ? (
-        <EmptyState title={copy.exploreEmptyTitle[lang]} description={emptyDescription} />
-      ) : (
-        <ul className="grid min-w-0 grid-cols-2 gap-3 lg:grid-cols-3 lg:gap-4 xl:grid-cols-4">
-          {items.map((item) => (
-            <li key={item.id} className="min-w-0">
-              <CreationCard creation={item} lang={lang} />
-            </li>
-          ))}
-        </ul>
-      )}
+  if (items.length === 0) {
+    return <SocialEmptyState title={copy.exploreEmptyTitle[lang]} description={emptyDescription} />
+  }
 
-      {pageCount > 1 ? (
-        <nav
-          aria-label={copy.explorePaginationAria[lang]}
-          className="flex flex-wrap items-center justify-between gap-3"
-        >
-          <div className="min-w-[5.5rem]">
-            {page > 1 ? (
-              <Link
-                href={exploreHref(lang, { ...query, page: page - 1 })}
-                className="inline-flex min-h-11 items-center text-[14px] text-muted hover:text-fg"
-              >
-                {copy.pagePrev[lang]}
-              </Link>
-            ) : null}
-          </div>
-          <p className="text-[13px] text-muted" aria-current="page">
-            {copy.explorePageStatus[lang]
-              .replace("{page}", String(page))
-              .replace("{pages}", String(pageCount))}
-          </p>
-          <div className="flex min-w-[5.5rem] justify-end">
-            {page < pageCount ? (
-              <Link
-                href={exploreHref(lang, { ...query, page: page + 1 })}
-                className="inline-flex min-h-11 items-center text-[14px] text-muted hover:text-fg"
-              >
-                {copy.pageNext[lang]}
-              </Link>
-            ) : null}
-          </div>
-        </nav>
-      ) : null}
-    </div>
+  return (
+    <ExploreInfinite
+      // New filters/page = fresh client state (loaded pages, scroll bookkeeping).
+      key={`${feed}|${category}|${q}|${page}`}
+      lang={lang}
+      category={category}
+      q={q}
+      feed={feed}
+      initialItems={items}
+      initialPage={page}
+      pageCount={pageCount}
+    />
   )
 }
 
 export function ExploreFollowingGuest({ lang }: { lang: Lang }) {
   return (
-    <EmptyState
+    <SocialEmptyState
       title={copy.exploreFeedFollowing[lang]}
       description={copy.exploreFollowingGuest[lang]}
       action={
         <Link
           href={loginHref(lang, "/explore?feed=following")}
-          className={buttonClassName({ size: "sm" })}
+          className={socialButtonClass({ variant: "solid" })}
         >
           {copy.followSignIn[lang]}
         </Link>

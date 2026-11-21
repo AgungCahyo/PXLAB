@@ -36,6 +36,6 @@ describe("visual-first gallery", () => {
 
   it("shows published work on the landing page", () => {
     expect(landing).toMatch(/listPublishedCreations/)
-    expect(landing).toMatch(/CreationCard/)
+    expect(landing).toMatch(/CreationCard|WorkTile/)
   })
 })

@@ -71,6 +71,7 @@ describe("pixel studio redesign S0–S1", () => {
     expect(playground).toMatch(/toolButton\("selectContiguous"/)
     expect(playground).toMatch(/toolButton\("selectColor"/)
     expect(playground).toMatch(/toolButton\("lasso"/)
+    expect(playground).toMatch(/toolButton\("selectPolygon"/)
     expect(playground).not.toMatch(/onTextRequest/)
     expect(playground).not.toMatch(/pixelTextStamp/)
     expect(playground).not.toMatch(/comingTool/)

@@ -5,14 +5,14 @@ import { describe, expect, it } from "vitest"
 const read = (file: string) => readFileSync(path.resolve(__dirname, "..", file), "utf8")
 
 describe("PR-3 system chrome + SEO", () => {
-  it("shares FilterChip across Explore and Admin", () => {
+  it("shares chips: Explore uses the social Pill, Admin keeps FilterChip", () => {
     const chip = read("components/ui/FilterChip.tsx")
     const gallery = read("components/creations/ExploreGallery.tsx")
     const admin = read("components/moderation/AdminReports.tsx")
     expect(chip).toMatch(/aria-current/)
     expect(chip).toMatch(/bg-brick/)
-    expect(gallery).toMatch(/FilterChip/)
-    expect(gallery).not.toMatch(/function FilterLink/)
+    expect(gallery).toMatch(/components\/social\/Pill/)
+    expect(gallery).not.toMatch(/function (FilterLink|Pill)\b/)
     expect(admin).toMatch(/FilterChip/)
   })
 

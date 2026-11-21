@@ -3,16 +3,18 @@ import Link from "next/link"
 import { notFound } from "next/navigation"
 import { Suspense } from "react"
 import { FollowButton } from "@/components/community/FollowButton"
-import { CreationCard } from "@/components/creations/CreationCard"
-import { GallerySkeleton } from "@/components/creations/GallerySkeleton"
 import { PageTransition } from "@/components/layout/PageTransition"
 import { ProfileAvatar } from "@/components/profiles/ProfileAvatar"
-import { EmptyState } from "@/components/ui/EmptyState"
-import { buttonClassName } from "@/components/ui/Button"
+import { Grid2x22 } from "pixelarticons/react"
+import { TileGridSkeleton } from "@/components/social/Skeleton"
+import { SocialEmptyState } from "@/components/social/SocialEmptyState"
+import { socialButtonClass } from "@/components/social/socialButton"
+import { WorkTile } from "@/components/social/WorkTile"
 import { isFollowing } from "@/features/community/follows"
 import { listPublishedCreationsByUser } from "@/features/creations/queries"
 import { getCurrentProfile, getProfileByUsername } from "@/lib/auth/session"
 import { copy } from "@/lib/copy"
+import { socialCopy } from "@/lib/copy-social"
 import { formatMonthYear } from "@/lib/format"
 import { href, isLang, type Lang } from "@/lib/i18n"
 import { pageMeta } from "@/lib/meta"
@@ -70,101 +72,94 @@ export default async function PublicProfilePage({
 
   return (
     <PageTransition>
-      <div className="mx-auto w-full min-w-0 max-w-6xl px-5 py-8 sm:px-8 sm:py-10 lg:px-16">
-        <header className="min-w-0">
-          <div className="flex min-w-0 flex-col gap-5 sm:flex-row sm:items-start sm:gap-6">
-            <div className="shrink-0 self-start border-[3px] border-earth bg-card p-1 shadow-[4px_4px_0_0_var(--fg)]">
-              <ProfileAvatar
-                src={profile.avatar_url}
-                avatarConfig={profile.avatar_config}
-                userId={profile.id}
-                alt={name}
-                size="lg"
-                className="border-0"
-              />
-            </div>
+      <div className="mx-auto w-full min-w-0 max-w-4xl px-4 py-6 sm:px-8 sm:py-10">
+        <header className="flex min-w-0 items-start gap-4 sm:gap-10">
+          <ProfileAvatar
+            src={profile.avatar_url}
+            avatarConfig={profile.avatar_config}
+            userId={profile.id}
+            alt={name}
+            size="lg"
+            className="shrink-0"
+          />
 
-            <div className="min-w-0 flex-1">
-              <p className="pixel-kicker">@{profile.username}</p>
-              <h1 className="page-heading-sans mt-2 break-words">{name}</h1>
-
-              <ul className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-[13px] text-muted">
-                <li>{copy.profileWorksCount[lang].replace("{count}", String(worksCount))}</li>
-                {joined ? (
-                  <li>
-                    <span className="text-earth" aria-hidden="true">
-                      ·
-                    </span>{" "}
-                    {copy.memberSince[lang]} {joined}
-                  </li>
-                ) : null}
-              </ul>
-
-              {profile.bio ? (
-                <p className="mt-4 max-w-2xl whitespace-pre-wrap text-[15px] leading-relaxed text-fg">
-                  {profile.bio}
-                </p>
+          <div className="min-w-0 flex-1">
+            <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-center sm:gap-5">
+              <div className="min-w-0">
+                <p className="pixel-kicker">@{profile.username}</p>
+                <h1 className="page-heading-sans mt-1.5 break-words">{name}</h1>
+              </div>
+              {!ownProfile ? (
+                <FollowButton
+                  lang={lang}
+                  userId={profile.id}
+                  username={profile.username}
+                  initialFollowing={following}
+                  member={Boolean(me)}
+                  returnPath={profilePath}
+                />
               ) : null}
-
-              {ownProfile ? (
-                <div className="mt-5 flex flex-wrap gap-2">
-                  <Link href={href(lang, "/dashboard")} className={buttonClassName({ size: "sm" })}>
-                    {copy.nav.dashboard[lang]}
-                  </Link>
-                  <Link
-                    href={href(lang, "/create")}
-                    className={buttonClassName({ size: "sm", variant: "secondary" })}
-                  >
-                    {copy.nav.create[lang]}
-                  </Link>
-                  <Link
-                    href={href(lang, "/responses")}
-                    className={buttonClassName({ size: "sm", variant: "outline" })}
-                  >
-                    {copy.nav.responses[lang]}
-                  </Link>
-                  <Link
-                    href={href(lang, "/settings")}
-                    className={buttonClassName({ size: "sm", variant: "outline" })}
-                  >
-                    {copy.nav.settings[lang]}
-                  </Link>
-                </div>
-              ) : (
-                <div className="mt-5">
-                  <FollowButton
-                    lang={lang}
-                    userId={profile.id}
-                    username={profile.username}
-                    initialFollowing={following}
-                    member={Boolean(me)}
-                    returnPath={profilePath}
-                  />
-                </div>
-              )}
             </div>
+
+            <ul className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-[14px] text-muted">
+              <li>
+                <strong className="font-semibold text-fg">{worksCount}</strong>{" "}
+                {copy.profileWorksCount[lang].replace("{count}", "").replace(/\s+/g, " ").trim()}
+              </li>
+              {joined ? (
+                <li>
+                  {copy.memberSince[lang]} {joined}
+                </li>
+              ) : null}
+            </ul>
+
+            {profile.bio ? (
+              <p className="mt-3 max-w-xl whitespace-pre-wrap text-[14px] leading-relaxed text-fg">
+                {profile.bio}
+              </p>
+            ) : null}
           </div>
         </header>
 
-        <section className="mt-10 min-w-0 border-t-[3px] border-earth pt-8" aria-labelledby="profile-works-heading">
-          <div className="mb-5 flex min-w-0 flex-wrap items-end justify-between gap-3">
-            <h2 id="profile-works-heading" className="text-[15px] font-medium text-fg">
-              {copy.profileWorksHeading[lang]}
+        {ownProfile ? (
+          <div className="mt-5 flex flex-wrap gap-2">
+            <Link href={href(lang, "/settings")} className={socialButtonClass({ variant: "soft", size: "sm" })}>
+              {copy.nav.settings[lang]}
+            </Link>
+            <Link href={href(lang, "/dashboard")} className={socialButtonClass({ variant: "soft", size: "sm" })}>
+              {copy.nav.dashboard[lang]}
+            </Link>
+            <Link href={href(lang, "/responses")} className={socialButtonClass({ variant: "soft", size: "sm" })}>
+              {socialCopy.profile.notifications[lang]}
+            </Link>
+            <Link href={href(lang, "/create")} className={socialButtonClass({ variant: "brand", size: "sm" })}>
+              {copy.nav.create[lang]}
+            </Link>
+          </div>
+        ) : null}
+
+        <section className="mt-8 min-w-0 border-t border-[color:var(--soc-hairline)]" aria-labelledby="profile-works-heading">
+          <div className="flex justify-center">
+            <h2
+              id="profile-works-heading"
+              className="-mt-px inline-flex min-h-11 items-center gap-2 border-t-2 border-fg px-4 text-[13px] font-semibold text-fg"
+            >
+              <Grid2x22 width={16} height={16} aria-hidden="true" />
+              {socialCopy.profile.tabWorks[lang]}
             </h2>
-            <p className="text-[13px] text-muted">
-              {copy.profileWorksCount[lang].replace("{count}", String(worksCount))}
-            </p>
           </div>
 
-          <Suspense fallback={<GallerySkeleton />}>
-            <ProfileWorks
-              lang={lang}
-              username={profile.username}
-              items={works.failed ? null : works.items}
-              failed={works.failed}
-              ownProfile={ownProfile}
-            />
-          </Suspense>
+          <div className="mt-3">
+            <Suspense fallback={<TileGridSkeleton count={9} />}>
+              <ProfileWorks
+                lang={lang}
+                username={profile.username}
+                items={works.failed ? null : works.items}
+                failed={works.failed}
+                ownProfile={ownProfile}
+              />
+            </Suspense>
+          </div>
         </section>
       </div>
     </PageTransition>
@@ -186,11 +181,11 @@ function ProfileWorks({
 }) {
   if (failed || items === null) {
     return (
-      <EmptyState
+      <SocialEmptyState
         title={copy.exploreLoadError[lang]}
         description={copy.exploreLoadHint[lang]}
         action={
-          <Link href={href(lang, `/u/${username}`)} className={buttonClassName({ size: "sm" })}>
+          <Link href={href(lang, `/u/${username}`)} className={socialButtonClass({ variant: "solid" })}>
             {copy.exploreRetry[lang]}
           </Link>
         }
@@ -200,12 +195,12 @@ function ProfileWorks({
 
   if (items.length === 0) {
     return (
-      <EmptyState
+      <SocialEmptyState
         title={copy.profileEmptyCreations[lang]}
         description={ownProfile ? copy.profileEmptyOwnBody[lang] : copy.profileEmptyBody[lang]}
         action={
           ownProfile ? (
-            <Link href={href(lang, "/create")} className={buttonClassName({ size: "sm" })}>
+            <Link href={href(lang, "/create")} className={socialButtonClass({ variant: "brand" })}>
               {copy.nav.create[lang]}
             </Link>
           ) : undefined
@@ -215,13 +210,10 @@ function ProfileWorks({
   }
 
   return (
-    <ul
-      className="grid min-w-0 grid-cols-2 gap-3 lg:grid-cols-3 lg:gap-4 xl:grid-cols-4"
-      aria-label={copy.profileWorksHeading[lang]}
-    >
+    <ul className="grid min-w-0 grid-cols-3 gap-0.5 sm:gap-1" aria-label={copy.profileWorksHeading[lang]}>
       {items.map((item) => (
         <li key={item.id} className="min-w-0">
-          <CreationCard creation={item} lang={lang} showAuthor={false} />
+          <WorkTile creation={item} lang={lang} showAuthor={false} />
         </li>
       ))}
     </ul>

@@ -336,6 +336,12 @@ export function StudioInspector({
           </div>
         ) : null}
 
+        {tool === "selectPolygon" ? (
+          <p className="text-[length:var(--studio-meta,0.75rem)] leading-relaxed text-muted">
+            {copy.pixelSelectPolygonHint[lang]}
+          </p>
+        ) : null}
+
         {tool === "select" ? (
           <div className="flex flex-wrap gap-1.5" role="group" aria-label={copy.pixelSelectShape[lang]}>
             <button

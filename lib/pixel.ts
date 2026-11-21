@@ -82,6 +82,7 @@ export type PixelDrawTool =
   | "selectContiguous"
   | "selectColor"
   | "lasso"
+  | "selectPolygon"
 
 export type PixelBrushShape = "square" | "circle"
 
@@ -1306,6 +1307,68 @@ export function selectionFromColor(
   }
   return compactSelection(full, width, height)
 }
+
+/**
+ * Selection from clicked polygon vertices (cell coordinates).
+ *
+ * Vertices are cell centres. A cell is selected when its centre lies inside the polygon
+ * (even-odd rule, so a self-crossing outline leaves its overlap unselected) or when it
+ * lies on an outline edge (Bresenham). That keeps every clicked vertex and every thin
+ * sliver selected with no gaps, and the result never depends on zoom. Vertices may lie
+ * outside the canvas; the selection is clipped to it. Needs 3 distinct vertices.
+ */
+export function selectionFromPolygonVertices(
+  vertices: readonly PixelPoint[],
+  width: number,
+  height: number,
+): PixelSelection | null {
+  const points: PixelPoint[] = []
+  for (const v of vertices) {
+    const last = points[points.length - 1]
+    if (!last || last.x !== v.x || last.y !== v.y) points.push({ x: v.x, y: v.y })
+  }
+  while (points.length > 1 && points[0]!.x === points[points.length - 1]!.x && points[0]!.y === points[points.length - 1]!.y) {
+    points.pop()
+  }
+  if (points.length < 3) return null
+  const full = new Uint8Array(width * height)
+  let minY = Infinity
+  let maxY = -Infinity
+  for (const p of points) {
+    minY = Math.min(minY, p.y)
+    maxY = Math.max(maxY, p.y)
+  }
+  const count = points.length
+  for (let y = Math.max(0, minY); y <= Math.min(height - 1, maxY); y += 1) {
+    const sy = y + 0.5
+    const xs: number[] = []
+    for (let i = 0; i < count; i += 1) {
+      const a = points[i]!
+      const b = points[(i + 1) % count]!
+      const ay = a.y + 0.5
+      const by = b.y + 0.5
+      if (ay <= sy === by <= sy) continue
+      xs.push(a.x + 0.5 + ((sy - ay) * (b.x - a.x)) / (by - ay))
+    }
+    xs.sort((l, r) => l - r)
+    for (let i = 0; i + 1 < xs.length; i += 2) {
+      const from = Math.max(0, Math.ceil(xs[i]! - 0.5))
+      const to = Math.min(width - 1, Math.ceil(xs[i + 1]! - 0.5) - 1)
+      for (let x = from; x <= to; x += 1) full[y * width + x] = 1
+    }
+  }
+  for (let i = 0; i < count; i += 1) {
+    const a = points[i]!
+    const b = points[(i + 1) % count]!
+    walkLine(a.x, a.y, b.x, b.y, (x, y) => {
+      if (inCanvas(x, y, width, height)) full[y * width + x] = 1
+    })
+  }
+  return compactSelection(full, width, height)
+}
+
+/** Distance (cells) within which a click on the first vertex closes a polygon. */
+export const POLYGON_SELECT_CLOSE_DIST = 1.5
 
 export function selectionFromPolygon(
   points: PixelPoint[],

@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react"
 import { flushSync } from "react-dom"
 import Link from "next/link"
 import { Alert } from "@/components/ui/Alert"
-import { Button, buttonClassName } from "@/components/ui/Button"
+import { socialButtonClass } from "@/components/social/socialButton"
 import {
   followCreatorAction,
   unfollowCreatorAction,
@@ -13,7 +13,6 @@ import {
 import { copy } from "@/lib/copy"
 import type { Lang } from "@/lib/i18n"
 import { loginHref } from "@/lib/paths"
-import { cn } from "@/lib/utils"
 
 export function FollowButton({
   lang,
@@ -75,7 +74,7 @@ export function FollowButton({
     return (
       <Link
         href={loginHref(lang, returnPath)}
-        className={buttonClassName({ size: "sm", variant: "outline" })}
+        className={socialButtonClass({ variant: "solid", size: "sm" })}
       >
         {copy.followSignIn[lang]}
       </Link>
@@ -89,21 +88,20 @@ export function FollowButton({
           {copy.errors[error.error][lang]}
         </Alert>
       ) : null}
-      <Button
+      <button
         type="button"
-        size="sm"
-        variant={following ? "secondary" : "outline"}
         disabled={pending}
         aria-busy={pending || undefined}
         aria-pressed={following}
         onClick={toggle}
-        className={cn(
-          "disabled:opacity-100",
-          following && "shadow-[4px_4px_0_0_var(--fg)]",
-        )}
+        className={socialButtonClass({
+          variant: following ? "soft" : "brand",
+          size: "sm",
+          className: "min-w-28 disabled:opacity-100",
+        })}
       >
         {following ? copy.following[lang] : copy.follow[lang]}
-      </Button>
+      </button>
       <span className="sr-only">@{username}</span>
     </div>
   )

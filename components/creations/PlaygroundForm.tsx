@@ -664,6 +664,7 @@ export function PlaygroundForm({
     selectContiguous: copy.pixelSelectContiguous[lang],
     selectColor: copy.pixelSelectColor[lang],
     lasso: copy.pixelSelectLasso[lang],
+    selectPolygon: copy.pixelSelectPolygon[lang],
   }
   const toolLabel = toolLabels[tool]
   const toolIcons: Record<Tool, PixelIconName> = {
@@ -684,6 +685,7 @@ export function PlaygroundForm({
     selectContiguous: "wand",
     selectColor: "colorSelect",
     lasso: "lasso",
+    selectPolygon: "polygonSelect",
   }
   const brushPanel = (
     <BrushOptionsPanel
@@ -794,6 +796,7 @@ export function PlaygroundForm({
       {toolButton("selectContiguous", "wand", copy.pixelSelectContiguous[lang], "W")}
       {toolButton("selectColor", "colorSelect", copy.pixelSelectColor[lang], "K")}
       {toolButton("lasso", "lasso", copy.pixelSelectLasso[lang], "S")}
+      {toolButton("selectPolygon", "polygonSelect", copy.pixelSelectPolygon[lang], "Y")}
     </>
   )
 
@@ -1605,6 +1608,9 @@ export function PlaygroundForm({
               />
               <span className="w-8 text-right text-[12px] tabular-nums text-fg">{fillTolerance}</span>
             </div>
+          ) : null}
+          {tool === "selectPolygon" ? (
+            <p className="w-full text-[12px] leading-relaxed text-muted">{copy.pixelSelectPolygonHint[lang]}</p>
           ) : null}
           {tool === "select" ? (
             <div className="flex flex-wrap gap-1.5" role="group" aria-label={copy.pixelSelectShape[lang]}>

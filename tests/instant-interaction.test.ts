@@ -25,7 +25,7 @@ describe("instant interaction — appreciation", () => {
 describe("instant interaction — route loading shells", () => {
   it("provides page-specific loading UI for key destinations", () => {
     expect(read("app/[lang]/(public)/creation/[id]/loading.tsx")).toMatch(/ArtworkDetailSkeleton/)
-    expect(read("app/[lang]/(public)/u/[username]/loading.tsx")).toMatch(/ProfileSkeleton/)
+    expect(read("app/[lang]/(public)/u/[username]/loading.tsx")).toMatch(/ProfileLoadingSkeleton|ProfileSkeleton/)
     expect(read("app/[lang]/(member)/dashboard/loading.tsx")).toMatch(/WorksSkeleton/)
     expect(read("app/[lang]/(member)/create/loading.tsx")).toMatch(/CreateSkeleton/)
     expect(read("app/[lang]/(member)/create/[id]/loading.tsx")).toMatch(/StudioSkeleton/)

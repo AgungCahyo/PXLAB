@@ -763,3 +763,113 @@ body:has([data-chrome="playground"]) .corner-busy-studio {
     transform: none !important;
   }
 }
+
+/*
+ * Social shell — desktop left rail for members (SocialNav).
+ * The rail is a `.site-header`, so the Studio rules above already hide it while drawing;
+ * the offset below is skipped for the playground so Studio layout stays untouched.
+ */
+@media (min-width: 48rem) {
+  body:has(.social-rail):not(.playground-open):not(:has([data-chrome="playground"])) .shell-content {
+    padding-left: 15rem;
+  }
+  body:has(.social-rail):not(.playground-open):not(:has([data-chrome="playground"])) #main {
+    padding-top: 0;
+  }
+}
+
+/*
+ * Social design tokens + primitives (Phase 2).
+ * Flat surfaces, no heavy borders — pixel identity comes from square corners,
+ * the PXLB palette and the crisp motion below. Studio never uses these classes.
+ */
+:root {
+  --soc-hairline: color-mix(in srgb, var(--earth) 18%, transparent);
+  --soc-ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --soc-fast: 120ms;
+  --soc-base: 200ms;
+  --soc-tap: 2.75rem; /* 44px minimum touch target */
+}
+
+.soc-surface {
+  background: var(--card);
+}
+.soc-divider {
+  border-color: var(--soc-hairline);
+}
+
+@keyframes soc-pop {
+  0% { scale: 1; }
+  35% { scale: 1.35; }
+  70% { scale: 0.92; }
+  100% { scale: 1; }
+}
+.soc-pop {
+  animation: soc-pop 320ms var(--soc-ease);
+}
+
+@keyframes soc-skeleton {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.55; }
+}
+.soc-skeleton {
+  background: var(--soft);
+  animation: soc-skeleton 1.4s ease-in-out infinite;
+}
+
+@keyframes soc-toast-in {
+  from { opacity: 0; transform: translateY(0.5rem); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.soc-toast {
+  animation: soc-toast-in var(--soc-base) var(--soc-ease);
+}
+
+/* Expandable region (comments): grid-rows trick animates height without JS measuring. */
+.soc-expand {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows var(--soc-base) var(--soc-ease);
+}
+.soc-expand[data-open="true"] {
+  grid-template-rows: 1fr;
+}
+.soc-expand > div {
+  overflow: hidden;
+  min-height: 0;
+}
+
+/*
+ * Auth presentation (Phase 3). Scoped to `.auth-flat` so the shared Input/Button/Alert
+ * components (also used by Studio) are untouched; flat, hairline, social-app feel.
+ */
+.auth-flat input:not([aria-invalid="true"]) {
+  border-width: 1px;
+  border-color: var(--soc-hairline);
+  background: var(--soft);
+}
+.auth-flat input[aria-invalid="true"] {
+  border-width: 2px;
+}
+.auth-flat input:focus-visible {
+  border-color: var(--fg);
+  box-shadow: 0 0 0 2px var(--sky);
+}
+.auth-flat .pixel-press {
+  border-width: 0;
+  box-shadow: none;
+}
+.auth-flat .pixel-press[class*="bg-card"] {
+  border: 1px solid var(--soc-hairline);
+  background: var(--card);
+}
+.auth-flat .pixel-press:active {
+  translate: none;
+  scale: 0.98;
+  box-shadow: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .auth-flat .pixel-press:active {
+    box-shadow: none !important;
+  }
+}

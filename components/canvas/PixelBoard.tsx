@@ -103,6 +103,8 @@ import {
   selectionFromEllipse,
   selectionFromFlood,
   selectionFromPolygon,
+  selectionFromPolygonVertices,
+  POLYGON_SELECT_CLOSE_DIST,
   type SelectionCombineMode,
   snapCssScaleToDevicePixels,
   snapOriginToDevicePixels,
@@ -138,7 +140,7 @@ type Camera = { originX: number; originY: number; scale: number }
 
 const SHAPE_TOOLS = new Set<Tool>(["line", "rect", "ellipse", "gradient"])
 const DRAFT_SHAPE_TOOLS = new Set<Tool>(["rect", "ellipse"])
-const SELECT_TOOLS = new Set<Tool>(["select", "selectContiguous", "selectColor", "lasso"])
+const SELECT_TOOLS = new Set<Tool>(["select", "selectContiguous", "selectColor", "lasso", "selectPolygon"])
 const PATH_CLOSE_DIST = 1.5
 const HANDLE_HIT = 1.75
 
@@ -472,6 +474,12 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
     base: Uint8ClampedArray
   } | null>(null)
   const lassoRef = useRef<PixelPoint[] | null>(null)
+  /** In-progress click-by-click polygon selection. */
+  const polySelRef = useRef<{
+    points: PixelPoint[]
+    mode: SelectionCombineMode
+    hover: PixelPoint | null
+  } | null>(null)
   const onShapeDraftChangeRef = useRef(onShapeDraftChange)
   onShapeDraftChangeRef.current = onShapeDraftChange
   const [textFrame, setTextFrame] = useState<TextFrame | null>(null)
@@ -1060,6 +1068,42 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
       viewCtx.restore()
     }
 
+    const poly = polySelRef.current
+    if (poly && poly.points.length > 0) {
+      const trail = poly.hover ? [...poly.points, poly.hover] : poly.points
+      const first = poly.points[0]!
+      const closing =
+        poly.hover !== null &&
+        poly.points.length >= 3 &&
+        Math.hypot(poly.hover.x - first.x, poly.hover.y - first.y) <= POLYGON_SELECT_CLOSE_DIST
+      viewCtx.save()
+      viewCtx.lineWidth = 1 / scale
+      viewCtx.setLineDash([2 / scale, 2 / scale])
+      const trace = () => {
+        viewCtx.beginPath()
+        viewCtx.moveTo(trail[0]!.x + 0.5, trail[0]!.y + 0.5)
+        for (let i = 1; i < trail.length; i += 1) viewCtx.lineTo(trail[i]!.x + 0.5, trail[i]!.y + 0.5)
+        if (closing) viewCtx.closePath()
+        viewCtx.stroke()
+      }
+      viewCtx.strokeStyle = "rgba(40, 43, 53, 0.95)"
+      trace()
+      viewCtx.strokeStyle = "rgba(255, 253, 247, 0.95)"
+      viewCtx.lineDashOffset = 2 / scale
+      trace()
+      viewCtx.setLineDash([])
+      const marker = Math.max(3 / scale, 0.9)
+      for (let i = 0; i < poly.points.length; i += 1) {
+        const v = poly.points[i]!
+        const big = i === 0 ? marker * 1.5 : marker
+        viewCtx.fillStyle = i === 0 && closing ? "rgba(89, 188, 235, 1)" : "rgba(255, 253, 247, 1)"
+        viewCtx.strokeStyle = "rgba(40, 43, 53, 1)"
+        viewCtx.fillRect(v.x + 0.5 - big / 2, v.y + 0.5 - big / 2, big, big)
+        viewCtx.strokeRect(v.x + 0.5 - big / 2, v.y + 0.5 - big / 2, big, big)
+      }
+      viewCtx.restore()
+    }
+
     const creating = textCreateRef.current
     if (creating) {
       const rect = normalizePixelRect(creating.start.x, creating.start.y, creating.end.x, creating.end.y)
@@ -1301,6 +1345,72 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
       ),
     )
   }
+
+  const cancelPolygonSelect = () => {
+    if (!polySelRef.current) return
+    polySelRef.current = null
+    scheduleView()
+  }
+
+  const finishPolygonSelect = () => {
+    const poly = polySelRef.current
+    if (!poly) return
+    polySelRef.current = null
+    const next = selectionFromPolygonVertices(
+      poly.points,
+      canvasWidthRef.current,
+      canvasHeightRef.current,
+    )
+    // Fewer than 3 distinct vertices: abandon the draft and leave the selection alone.
+    if (next) {
+      selectCombineRef.current = poly.mode
+      if (poly.mode === "replace") ensureSelectionCommitted()
+      commitSelection(next)
+      endSelectionUndo()
+    }
+    scheduleView()
+  }
+
+  const undoPolygonSelectVertex = () => {
+    const poly = polySelRef.current
+    if (!poly) return
+    poly.points.pop()
+    if (poly.points.length === 0) polySelRef.current = null
+    scheduleView()
+  }
+
+  /** Click adds a vertex. Clicking the first vertex, or the last one again, closes the shape. */
+  const polygonSelectClick = (cell: PixelPoint) => {
+    const poly = polySelRef.current
+    if (!poly) {
+      polySelRef.current = {
+        points: [cell],
+        mode: selectCombineRef.current,
+        hover: cell,
+      }
+      scheduleView()
+      return
+    }
+    const first = poly.points[0]!
+    const last = poly.points[poly.points.length - 1]!
+    const onLast = last.x === cell.x && last.y === cell.y
+    const onFirst =
+      Math.hypot(cell.x - first.x, cell.y - first.y) <= POLYGON_SELECT_CLOSE_DIST
+    if (poly.points.length >= 3 && (onFirst || onLast)) {
+      finishPolygonSelect()
+      return
+    }
+    if (onLast) return
+    poly.points.push(cell)
+    scheduleView()
+  }
+
+  const finishPolygonSelectRef = useRef(finishPolygonSelect)
+  finishPolygonSelectRef.current = finishPolygonSelect
+  const cancelPolygonSelectRef = useRef(cancelPolygonSelect)
+  cancelPolygonSelectRef.current = cancelPolygonSelect
+  const undoPolygonSelectVertexRef = useRef(undoPolygonSelectVertex)
+  undoPolygonSelectVertexRef.current = undoPolygonSelectVertex
 
   const restorePathBase = () => {
     const base = shapeBaseRef.current
@@ -1752,6 +1862,10 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
       : normalizePixelRect(x0, y0, x1, y1)
 
   const undo = () => {
+    if (polySelRef.current) {
+      undoPolygonSelectVertexRef.current()
+      return
+    }
     const previous = historyRef.current.undo(currentHistoryState())
     if (!previous) return
     placedTextsRef.current = []
@@ -2497,6 +2611,7 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
       if (toolRef.current === "text") commitTextFrameRef.current()
       if (shapeDraftRef.current) cancelShapeDraftRef.current()
       clearPathDraft(true)
+      polySelRef.current = null
     }
     toolRef.current = next
     if (onToolChange) onToolChange(next)
@@ -2521,6 +2636,13 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
     else setInternalColor(next)
     if (toolRef.current === "eraser" || toolRef.current === "eyedropper") chooseTool("pencil")
   }
+
+  useEffect(() => {
+    if (tool !== "selectPolygon" && polySelRef.current) {
+      polySelRef.current = null
+      scheduleView()
+    }
+  }, [tool])
 
   const chooseToolRef = useRef(chooseTool)
   chooseToolRef.current = chooseTool
@@ -2587,6 +2709,11 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
           cancelTextFrame()
           return
         }
+        if (polySelRef.current) {
+          event.preventDefault()
+          cancelPolygonSelectRef.current()
+          return
+        }
         if (shapeDraftRef.current) {
           event.preventDefault()
           cancelShapeDraftRef.current()
@@ -2638,6 +2765,11 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
         nudgeSelectionRef.current(dx, dy)
         return
       }
+      if ((event.key === "Delete" || event.key === "Backspace") && polySelRef.current) {
+        event.preventDefault()
+        undoPolygonSelectVertexRef.current()
+        return
+      }
       if (event.key === "Delete" || event.key === "Backspace") {
         const draft = shapeDraftRef.current
         if (draft?.kind === "bezier" && draft.anchors.length > 2 && draft.selected >= 0) {
@@ -2662,6 +2794,11 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
       }
       const key = event.key.toLowerCase()
       if (event.key === "Enter") {
+        if (polySelRef.current) {
+          event.preventDefault()
+          finishPolygonSelectRef.current()
+          return
+        }
         if (shapeDraftRef.current) {
           event.preventDefault()
           applyShapeDraftRef.current()
@@ -2685,6 +2822,7 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
       else if (key === "w") chooseToolRef.current("selectContiguous")
       else if (key === "k") chooseToolRef.current("selectColor")
       else if (key === "s") chooseToolRef.current("lasso")
+      else if (key === "y") chooseToolRef.current("selectPolygon")
       else if (event.shiftKey && event.code === "BracketLeft") {
         event.preventDefault()
         contractSelectionRef.current()
@@ -3263,7 +3401,7 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
       const combining = event.shiftKey || event.altKey
       selectCombineRef.current = selectionCombineModeFromModifiers(event.shiftKey, event.altKey)
       const selection = selectionRef.current
-      if (selection && !combining) {
+      if (selection && !combining && !polySelRef.current) {
         if (hitSelectionRotate(selection, cell)) {
           beginSelectionRotate(selection, cell)
           return
@@ -3304,6 +3442,10 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
             fillToleranceRef.current,
           ),
         )
+        return
+      }
+      if (toolRef.current === "selectPolygon") {
+        polygonSelectClick(cell)
         return
       }
       if (toolRef.current === "lasso") {
@@ -3387,6 +3529,13 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
   const onPointerMove = (event: React.PointerEvent<HTMLCanvasElement>) => {
     emitHover(event)
     const hoverCell = cellFromEvent(event)
+    if (polySelRef.current) {
+      const prev = polySelRef.current.hover
+      if (!prev || prev.x !== hoverCell.x || prev.y !== hoverCell.y) {
+        polySelRef.current.hover = hoverCell
+        scheduleView()
+      }
+    }
     if (lassoRef.current) {
       const last = lassoRef.current[lassoRef.current.length - 1]
       if (!last || last.x !== hoverCell.x || last.y !== hoverCell.y) {

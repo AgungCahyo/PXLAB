@@ -7,6 +7,7 @@ const read = (file: string) => readFileSync(path.resolve(__dirname, "..", file),
 describe("Explore gallery layout", () => {
   const card = read("components/creations/CreationCard.tsx")
   const gallery = read("components/creations/ExploreGallery.tsx")
+  const infinite = read("components/social/ExploreInfinite.tsx")
   const explorePage = read("app/[lang]/(public)/explore/page.tsx")
 
   it("keeps artwork first with a single frame and no caption/tags on the card", () => {
@@ -30,30 +31,32 @@ describe("Explore gallery layout", () => {
     expect(card).toMatch(/ProfileAvatar/)
   })
 
-  it("uses a dense 2 / lg:3 / xl:4 grid", () => {
-    expect(gallery).toMatch(/grid-cols-2 gap-3 lg:grid-cols-3 lg:gap-4 xl:grid-cols-4/)
+  it("uses a dense 2 / sm:3 / lg:4 tile grid", () => {
+    expect(infinite).toMatch(/grid-cols-2 gap-1 sm:grid-cols-3 sm:gap-1\.5 lg:grid-cols-4/)
     expect(gallery).toMatch(/role="search"/)
     expect(gallery).toMatch(/name="q"/)
     expect(gallery).not.toMatch(/masonry/)
     expect(explorePage).toMatch(/parseExploreSearch/)
   })
 
-  it("keeps minimal chrome and folded size filters on mobile", () => {
-    expect(gallery).toMatch(/flex w-full min-w-0 gap-2/)
+  it("keeps minimal chrome with horizontally scrolling size chips on mobile", () => {
+    expect(gallery).toMatch(/overflow-x-auto/)
+    expect(gallery).toMatch(/flex-nowrap/)
     expect(gallery).toMatch(/sr-only/)
     expect(gallery).toMatch(/min-w-0/)
-    expect(gallery).toMatch(/<details className="group sm:hidden"/)
-    expect(gallery).toMatch(/categoryFilterSummary/)
-    expect(gallery).toMatch(/hidden min-w-0 sm:block/)
+    expect(gallery).not.toMatch(/<details/)
     expect(explorePage).toMatch(/w-full min-w-0 max-w-6xl/)
     expect(explorePage).not.toMatch(/exploreIntro/)
     expect(explorePage).toMatch(/PageHeader/)
   })
 
 
-  it("shows page position with a distinct pagination landmark", () => {
-    expect(gallery).toMatch(/explorePaginationAria/)
-    expect(gallery).toMatch(/explorePageStatus/)
+  it("keeps a distinct pagination landmark and page position under infinite scroll", () => {
+    expect(infinite).toMatch(/explorePaginationAria/)
+    expect(infinite).toMatch(/explorePageStatus/)
+    expect(read("components/social/useInfiniteList.ts")).toMatch(/IntersectionObserver/)
+    expect(infinite).toMatch(/useInfiniteList/)
+    expect(infinite).toMatch(/loadMoreExploreAction/)
     expect(gallery).not.toMatch(/aria-label=\{copy\.exploreTitle/)
   })
 })

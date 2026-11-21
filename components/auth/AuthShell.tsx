@@ -18,7 +18,7 @@ export function AuthShell({
   children: ReactNode
 }) {
   return (
-    <div className="mx-auto w-full max-w-6xl px-5 py-10 sm:px-8 sm:py-12 lg:px-16 lg:py-16">
+    <div className="auth-flat mx-auto w-full max-w-6xl px-5 py-8 sm:px-8 sm:py-12 lg:px-16 lg:py-16">
       <div className="grid min-w-0 items-start gap-10 lg:grid-cols-[minmax(0,26rem)_minmax(0,22rem)] lg:justify-between lg:gap-14 xl:grid-cols-[minmax(0,26rem)_minmax(0,24rem)] xl:gap-20">
         <div className="mx-auto w-full min-w-0 max-w-md lg:mx-0">
           <Link
@@ -30,16 +30,16 @@ export function AuthShell({
             <span className="pixel-brand text-[13px] tracking-[0.08em]">{SITE_NAME}</span>
           </Link>
 
-          <header className="mt-8">
+          <header className="mt-6 sm:mt-8">
             <h1 className="page-heading-sans text-balance">{title}</h1>
             <p className="mt-3 max-w-sm text-[15px] leading-relaxed text-muted">{intro}</p>
           </header>
 
-          <div className="mt-8">{children}</div>
+          <div className="mt-6 sm:mt-8">{children}</div>
         </div>
 
         <aside className="hidden min-w-0 lg:sticky lg:top-[5.5rem] lg:block">
-          <div className="overflow-hidden border-[3px] border-earth bg-card shadow-[4px_4px_0_0_var(--fg)]">
+          <div className="overflow-hidden border border-[color:var(--soc-hairline)] bg-card">
             <AuthDoodlePad lang={lang} />
           </div>
         </aside>
@@ -51,11 +51,11 @@ export function AuthShell({
 export function AuthDivider({ label }: { label: string }) {
   return (
     <div className="flex items-center gap-3" role="separator" aria-label={label}>
-      <span className="h-[3px] flex-1 bg-earth/35" />
+      <span className="h-px flex-1 bg-[color:var(--soc-hairline)]" />
       <span className="text-[12px] font-medium uppercase tracking-[0.14em] text-muted">
         {label}
       </span>
-      <span className="h-[3px] flex-1 bg-earth/35" />
+      <span className="h-px flex-1 bg-[color:var(--soc-hairline)]" />
     </div>
   )
 }
