@@ -2,6 +2,7 @@ import type { Metadata } from "next"
 import { notFound, redirect } from "next/navigation"
 import { AuthShell } from "@/components/auth/AuthShell"
 import { ForgotPasswordForm } from "@/components/auth/ForgotPasswordForm"
+import { Alert } from "@/components/ui/Alert"
 import { getCurrentProfile } from "@/lib/auth/session"
 import { copy } from "@/lib/copy"
 import { isLang } from "@/lib/i18n"
@@ -31,12 +32,12 @@ export default async function ForgotPasswordPage({
   searchParams,
 }: {
   params: Promise<{ lang: string }>
-  searchParams: Promise<{ next?: string }>
+  searchParams: Promise<{ next?: string; error?: string }>
 }) {
   const { lang: raw } = await params
   if (!isLang(raw)) notFound()
   const lang = raw
-  const { next } = await searchParams
+  const { next, error } = await searchParams
   const destination = authDestination(lang, next)
   const profile = await getCurrentProfile()
   if (profile) redirect(destination)
@@ -47,7 +48,12 @@ export default async function ForgotPasswordPage({
       title={copy.forgotPasswordTitle[lang]}
       intro={copy.forgotPasswordMeta[lang]}
     >
-      <ForgotPasswordForm lang={lang} next={destination} />
+      <div className="grid gap-4">
+        {error === "recovery_invalid" ? (
+          <Alert tone="warning">{copy.resetPasswordInvalid[lang]}</Alert>
+        ) : null}
+        <ForgotPasswordForm lang={lang} next={destination} />
+      </div>
     </AuthShell>
   )
 }

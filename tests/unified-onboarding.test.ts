@@ -13,13 +13,13 @@ describe("unified registration + identity onboarding", () => {
     expect(
       registerSchema.safeParse({
         email: "a@b.co",
-        password: "password1",
+        password: "River9!pixel",
       }).success,
     ).toBe(true)
     expect(
       registerSchema.safeParse({
         email: "a@b.co",
-        password: "password1",
+        password: "River9!pixel",
         username: "extra",
       }).success,
     ).toBe(true) // unknown keys stripped by zod object default... actually z.object strips unknown by default

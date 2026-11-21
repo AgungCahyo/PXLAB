@@ -1,4 +1,5 @@
 import { z } from "zod"
+import { isStrongPassword } from "@/lib/validations/password"
 
 export const USERNAME_PATTERN = /^[a-z0-9_]{3,20}$/
 
@@ -32,7 +33,11 @@ export const usernameSchema = z
 
 export const displayNameSchema = z.string().trim().min(1).max(50)
 export const bioSchema = z.string().trim().max(280)
-export const passwordSchema = z.string().min(8).max(72)
+export const passwordSchema = z
+  .string()
+  .min(8)
+  .max(72)
+  .refine(isStrongPassword, "password_weak")
 export const emailSchema = z.string().trim().email()
 
 /** Credentials only — identity is collected on /welcome. */

@@ -8,6 +8,7 @@ export type AuthErrorCode =
   | "invalid_input"
   | "invalid_email"
   | "invalid_password"
+  | "password_weak"
   | "password_mismatch"
   | "username_taken"
   | "username_format"
@@ -45,17 +46,43 @@ export function mapAuthError(error: { message?: string; code?: string } | null |
   return "generic_auth"
 }
 
-export function mapRegisterError(error: { message?: string; code?: string } | null | undefined): AuthErrorCode {
+export type SignupConflict = "duplicate" | "oauth"
+
+/**
+ * Detects an existing account behind a signup attempt, including accounts
+ * originally created by an OAuth provider. Used only to pick the follow-up
+ * email — the UI response stays generic for anti-enumeration.
+ */
+export function classifySignupConflict(
+  error: { message?: string; code?: string } | null | undefined,
+): SignupConflict | null {
   const message = (error?.message ?? "").toLowerCase()
   const code = (error?.code ?? "").toLowerCase()
-  if (
+  const duplicate =
     code === "user_already_exists" ||
+    code === "email_exists" ||
     message.includes("already registered") ||
     message.includes("already been registered") ||
-    message.includes("user already exists")
+    message.includes("user already exists") ||
+    message.includes("email address is already") ||
+    (message.includes("already exists") && message.includes("email"))
+
+  if (!duplicate) return null
+  if (
+    message.includes("oauth") ||
+    message.includes("google") ||
+    message.includes("provider") ||
+    message.includes("identity") ||
+    message.includes("sign-in method") ||
+    message.includes("linked")
   ) {
-    return "email_taken"
+    return "oauth"
   }
+  return "duplicate"
+}
+
+export function mapRegisterError(error: { message?: string; code?: string } | null | undefined): AuthErrorCode {
+  if (classifySignupConflict(error)) return "generic_register"
   const mapped = mapAuthError(error)
   if (mapped === "username_taken" || mapped === "username_format") return mapped
   return "generic_register"

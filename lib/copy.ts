@@ -1114,7 +1114,10 @@ export const copy = {
     id: "3–20: a–z, 0–9, _.",
     en: "3–20: a–z, 0–9, _.",
   } satisfies Bi,
-  passwordHint: { id: "Min. 8 karakter.", en: "Min. 8 characters." } satisfies Bi,
+  passwordHint: {
+    id: "Min. 8 karakter · 3 jenis karakter (atau 14+ karakter).",
+    en: "Min. 8 characters · 3 character types (or 14+).",
+  } satisfies Bi,
   roleHint: {
     id: "Tidak bisa diubah.",
     en: "Cannot change.",
@@ -1378,6 +1381,10 @@ export const copy = {
     invalid_password: {
       id: "Min. 8 karakter.",
       en: "Min. 8 characters.",
+    } satisfies Bi,
+    password_weak: {
+      id: "Kata sandi terlalu lemah.",
+      en: "Password is too weak.",
     } satisfies Bi,
     password_mismatch: {
       id: "Kata sandi tidak sama.",

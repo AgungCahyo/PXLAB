@@ -1,10 +1,9 @@
 import type { Metadata } from "next"
-import Link from "next/link"
-import { notFound } from "next/navigation"
+import { cookies } from "next/headers"
+import { notFound, redirect } from "next/navigation"
 import { AuthShell } from "@/components/auth/AuthShell"
 import { ResetPasswordForm } from "@/components/auth/ResetPasswordForm"
-import { Alert } from "@/components/ui/Alert"
-import { getSessionUserId } from "@/lib/auth/session"
+import { RECOVERY_COOKIE, verifyRecoveryTicket } from "@/lib/auth/recovery"
 import { copy } from "@/lib/copy"
 import { isLang } from "@/lib/i18n"
 import { pageMeta } from "@/lib/meta"
@@ -40,7 +39,14 @@ export default async function ResetPasswordPage({
   const lang = raw
   const { next } = await searchParams
   const destination = authDestination(lang, next)
-  const userId = await getSessionUserId()
+
+  // A normal session must never unlock this page — only a valid recovery ticket.
+  const cookieStore = await cookies()
+  const ticket = verifyRecoveryTicket(cookieStore.get(RECOVERY_COOKIE)?.value)
+  if (!ticket) {
+    const fallback = forgotPasswordHref(lang, destination)
+    redirect(`${fallback}${fallback.includes("?") ? "&" : "?"}error=recovery_invalid`)
+  }
 
   return (
     <AuthShell
@@ -48,19 +54,7 @@ export default async function ResetPasswordPage({
       title={copy.resetPasswordTitle[lang]}
       intro={copy.resetPasswordMeta[lang]}
     >
-      {userId ? (
-        <ResetPasswordForm lang={lang} next={destination} />
-      ) : (
-        <div className="grid gap-4">
-          <Alert tone="warning">{copy.resetPasswordInvalid[lang]}</Alert>
-          <Link
-            href={forgotPasswordHref(lang, destination)}
-            className="text-[14px] font-medium text-fg underline decoration-earth underline-offset-4 hover:text-brick"
-          >
-            {copy.forgotPasswordTitle[lang]}
-          </Link>
-        </div>
-      )}
+      <ResetPasswordForm lang={lang} next={destination} />
     </AuthShell>
   )
 }

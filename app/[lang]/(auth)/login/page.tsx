@@ -2,6 +2,7 @@ import type { Metadata } from "next"
 import { notFound, redirect } from "next/navigation"
 import { AuthShell } from "@/components/auth/AuthShell"
 import { LoginForm } from "@/components/auth/LoginForm"
+import { Alert } from "@/components/ui/Alert"
 import { getCurrentProfile } from "@/lib/auth/session"
 import { copy } from "@/lib/copy"
 import { isLang } from "@/lib/i18n"
@@ -31,23 +32,26 @@ export default async function LoginPage({
   searchParams,
 }: {
   params: Promise<{ lang: string }>
-  searchParams: Promise<{ next?: string; error?: string }>
+  searchParams: Promise<{ next?: string; error?: string; reset?: string }>
 }) {
   const { lang: raw } = await params
   if (!isLang(raw)) notFound()
   const lang = raw
-  const { next, error } = await searchParams
+  const { next, error, reset } = await searchParams
   const destination = authDestination(lang, next)
   const profile = await getCurrentProfile()
   if (profile) redirect(postAuthPath(lang, next, profile))
 
   return (
     <AuthShell lang={lang} title={copy.loginTitle[lang]} intro={copy.loginMeta[lang]}>
-      <LoginForm
-        lang={lang}
-        next={destination}
-        oauthError={error === "oauth" || error === "oauth_email" ? error : null}
-      />
+      <div className="grid gap-4">
+        {reset === "done" ? <Alert tone="info">{copy.resetPasswordDone[lang]}</Alert> : null}
+        <LoginForm
+          lang={lang}
+          next={destination}
+          oauthError={error === "oauth" || error === "oauth_email" ? error : null}
+        />
+      </div>
     </AuthShell>
   )
 }
