@@ -17,6 +17,12 @@ export function withNextQuery(path: string, next: string | null | undefined): st
   return `${path}${join}next=${encodeURIComponent(safe)}`
 }
 
+export function withQuery(path: string, key: string, value: string | null | undefined): string {
+  if (!value) return path
+  const join = path.includes("?") ? "&" : "?"
+  return `${path}${join}${key}=${encodeURIComponent(value)}`
+}
+
 export function loginHref(lang: Lang, next?: string | null) {
   return withNextQuery(href(lang, "/login"), next)
 }
@@ -31,6 +37,14 @@ export function forgotPasswordHref(lang: Lang, next?: string | null) {
 
 export function resetPasswordHref(lang: Lang, next?: string | null) {
   return withNextQuery(href(lang, "/reset-password"), next)
+}
+
+export function verifyEmailHref(
+  lang: Lang,
+  next?: string | null,
+  error?: "expired" | "invalid" | string | null,
+) {
+  return withQuery(withNextQuery(href(lang, "/verify-email"), next), "error", error)
 }
 
 export function welcomeHref(lang: Lang, next?: string | null) {

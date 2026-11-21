@@ -1,10 +1,19 @@
 import { describe, expect, it } from "vitest"
-import { classifySignupConflict, mapAuthError, mapRegisterError } from "@/lib/auth/errors"
+import {
+  classifySignupConflict,
+  mapAuthError,
+  mapLoginError,
+  mapRegisterError,
+} from "@/lib/auth/errors"
 
 describe("auth error mapping", () => {
   it("keeps login and registration failures generic", () => {
     expect(mapAuthError({ message: "Invalid login credentials" })).toBe("generic_auth")
     expect(mapRegisterError({ message: "User already registered" })).toBe("generic_register")
+  })
+
+  it("does not leak an unconfirmed email from the login action", () => {
+    expect(mapLoginError({ code: "email_not_confirmed" })).toBe("generic_auth")
   })
 
   it("keeps username collisions specific", () => {

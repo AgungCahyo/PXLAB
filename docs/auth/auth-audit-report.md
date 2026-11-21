@@ -232,37 +232,37 @@ profiles:
 ## G. Recommended Implementation Roadmap
 
 ### AUTH-01: Registration Fixes (Week 1)
-- [ ] REG-01: Anti-enumeration registration response
-- [ ] REG-02: Consistent `/welcome` redirect for new users
-- [ ] REG-05: OAuth email conflict detection in registration action
-- [ ] Add server-side password strength validation
-- [ ] Rate limiting on registration endpoint
+- [x] REG-01: Anti-enumeration registration response
+- [x] REG-02: Consistent `/welcome` redirect for new users
+- [x] REG-05: OAuth email conflict detection in registration action
+- [x] Add server-side password strength validation
+- [x] Rate limiting on registration endpoint
 
 ### AUTH-02: Login & Session Management (Week 1-2)
-- [ ] LOG-01: Anti-enumeration login error (generic failure)
-- [ ] LOG-05: Rate limiting on login
-- [ ] Add "remember me" extended session option
-- [ ] Session regeneration on login (prevent fixation)
+- [x] LOG-01: Anti-enumeration login error (generic failure)
+- [x] LOG-05: Rate limiting on login
+- [x] Add "remember me" extended session option
+- [x] Session regeneration on login (prevent fixation)
 
 ### AUTH-03: Password Recovery (Week 2) — **Highest Priority**
-- [ ] **REC-01**: Fix recovery session hijacking — implement recovery token validation
-- [ ] **REC-02/03**: Verify recovery context on reset page and update action
-- [ ] **REC-04**: Dedicated recovery callback or type parameter
-- [ ] **REC-05**: Track used recovery tokens (prevent reuse)
-- [ ] **REC-06**: Gate reset page with recovery token
-- [ ] Rate limiting on password reset requests
+- [x] **REC-01**: Fix recovery session hijacking — implement recovery token validation
+- [x] **REC-02/03**: Verify recovery context on reset page and update action
+- [x] **REC-04**: Dedicated recovery callback or type parameter
+- [x] **REC-05**: Track used recovery tokens (prevent reuse)
+- [x] **REC-06**: Gate reset page with recovery token
+- [x] Rate limiting on password reset requests
 
 ### AUTH-04: Email Verification (Week 2-3)
-- [ ] VER-03: Expired verification link handling
-- [ ] VER-04: Redirect unverified users to verification page
-- [ ] Rate limiting on resend verification
+- [x] VER-03: Expired verification link handling
+- [x] VER-04: Redirect unverified users to verification page
+- [x] Rate limiting on resend verification
 
 ### AUTH-05: Account Security (Week 3-4)
-- [ ] SEC-01: Re-authentication for password change
-- [ ] SEC-02: Email change flow with verification
-- [ ] SEC-03: Logout from all devices
-- [ ] SEC-04: Account deletion flow
-- [ ] SEC-05: Session management UI
+- [x] SEC-01: Re-authentication for password change
+- [x] SEC-02: Email change flow with verification
+- [x] SEC-03: Logout from all devices
+- [x] SEC-04: Account deletion flow
+- [x] SEC-05: Session management UI
 - [ ] SEC-06: **Rate limiting on ALL auth endpoints** (cross-cutting)
 - [ ] SEC-07: **CSRF protection for server actions** (cross-cutting)
 - [ ] SEC-09: Brute force lockout tracking

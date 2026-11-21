@@ -1001,6 +1001,45 @@ export const copy = {
   loginToRegisterPrompt: { id: "Belum punya akun?", en: "New here?" } satisfies Bi,
   loginToRegister: { id: "Buat akun", en: "Create an account" } satisfies Bi,
   loginForgotPassword: { id: "Lupa kata sandi?", en: "Forgot password?" } satisfies Bi,
+  loginRemember: { id: "Ingat saya", en: "Keep me signed in" } satisfies Bi,
+  loginResendVerification: {
+    id: "Belum menerima email verifikasi?",
+    en: "Didn't get a verification email?",
+  } satisfies Bi,
+  loginResendSubmit: {
+    id: "Kirim ulang verifikasi",
+    en: "Resend verification",
+  } satisfies Bi,
+  loginResendSending: { id: "Mengirim…", en: "Sending…" } satisfies Bi,
+  loginVerifyEmailLink: {
+    id: "Buka halaman verifikasi email",
+    en: "Open the email verification page",
+  } satisfies Bi,
+  verifyEmailTitle: { id: "Verifikasi email Anda", en: "Verify your email" } satisfies Bi,
+  verifyEmailMeta: {
+    id: "Kirim ulang tautan verifikasi untuk melanjutkan.",
+    en: "Resend a verification link to continue.",
+  } satisfies Bi,
+  verifyEmailSubmit: { id: "Kirim ulang tautan", en: "Resend link" } satisfies Bi,
+  verifyEmailSending: { id: "Mengirim…", en: "Sending…" } satisfies Bi,
+  verifyEmailSent: {
+    id: "Jika alamat tersebut memerlukan verifikasi, tautan baru sudah dikirim.",
+    en: "If that address needs verification, a new link is on its way.",
+  } satisfies Bi,
+  verifyEmailHelp: {
+    id: "Periksa kotak masuk dan folder spam. Tautan hanya berlaku untuk waktu terbatas.",
+    en: "Check your inbox and spam folder. Links are only valid for a limited time.",
+  } satisfies Bi,
+  verifyEmailExpired: {
+    id: "Tautan verifikasi sudah kedaluwarsa. Minta tautan baru di bawah.",
+    en: "This verification link has expired. Request a new one below.",
+  } satisfies Bi,
+  verifyEmailInvalid: {
+    id: "Tautan verifikasi tidak valid atau sudah digunakan. Minta tautan baru di bawah.",
+    en: "This verification link is invalid or has already been used. Request a new one below.",
+  } satisfies Bi,
+  verifyEmailBackPrompt: { id: "Sudah terverifikasi?", en: "Already verified?" } satisfies Bi,
+  verifyEmailBack: { id: "Masuk", en: "Sign in" } satisfies Bi,
   authContinueGoogle: { id: "Lanjut dengan Google", en: "Continue with Google" } satisfies Bi,
   authContinueGoogleWorking: { id: "Mengalihkan…", en: "Redirecting…" } satisfies Bi,
   authOrEmail: { id: "atau", en: "or" } satisfies Bi,
@@ -1296,6 +1335,80 @@ export const copy = {
     en: "Sign out here.",
   } satisfies Bi,
 
+  accountSecurityTitle: { id: "Keamanan akun", en: "Account security" } satisfies Bi,
+  accountSecurityIntro: {
+    id: "Perbarui kata sandi dan email, kelola sesi, atau hapus akun.",
+    en: "Update your password and email, manage sessions, or delete your account.",
+  } satisfies Bi,
+  securityPasswordTitle: { id: "Kata sandi", en: "Password" } satisfies Bi,
+  securityPasswordHint: {
+    id: "Konfirmasi identitas dulu sebelum mengganti kata sandi.",
+    en: "Confirm your identity before changing your password.",
+  } satisfies Bi,
+  currentPasswordLabel: { id: "Kata sandi saat ini", en: "Current password" } satisfies Bi,
+  reauthNonceLabel: { id: "Kode verifikasi", en: "Verification code" } satisfies Bi,
+  reauthNonceHint: {
+    id: "Kode dikirim ke email akun. Berlaku sebentar.",
+    en: "A code was emailed to the account address. It expires shortly.",
+  } satisfies Bi,
+  reauthSend: { id: "Kirim kode", en: "Send code" } satisfies Bi,
+  reauthSending: { id: "Mengirim…", en: "Sending…" } satisfies Bi,
+  reauthSent: {
+    id: "Kode verifikasi dikirim. Periksa email akun.",
+    en: "Verification code sent. Check the account email.",
+  } satisfies Bi,
+  newPasswordLabel: { id: "Kata sandi baru", en: "New password" } satisfies Bi,
+  confirmPasswordLabel: { id: "Ulangi kata sandi baru", en: "Repeat new password" } satisfies Bi,
+  passwordChangeSubmit: { id: "Ganti kata sandi", en: "Change password" } satisfies Bi,
+  passwordChanging: { id: "Mengganti…", en: "Changing…" } satisfies Bi,
+  passwordChanged: {
+    id: "Kata sandi diganti. Sesi di perangkat lain dicabut.",
+    en: "Password changed. Sessions on other devices were revoked.",
+  } satisfies Bi,
+  emailChangeTitle: { id: "Alamat email", en: "Email address" } satisfies Bi,
+  emailChangeHint: {
+    id: "Tautan konfirmasi dikirim ke alamat baru (dan lama jika diaktifkan di Supabase).",
+    en: "A confirmation link is sent to the new address (and the old one if enabled in Supabase).",
+  } satisfies Bi,
+  newEmailLabel: { id: "Email baru", en: "New email" } satisfies Bi,
+  emailChangeSubmit: { id: "Kirim tautan verifikasi", en: "Send verification link" } satisfies Bi,
+  emailChanging: { id: "Mengirim…", en: "Sending…" } satisfies Bi,
+  emailChangeSentGeneric: {
+    id: "Jika alamat itu perlu diverifikasi, tautan sudah dikirim.",
+    en: "If that address needs verification, a link is on its way.",
+  } satisfies Bi,
+  settingsEmailUpdated: { id: "Alamat email berhasil diperbarui.", en: "Email address updated." } satisfies Bi,
+  sessionsTitle: { id: "Sesi aktif", en: "Active sessions" } satisfies Bi,
+  sessionsHint: {
+    id: "Keluar dari perangkat lain atau dari semua perangkat.",
+    en: "Sign out of other devices or every device.",
+  } satisfies Bi,
+  sessionCurrent: { id: "Perangkat ini", en: "This device" } satisfies Bi,
+  sessionSignedIn: { id: "Masuk terakhir", en: "Last signed in" } satisfies Bi,
+  sessionProvider: { id: "Metode masuk", en: "Sign-in method" } satisfies Bi,
+  sessionOtherDevices: { id: "Perangkat lain aktif", en: "Other active devices" } satisfies Bi,
+  sessionOtherDevicesAction: {
+    id: "Keluar dari perangkat lain",
+    en: "Sign out other devices",
+  } satisfies Bi,
+  sessionAllDevicesAction: { id: "Keluar dari semua perangkat", en: "Sign out everywhere" } satisfies Bi,
+  sessionOthersDone: {
+    id: "Sesi di perangkat lain sudah dicabut.",
+    en: "Sessions on other devices were revoked.",
+  } satisfies Bi,
+  deleteAccountTitle: { id: "Hapus akun", en: "Delete account" } satisfies Bi,
+  deleteAccountHint: {
+    id: "Tindakan ini permanen. Profil dan karya terkait ikut terhapus.",
+    en: "This is permanent. Your profile and related works are removed.",
+  } satisfies Bi,
+  deleteAccountWarning: {
+    id: "Ketik DELETE untuk mengonfirmasi.",
+    en: "Type DELETE to confirm.",
+  } satisfies Bi,
+  deleteAccountConfirmLabel: { id: "Konfirmasi", en: "Confirmation" } satisfies Bi,
+  deleteAccountSubmit: { id: "Hapus akun saya", en: "Delete my account" } satisfies Bi,
+  deleteAccountBusy: { id: "Menghapus…", en: "Deleting…" } satisfies Bi,
+
   pwaInstallTitle: { id: "Pasang PXLB", en: "Install PXLB" } satisfies Bi,
   pwaInstallHint: {
     id: "Tambahkan ke layar utama untuk akses cepat seperti aplikasi.",
@@ -1389,6 +1502,30 @@ export const copy = {
     password_mismatch: {
       id: "Kata sandi tidak sama.",
       en: "Passwords do not match.",
+    } satisfies Bi,
+    invalid_current_password: {
+      id: "Kata sandi saat ini salah.",
+      en: "Current password is incorrect.",
+    } satisfies Bi,
+    reauth_required: {
+      id: "Konfirmasi identitas dulu.",
+      en: "Confirm your identity first.",
+    } satisfies Bi,
+    reauth_failed: {
+      id: "Kode verifikasi tidak valid atau kedaluwarsa.",
+      en: "Verification code is invalid or expired.",
+    } satisfies Bi,
+    email_unchanged: {
+      id: "Itu alamat email yang sekarang.",
+      en: "That is your current email address.",
+    } satisfies Bi,
+    email_change_failed: {
+      id: "Permintaan perubahan email gagal. Coba lagi.",
+      en: "Email change request failed. Try again.",
+    } satisfies Bi,
+    account_delete_failed: {
+      id: "Akun belum terhapus. Coba lagi.",
+      en: "Account was not deleted. Try again.",
     } satisfies Bi,
     username_taken: {
       id: "Username dipakai.",

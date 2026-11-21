@@ -10,6 +10,12 @@ export type AuthErrorCode =
   | "invalid_password"
   | "password_weak"
   | "password_mismatch"
+  | "invalid_current_password"
+  | "reauth_required"
+  | "reauth_failed"
+  | "email_unchanged"
+  | "email_change_failed"
+  | "account_delete_failed"
   | "username_taken"
   | "username_format"
   | "username_reserved"
@@ -23,13 +29,13 @@ export type AuthErrorCode =
 
 export type AuthField = "email" | "password" | "username" | "displayName"
 
-export function mapLoginError(error: { message?: string; code?: string } | null | undefined): AuthErrorCode {
-  const message = (error?.message ?? "").toLowerCase()
-  const code = (error?.code ?? "").toLowerCase()
-  // Only after credentials resolve to an account — does not leak existence on wrong password.
-  if (code === "email_not_confirmed" || message.includes("email not confirmed")) {
-    return "email_not_confirmed"
-  }
+export function mapLoginError(
+  error: { message?: string; code?: string } | null | undefined,
+): AuthErrorCode {
+  // Supabase can report `email_not_confirmed`, which would reveal that the
+  // address exists. Every failed sign-in answers the same way (LOG-01); an
+  // unconfirmed owner is nudged by the generic resend-verification form.
+  void error
   return "generic_auth"
 }
 

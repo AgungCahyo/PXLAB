@@ -5,8 +5,16 @@ export const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000
 export const REGISTER_PER_IP = 20
 export const REGISTER_PER_EMAIL = 3
 export const RESEND_PER_EMAIL = 3
+export const LOGIN_PER_IP = 20
+export const LOGIN_PER_EMAIL = 10
 export const RESET_PER_IP = 20
 export const RESET_PER_EMAIL = 3
+/** Sensitive account changes (re-auth, email, sessions, deletion). */
+export const ACCOUNT_PER_IP = 20
+export const REAUTH_PER_USER = 10
+export const EMAIL_CHANGE_PER_USER = 3
+export const SESSION_PER_USER = 10
+export const DELETE_PER_USER = 3
 
 type Bucket = { count: number; resetAt: number }
 

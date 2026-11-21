@@ -5,6 +5,7 @@ import { cookies } from "next/headers"
 import { redirect } from "next/navigation"
 import { after } from "next/server"
 import type { ZodError } from "zod"
+import { reauthMetadata, verifyReauth } from "@/lib/auth/account-security"
 import {
   classifySignupConflict,
   mapLoginError,
@@ -20,18 +21,34 @@ import {
   verifyRecoveryTicket,
 } from "@/lib/auth/recovery"
 import {
+  ACCOUNT_PER_IP,
+  DELETE_PER_USER,
+  EMAIL_CHANGE_PER_USER,
+  LOGIN_PER_EMAIL,
+  LOGIN_PER_IP,
+  REAUTH_PER_USER,
   REGISTER_PER_EMAIL,
   REGISTER_PER_IP,
   RESET_PER_EMAIL,
   RESET_PER_IP,
   RESEND_PER_EMAIL,
+  SESSION_PER_USER,
   clientIp,
   takeRateLimit,
 } from "@/lib/auth/rate-limit"
-import { getCurrentProfile } from "@/lib/auth/session"
+import {
+  REMEMBER_COOKIE,
+  authCookieOptions,
+  clearAuthCookies,
+  isAuthCookieName,
+  rememberCookieOptions,
+} from "@/lib/auth/session-cookie"
+import { getCurrentAuthUser, getCurrentProfile } from "@/lib/auth/session"
+import { needsEmailVerification } from "@/lib/auth/verification"
 import { href, isLang, type Lang } from "@/lib/i18n"
-import { authDestination, loginHref, postAuthPath } from "@/lib/paths"
+import { authDestination, loginHref, postAuthPath, verifyEmailHref } from "@/lib/paths"
 import { SITE_URL } from "@/lib/site"
+import { getSupabaseEnv } from "@/lib/supabase/env"
 import { createPublicSupabase } from "@/lib/supabase/public"
 import { createServerSupabase } from "@/lib/supabase/server"
 import { emailSchema, loginSchema, passwordSchema, registerSchema } from "@/lib/validations/profile"
@@ -44,6 +61,9 @@ export type AuthActionState =
   | { ok: true; needsEmail: boolean; email?: string }
   | { ok: true; resent: true }
   | { ok: true; resetSent: true }
+  | { ok: true; reauthSent: true }
+  | { ok: true; passwordChanged: true }
+  | { ok: true; emailChangeSent: true }
   | null
 
 function langOf(value: FormDataEntryValue | null): Lang {
@@ -81,6 +101,25 @@ function mapRecoveryError(error: { message?: string; code?: string } | null | un
   const message = (error?.message ?? "").toLowerCase()
   if (message.includes("weak") || message.includes("password should be")) return "password_weak"
   return "generic_auth"
+}
+
+type AccountGate =
+  | { ok: true; user: NonNullable<Awaited<ReturnType<typeof getCurrentAuthUser>>> }
+  | { ok: false; error: AuthErrorCode }
+
+async function requireAccountUser(): Promise<AccountGate> {
+  const user = await getCurrentAuthUser()
+  if (!user) return { ok: false, error: "not_authenticated" }
+  return { ok: true, user }
+}
+
+/** One shared process-local window per operation, per IP and per user. */
+async function allowAccountAction(key: string, userId: string, limit: number) {
+  const ip = await clientIp()
+  return (
+    takeRateLimit(`${key}:ip:${ip}`, ACCOUNT_PER_IP) &&
+    takeRateLimit(`${key}:user:${userId}`, limit)
+  )
 }
 
 export async function registerAction(
@@ -217,15 +256,46 @@ export async function loginAction(
     return { error: "invalid_input", fields: fieldsFromZod(parsed.error) }
   }
 
+  const email = parsed.data.email.toLowerCase()
+  const ip = await clientIp()
+  if (
+    !takeRateLimit(`login:ip:${ip}`, LOGIN_PER_IP) ||
+    !takeRateLimit(`login:email:${email}`, LOGIN_PER_EMAIL)
+  ) {
+    return { error: "limit_reached" }
+  }
+
+  // Drop any pre-existing (possibly planted) session before authenticating.
+  // signInWithPassword then writes a freshly issued refresh token.
+  const cookieStore = await cookies()
+  clearAuthCookies(cookieStore)
+
   const supabase = await createServerSupabase()
   if (!supabase) return { error: "not_configured" }
 
-  const { error } = await supabase.auth.signInWithPassword({
-    email: parsed.data.email,
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email,
     password: parsed.data.password,
   })
 
   if (error) return { error: mapLoginError(error) }
+
+  // Remember-me extends the cookie lifetime; without it the session dies with
+  // the browser. @supabase/ssr forces 400 days on writes, so reapply it here.
+  const remember = formData.get("remember") === "1"
+  cookieStore.set(REMEMBER_COOKIE, remember ? "1" : "0", rememberCookieOptions(remember))
+  for (const cookie of cookieStore.getAll()) {
+    if (isAuthCookieName(cookie.name)) {
+      cookieStore.set(cookie.name, cookie.value, authCookieOptions(remember))
+    }
+  }
+  cookieStore.delete(RECOVERY_COOKIE)
+
+  // Only reachable when credentials were valid and the project still issued a
+  // session without confirmation. Never applied to OAuth-verified addresses.
+  if (needsEmailVerification(data.user)) {
+    redirect(verifyEmailHref(lang, authDestination(lang, formData.get("next"))))
+  }
 
   revalidatePath("/", "layout")
   const profile = await getCurrentProfile()
@@ -310,6 +380,7 @@ export async function updatePasswordAction(
 
   await supabase.auth.signOut({ scope: "global" })
   cookieStore.delete(RECOVERY_COOKIE)
+  cookieStore.delete(REMEMBER_COOKIE)
   revalidatePath("/", "layout")
   const login = loginHref(lang, String(formData.get("next") ?? ""))
   redirect(`${login}${login.includes("?") ? "&" : "?"}reset=done`)
@@ -319,8 +390,205 @@ export async function logoutAction(formData: FormData) {
   const lang = langOf(formData.get("lang"))
   const supabase = await createServerSupabase()
   if (supabase) {
-    await supabase.auth.signOut()
+    // Explicit local scope: other devices stay signed in. The settings panel
+    // offers the global and "others" variants as separate, deliberate actions.
+    await supabase.auth.signOut({ scope: "local" })
   }
+  const cookieStore = await cookies()
+  clearAuthCookies(cookieStore)
+  cookieStore.delete(REMEMBER_COOKIE)
+  cookieStore.delete(RECOVERY_COOKIE)
   revalidatePath("/", "layout")
   redirect(href(lang, "/"))
+}
+
+/** SEC-01: issues the re-auth nonce used by accounts without a local password. */
+export async function sendReauthCodeAction(
+  _prev: AuthActionState,
+  formData: FormData,
+): Promise<AuthActionState> {
+  void formData // the code is sent to the signed-in user's own address
+  const gate = await requireAccountUser()
+  if (!gate.ok) return { error: gate.error }
+  if (!(await allowAccountAction("reauth", gate.user.id, REAUTH_PER_USER))) {
+    return { error: "limit_reached" }
+  }
+
+  const supabase = await createServerSupabase()
+  if (!supabase) return { error: "not_configured" }
+  const { error } = await supabase.auth.reauthenticate()
+  if (error) return { error: "reauth_failed" }
+  return { ok: true, reauthSent: true }
+}
+
+/** SEC-01: every password change is preceded by a fresh identity check. */
+export async function changePasswordAction(
+  _prev: AuthActionState,
+  formData: FormData,
+): Promise<AuthActionState> {
+  const password = passwordSchema.safeParse(formData.get("password"))
+  if (!password.success) {
+    return {
+      error: "invalid_password",
+      fields: { password: fieldsFromZod(password.error).password ?? "invalid_password" },
+    }
+  }
+  if (password.data !== String(formData.get("confirm") ?? "")) {
+    return { error: "password_mismatch", fields: { password: "password_mismatch" } }
+  }
+
+  const gate = await requireAccountUser()
+  if (!gate.ok) return { error: gate.error }
+  if (!(await allowAccountAction("password", gate.user.id, REAUTH_PER_USER))) {
+    return { error: "limit_reached" }
+  }
+  const reauth = await verifyReauth(gate.user, {
+    currentPassword: formData.get("currentPassword"),
+    nonce: formData.get("nonce"),
+  })
+  if (!reauth.ok) return { error: reauth.error }
+
+  const supabase = await createServerSupabase()
+  if (!supabase) return { error: "not_configured" }
+  const { error } = await supabase.auth.updateUser(
+    reauth.nonce ? { password: password.data, nonce: reauth.nonce } : { password: password.data },
+  )
+  if (error) return { error: reauth.nonce ? "reauth_failed" : mapRecoveryError(error) }
+
+  // A new credential invalidates every other device, but keeps this session.
+  await supabase.auth.signOut({ scope: "others" })
+  revalidatePath("/", "layout")
+  return { ok: true, passwordChanged: true }
+}
+
+/** SEC-02: Supabase verifies the new address before it replaces the old one. */
+export async function changeEmailAction(
+  _prev: AuthActionState,
+  formData: FormData,
+): Promise<AuthActionState> {
+  const lang = langOf(formData.get("lang"))
+  const parsed = emailSchema.safeParse(formData.get("email"))
+  if (!parsed.success) {
+    return { error: "invalid_email", fields: { email: "invalid_email" } }
+  }
+
+  const gate = await requireAccountUser()
+  if (!gate.ok) return { error: gate.error }
+  const nextEmail = parsed.data.toLowerCase()
+  if (nextEmail === (gate.user.email ?? "").toLowerCase()) return { error: "email_unchanged" }
+  if (!(await allowAccountAction("email", gate.user.id, EMAIL_CHANGE_PER_USER))) {
+    return { error: "limit_reached" }
+  }
+  const reauth = await verifyReauth(gate.user, {
+    currentPassword: formData.get("currentPassword"),
+    nonce: formData.get("nonce"),
+  })
+  if (!reauth.ok) return { error: reauth.error }
+
+  const supabase = await createServerSupabase()
+  if (!supabase) return { error: "not_configured" }
+  const settings = href(lang, "/settings")
+  const { error } = await supabase.auth.updateUser(
+    reauth.nonce ? { email: nextEmail, nonce: reauth.nonce } : { email: nextEmail },
+    {
+      emailRedirectTo: `${siteOrigin()}/auth/callback?next=${encodeURIComponent(settings)}&email_change=1`,
+    },
+  )
+  if (error) return { error: "email_change_failed" }
+  // Anti-enumeration: the new address may already be registered. The response
+  // stays generic either way; only the address owner receives a confirmation.
+  return { ok: true, emailChangeSent: true }
+}
+
+/** SEC-03: revoke every other refresh token while keeping this session. */
+export async function signOutOtherDevicesAction(formData: FormData) {
+  const lang = langOf(formData.get("lang"))
+  const gate = await requireAccountUser()
+  if (!gate.ok) redirect(href(lang, "/login"))
+  if (!(await allowAccountAction("session", gate.user.id, SESSION_PER_USER))) {
+    redirect(`${href(lang, "/settings")}?error=limit_reached`)
+  }
+
+  const supabase = await createServerSupabase()
+  if (supabase) await supabase.auth.signOut({ scope: "others" })
+  revalidatePath("/", "layout")
+  redirect(`${href(lang, "/settings")}?session=others`)
+}
+
+/** SEC-03: revoke all sessions, including the current one. */
+export async function signOutEverywhereAction(formData: FormData) {
+  const lang = langOf(formData.get("lang"))
+  const gate = await requireAccountUser()
+  if (!gate.ok) redirect(href(lang, "/login"))
+  if (!(await allowAccountAction("session", gate.user.id, SESSION_PER_USER))) {
+    redirect(`${href(lang, "/settings")}?error=limit_reached`)
+  }
+
+  const supabase = await createServerSupabase()
+  if (supabase) await supabase.auth.signOut({ scope: "global" })
+  const cookieStore = await cookies()
+  clearAuthCookies(cookieStore)
+  cookieStore.delete(REMEMBER_COOKIE)
+  cookieStore.delete(RECOVERY_COOKIE)
+  revalidatePath("/", "layout")
+  redirect(href(lang, "/"))
+}
+
+/**
+ * SEC-04: re-auth, then delegate the privileged delete to a Supabase Edge
+ * Function. The service-role key never enters the Next.js application bundle.
+ */
+export async function deleteAccountAction(
+  _prev: AuthActionState,
+  formData: FormData,
+): Promise<AuthActionState> {
+  const lang = langOf(formData.get("lang"))
+  if (String(formData.get("confirm") ?? "") !== "DELETE") return { error: "invalid_input" }
+
+  const gate = await requireAccountUser()
+  if (!gate.ok) return { error: gate.error }
+  if (!(await allowAccountAction("delete", gate.user.id, DELETE_PER_USER))) {
+    return { error: "limit_reached" }
+  }
+  const reauth = await verifyReauth(gate.user, {
+    currentPassword: formData.get("currentPassword"),
+    nonce: formData.get("nonce"),
+  })
+  if (!reauth.ok) return { error: reauth.error }
+
+  const supabase = await createServerSupabase()
+  const env = getSupabaseEnv()
+  if (!supabase || !env) return { error: "not_configured" }
+
+  if (reauth.nonce) {
+    const { error } = await supabase.auth.updateUser(reauthMetadata(reauth.nonce))
+    if (error) return { error: "reauth_failed" }
+  }
+
+  const {
+    data: { session },
+  } = await supabase.auth.getSession()
+  if (!session) return { error: "not_authenticated" }
+
+  let response: Response
+  try {
+    response = await fetch(`${env.url}/functions/v1/delete-account`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${session.access_token}`,
+        apikey: env.anonKey,
+        "Content-Type": "application/json",
+      },
+    })
+  } catch {
+    return { error: "account_delete_failed" }
+  }
+  if (!response.ok) return { error: "account_delete_failed" }
+
+  const cookieStore = await cookies()
+  clearAuthCookies(cookieStore)
+  cookieStore.delete(REMEMBER_COOKIE)
+  cookieStore.delete(RECOVERY_COOKIE)
+  revalidatePath("/", "layout")
+  redirect(`${href(lang, "/")}?deleted=1`)
 }

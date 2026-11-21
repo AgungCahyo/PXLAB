@@ -48,6 +48,15 @@ export async function getSessionUserId() {
   return user?.id ?? null
 }
 
+export async function getCurrentAuthUser() {
+  const supabase = await createServerSupabase()
+  if (!supabase) return null
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  return user ?? null
+}
+
 export async function getCurrentProfile(): Promise<MemberProfile | null> {
   const supabase = await createServerSupabase()
   if (!supabase) return null

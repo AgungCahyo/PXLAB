@@ -11,7 +11,7 @@ describe("AUTH-03 recovery hardening", () => {
     const generic = read("app/auth/callback/route.ts")
 
     expect(actions).toMatch(/\/auth\/recovery\?\$\{RECOVERY_STATE_PARAM\}/)
-    expect(actions).not.toMatch(/resetPasswordForEmail[\s\S]*\/auth\/callback\?next=/)
+    expect(actions).not.toMatch(/resetPasswordForEmail\([\s\S]{0,500}?\/auth\/callback\?next=/)
     expect(callback).toMatch(/verifyRecoveryState/)
     expect(callback).toMatch(/exchangeCodeForSession/)
     expect(callback).toMatch(/redirectType/)

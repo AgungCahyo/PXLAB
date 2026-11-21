@@ -75,15 +75,17 @@ describe("auth UX — R2", () => {
     expect(nav).toMatch(/nav\.join/)
   })
 
-  it("distinguishes unconfirmed email and returns field errors", () => {
+  it("keeps login failures generic and offers a resend flow", () => {
     const actions = read("features/auth/actions.ts")
     const errors = read("lib/auth/errors.ts")
+    const form = read("components/auth/LoginForm.tsx")
     expect(errors).toMatch(/mapLoginError/)
-    expect(errors).toMatch(/email_not_confirmed/)
+    expect(errors).toMatch(/return "generic_auth"/)
     expect(actions).toMatch(/mapLoginError/)
     expect(actions).toMatch(/fieldsFromZod/)
     expect(actions).toMatch(/resendRegisterEmailAction/)
     expect(actions).toMatch(/needsEmail: true, email:/)
+    expect(form).toMatch(/resendRegisterEmailAction/)
   })
 
   it("makes the post-register screen actionable", () => {

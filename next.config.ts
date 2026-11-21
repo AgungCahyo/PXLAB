@@ -14,6 +14,7 @@ const indonesianRoutes = [
   "/register",
   "/forgot-password",
   "/reset-password",
+  "/verify-email",
   "/dashboard",
   "/responses",
   "/settings",

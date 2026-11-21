@@ -3,11 +3,12 @@ import { notFound, redirect } from "next/navigation"
 import { AuthShell } from "@/components/auth/AuthShell"
 import { LoginForm } from "@/components/auth/LoginForm"
 import { Alert } from "@/components/ui/Alert"
-import { getCurrentProfile } from "@/lib/auth/session"
+import { getCurrentAuthUser, getCurrentProfile } from "@/lib/auth/session"
+import { needsEmailVerification } from "@/lib/auth/verification"
 import { copy } from "@/lib/copy"
 import { isLang } from "@/lib/i18n"
 import { pageMeta } from "@/lib/meta"
-import { authDestination, postAuthPath } from "@/lib/paths"
+import { authDestination, postAuthPath, verifyEmailHref } from "@/lib/paths"
 
 export const instant = false
 
@@ -39,6 +40,8 @@ export default async function LoginPage({
   const lang = raw
   const { next, error, reset } = await searchParams
   const destination = authDestination(lang, next)
+  const user = await getCurrentAuthUser()
+  if (needsEmailVerification(user)) redirect(verifyEmailHref(lang, destination))
   const profile = await getCurrentProfile()
   if (profile) redirect(postAuthPath(lang, next, profile))
 
