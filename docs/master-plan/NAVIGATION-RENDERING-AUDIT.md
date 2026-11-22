@@ -2,10 +2,10 @@
 
 **Document:** `docs/master-plan/NAVIGATION-RENDERING-AUDIT.md`  
 **Roadmap:** `docs/master-plan/ROADMAP — Native-like Navigation & Interaction.md`  
-**Status:** Phase 1 complete. Implementation not started.  
+**Status:** Phase 1 complete. Implementation partial — see Sections Q–W and the roadmap status notes.
 **Date:** 22 Nov 2026  
 **Scope:** NAV-01–NAV-10  
-**Basis:** current working tree (includes the uncommitted auth, studio, and nav fixes). All line numbers refer to this tree.
+**Basis:** Sections A–P preserve the original pre-implementation findings and their line references. The follow-up work is recorded in Sections Q–W and was committed in `d474d82` on 22 Nov 2026.
 
 ---
 
@@ -274,7 +274,7 @@ No application source uses `.channel()`, `.subscribe()`, `removeChannel`, `postg
 | PWA events | `PwaRegister.tsx:36-56`, `PwaInstall.tsx:36-59` | Cleaned |
 | Palette cross-tab listener | `lib/pixel-color-memory.ts:16-27` | Cleaned |
 
-Minor unrelated gaps: `PixelBoard.tsx:872-878` has no `cancelAnimationFrame`; `Toast.tsx:18-23` and `LayerPanel.tsx:473-489` have no found timer cleanup. Neither explains shell nav loss.
+Minor unrelated gap: `PixelBoard.tsx:872-878` still has no `cancelAnimationFrame` (guarded by null refs on repaint). Toast and LayerPanel timer cleanup was added in Phase 7 (Section Z); neither gap explains shell nav loss.
 
 ---
 
@@ -343,8 +343,9 @@ None found; deprioritize NAV-09.
 4. **Define stale-content policy.** Add explicit `staleTimes` where safe, keep `instant = false` where auth correctness matters, and ensure loading boundaries show a skeleton rather than blank `main`. Do not cache private data by public keys.
 5. **Finish loading coverage.** Add `loading.tsx` or an early Suspense boundary for landing, creators, space, settings, welcome, auth routes, admin, and move the profile boundary before the awaited data.
 6. **Unify scroll restoration.** For Explore, disable Link's automatic scroll (`scroll={false}`) where manual restore is used and call `window.scrollTo` with an explicit non-smooth behavior. Decide whether Home/Profile need the same; do not add a generic keeper. (Done — Section V; Home/Profile intentionally unchanged.)
-7. **Eliminate full loads where safe.** Convert `LanguageSwitch` to a client navigation only after verifying `<html lang>` updates correctly; convert Explore search to a client-side URL push only after verifying Back/Forward and filter state.
-8. **Add runtime validation before claiming done.** Current tests are static/SSR only. Add a browser-level test (or documented manual measurement) for studio exit → nav clickable/scroll unlocked → Back/Forward → Explore restore. Do not install a browser-test stack solely for this audit; decide when Phase 8 starts.
+7. **Eliminate full loads where safe.** Convert `LanguageSwitch` to a client navigation only after verifying `<html lang>` updates correctly; convert Explore search to a client-side URL push only after verifying Back/Forward and filter state. (Done — Section X; runtime Back/Forward proof remains Phase 8.)
+8. **Add runtime validation before claiming done.** Current tests are static/SSR only. Add a browser-level test (or documented manual measurement) for studio exit → nav clickable/scroll unlocked → Back/Forward → Explore restore. Do not install a browser-test stack solely for this audit. Checklist ready in Section W; not executed yet.
+9. **Bound growth before long sessions.** Cap the recommendation/restore caches, automatic page continuations, and tracked timers; memoize repeated tiles. Done in Section Z; do not add realtime or a cache library.
 
 ---
 
@@ -362,8 +363,8 @@ The roadmap’s order is adjusted because transition retention is the confirmed 
 | 6 | Stale policy / cache ownership | 4 | 4,5 | Old content stays visible where safe; invalidation predictable |
 | 7 | Scroll + state restoration | 3 | 2,6 | Explore restore stable; Home/Profile decision documented |
 | 8 | Language/Explore full-load removal | 2 | 7 | Shell and scroll state survive; Back/Forward correct |
-| 9 | Pull-to-Refresh | 5 | 6 | Gesture does not touch canvas/modals/horizontal controls |
-| 10 | Rendering/memory/network optimization | 7 | 2–9 | No accumulating listeners/requests; mobile responsive |
+| 9 | Pull-to-Refresh | 5 | 6 | Gesture does not touch canvas/modals/horizontal controls (Done — Section Y) |
+| 10 | Rendering/memory/network optimization | 7 | 2–9 | No accumulating listeners/requests; mobile responsive (Done — Section Z) |
 | 11 | Browser-level tests + measurements | 8 | all | Real timings and interaction results recorded |
 
 Phases 3 and 4 of the original roadmap can still run in parallel after step 2, provided state and cache ownership remain separate.
@@ -383,6 +384,9 @@ Phases 3 and 4 of the original roadmap can still run in parallel after step 2, p
 - `tests/instant-interaction.test.ts` — key loading skeletons, full page-route fallback coverage, shared auth fallback, and the profile's early Suspense boundary (Section T).
 - `tests/cache-policy.test.ts` — static owner/TTL policy, blocking private segments, and mutation invalidation (Section U).
 - `tests/scroll-restoration.test.ts` — opt-in Explore resume links, explicit instant scroll, and no generic scroll keeper (Section V).
+- `tests/full-load-removal.test.ts` — client language switch, `<html lang>` sync, and client-router Explore search (Section X).
+- `tests/pull-to-refresh.test.ts` — gesture scope, safety selectors, refresh lifecycle, retry path, and reduced-motion announcement (Section Y).
+- `tests/resource-cleanup.test.ts` — no realtime APIs, bounded caches/storage, timer cleanup, memoized tiles, and capped automatic infinite loads (Section Z).
 - `tests/explore-layout.test.ts:63-69`, `tests/explore-render.test.ts:44-87`, `tests/feed-render.test.ts:37-73` — static/SSR shape.
 - `tests/pwa.test.ts:37-58`, `tests/pwa-dev.test.ts:7-25` — SW strategy and dev cleanup.
 
@@ -434,7 +438,7 @@ Completed on 22 Nov 2026, ahead of Phases 2–5, because `ViewTransition` retent
 | Regression guard | `tests/route-transitions.test.ts` scans `app`, `components`, `features`, `lib` for any reintroduced transition consumer or orphan CSS |
 | Roadmap | Phase 6 implementation note added |
 
-All Section N implementation steps are now addressed. Browser-level measurement remains a Phase 8 deliverable; runtime studio-exit verification was confirmed safe by the user (see Section R).
+Section N steps 2–10 are addressed. Step 11 (browser-level measurement) remains open. Runtime studio-exit verification was confirmed safe by the user (see Section R).
 
 ---
 
@@ -487,7 +491,7 @@ Completed on 22 Nov 2026 (Section N step 5). Checked against the local Next.js `
 
 ## U. Implementation status — stale-content policy and cache ownership
 
-Completed on 22 Nov 2026 (Section N step 4). Checked against the local Next.js `staleTimes`, `cacheLife`, `loading` and Client Cache references first.
+Completed on 22 Nov 2026 (Section N step 6; Section M step 4). Checked against the local Next.js `staleTimes`, `cacheLife`, `loading` and Client Cache references first.
 
 | Layer | Owner | Policy |
 |---|---|---|
@@ -503,7 +507,7 @@ The policy is enforced statically by `tests/cache-policy.test.ts`. No client-cac
 
 ## V. Implementation status — unified Explore scroll restoration
 
-Completed on 22 Nov 2026 (Section N step 6). Checked against the local Next.js `link` and `use-router` references: `scroll={false}` / `{ scroll: false }` disables Next's automatic scroll to the new page, while `data-scroll-behavior="smooth"` lets Next temporarily set `scroll-behavior: auto` during its own route transition.
+Completed on 22 Nov 2026 (Section N step 7; Section M step 6). Checked against the local Next.js `link` and `use-router` references: `scroll={false}` / `{ scroll: false }` disables Next's automatic scroll to the new page, while `data-scroll-behavior="smooth"` lets Next temporarily set `scroll-behavior: auto` during its own route transition.
 
 | Step | Result |
 |---|---|
@@ -519,8 +523,8 @@ The local Next smooth-scroll helper only wraps Next's own transition scroll; thi
 
 ## W. Phase 8 runtime validation plan
 
-All Section N implementation steps are complete; the remaining deliverable is
-runtime proof, not more source changes. The manual checklist is in
+Section N steps 2–10 are complete. Step 11 (browser-level measurement, roadmap
+Phase 8) remains open. The manual checklist is in
 `docs/master-plan/PHASE-8-RUNTIME-VALIDATION.md`. It covers shell identity after
 studio exit, Explore restore (all opt-in link types), loading boundaries,
 account-switch cache isolation, runtime `auth.getUser()` counts, Back/Forward
@@ -528,5 +532,69 @@ and direct URLs, auth regression smoke, repeated-navigation memory, and
 Pull-to-Refresh/offline.
 
 No browser-test stack was installed, and no evidence was generated yet. The
-plan explicitly keeps the current uncommitted tree untouched and treats a
-`HEAD` worktree baseline as optional.
+plan treats a fresh `HEAD` worktree baseline as optional.
+
+---
+
+## X. Implementation status — full-load removal
+
+Completed on 22 Nov 2026 (Section N step 8 / Section M step 7). Checked against
+the local Next.js `link`, `use-router`, `layout` and `internationalization`
+guides first. The root layout may live under `[lang]`, so `<html lang>` is now
+synced explicitly rather than relying on layout re-render timing.
+
+| Step | Result |
+|---|---|
+| Language switch | `LanguageSwitch` renders `next/link` with `scroll={false}` instead of a plain `<a href>`; shell, Toast state and scroll are no longer reset by a document load |
+| `<html lang>` | A `useEffect` writes `document.documentElement.lang = lang`, so a client locale change stays correct even if the root layout segment does not re-render |
+| Explore search | The `method="get"` form was extracted into `ExploreSearch`, a Client Component that calls `router.push(exploreHref(lang, { category, q, feed, page: 1 }))` |
+| Back/Forward state | `ExploreSearch` is keyed by `q` in `ExploreGallery`, so URL-driven query changes remount the input with the correct value; all other filter/pagination state remains URL-owned |
+| Regression guard | `tests/full-load-removal.test.ts` asserts `Link` usage, the `lang` sync, absence of the GET form, and router-push search state |
+
+`tests/full-load-removal.test.ts` is static only. Real Back/Forward, filter
+state and `<html lang>` behavior after a language switch remain Phase 8
+runtime checks (Section W and the Phase 8 checklist).
+
+---
+
+## Y. Implementation status — Pull-to-Refresh
+
+Completed on 22 Nov 2026 (Section N step 9 / roadmap Phase 5). The local Next.js
+`useRouter` guide was checked first: `router.refresh()` re-fetches the current
+route and merges the RSC payload without clearing client state or scroll.
+
+| Step | Result |
+|---|---|
+| Gesture | `components/social/PullToRefresh.tsx` starts only from a single touch at `window.scrollY === 0`, uses 72 px threshold with 0.5 resistance, and prevents native overscroll only while actively pulling |
+| Safety | Canvas, dialogs, modals, inputs, textarea, select, contenteditable, explicit `data-pull-refresh-ignore`, and `overflow-x-auto` descendants never start a refresh |
+| Scope | Only `HomeFeed` and `ExploreGallery` wrap their lists. `HomeFeedList` was split out so the remount boundary actually resets `useInfiniteList`; `ExploreInfinite` is already a child of the wrapper |
+| Refresh | `router.refresh()` keeps current content visible. After the transition settles, a key bump remounts the list with fresh server props; URL-owned Explore filters and Home feed/page are preserved |
+| Failure | Offline is rejected immediately; a hung refresh falls back after 8 s. Both show a status message and a retry button |
+| Accessibility | Live-region status, reduced-motion-aware spinner/transition, and bilingual copy in `lib/copy.ts` |
+| Regression guard | `tests/pull-to-refresh.test.ts` scans touch listeners, safety selectors, scope consumers, remount path, timeout/retry, and reduced motion |
+
+This is static implementation proof only. iOS Safari, Android Chrome, desktop,
+native-refresh interaction, and offline behavior remain Phase 8 runtime checks
+(Section W and `docs/master-plan/PHASE-8-RUNTIME-VALIDATION.md`).
+
+---
+
+## Z. Implementation status — rendering, memory and network
+
+Completed on 22 Nov 2026 (Section N step 10 / roadmap Phase 7). A static audit
+confirmed there are no Supabase Realtime subscriptions and no global listener
+leaks; the work below targets bounded growth and avoidable re-renders instead
+of adding new infrastructure.
+
+| Area | Result |
+|---|---|
+| Recommendation cache | `SimilarWorksLazy` keeps a 32-entry LRU; state reset moved to a caller `key`, and loading/failure are derived so the effects no longer call `setState` synchronously |
+| Explore restore | One `pxlb:explore:resume` slot replaces per-filter markers; a 6-key index evicts old payloads and saved items are capped at 96 |
+| Infinite scroll | `useInfiniteList` uses a 240 px root margin, caps automatic continuations at 3 pages until the next scroll, and exposes `autoPaused` so both feeds show a manual load button |
+| Rendering | `WorkTile` is memoized via `memo()`; appended pages no longer repaint earlier tiles |
+| Timers | Layer long-press is cleared on unmount, Toast timers are tracked/cleared, and the PWA visibility listener cannot install after unmount |
+| Regression guard | `tests/resource-cleanup.test.ts` asserts no Realtime APIs, the cache/storage bounds, timer cleanup, memoized tiles, and the auto-load cap |
+
+`PixelBoard` still has a pending rAF without `cancelAnimationFrame`, but its
+repaint callback is null-guarded and it is a bounded one-shot. Real heap,
+listener, and request-count measurements stay in Phase 8 (Section W).

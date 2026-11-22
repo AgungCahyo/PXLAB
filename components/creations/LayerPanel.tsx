@@ -3,6 +3,7 @@
 import {
   Fragment,
   useEffect,
+  useMemo,
   useRef,
   useState,
   type ComponentProps,
@@ -78,22 +79,23 @@ export function LayerPanel({
   groupApi,
   onFeedback,
 }: LayerPanelProps) {
-  const [thumbs, setThumbs] = useState<Record<string, string>>({})
   const [editingId, setEditingId] = useState<string | null>(null)
   const [menu, setMenu] = useState<MenuState>(null)
   const [dragId, setDragId] = useState<string | null>(null)
   const [dropId, setDropId] = useState<string | null>(null)
   const renameRef = useRef<HTMLInputElement | null>(null)
   const thumbKey = layers.map((layer) => `${layer.id}:${layer.visible}:${layer.active}`).join("|")
-
-  useEffect(() => {
+  const thumbVersion = `${thumbKey}|${thumbEpoch}`
+  const thumbs = useMemo(() => {
+    // Invalidation key: getThumbnail reads mutable canvas output, not just props.
+    void thumbVersion
     const next: Record<string, string> = {}
     for (const layer of layers) {
       const url = getThumbnail(layer.id)
       if (url) next[layer.id] = url
     }
-    setThumbs(next)
-  }, [layers, getThumbnail, thumbKey, thumbEpoch])
+    return next
+  }, [layers, getThumbnail, thumbVersion])
 
   useEffect(() => {
     if (editingId) renameRef.current?.focus()
@@ -457,18 +459,18 @@ export function LayerMobileStrip({
   onFeedback?: (kind: LayerPanelFeedback) => void
   onOpenSheet: (id: string) => void
 }) {
-  const [thumbs, setThumbs] = useState<Record<string, string>>({})
   const longPressRef = useRef<{ id: string; timer: ReturnType<typeof setTimeout> } | null>(null)
   const thumbKey = layers.map((layer) => layer.id).join("|")
-
-  useEffect(() => {
+  const thumbVersion = `${thumbKey}|${thumbEpoch}`
+  const thumbs = useMemo(() => {
+    void thumbVersion
     const next: Record<string, string> = {}
     for (const layer of layers) {
       const url = getThumbnail(layer.id)
       if (url) next[layer.id] = url
     }
-    setThumbs(next)
-  }, [layers, getThumbnail, thumbKey, thumbEpoch])
+    return next
+  }, [layers, getThumbnail, thumbVersion])
 
   const clearLongPress = () => {
     if (longPressRef.current) {
@@ -476,6 +478,13 @@ export function LayerMobileStrip({
       longPressRef.current = null
     }
   }
+
+  useEffect(
+    () => () => {
+      if (longPressRef.current) clearTimeout(longPressRef.current.timer)
+    },
+    [],
+  )
 
   const startLongPress = (id: string) => {
     clearLongPress()
@@ -593,11 +602,13 @@ export function LayerMobileSheet({
   const layer = layerId ? layers.find((item) => item.id === layerId) : null
   const stack = layer ? stackIndexOf(layers, layer.id) : -1
   const thumb = layer ? getThumbnail(layer.id) : null
-  const [name, setName] = useState(layer?.name ?? "")
-
-  useEffect(() => {
-    setName(layer?.name ?? "")
-  }, [layer?.id, layer?.name])
+  const sourceName = layer?.name ?? ""
+  const [draft, setDraft] = useState({
+    id: layer?.id ?? null,
+    source: sourceName,
+    value: sourceName,
+  })
+  const name = draft.id === (layer?.id ?? null) && draft.source === sourceName ? draft.value : sourceName
 
   if (!layer) {
     return (
@@ -627,7 +638,9 @@ export function LayerMobileSheet({
           value={name}
           aria-label={copy.pixelLayerRename[lang]}
           className="studio-control min-w-0 flex-1 border-[3px] border-earth bg-bg px-2 text-[13px] text-fg md:text-[14px]"
-          onChange={(event) => setName(event.target.value)}
+          onChange={(event) =>
+            setDraft({ id: layer?.id ?? null, source: sourceName, value: event.target.value })
+          }
           onBlur={() => onRename(layer.id, name)}
         />
       </div>

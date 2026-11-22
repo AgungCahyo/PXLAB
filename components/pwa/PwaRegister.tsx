@@ -33,6 +33,7 @@ export function PwaRegister() {
       return
     }
 
+    let disposed = false
     let cleanup: (() => void) | undefined
     const register = async () => {
       try {
@@ -40,6 +41,7 @@ export function PwaRegister() {
           scope: "/",
           updateViaCache: "none",
         })
+        if (disposed) return
         // Check for updates periodically while the tab is open.
         const onVisible = () => {
           if (document.visibilityState === "visible") {
@@ -48,12 +50,19 @@ export function PwaRegister() {
         }
         document.addEventListener("visibilitychange", onVisible)
         cleanup = () => document.removeEventListener("visibilitychange", onVisible)
+        if (disposed) {
+          cleanup()
+          cleanup = undefined
+        }
       } catch {
         // Registration can fail on HTTP (non-localhost) or blocked SW — non-fatal.
       }
     }
     void register()
-    return () => cleanup?.()
+    return () => {
+      disposed = true
+      cleanup?.()
+    }
   }, [])
 
   return null

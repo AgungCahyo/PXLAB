@@ -19,6 +19,10 @@ import { cn } from "@/lib/utils"
 type Saved = { items: CreationCard[]; page: number; pageCount: number; y: number; at: number }
 
 const RESUME_TTL_MS = 10 * 60 * 1000
+const RESUME_KEY = "pxlb:explore:resume"
+const STORAGE_INDEX_KEY = "pxlb:explore:keys"
+const MAX_RESTORE_KEYS = 6
+const MAX_RESTORE_ITEMS = 96
 
 function readSaved(key: string): Saved | null {
   try {
@@ -26,6 +30,16 @@ function readSaved(key: string): Saved | null {
     return raw ? (JSON.parse(raw) as Saved) : null
   } catch {
     return null
+  }
+}
+
+function readKeyIndex(): string[] {
+  try {
+    const raw = sessionStorage.getItem(STORAGE_INDEX_KEY)
+    const parsed = raw ? JSON.parse(raw) : []
+    return Array.isArray(parsed) ? parsed.filter((key): key is string => typeof key === "string") : []
+  } catch {
+    return []
   }
 }
 
@@ -60,14 +74,13 @@ export function ExploreInfinite({
     (page: number) => loadMoreExploreAction({ category, q, feed, page }),
     [category, q, feed],
   )
-  const { items, lastPage, pageCount, status, hasMore, sentinelRef, observerSupported, loadNext, restore } =
+  const { items, lastPage, pageCount, status, hasMore, sentinelRef, observerSupported, autoPaused, loadNext, restore } =
     useInfiniteList({ initialItems, initialPage, pageCount: initialPageCount, fetchPage })
   const scrollYRef = useRef(0)
   const stateRef = useRef({ items, lastPage, pageCount })
 
   const query = { category, q, feed }
   const storageKey = `pxlb:explore:${lang}:${feed}:${category}:${q}:${initialPage}`
-  const resumeKey = `${storageKey}:resume`
   // False in server HTML (no-JS users see the pagination links), true once hydrated.
   const enhanced = useSyncExternalStore(
     () => () => {},
@@ -84,9 +97,9 @@ export function ExploreInfinite({
   useEffect(() => {
     let frame = 0
     try {
-      const resume = sessionStorage.getItem(resumeKey)
-      sessionStorage.removeItem(resumeKey)
-      const saved = resume ? readSaved(storageKey) : null
+      const resume = sessionStorage.getItem(RESUME_KEY)
+      sessionStorage.removeItem(RESUME_KEY)
+      const saved = resume === storageKey ? readSaved(storageKey) : null
       if (
         saved &&
         Date.now() - saved.at < RESUME_TTL_MS &&
@@ -119,8 +132,21 @@ export function ExploreInfinite({
       try {
         const { items: current, lastPage: page, pageCount: count } = stateRef.current
         if (page <= initialPage) return
-        const payload: Saved = { items: current, page, pageCount: count, y: scrollYRef.current, at: Date.now() }
+        const payload: Saved = {
+          items: current.slice(0, MAX_RESTORE_ITEMS),
+          page,
+          pageCount: count,
+          y: scrollYRef.current,
+          at: Date.now(),
+        }
         sessionStorage.setItem(storageKey, JSON.stringify(payload))
+        const keys = readKeyIndex().filter((key) => key !== storageKey)
+        keys.push(storageKey)
+        while (keys.length > MAX_RESTORE_KEYS) {
+          const oldest = keys.shift()
+          if (oldest) sessionStorage.removeItem(oldest)
+        }
+        sessionStorage.setItem(STORAGE_INDEX_KEY, JSON.stringify(keys))
       } catch {}
     }
     window.addEventListener("scroll", onScroll, { passive: true })
@@ -134,7 +160,7 @@ export function ExploreInfinite({
 
   const markResume = () => {
     try {
-      sessionStorage.setItem(resumeKey, "1")
+      sessionStorage.setItem(RESUME_KEY, storageKey)
     } catch {}
   }
 
@@ -215,7 +241,7 @@ export function ExploreInfinite({
       {hasMore && status === "idle" ? <div ref={sentinelRef} aria-hidden="true" className="h-px" /> : null}
 
       {/* Manual fallback when IntersectionObserver is unavailable. */}
-      {hasMore && status === "idle" && !observerSupported ? (
+      {hasMore && status === "idle" && (!observerSupported || autoPaused) ? (
         <button
           type="button"
           onClick={() => void loadNext()}

@@ -1,3 +1,4 @@
+import { memo } from "react"
 import Link from "next/link"
 import { Comment } from "pixelarticons/react"
 import { PixelArt } from "@/components/creations/PixelArt"
@@ -15,7 +16,7 @@ import { cn } from "@/lib/utils"
  *             comment count (or a "no comments yet" cue)
  * The tile link and the creator link are siblings (never nested).
  */
-export function WorkTile({
+export const WorkTile = memo(function WorkTile({
   creation,
   lang,
   className,
@@ -135,4 +136,4 @@ export function WorkTile({
       ) : null}
     </article>
   )
-}
+})

@@ -9,10 +9,25 @@ import { copy } from "@/lib/copy"
 import type { Lang } from "@/lib/i18n"
 import type { CreationCategory } from "@/lib/site"
 
+const SESSION_CACHE_MAX = 32
 const sessionCache = new Map<string, CreationCard[]>()
 
 function cacheKey(id: string, category: CreationCategory | null, tags: string[]) {
   return `${id}|${category ?? ""}|${tags.slice().sort().join(",")}`
+}
+
+function peekCached(key: string) {
+  return sessionCache.get(key)
+}
+
+function writeCached(key: string, value: CreationCard[]) {
+  sessionCache.delete(key)
+  sessionCache.set(key, value)
+  while (sessionCache.size > SESSION_CACHE_MAX) {
+    const oldest = sessionCache.keys().next().value
+    if (oldest === undefined) break
+    sessionCache.delete(oldest)
+  }
 }
 
 export function SimilarWorksLazy({
@@ -32,14 +47,11 @@ export function SimilarWorksLazy({
   const [retryToken, setRetryToken] = useState(0)
   const [items, setItems] = useState<CreationCard[] | null>(null)
   const [failed, setFailed] = useState(false)
-  const [loading, setLoading] = useState(false)
 
-  useEffect(() => {
-    setArmed(false)
-    setItems(null)
-    setFailed(false)
-    setLoading(false)
-  }, [creationId])
+  const key = cacheKey(creationId, category, tags)
+  const cached = retryToken === 0 ? peekCached(key) : undefined
+  const effectiveItems = items ?? cached ?? null
+  const pending = armed && !cached && items === null && !failed
 
   useEffect(() => {
     const node = rootRef.current
@@ -58,22 +70,9 @@ export function SimilarWorksLazy({
   }, [creationId])
 
   useEffect(() => {
-    if (!armed) return
-    const key = cacheKey(creationId, category, tags)
-    if (retryToken === 0) {
-      const cached = sessionCache.get(key)
-      if (cached) {
-        setItems(cached)
-        setFailed(false)
-        setLoading(false)
-        return
-      }
-    }
-
+    if (!armed || cached) return
     const requestId = ++requestIdRef.current
     let cancelled = false
-    setLoading(true)
-    setFailed(false)
 
     void loadSimilarCreationsAction({
       id: creationId,
@@ -88,7 +87,7 @@ export function SimilarWorksLazy({
           setItems([])
           return
         }
-        sessionCache.set(key, result.items)
+        writeCached(key, result.items)
         setItems(result.items)
       })
       .catch(() => {
@@ -96,28 +95,23 @@ export function SimilarWorksLazy({
         setFailed(true)
         setItems([])
       })
-      .finally(() => {
-        if (cancelled || requestId !== requestIdRef.current) return
-        setLoading(false)
-      })
 
     return () => {
       cancelled = true
     }
-  }, [armed, creationId, category, tags, retryToken])
+  }, [armed, cached, key, creationId, category, tags, retryToken])
 
   return (
     <div ref={rootRef}>
-      {loading || (armed && items === null && !failed) ? (
-        <RecommendationSkeleton label={copy.similarWorksTitle[lang]} />
-      ) : null}
+      {pending ? <RecommendationSkeleton label={copy.similarWorksTitle[lang]} /> : null}
       {failed ? (
         <div className="mt-8 border-t-[3px] border-earth pt-6">
           <button
             type="button"
             onClick={() => {
-              sessionCache.delete(cacheKey(creationId, category, tags))
+              sessionCache.delete(key)
               setItems(null)
+              setFailed(false)
               setRetryToken((n) => n + 1)
             }}
             className="text-[13px] text-muted underline decoration-earth/50 underline-offset-4 hover:text-fg"
@@ -126,7 +120,9 @@ export function SimilarWorksLazy({
           </button>
         </div>
       ) : null}
-      {items && items.length > 0 ? <SimilarWorksStrip lang={lang} items={items} /> : null}
+      {effectiveItems && effectiveItems.length > 0 ? (
+        <SimilarWorksStrip lang={lang} items={effectiveItems} />
+      ) : null}
     </div>
   )
 }

@@ -51,16 +51,17 @@ claiming a measured improvement.
 
 | Check | Command |
 |---|---|
-| All tests | `npm test` (90 files / 676 tests at time of writing) |
+| All tests | `npm test` (93 files / 696 tests at time of writing) |
 | Types | `npm run typecheck` |
 | Changed-file lint | `npx eslint <changed files>` |
 | Whitespace | `git diff --check` |
 
 Relevant guards: `tests/route-transitions.test.ts`, `tests/session-identity.test.ts`,
 `tests/instant-interaction.test.ts`, `tests/cache-policy.test.ts`,
-`tests/scroll-restoration.test.ts`, `tests/mobile-chrome.test.ts`, and
-`tests/back-navigation.test.ts`. They prove source shape, not timing or DOM
-identity; the scenarios below close that gap.
+`tests/scroll-restoration.test.ts`, `tests/full-load-removal.test.ts`,
+`tests/pull-to-refresh.test.ts`, `tests/resource-cleanup.test.ts`,
+`tests/mobile-chrome.test.ts`, and `tests/back-navigation.test.ts`. They prove
+source shape, not timing or DOM identity; the scenarios below close that gap.
 
 ## 2. Runtime scenarios
 
@@ -167,12 +168,19 @@ cache.
   `/en/settings`, `/en/admin`.
 - Change Explore `category`, `q`, `feed`, and `page`; navigate away; return via
   Back and via a fresh link. URL and visible controls must agree.
-- Language switch: currently a full load. Record it as known behavior, not a
-  regression, unless Phase 7/8 explicitly changes it.
+- Explore search now uses `router.push`: submit a query, check the URL, then go
+  Back and confirm the input text matches the restored `q`.
+- Language switch now uses `next/link` with `scroll={false}`. Switch ID → EN →
+  ID without refreshing, then check:
 
-**Pass:** URL, visible filter state and shell stay consistent; no refresh is
-required to restore nav. **Fail:** stale filters, missing nav, or wrong route
-group after history navigation.
+  ```js
+  document.documentElement.lang
+  ```
+
+**Pass:** URL, visible filter state and shell stay consistent; `<html lang>`
+matches the active locale; no refresh is required to restore nav. **Fail:**
+stale filters, stale `lang`, missing nav, or wrong route group after history
+navigation.
 
 ### 2.7 Auth regression smoke (do not expand scope)
 
@@ -194,14 +202,20 @@ recovery behave as documented. Do **not** test AUTH-06 or SEC-06/07/09 here.
 2. Watch Console for duplicate Supabase subscription/listener warnings and
    check `getEventListeners(document)` in Chromium if available.
 3. Scroll the Explore feed continuously during the loop; note jank or forced
-   layout warnings.
-4. Test Pull-to-Refresh with mobile emulation and `Offline` after a successful
-   load.
+   layout warnings. With no scrolling, confirm automatic loading stops after 3
+   pages and a manual button appears; the next user scroll should resume it.
+4. Test Pull-to-Refresh at the top of Home and Explore with mobile emulation.
+   Confirm the indicator, that existing content stays visible, that the list
+   updates after release, and that a canvas/modals/horizontal filter row do not
+   trigger it.
+5. Repeat with `Offline` after a successful load and with a throttled/failing
+   request. The 8 s fallback should show the failure message and retry button.
 
 **Pass:** no monotonic heap growth across rounds, no accumulating listeners or
-fetches, feed scrolling stays responsive, offline shows already-loaded content
-where the service worker supports it. **Fail:** steady growth, duplicate
-subscriptions, or blank feed after offline.
+fetches, feed scrolling stays responsive, refresh failure is visible/retryable,
+and offline shows already-loaded content where the service worker supports it.
+**Fail:** steady growth, duplicate subscriptions, blank feed after offline, or
+a silent hung refresh.
 
 ## 3. Result template
 
@@ -226,6 +240,7 @@ Account(s) used:
 |10 | Auth regression smoke |                |                |               |      |
 |11 | Repeated nav memory/listeners |         | heap= MB       |               |      |
 |12 | Pull-to-Refresh / offline |             |                |               |      |
+|13 | Language switch + Explore search |       | lang=          |               |      |
 ```
 
 ## 4. Exit criteria
@@ -242,8 +257,15 @@ later wants automation, that is a separate decision.
   emulation is a smoke check, not full device coverage.
 - The 50 px scroll tolerance is a practical manual threshold, not a product
   SLA. Adjust it in the evidence note if the design team sets a stricter one.
-- Language switch and Explore search still use full loads; this plan records
-  them as current behavior rather than silently marking them fixed.
+- Language switch and Explore search are now client navigations, but their
+  runtime behavior (Back/Forward input state and `<html lang>`) is only guarded
+  statically by `tests/full-load-removal.test.ts`; this plan records the browser
+  check rather than claiming it was measured.
+- Pull-to-Refresh is also static-only right now. Native overscroll, iOS Safari
+  touch behavior, the 8 s timeout, and cross-browser reduced-motion rendering
+  need real devices/emulation before Phase 8 can close.
+- Cache bounds, the 3-page automatic-load cap, and timer cleanup are statically
+  guarded but not measured as heap/listener counts in a real browser.
 - Supabase-hosted changes (Reset Password template, Edge Function secrets,
   redirect allow-list, rate limits) remain manual setup items outside this
   repository.

@@ -1,20 +1,20 @@
 import type { ReactNode } from "react"
 import Link from "next/link"
-import { Search } from "pixelarticons/react"
+import { ExploreSearch } from "@/components/creations/ExploreSearch"
 import { ExploreInfinite } from "@/components/social/ExploreInfinite"
 import { Pill } from "@/components/social/Pill"
+import { PullToRefresh } from "@/components/social/PullToRefresh"
 import { SocialEmptyState } from "@/components/social/SocialEmptyState"
 import { socialButtonClass } from "@/components/social/socialButton"
-import { socialCopy } from "@/lib/copy-social"
 import {
   exploreHref,
   type ExploreCategoryFilter,
   type ExploreFeed,
 } from "@/lib/creations"
 import { copy, creationCategoryLabels } from "@/lib/copy"
-import { href, type Lang } from "@/lib/i18n"
+import { type Lang } from "@/lib/i18n"
 import { loginHref } from "@/lib/paths"
-import { CREATION_CATEGORIES, EXPLORE_SEARCH_MAX } from "@/lib/site"
+import { CREATION_CATEGORIES } from "@/lib/site"
 import type { CreationCard as CreationCardData } from "@/features/creations/queries"
 
 export function ExploreFilters({
@@ -29,43 +29,10 @@ export function ExploreFilters({
   feed?: ExploreFeed
 }) {
   const base = { category, q, feed }
-  const t = socialCopy.explore
   return (
     <div className="grid min-w-0 gap-3">
       {/* 1. Search is the primary control: big, calm, first. */}
-      <form action={href(lang, "/explore")} method="get" role="search" className="flex min-w-0 gap-2">
-        {feed === "following" ? <input type="hidden" name="feed" value="following" /> : null}
-        {category !== "all" ? <input type="hidden" name="category" value={category} /> : null}
-        <label className="relative block min-w-0 flex-1">
-          <span className="sr-only">{copy.exploreSearchLabel[lang]}</span>
-          <Search
-            width={20}
-            height={20}
-            aria-hidden="true"
-            className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-muted"
-          />
-          <input
-            type="search"
-            name="q"
-            defaultValue={q}
-            maxLength={EXPLORE_SEARCH_MAX}
-            enterKeyHint="search"
-            placeholder={t.searchPlaceholder[lang]}
-            className="min-h-12 w-full min-w-0 border border-transparent bg-soft py-2.5 pl-11 pr-3 text-[16px] text-fg placeholder:text-muted focus-visible:border-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky"
-          />
-        </label>
-        {/* Visible from sm up; on phones the keyboard's search key submits (still focusable for a11y). */}
-        <button
-          type="submit"
-          className={socialButtonClass({
-            variant: "solid",
-            size: "lg",
-            className: "sr-only shrink-0 focus:not-sr-only sm:not-sr-only",
-          })}
-        >
-          {t.searchSubmit[lang]}
-        </button>
-      </form>
+      <ExploreSearch key={q} lang={lang} category={category} q={q} feed={feed} />
 
       {/* 2. One quiet row of pills: feed switch first, then the size filters. */}
       <div className="-mx-3 flex min-w-0 items-center gap-2 overflow-x-auto px-3 pb-0.5 sm:mx-0 sm:px-0 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
@@ -138,23 +105,25 @@ export function ExploreGallery({
           ? copy.exploreEmptySize[lang]
           : copy.exploreEmptyAll[lang]
 
-  if (items.length === 0) {
-    return <SocialEmptyState title={copy.exploreEmptyTitle[lang]} description={emptyDescription} />
-  }
-
   return (
-    <ExploreInfinite
-      // New filters/page = fresh client state (loaded pages, scroll bookkeeping).
-      key={`${feed}|${category}|${q}|${page}`}
-      lang={lang}
-      category={category}
-      q={q}
-      feed={feed}
-      initialItems={items}
-      initialPage={page}
-      pageCount={pageCount}
-      interludes={interludes}
-    />
+    <PullToRefresh lang={lang}>
+      {items.length === 0 ? (
+        <SocialEmptyState title={copy.exploreEmptyTitle[lang]} description={emptyDescription} />
+      ) : (
+        <ExploreInfinite
+          // New filters/page = fresh client state (loaded pages, scroll bookkeeping).
+          key={`${feed}|${category}|${q}|${page}`}
+          lang={lang}
+          category={category}
+          q={q}
+          feed={feed}
+          initialItems={items}
+          initialPage={page}
+          pageCount={pageCount}
+          interludes={interludes}
+        />
+      )}
+    </PullToRefresh>
   )
 }
 

@@ -7,6 +7,7 @@ const read = (file: string) => readFileSync(path.resolve(__dirname, "..", file),
 describe("Explore gallery layout", () => {
   const card = read("components/creations/CreationCard.tsx")
   const gallery = read("components/creations/ExploreGallery.tsx")
+  const search = read("components/creations/ExploreSearch.tsx")
   const infinite = read("components/social/ExploreInfinite.tsx")
   const explorePage = read("app/[lang]/(public)/explore/page.tsx")
 
@@ -39,8 +40,9 @@ describe("Explore gallery layout", () => {
     expect(infinite).toMatch(/MosaicGrid/)
     expect(infinite).toMatch(/isLargeTile/)
     expect(infinite).toMatch(/segmentWithBands/)
-    expect(gallery).toMatch(/role="search"/)
-    expect(gallery).toMatch(/name="q"/)
+    expect(gallery).toMatch(/<ExploreSearch\b/)
+    expect(search).toMatch(/role="search"/)
+    expect(search).toMatch(/name="q"/)
     expect(gallery).not.toMatch(/masonry/)
     expect(explorePage).toMatch(/parseExploreSearch/)
   })
@@ -48,7 +50,7 @@ describe("Explore gallery layout", () => {
   it("keeps minimal chrome with horizontally scrolling size chips on mobile", () => {
     expect(gallery).toMatch(/overflow-x-auto/)
     expect(gallery).toMatch(/flex-nowrap/)
-    expect(gallery).toMatch(/sr-only/)
+    expect(search).toMatch(/sr-only/)
     expect(gallery).toMatch(/min-w-0/)
     expect(gallery).not.toMatch(/<details/)
     expect(explorePage).toMatch(/w-full min-w-0 max-w-6xl/)
@@ -56,7 +58,7 @@ describe("Explore gallery layout", () => {
     // Search leads the page; the title stays for assistive tech but is not a visible control.
     expect(explorePage).not.toMatch(/<PageHeader/)
     expect(explorePage).toMatch(/<h1 className="sr-only">/)
-    expect(gallery).toMatch(/min-h-12/)
+    expect(search).toMatch(/min-h-12/)
   })
 
 

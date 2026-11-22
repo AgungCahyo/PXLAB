@@ -6,11 +6,14 @@ import { mergeUnique } from "@/lib/social-feed"
 export type InfiniteStatus = "idle" | "loading" | "error"
 export type PageResult<T> = { ok: true; items: T[]; page: number; pageCount: number } | { ok: false }
 
+const AUTO_LOAD_LIMIT = 3
+const AUTO_ROOT_MARGIN = "240px 0px"
+
 /**
  * Shared infinite-scroll engine (Explore + Home feed).
  * - one request at a time, items de-duplicated by id
- * - IntersectionObserver on a sentinel, re-created after each load so a sentinel that is
- *   still on screen immediately pulls the next page
+ * - IntersectionObserver on a sentinel, re-created after each load; automatic
+ *   continuations are capped so a tall viewport cannot walk the whole feed
  * - exposes `restore` so callers can resume a previous session without extra renders here
  */
 export function useInfiniteList<T extends { id: string }>({
@@ -28,7 +31,9 @@ export function useInfiniteList<T extends { id: string }>({
   const [lastPage, setLastPage] = useState(initialPage)
   const [pageCount, setPageCount] = useState(initialPageCount)
   const [status, setStatus] = useState<InfiniteStatus>("idle")
+  const [autoPaused, setAutoPaused] = useState(false)
   const loadingRef = useRef(false)
+  const autoLoadsRef = useRef(0)
   const sentinelRef = useRef<HTMLDivElement>(null)
   const loadNextRef = useRef<() => void>(() => {})
   const hasMore = lastPage < pageCount
@@ -62,17 +67,33 @@ export function useInfiniteList<T extends { id: string }>({
   }, [loadNext])
 
   useEffect(() => {
+    const resetAutoLoads = () => {
+      autoLoadsRef.current = 0
+      setAutoPaused((prev) => (prev ? false : prev))
+    }
+    window.addEventListener("scroll", resetAutoLoads, { passive: true })
+    return () => window.removeEventListener("scroll", resetAutoLoads)
+  }, [])
+
+  useEffect(() => {
     const node = sentinelRef.current
-    if (!node || !hasMore || status !== "idle" || typeof IntersectionObserver === "undefined") return
+    if (!node || !hasMore || status !== "idle" || autoPaused || typeof IntersectionObserver === "undefined") return
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries.some((entry) => entry.isIntersecting)) loadNextRef.current()
+        if (!entries.some((entry) => entry.isIntersecting)) return
+        if (autoLoadsRef.current >= AUTO_LOAD_LIMIT) {
+          setAutoPaused(true)
+          observer.disconnect()
+          return
+        }
+        autoLoadsRef.current += 1
+        loadNextRef.current()
       },
-      { rootMargin: "800px 0px" },
+      { rootMargin: AUTO_ROOT_MARGIN },
     )
     observer.observe(node)
     return () => observer.disconnect()
-  }, [hasMore, status, lastPage])
+  }, [autoPaused, hasMore, status, lastPage])
 
   const restore = useCallback((next: { items: T[]; page: number; pageCount: number }) => {
     setItems(next.items)
@@ -80,5 +101,16 @@ export function useInfiniteList<T extends { id: string }>({
     setPageCount(next.pageCount)
   }, [])
 
-  return { items, lastPage, pageCount, status, hasMore, sentinelRef, observerSupported, loadNext, restore }
+  return {
+    items,
+    lastPage,
+    pageCount,
+    status,
+    hasMore,
+    sentinelRef,
+    observerSupported,
+    autoPaused,
+    loadNext,
+    restore,
+  }
 }

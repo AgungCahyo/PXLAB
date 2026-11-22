@@ -1,6 +1,6 @@
 "use client"
 
-import { createContext, useCallback, useContext, useMemo, useRef, useState, type ReactNode } from "react"
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react"
 import { cn } from "@/lib/utils"
 
 type ToastTone = "success" | "error" | "info"
@@ -14,12 +14,24 @@ const TOAST_MS = 2600
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<ToastItem[]>([])
   const nextId = useRef(0)
+  const timersRef = useRef<number[]>([])
+
+  useEffect(
+    () => () => {
+      for (const timer of timersRef.current) window.clearTimeout(timer)
+    },
+    [],
+  )
 
   const show = useCallback<ShowToast>((message, tone = "success") => {
     const id = (nextId.current += 1)
     // Keep at most 2 visible; newest wins.
     setItems((prev) => [...prev.slice(-1), { id, message, tone }])
-    window.setTimeout(() => setItems((prev) => prev.filter((t) => t.id !== id)), TOAST_MS)
+    const timer = window.setTimeout(() => {
+      timersRef.current = timersRef.current.filter((pending) => pending !== timer)
+      setItems((prev) => prev.filter((t) => t.id !== id))
+    }, TOAST_MS)
+    timersRef.current.push(timer)
   }, [])
 
   const value = useMemo(() => show, [show])

@@ -271,6 +271,8 @@ export default async function CreationDetailPage({
 
       {isPixel ? (
         <SimilarWorksLazy
+          // Remount on detail change instead of resetting state in an effect.
+          key={creation.id}
           lang={lang}
           creationId={creation.id}
           category={creation.category}

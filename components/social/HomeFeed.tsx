@@ -3,6 +3,7 @@
 import Link from "next/link"
 import { useCallback, useSyncExternalStore } from "react"
 import { FeedPost } from "@/components/social/FeedPost"
+import { PullToRefresh } from "@/components/social/PullToRefresh"
 import type { FeedViewer } from "@/components/social/CommentPanel"
 import { FeedSkeleton } from "@/components/social/Skeleton"
 import { socialButtonClass } from "@/components/social/socialButton"
@@ -14,6 +15,15 @@ import { socialCopy } from "@/lib/copy-social"
 import type { Lang } from "@/lib/i18n"
 import { cn } from "@/lib/utils"
 
+type HomeFeedProps = {
+  lang: Lang
+  feed: FeedKind
+  viewer: FeedViewer | null
+  initialItems: FeedPostData[]
+  initialPage: number
+  pageCount: number
+}
+
 function pageHref(lang: Lang, feed: FeedKind, page: number) {
   const prefix = lang === "id" ? "" : `/${lang}`
   const params = new URLSearchParams()
@@ -24,24 +34,17 @@ function pageHref(lang: Lang, feed: FeedKind, page: number) {
 }
 
 /** Home feed list: same infinite-scroll engine as Explore, with a pagination landmark fallback. */
-export function HomeFeed({
+function HomeFeedList({
   lang,
   feed,
   viewer,
   initialItems,
   initialPage,
   pageCount: initialPageCount,
-}: {
-  lang: Lang
-  feed: FeedKind
-  viewer: FeedViewer | null
-  initialItems: FeedPostData[]
-  initialPage: number
-  pageCount: number
-}) {
+}: HomeFeedProps) {
   const t = socialCopy.explore
   const fetchPage = useCallback((page: number) => loadMoreHomeFeedAction({ feed, page }), [feed])
-  const { items, lastPage, pageCount, status, hasMore, sentinelRef, observerSupported, loadNext } =
+  const { items, lastPage, pageCount, status, hasMore, sentinelRef, observerSupported, autoPaused, loadNext } =
     useInfiniteList({ initialItems, initialPage, pageCount: initialPageCount, fetchPage })
   const enhanced = useSyncExternalStore(
     () => () => {},
@@ -85,7 +88,7 @@ export function HomeFeed({
 
       {hasMore && status === "idle" ? <div ref={sentinelRef} aria-hidden="true" className="h-px" /> : null}
 
-      {hasMore && status === "idle" && !observerSupported ? (
+      {hasMore && status === "idle" && (!observerSupported || autoPaused) ? (
         <div className="flex justify-center py-4">
           <button type="button" onClick={() => void loadNext()} className={socialButtonClass({ variant: "soft" })}>
             {t.loadMore[lang]}
@@ -107,5 +110,14 @@ export function HomeFeed({
         {status === "loading" ? t.loadingMore[lang] : ""}
       </span>
     </div>
+  )
+}
+
+/** Pull-to-refresh owns only the remount boundary; the list owns infinite state. */
+export function HomeFeed(props: HomeFeedProps) {
+  return (
+    <PullToRefresh lang={props.lang}>
+      <HomeFeedList {...props} />
+    </PullToRefresh>
   )
 }

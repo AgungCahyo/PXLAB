@@ -132,9 +132,15 @@ understood and documented.
 > from it; static guard: `tests/session-identity.test.ts`. All 19 page routes
 > now have a fallback (`tests/instant-interaction.test.ts`); cache ownership is
 > guarded by `tests/cache-policy.test.ts` and Explore restore by
-> `tests/scroll-restoration.test.ts`. The Phase 8 manual validation checklist is
-> ready in `docs/master-plan/PHASE-8-RUNTIME-VALIDATION.md` but has not been
-> executed.
+> `tests/scroll-restoration.test.ts`. Language switching and Explore search now
+> use client navigation with an explicit `<html lang>` sync (audit Section X);
+> guard: `tests/full-load-removal.test.ts`. Pull-to-Refresh is implemented for
+> Home and Explore with gesture safety, retry, and reduced-motion support (audit
+> Section Y); guard: `tests/pull-to-refresh.test.ts`. Phase 7 added bounded
+> caches/storage, capped automatic infinite loads, timer cleanup, and memoized
+> tiles (audit Section Z); guard: `tests/resource-cleanup.test.ts`. The Phase 8
+> manual validation checklist is ready in
+> `docs/master-plan/PHASE-8-RUNTIME-VALIDATION.md` but has not been executed.
 
 ------------------------------------------------------------------------
 
@@ -182,6 +188,13 @@ separately in Phase 3.
 -   Global navigation and header do not remount unnecessarily.
 -   Route changes do not reset global application state.
 -   Direct route access and browser history still work.
+
+> **Implementation status (22 Nov 2026): shell unchanged, full loads removed.**
+> The persistent `[lang]`/`PublicShell` structure needed no refactor. Language
+> switching now uses `next/link` with `scroll={false}` and syncs
+> `document.documentElement.lang`; Explore search uses `router.push` instead of
+> a GET form. See audit Section X and `tests/full-load-removal.test.ts`. Runtime
+> shell-identity proof remains Phase 8.
 
 ------------------------------------------------------------------------
 
@@ -396,6 +409,16 @@ Apply the gesture only to appropriate feed containers.
 -   Existing content is not cleared unnecessarily.
 -   Refresh status is accessible and understandable.
 
+> **Implementation status (22 Nov 2026): source implemented, runtime unproven.**
+> `PullToRefresh` is scoped to `HomeFeed` and `ExploreGallery`; it uses a 72 px
+> threshold with 0.5 resistance, ignores canvas/dialog/input/horizontal
+> controls, and calls `router.refresh()` before remounting the list with fresh
+> server props. Failure, offline, retry, reduced-motion, and live-region status
+> are included. `HomeFeedList` was split out so the remount resets its infinite
+> state. Static guard: `tests/pull-to-refresh.test.ts`. iOS Safari, Android
+> Chrome, desktop, native-refresh, and offline behavior still need the Phase 8
+> browser checklist.
+
 ------------------------------------------------------------------------
 
 ## 7. Phase 6 --- Remove Unnecessary Route Transitions
@@ -481,6 +504,14 @@ longer sessions.
 -   Feed scrolling remains responsive.
 -   Images do not cause avoidable layout shifts.
 -   Network requests are appropriate to the user's actions.
+
+> **Implementation status (22 Nov 2026): source hardening done, runtime metrics
+> pending.** No Realtime or global listener leak exists. The recommendation
+> cache is a 32-entry LRU, Explore restore uses one resume slot plus a 6-key
+> index with 96-item payloads, automatic infinite loads stop after 3 pages until
+> the next scroll, `WorkTile` is memoized, and long-press/Toast/PWA timers and
+> listeners are cleaned up. Static guard: `tests/resource-cleanup.test.ts`. Heap,
+> listener, and request-count measurements remain Phase 8 work.
 
 ------------------------------------------------------------------------
 

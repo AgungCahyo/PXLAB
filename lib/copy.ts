@@ -34,6 +34,12 @@ export const copy = {
   } satisfies Bi,
   errorRetry: { id: "Coba lagi", en: "Try again" } satisfies Bi,
 
+  pullRefresh: { id: "Tarik untuk memuat ulang", en: "Pull to refresh" } satisfies Bi,
+  pullRelease: { id: "Lepaskan untuk memuat ulang", en: "Release to refresh" } satisfies Bi,
+  pullRefreshing: { id: "Memuat ulang…", en: "Refreshing…" } satisfies Bi,
+  pullDone: { id: "Berhasil dimuat ulang", en: "Refreshed" } satisfies Bi,
+  pullFailed: { id: "Gagal memuat ulang", en: "Refresh failed" } satisfies Bi,
+
   nav: {
     explore: { id: "Jelajah", en: "Explore" } satisfies Bi,
     space: { id: "Ruang (nanti)", en: "Space (later)" } satisfies Bi,
