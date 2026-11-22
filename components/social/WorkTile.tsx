@@ -61,7 +61,7 @@ export const WorkTile = memo(function WorkTile({
         aria-label={
           showAuthor ? `${title} — ${socialCopy.landing.workBy[lang]} @${creation.author.username}` : title
         }
-        className="absolute inset-0 z-0"
+        className="absolute inset-0 z-0 focus-visible:outline-2 focus-visible:outline-offset-[-3px] focus-visible:outline-sky"
       />
       <div className="pointer-events-none absolute inset-0">
         {cover ? (
@@ -72,7 +72,7 @@ export const WorkTile = memo(function WorkTile({
       </div>
 
       {!large ? (
-        <div className="pointer-events-none absolute inset-x-0 top-0 z-[1] bg-fg/75 px-2 py-1.5 text-[12px] font-medium text-white opacity-0 transition-opacity duration-[var(--soc-fast)] group-hover:opacity-100 group-focus-within:opacity-100">
+        <div className="pointer-events-none absolute inset-x-0 top-0 z-[1] bg-fg/75 px-2 py-1.5 text-[12px] font-medium text-white opacity-100 transition-opacity duration-[var(--soc-fast)] sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100">
           <span className="block truncate">{title}</span>
         </div>
       ) : null}
@@ -102,7 +102,7 @@ export const WorkTile = memo(function WorkTile({
               />
               <span className="flex min-w-0 flex-col leading-tight">
                 <span className="truncate text-[12px] font-semibold">{authorName}</span>
-                <span className="truncate text-[11px] text-white/70">@{creation.author.username}</span>
+                <span className="truncate text-[11px] text-white">@{creation.author.username}</span>
               </span>
             </Link>
           </div>

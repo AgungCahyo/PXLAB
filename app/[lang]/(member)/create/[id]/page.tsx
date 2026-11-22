@@ -3,7 +3,9 @@ import { notFound } from "next/navigation"
 import { connection } from "next/server"
 import { PlaygroundForm } from "@/components/creations/PlaygroundForm"
 import { StudioForm } from "@/components/creations/StudioForm"
+import { PageHeader } from "@/components/ui/PageHeader"
 import { getOwnedCreation, getPublishedCreation, loadOwnedPixelSource } from "@/features/creations/queries"
+import { displayTitle } from "@/lib/creations"
 import { copy } from "@/lib/copy"
 import { isLang } from "@/lib/i18n"
 import { pageMeta } from "@/lib/meta"
@@ -65,10 +67,7 @@ export default async function EditCreationPage({
 
   return (
     <div data-chrome="studio" className="mx-auto max-w-5xl px-5 py-16 sm:px-8 lg:px-16">
-      <p className="pixel-kicker mb-3">
-        {copy.createEyebrow[raw]}
-      </p>
-      <h1 className="pixel-title">{copy.createTitle[raw]}</h1>
+      <PageHeader title={copy.createEdit[raw]} intro={displayTitle(creation.title, raw)} />
       <div className="mt-10">
         <StudioForm lang={raw} creation={creation} />
       </div>

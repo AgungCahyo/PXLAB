@@ -1,7 +1,6 @@
 import type { Metadata } from "next"
-import Link from "next/link"
 import { notFound } from "next/navigation"
-import { Suspense, type ReactNode } from "react"
+import { Suspense } from "react"
 import {
   ExploreFilters,
   ExploreFollowingGuest,
@@ -9,27 +8,38 @@ import {
 } from "@/components/creations/ExploreGallery"
 import { NewCreatorsStrip } from "@/components/creations/NewCreatorsStrip"
 import { QuietRack } from "@/components/creations/QuietRack"
-import { TileGridSkeleton } from "@/components/social/Skeleton"
-import { SocialEmptyState } from "@/components/social/SocialEmptyState"
-import { socialButtonClass } from "@/components/social/socialButton"
+import {
+  SearchOverview,
+  SearchOverviewSkeleton,
+  relevantTagsForSearch,
+} from "@/components/search/SearchResults"
+import { CreatorRailSkeleton, QuietRailSkeleton, TileGridSkeleton } from "@/components/social/Skeleton"
+import { SectionHeader } from "@/components/ui/PageHeader"
 import { listFollowingIds } from "@/features/community/follows"
 import {
+  listCreatorWorkPreviews,
   listNewCreators,
   listPublishedCreations,
   listQuietPublishedCreations,
+  type CreationCard,
 } from "@/features/creations/queries"
-import { getCurrentProfile } from "@/lib/auth/session"
+import { searchCreators } from "@/features/profiles/queries"
+import { getCurrentProfile, type MemberProfile } from "@/lib/auth/session"
 import {
   exploreHref,
   parseExploreCategory,
   parseExploreFeed,
+  parseExploreScope,
   parseExploreSearch,
+  parseExploreTag,
   type ExploreCategoryFilter,
   type ExploreFeed,
+  type ExploreScope,
 } from "@/lib/creations"
 import { copy } from "@/lib/copy"
 import { isLang, type Lang } from "@/lib/i18n"
 import { pageMeta } from "@/lib/meta"
+import { EXPLORE_PAGE_SIZE, SEARCH_MIN_LENGTH } from "@/lib/site"
 
 export const instant = false
 
@@ -53,58 +63,125 @@ export default async function ExplorePage({
   searchParams,
 }: {
   params: Promise<{ lang: string }>
-  searchParams: Promise<{ category?: string; q?: string; page?: string; feed?: string }>
+  searchParams: Promise<{
+    category?: string
+    q?: string
+    tag?: string
+    page?: string
+    feed?: string
+    scope?: string
+  }>
 }) {
   const { lang: raw } = await params
   if (!isLang(raw)) notFound()
   const lang = raw
   const query = await searchParams
   const category = parseExploreCategory(query.category)
-  const q = parseExploreSearch(query.q)
+  const tag = parseExploreTag(query.tag)
+  const q = parseExploreSearch(query.q || (tag ? `#${tag}` : ""))
+  const activeQ = q.length >= SEARCH_MIN_LENGTH ? q : ""
   const feed = parseExploreFeed(query.feed)
+  const scope = parseExploreScope(query.scope)
   const page = Math.max(1, Number.parseInt(query.page ?? "1", 10) || 1)
-  const showDiscovery = page === 1 && feed === "all" && category === "all" && !q
+  const showDiscovery = page === 1 && feed === "all" && category === "all" && !activeQ
 
-  // Bands that live inside the feed (never below it: an infinite feed has no "below").
-  const interludes = showDiscovery
-    ? [
-        {
-          at: 5,
-          node: (
-            <Suspense fallback={null}>
-              <NewCreatorsSlot lang={lang} />
-            </Suspense>
-          ),
-        },
-        {
-          at: 15,
-          node: (
-            <Suspense fallback={null}>
-              <QuietRackSlot lang={lang} />
-            </Suspense>
-          ),
-        },
-      ]
-    : undefined
+  // One viewer lookup for the whole page: follow state, Following feed and login links.
+  const viewer = await getCurrentProfile()
+  const following = viewer ? await listFollowingIds(viewer.id) : []
+  const followingSet = new Set(following)
+  const member = Boolean(viewer)
+  const returnPath = exploreHref(lang, { category, q, feed, scope })
 
   return (
     <div className="mx-auto w-full min-w-0 max-w-6xl px-3 py-4 sm:px-6 sm:py-6 lg:px-10">
       <h1 className="sr-only">{copy.exploreTitle[lang]}</h1>
 
-      <ExploreFilters lang={lang} category={category} q={q} feed={feed} />
+      <ExploreFilters lang={lang} category={category} q={q} feed={feed} scope={scope} />
 
-      <div className="mt-3 min-w-0 sm:mt-4">
-        <Suspense fallback={<TileGridSkeleton />}>
-          <ExploreResults
-            lang={lang}
-            category={category}
-            q={q}
-            page={page}
-            feed={feed}
-            interludes={interludes}
-          />
-        </Suspense>
-      </div>
+      {activeQ ? (
+        <div className="mt-3 min-w-0 sm:mt-4">
+          <Suspense fallback={<SearchOverviewSkeleton scope={scope} />}>
+            <ExploreResults
+              lang={lang}
+              category={category}
+              q={activeQ}
+              page={page}
+              feed={feed}
+              scope={scope}
+              viewer={viewer}
+              following={following}
+              followingSet={followingSet}
+              member={member}
+              returnPath={returnPath}
+            />
+          </Suspense>
+        </div>
+      ) : (
+        <div className="mt-4 grid min-w-0 gap-6 sm:gap-7">
+          {/*
+           * Discovery mode keeps its three sections distinct: artwork discovery,
+           * new creators, then works that still need exposure.
+           */}
+          <section aria-labelledby="explore-works-heading" className="min-w-0">
+            <SectionHeader id="explore-works-heading" title={copy.discoveryWorksTitle[lang]} />
+            <div className="mt-2">
+              <Suspense fallback={<TileGridSkeleton count={EXPLORE_PAGE_SIZE} />}>
+                <ExploreResults
+                  lang={lang}
+                  category={category}
+                  q=""
+                  page={page}
+                  feed={feed}
+                  scope={scope}
+                  viewer={viewer}
+                  following={following}
+                  followingSet={followingSet}
+                  member={member}
+                  returnPath={returnPath}
+                />
+              </Suspense>
+            </div>
+          </section>
+
+          {showDiscovery ? (
+            <>
+              <Suspense
+                fallback={
+                  <div className="min-w-0">
+                    <SectionHeader
+                      id="new-creators-heading"
+                      title={copy.discoveryCreatorsTitle[lang]}
+                    />
+                    <CreatorRailSkeleton />
+                  </div>
+                }
+              >
+                <NewCreatorsSlot
+                  lang={lang}
+                  followingSet={followingSet}
+                  member={member}
+                  returnPath={returnPath}
+                  currentUserId={viewer?.id ?? null}
+                />
+              </Suspense>
+
+              <Suspense
+                fallback={
+                  <div className="min-w-0">
+                    <SectionHeader
+                      id="quiet-rack-heading"
+                      title={copy.discoveryQuietTitle[lang]}
+                    />
+                    <QuietRailSkeleton />
+                  </div>
+                }
+              >
+                <QuietRackSlot lang={lang} />
+              </Suspense>
+            </>
+          ) : null}
+        </div>
+      )}
     </div>
   )
 }
@@ -115,79 +192,121 @@ async function ExploreResults({
   q,
   page,
   feed,
-  interludes,
+  scope,
+  viewer,
+  following,
+  followingSet,
+  member,
+  returnPath,
 }: {
   lang: Lang
   category: ExploreCategoryFilter
   q: string
   page: number
   feed: ExploreFeed
-  interludes?: { at: number; node: ReactNode }[]
+  scope: ExploreScope
+  viewer: MemberProfile | null
+  following: string[]
+  followingSet: Set<string>
+  member: boolean
+  returnPath: string
 }) {
-  if (feed === "following") {
-    const profile = await getCurrentProfile()
-    if (!profile) return <ExploreFollowingGuest lang={lang} />
+  const emptyWorks: {
+    items: CreationCard[]
+    total: number
+    page: number
+    pageCount: number
+    failed: boolean
+  } = { items: [], total: 0, page, pageCount: 1, failed: false }
+  const guestFollowing = feed === "following" && !viewer
+  const creatorSearch = q && scope !== "creations" ? await searchCreators(q) : null
+  const creatorItems = creatorSearch
+    ? viewer?.id
+      ? creatorSearch.items.filter((creator) => creator.id !== viewer.id)
+      : creatorSearch.items
+    : []
+  const creators = creatorSearch
+    ? {
+        ...creatorSearch,
+        items: creatorItems,
+        total: viewer?.id ? creatorItems.length : creatorSearch.total,
+      }
+    : { items: [], total: 0, failed: false }
+  const creatorPreviews =
+    creators.items.length > 0
+      ? await listCreatorWorkPreviews(creators.items.map((creator) => creator.id))
+      : {}
 
-    const followingIds = await listFollowingIds(profile.id)
-    const result = await listPublishedCreations({
-      type: "pixel",
-      category: category === "all" ? undefined : category,
-      q: q || undefined,
-      page,
-      followingUserIds: followingIds,
-      markNewSince: profile.activity_seen_at,
-    })
-
-    if (result.failed) {
-      return (
-        <SocialEmptyState
-          title={copy.exploreLoadError[lang]}
-          description={copy.exploreLoadHint[lang]}
-          action={
-            <Link
-              href={exploreHref(lang, { category, q, page, feed })}
-              className={socialButtonClass({ variant: "solid" })}
-            >
-              {copy.exploreRetry[lang]}
-            </Link>
-          }
-        />
-      )
-    }
-
+  // The creators tab must not fetch or render the creation feed.
+  if (q && scope === "creators") {
     return (
-      <ExploreGallery
+      <SearchOverview
         lang={lang}
-        category={category}
         q={q}
+        category={category}
         feed={feed}
-        page={result.page}
-        pageCount={result.pageCount}
-        items={result.items}
+        scope={scope}
+        creators={creators}
+        creatorPreviews={creatorPreviews}
+        followingIds={followingSet}
+        member={member}
+        returnPath={returnPath}
+        currentUserId={viewer?.id ?? null}
+        works={[]}
+        worksTotal={0}
+        worksFailed={false}
+        worksPage={page}
+        worksPageCount={1}
+        tags={[]}
       />
     )
   }
 
-  const result = await listPublishedCreations({
-    type: "pixel",
-    category: category === "all" ? undefined : category,
-    q: q || undefined,
-    page,
-  })
+  if (!q && guestFollowing) {
+    return <ExploreFollowingGuest lang={lang} />
+  }
 
-  if (result.failed) {
+  const result =
+    guestFollowing
+      ? emptyWorks
+      : feed === "following" && viewer
+        ? await listPublishedCreations({
+            type: "pixel",
+            category: category === "all" ? undefined : category,
+            q: q || undefined,
+            page,
+            followingUserIds: following,
+            markNewSince: viewer.activity_seen_at,
+          })
+        : await listPublishedCreations({
+            type: "pixel",
+            category: category === "all" ? undefined : category,
+            q: q || undefined,
+            page,
+          })
+
+  // Search owns its result sections and its single empty state per scope.
+  if (q) {
     return (
-      <SocialEmptyState
-        title={copy.exploreLoadError[lang]}
-        description={copy.exploreLoadHint[lang]}
-        action={
-          <Link
-            href={exploreHref(lang, { category, q, page, feed })}
-            className={socialButtonClass({ variant: "solid" })}
-          >
-            {copy.exploreRetry[lang]}
-          </Link>
-        }
+      <SearchOverview
+        lang={lang}
+        q={q}
+        category={category}
+        feed={feed}
+        scope={scope}
+        creators={creators}
+        creatorPreviews={creatorPreviews}
+        followingIds={followingSet}
+        member={member}
+        returnPath={returnPath}
+        currentUserId={viewer?.id ?? null}
+        works={result.items}
+        worksTotal={result.total}
+        worksFailed={result.failed}
+        worksPage={result.page}
+        worksPageCount={result.pageCount}
+        tags={scope === "all" ? relevantTagsForSearch(result.items, q) : []}
+        guestFollowing={guestFollowing}
       />
     )
   }
@@ -201,19 +320,42 @@ async function ExploreResults({
       page={result.page}
       pageCount={result.pageCount}
       items={result.items}
-      interludes={interludes}
+      failed={result.failed}
     />
   )
 }
 
 async function QuietRackSlot({ lang }: { lang: Lang }) {
   const quiet = await listQuietPublishedCreations(6)
-  if (quiet.failed || quiet.items.length === 0) return null
-  return <QuietRack lang={lang} items={quiet.items} preserveScroll />
+  return <QuietRack lang={lang} items={quiet.items} failed={quiet.failed} preserveScroll />
 }
 
-async function NewCreatorsSlot({ lang }: { lang: Lang }) {
-  const creators = await listNewCreators(12)
-  if (creators.failed || creators.items.length === 0) return null
-  return <NewCreatorsStrip lang={lang} items={creators.items} preserveScroll />
+async function NewCreatorsSlot({
+  lang,
+  followingSet,
+  member,
+  returnPath,
+  currentUserId,
+}: {
+  lang: Lang
+  followingSet: Set<string>
+  member: boolean
+  returnPath: string
+  currentUserId: string | null
+}) {
+  const creators = await listNewCreators(12, currentUserId)
+  const previews = await listCreatorWorkPreviews(creators.items.map((creator) => creator.id))
+  return (
+    <NewCreatorsStrip
+      lang={lang}
+      items={creators.items}
+      previews={previews}
+      followingIds={followingSet}
+      member={member}
+      returnPath={returnPath}
+      currentUserId={currentUserId}
+      failed={creators.failed}
+      preserveScroll
+    />
+  )
 }

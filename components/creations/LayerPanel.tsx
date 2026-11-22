@@ -514,49 +514,60 @@ export function LayerMobileStrip({
         <PixelIcon name="plus" />
       </button>
       {displayLayers(layers).map((layer) => (
-        <button
-          key={layer.id}
-          type="button"
-          className={cn(
-            "studio-thumb relative inline-flex items-center justify-center border-[3px] border-earth",
-            layer.active ? "border-fg bg-soft" : "bg-card",
-            !layer.visible && "opacity-50",
-          )}
-          aria-label={layer.name}
-          aria-current={layer.active ? "true" : undefined}
-          onPointerDown={() => startLongPress(layer.id)}
-          onPointerUp={(event: ReactPointerEvent<HTMLButtonElement>) => {
-            const wasLong = !longPressRef.current
-            clearLongPress()
-            if (!wasLong && event.button === 0) {
-              if (onActive(layer.id)) onFeedback?.("active")
-            }
-          }}
-          onPointerLeave={clearLongPress}
-          onPointerCancel={clearLongPress}
-          onContextMenu={(event) => {
-            event.preventDefault()
-            clearLongPress()
-            onOpenSheet(layer.id)
-          }}
-        >
-          {thumbs[layer.id] ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={thumbs[layer.id]}
-              alt=""
-              className="h-full w-full object-contain [image-rendering:pixelated]"
-              draggable={false}
-            />
-          ) : (
-            <PixelIcon name="layers" />
-          )}
-          {layer.locked ? (
-            <span className="absolute bottom-0 right-0 bg-card/90 p-0.5 text-fg">
-              <PixelIcon name="lock" className="h-3 w-3" />
-            </span>
+        <Fragment key={layer.id}>
+          <button
+            type="button"
+            className={cn(
+              "studio-thumb relative inline-flex items-center justify-center border-[3px] border-earth",
+              layer.active ? "border-fg bg-soft" : "bg-card",
+              !layer.visible && "opacity-50",
+            )}
+            aria-label={layer.name}
+            aria-current={layer.active ? "true" : undefined}
+            onPointerDown={() => startLongPress(layer.id)}
+            onPointerUp={(event: ReactPointerEvent<HTMLButtonElement>) => {
+              const wasLong = !longPressRef.current
+              clearLongPress()
+              if (!wasLong && event.button === 0) {
+                if (onActive(layer.id)) onFeedback?.("active")
+              }
+            }}
+            onPointerLeave={clearLongPress}
+            onPointerCancel={clearLongPress}
+            onContextMenu={(event) => {
+              event.preventDefault()
+              clearLongPress()
+              onOpenSheet(layer.id)
+            }}
+          >
+            {thumbs[layer.id] ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={thumbs[layer.id]}
+                alt=""
+                className="h-full w-full object-contain [image-rendering:pixelated]"
+                draggable={false}
+              />
+            ) : (
+              <PixelIcon name="layers" />
+            )}
+            {layer.locked ? (
+              <span className="absolute bottom-0 right-0 bg-card/90 p-0.5 text-fg">
+                <PixelIcon name="lock" className="h-3 w-3" />
+              </span>
+            ) : null}
+          </button>
+          {layer.active ? (
+            <button
+              type="button"
+              className="studio-thumb inline-flex items-center justify-center border-[3px] border-earth bg-card text-fg"
+              aria-label={`${layer.name} — ${copy.pixelLayerMore[lang]}`}
+              onClick={() => onOpenSheet(layer.id)}
+            >
+              <PixelIcon name="more" />
+            </button>
           ) : null}
-        </button>
+        </Fragment>
       ))}
     </div>
   )

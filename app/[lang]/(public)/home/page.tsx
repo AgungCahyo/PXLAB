@@ -15,6 +15,7 @@ import { socialCopy } from "@/lib/copy-social"
 import { href, isLang, type Lang } from "@/lib/i18n"
 import { pageMeta } from "@/lib/meta"
 import { loginHref } from "@/lib/paths"
+import { EXPLORE_PAGE_SIZE } from "@/lib/site"
 
 export const instant = false
 
@@ -60,7 +61,7 @@ export default async function HomePage({
         </TabLink>
       </nav>
 
-      <Suspense key={`${feed}-${page}`} fallback={<FeedSkeleton />}>
+      <Suspense key={`${feed}-${page}`} fallback={<FeedSkeleton count={EXPLORE_PAGE_SIZE} />}>
         <HomeResults lang={lang} feed={feed} page={page} />
       </Suspense>
     </div>

@@ -40,7 +40,9 @@ describe("scroll restoration", () => {
     const creators = read("components/creations/NewCreatorsStrip.tsx")
     expect(creators).toMatch(/preserveScroll = false/)
     expect(creators).toMatch(/scroll: false, "data-explore-resume": "true"/)
-    expect((creators.match(/\{\.\.\.restoreScrollProps\}/g) ?? []).length).toBe(2)
+    expect((creators.match(/\{\.\.\.restoreScrollProps\}/g) ?? []).length).toBe(1)
+    const card = read("components/creations/CreatorCard.tsx")
+    expect((card.match(/\{\.\.\.restoreScrollProps\}/g) ?? []).length).toBe(3)
 
     const quiet = read("components/creations/QuietRack.tsx")
     expect(quiet).toMatch(/preserveScroll = false/)

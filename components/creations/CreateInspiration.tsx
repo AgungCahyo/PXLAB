@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { CreationCard } from "@/components/creations/CreationCard"
+import { WorkTile } from "@/components/social/WorkTile"
 import { copy, creationCategoryLabels } from "@/lib/copy"
 import { href, type Lang } from "@/lib/i18n"
 import type { CreationCard as CreationCardData } from "@/features/creations/queries"
@@ -21,7 +21,10 @@ export function CreateInspiration({
   })).filter((section) => section.items.length > 0)
 
   return (
-    <section className="mt-8 border-t border-line pt-8" aria-labelledby="create-inspiration-heading">
+    <section
+      className="mt-8 border-t border-[color:var(--soc-hairline)] pt-6"
+      aria-labelledby="create-inspiration-heading"
+    >
       <h2 id="create-inspiration-heading" className="text-[15px] font-medium text-fg">
         {copy.createInspirationTitle[lang]}
       </h2>
@@ -43,7 +46,7 @@ export function CreateInspiration({
               <ul className="mt-3 grid min-w-0 grid-cols-2 gap-3 sm:grid-cols-4">
                 {section.items.map((item) => (
                   <li key={item.id} className="min-w-0">
-                    <CreationCard creation={item} lang={lang} />
+                    <WorkTile creation={item} lang={lang} />
                   </li>
                 ))}
               </ul>

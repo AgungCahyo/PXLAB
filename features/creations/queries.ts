@@ -2,7 +2,7 @@ import { cache } from "react"
 import { connection } from "next/server"
 import { parseAvatarConfig, type AvatarConfig } from "@/lib/avatar-gen"
 import { getSessionUserId } from "@/lib/auth/session"
-import { ilikeContains } from "@/lib/creations"
+import { searchLikePattern, searchTagValue } from "@/lib/creations"
 import { createPublicSupabase } from "@/lib/supabase/public"
 import { createServerSupabase } from "@/lib/supabase/server"
 import {
@@ -135,6 +135,67 @@ function cardFromRow(row: Record<string, unknown>): CreationCard {
   }
 }
 
+type RankedCreationRow = Record<string, unknown> & {
+  profiles?: ProfileEmbed | ProfileEmbed[] | null
+}
+
+type RankedRpcRow = {
+  item: unknown
+  total: number | string | null
+}
+
+function isRankedRpcMissing(error: { code?: string; message?: string } | null): boolean {
+  if (!error) return false
+  return (
+    error.code === "PGRST202" ||
+    /could not find the function|schema cache/i.test(error.message ?? "")
+  )
+}
+
+/**
+ * Server-side relevance keeps ordering stable across pages. Returns null when
+ * the RPC is not deployed so the public ILIKE path can keep the app working.
+ */
+async function searchPublishedCreationsRanked(
+  supabase: NonNullable<ReturnType<typeof createPublicSupabase>>,
+  args: {
+    query: string
+    type?: CreationType
+    category?: CreationCategory
+    followingUserIds?: string[]
+    page: number
+  },
+): Promise<{ items: CreationCard[]; total: number } | null> {
+  const { data, error } = await supabase.rpc("search_published_creations_ranked", {
+    p_query: args.query,
+    p_tag: searchTagValue(args.query),
+    p_type: args.type ?? null,
+    p_category: args.category ?? null,
+    p_following_user_ids: args.followingUserIds ?? null,
+    p_limit: EXPLORE_PAGE_SIZE,
+    p_offset: (args.page - 1) * EXPLORE_PAGE_SIZE,
+  })
+
+  if (isRankedRpcMissing(error)) return null
+  if (error || !Array.isArray(data)) {
+    throw new Error(`search_published_creations_ranked failed: ${error?.message ?? "no data"}`)
+  }
+
+  const rows = data as RankedRpcRow[]
+  const total = Math.max(0, Number(rows[0]?.total ?? 0) || 0)
+  const seen = new Set<string>()
+  const items: CreationCard[] = []
+  for (const row of rows) {
+    const item = row.item as RankedCreationRow | null
+    if (!item || typeof item !== "object") continue
+    const id = item.id as string | undefined
+    if (!id || seen.has(id)) continue
+    seen.add(id)
+    items.push(cardFromRow(item))
+  }
+  return { items, total }
+}
+
 async function attachCommentCounts(items: CreationCard[]): Promise<CreationCard[]> {
   if (items.length === 0) return items
   const supabase = createPublicSupabase()
@@ -201,7 +262,38 @@ export async function listPublishedCreations(args: {
 
   if (args.type) query = query.eq("type", args.type)
   if (args.category) query = query.eq("category", args.category)
-  if (args.q) query = query.ilike("title", ilikeContains(args.q))
+  if (args.q) {
+    const ranked = await searchPublishedCreationsRanked(supabase, {
+      query: args.q,
+      type: args.type,
+      category: args.category,
+      followingUserIds: args.followingUserIds,
+      page,
+    })
+    if (ranked) {
+      let items = await attachCommentCounts(ranked.items)
+      if (args.markNewSince !== undefined) {
+        items = markNewItems(items, args.markNewSince)
+      }
+      return {
+        items,
+        total: ranked.total,
+        page,
+        pageCount: Math.max(1, Math.ceil(ranked.total / EXPLORE_PAGE_SIZE)),
+        failed: false,
+      }
+    }
+
+    // Fallback until the ranking migration is applied: relevance is best-effort
+    // (newest first), but all searchable fields keep working.
+    const pattern = searchLikePattern(args.q)
+    if (pattern) {
+      const filters = [`title.ilike.${pattern}`, `caption.ilike.${pattern}`]
+      const tag = searchTagValue(args.q)
+      if (tag) filters.push(`tags.cs.{${tag}}`)
+      query = query.or(filters.join(","))
+    }
+  }
   if (args.followingUserIds) query = query.in("user_id", args.followingUserIds)
 
   const { data, count, error } = await query
@@ -371,17 +463,21 @@ export type NewCreatorCard = {
 /** Distinct creators from recently published pixel works (newest publish first). */
 export async function listNewCreators(
   limit = 6,
+  excludeUserId?: string | null,
 ): Promise<{ items: NewCreatorCard[]; failed: boolean }> {
   await connection()
   const supabase = createPublicSupabase()
   if (!supabase) return { items: [], failed: true }
 
   const pool = Math.max(limit * 8, 48)
-  const { data, error } = await supabase
+  let query = supabase
     .from("creations")
     .select(`id, user_id, cover_url, published_at, ${PROFILE_CARD_EMBED}`)
     .eq("status", "published")
     .eq("type", "pixel")
+  if (excludeUserId) query = query.neq("user_id", excludeUserId)
+
+  const { data, error } = await query
     .order("published_at", { ascending: false })
     .limit(pool)
 
@@ -391,6 +487,7 @@ export async function listNewCreators(
   const items: NewCreatorCard[] = []
   for (const row of data) {
     const userId = row.user_id as string
+    if (excludeUserId && userId === excludeUserId) continue
     if (seen.has(userId)) continue
     seen.add(userId)
     const author = authorOf(row as Record<string, unknown>)
@@ -408,6 +505,73 @@ export async function listNewCreators(
   }
   return { failed: false, items }
 }
+
+export type CreatorWorkPreview = {
+  id: string
+  title: string
+  coverUrl: string | null
+}
+
+/**
+ * Batch the first works of several creators into one query so compact creator
+ * cards can show a small preview row without an N+1 request per card.
+ */
+export async function listCreatorWorkPreviews(
+  userIds: string[],
+  perCreator = 3,
+): Promise<Record<string, CreatorWorkPreview[]>> {
+  const ids = [...new Set(userIds.filter(Boolean))]
+  if (ids.length === 0) return {}
+  await connection()
+  const supabase = createPublicSupabase()
+  if (!supabase) return {}
+
+  const limit = Math.max(1, Math.min(3, perCreator))
+  const { data, error } = await supabase
+    .from("creations")
+    .select("id, user_id, title, cover_url")
+    .eq("status", "published")
+    .eq("type", "pixel")
+    .in("user_id", ids)
+    .order("user_id")
+    .order("published_at", { ascending: false })
+
+  if (error || !data) return {}
+
+  const grouped = new Map<string, CreatorWorkPreview[]>()
+  for (const row of data) {
+    const userId = row.user_id as string | null
+    if (!userId) continue
+    const list = grouped.get(userId) ?? []
+    if (list.length >= limit) continue
+    list.push({
+      id: row.id as string,
+      title: row.title as string,
+      coverUrl: (row.cover_url as string | null) ?? null,
+    })
+    grouped.set(userId, list)
+  }
+  return Object.fromEntries(grouped)
+}
+
+/** Lightweight published total for a profile — the gallery query is capped at 100. */
+export const countPublishedCreationsByUser = cache(async function countPublishedCreationsByUser(
+  userId: string,
+): Promise<number> {
+  await connection()
+  const supabase = createPublicSupabase()
+  if (!supabase) return 0
+
+  const { count, error } = await supabase
+    .from("creations")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", userId)
+    .eq("status", "published")
+    .eq("type", "pixel")
+
+  if (error) return 0
+  return count ?? 0
+})
 
 /** Lightweight remix total for engagement — no card rows. */
 export async function countPublishedRemixes(parentId: string): Promise<number> {

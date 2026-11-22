@@ -183,6 +183,7 @@ export function ImportPixelArtDialog({
                 <button
                   key={preset.id}
                   type="button"
+                  aria-pressed={active}
                   className={cn(
                     "border-[3px] px-2 py-1 text-[12px] font-medium",
                     active ? "border-fg bg-soft text-fg" : "border-earth bg-bg text-muted hover:text-fg",
@@ -272,6 +273,7 @@ export function ImportPixelArtDialog({
               <button
                 key={mode}
                 type="button"
+                aria-pressed={settings.paletteMode === mode}
                 className={cn(
                   "border-[3px] px-2 py-1 text-[12px] font-medium",
                   settings.paletteMode === mode
@@ -320,6 +322,7 @@ export function ImportPixelArtDialog({
               <button
                 key={mode}
                 type="button"
+                aria-pressed={settings.dither === mode}
                 className={cn(
                   "border-[3px] px-2 py-1 text-[12px] font-medium",
                   settings.dither === mode

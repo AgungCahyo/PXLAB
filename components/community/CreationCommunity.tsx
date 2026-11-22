@@ -1,12 +1,22 @@
 "use client"
 
-import { useActionState, useEffect, useRef, useState } from "react"
+import {
+  useActionState,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type ButtonHTMLAttributes,
+} from "react"
 import { flushSync } from "react-dom"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
+import { Comment, Share } from "pixelarticons/react"
 import { ProfileAvatar } from "@/components/profiles/ProfileAvatar"
+import { PixelHeart } from "@/components/social/PixelHeart"
+import { workActionClass } from "@/components/social/socialAction"
 import { Alert } from "@/components/ui/Alert"
-import { Button, buttonClassName } from "@/components/ui/Button"
-import { PixelIcon } from "@/components/ui/PixelIcon"
+import { socialButtonClass } from "@/components/social/socialButton"
 import { Textarea } from "@/components/ui/Textarea"
 import { ReportButton } from "@/components/community/ReportDialog"
 import { CreationShareDialog } from "@/components/share/CreationShareDialog"
@@ -23,16 +33,28 @@ import { forkCreationAction, type CreationActionState } from "@/features/creatio
 import type { ConversationNote, ConversationRoot } from "@/lib/conversation"
 import { isCommentEdited, mergeConversation } from "@/lib/conversation"
 import { copy } from "@/lib/copy"
+import { socialCopy } from "@/lib/copy-social"
 import { formatRelativeTime } from "@/lib/format"
 import { href, type Lang } from "@/lib/i18n"
 import { loginHref } from "@/lib/paths"
 import { COMMENT_BODY_MAX } from "@/lib/site"
+import { reconcileDesiredState } from "@/lib/social-like"
 import { cn } from "@/lib/utils"
 
 export type CommunityMember = {
   id: string
   username: string
   avatarUrl: string | null
+}
+
+function SocButton({
+  variant = "ghost",
+  className,
+  ...props
+}: ButtonHTMLAttributes<HTMLButtonElement> & {
+  variant?: "ghost" | "solid" | "soft" | "brand"
+}) {
+  return <button className={socialButtonClass({ variant, size: "sm", className })} {...props} />
 }
 
 export function CreationCommunity({
@@ -196,8 +218,12 @@ export function CreationCommunity({
   }
 
   return (
-    <section className="mt-10 border-t-[3px] border-earth pt-8" aria-labelledby="conversation-heading">
-      <h2 id="conversation-heading" className="pixel-title">
+    <section
+      id="creation-conversation"
+      className="mt-8 border-t border-[color:var(--soc-hairline)] pt-6"
+      aria-labelledby="conversation-heading"
+    >
+      <h2 id="conversation-heading" className="text-[15px] font-medium text-fg">
         {copy.commentsTitle[lang]}
         {headingCount > 0 ? ` (${headingCount})` : ""}
       </h2>
@@ -214,16 +240,14 @@ export function CreationCommunity({
 
       {hasEarlier ? (
         <div className="mt-8">
-          <Button
+          <SocButton
             type="button"
-            size="sm"
-            variant="ghost"
             onClick={loadEarlier}
             disabled={loadingEarlier}
             aria-busy={loadingEarlier || undefined}
           >
             {loadingEarlier ? copy.conversationLoadingEarlier[lang] : copy.conversationLoadEarlier[lang]}
-          </Button>
+          </SocButton>
         </div>
       ) : null}
 
@@ -232,7 +256,7 @@ export function CreationCommunity({
       ) : (
         <ul className="mt-8">
           {thread.map((root) => (
-            <li key={root.id} id={`comment-${root.id}`} className="border-b border-line py-5">
+            <li key={root.id} id={`comment-${root.id}`} className="border-b border-[color:var(--soc-hairline)] py-4">
               <ConversationNoteRow
                 lang={lang}
                 note={root}
@@ -349,10 +373,10 @@ function GuestConversationComposer({
   const login = loginHref(lang, href(lang, `/creation/${creationId}`))
   return (
     <div className="grid gap-3">
-      <p className="w-full border-[3px] border-earth bg-card px-3 py-3 text-left text-[15px] text-muted shadow-[4px_4px_0_0_var(--fg)]">
+      <p className="w-full bg-soft px-3 py-3 text-left text-[14px] text-muted">
         {prompt}
       </p>
-      <Link href={login} className={cn(buttonClassName({ size: "sm" }), "w-fit")}>
+      <Link href={login} className={cn(socialButtonClass({ variant: "solid", size: "sm" }), "w-fit")}>
         {copy.conversationGuestPrompt[lang]}
       </Link>
     </div>
@@ -407,7 +431,12 @@ function ConversationNoteRow({
             ? ` · ${copy.conversationSending[lang]}`
             : sendStatus === "failed"
               ? ` · ${copy.conversationSendFailed[lang]}`
-              : ` · ${formatRelativeTime(note.created_at, lang)}`}
+              : (
+                  <>
+                    {" · "}
+                    <time dateTime={note.created_at}>{formatRelativeTime(note.created_at, lang)}</time>
+                  </>
+                )}
           {edited ? ` · ${copy.conversationEdited[lang]}` : ""}
         </p>
         {editing ? (
@@ -431,23 +460,23 @@ function ConversationNoteRow({
         <div className="mt-3 flex flex-wrap items-center gap-3">
           {sendStatus === "failed" ? (
             <>
-              <Button type="button" size="sm" onClick={onRetry}>
+              <SocButton type="button" variant="solid" onClick={onRetry}>
                 {copy.conversationRetry[lang]}
-              </Button>
-              <Button type="button" size="sm" variant="ghost" onClick={onDiscard}>
+              </SocButton>
+              <SocButton type="button" onClick={onDiscard}>
                 {copy.conversationDiscard[lang]}
-              </Button>
+              </SocButton>
             </>
           ) : null}
           {canReply && onReply && !pendingLocal ? (
-            <Button type="button" size="sm" variant="ghost" onClick={onReply}>
+            <SocButton type="button" onClick={onReply}>
               {copy.conversationReply[lang]}
-            </Button>
+            </SocButton>
           ) : null}
           {own && !editing ? (
-            <Button type="button" size="sm" variant="ghost" onClick={() => setEditing(true)}>
+            <SocButton type="button" onClick={() => setEditing(true)}>
               {copy.conversationEdit[lang]}
-            </Button>
+            </SocButton>
           ) : null}
           {own ? <DeleteComment lang={lang} id={note.id} onDeleted={onDeleted} /> : null}
           {member && !pendingLocal ? (
@@ -498,7 +527,7 @@ function ConversationComposer({
     return (
       <button
         type="button"
-        className="w-full border-[3px] border-earth bg-card px-3 py-3 text-left text-[15px] text-muted shadow-[4px_4px_0_0_var(--fg)] hover:bg-soft"
+        className="w-full bg-soft px-3 py-3 text-left text-[14px] text-muted hover:text-fg"
         onClick={() => setOpen(true)}
       >
         {rootPrompt}
@@ -547,7 +576,11 @@ function ConversationComposer({
     <form action={submit} className="grid gap-3">
       <input type="hidden" name="creation_id" value={creationId} />
       {parentId ? <input type="hidden" name="parent_id" value={parentId} /> : null}
-      {error && "error" in error ? <Alert tone="error">{copy.errors[error.error][lang]}</Alert> : null}
+      {error && "error" in error ? (
+        <Alert tone="error" flat>
+          {copy.errors[error.error][lang]}
+        </Alert>
+      ) : null}
       <div className="flex gap-3">
         <ProfileAvatar src={member.avatarUrl} alt={member.username} size="xs" />
         <div className="min-w-0 flex-1">
@@ -561,6 +594,7 @@ function ConversationComposer({
               setContent(event.target.value)
               onContentChange?.(event.target.value)
             }}
+            appearance="social"
             label={
               parentId
                 ? `${copy.conversationReplyTo[lang]} @${replyTo ?? ""}`
@@ -574,22 +608,22 @@ function ConversationComposer({
         </div>
       </div>
       <div className="flex flex-wrap items-center gap-2">
-        <Button
+        <SocButton
           type="submit"
-          size="sm"
+          variant="solid"
           disabled={pending || content.trim().length === 0}
           aria-busy={pending || undefined}
         >
           {pending ? copy.conversationSending[lang] : copy.conversationSend[lang]}
-        </Button>
+        </SocButton>
         {onCancel ? (
-          <Button type="button" size="sm" variant="ghost" onClick={onCancel}>
+          <SocButton type="button" onClick={onCancel}>
             {copy.createCancel[lang]}
-          </Button>
+          </SocButton>
         ) : !parentId ? (
-          <Button type="button" size="sm" variant="ghost" onClick={() => setOpen(false)}>
+          <SocButton type="button" onClick={() => setOpen(false)}>
             {copy.createCancel[lang]}
-          </Button>
+          </SocButton>
         ) : null}
       </div>
     </form>
@@ -628,7 +662,11 @@ function EditComment({
   return (
     <form action={submit} className="mt-2 grid gap-2">
       <input type="hidden" name="id" value={id} />
-      {error && "error" in error ? <Alert tone="error">{copy.errors[error.error][lang]}</Alert> : null}
+      {error && "error" in error ? (
+        <Alert tone="error" flat>
+          {copy.errors[error.error][lang]}
+        </Alert>
+      ) : null}
       <Textarea
         id={`edit-${id}`}
         name="content"
@@ -637,20 +675,21 @@ function EditComment({
         value={content}
         onChange={(event) => setContent(event.target.value)}
         label={copy.conversationEdit[lang]}
+        appearance="social"
         className="min-h-24"
       />
       <div className="flex flex-wrap gap-2">
-        <Button
+        <SocButton
           type="submit"
-          size="sm"
+          variant="solid"
           disabled={pending || content.trim().length === 0}
           aria-busy={pending || undefined}
         >
           {pending ? copy.actionWorking[lang] : copy.conversationSave[lang]}
-        </Button>
-        <Button type="button" size="sm" variant="ghost" onClick={() => onCancel(content)}>
+        </SocButton>
+        <SocButton type="button" onClick={() => onCancel(content)}>
           {copy.createCancel[lang]}
-        </Button>
+        </SocButton>
       </div>
     </form>
   )
@@ -666,6 +705,7 @@ export function CreationEngagement({
   isPixel = true,
   appreciated,
   appreciateCount,
+  commentCount = 0,
   remixCount = 0,
   member,
   allowFork = false,
@@ -679,12 +719,16 @@ export function CreationEngagement({
   isPixel?: boolean
   appreciated: boolean
   appreciateCount: number
+  commentCount?: number
   remixCount?: number
   member: CommunityMember | null
   allowFork?: boolean
 }) {
+  const t = socialCopy.feed
+  const router = useRouter()
+
   return (
-    <div className="flex flex-wrap items-center gap-2">
+    <div className="-ml-2 flex flex-wrap items-center gap-1">
       {member ? (
         <AppreciateForm
           lang={lang}
@@ -693,19 +737,27 @@ export function CreationEngagement({
           count={appreciateCount}
         />
       ) : (
-        <p className="inline-flex min-h-9 items-center gap-2 border-[3px] border-earth bg-card px-3 text-[13px] text-muted">
-          <PixelIcon name="heart" />
-          {copy.appreciate[lang]}
-          {appreciateCount > 0 ? ` · ${appreciateCount}` : ""}
-        </p>
+        <button
+          type="button"
+          onClick={() => router.push(loginHref(lang, href(lang, `/creation/${creationId}`)))}
+          aria-label={`${t.like[lang]}, ${appreciateCount}`}
+          className={workActionClass}
+        >
+          <PixelHeart filled={false} />
+          <span>{appreciateCount}</span>
+        </button>
       )}
-      {allowFork ? (
-        <ForkForm lang={lang} creationId={creationId} member={Boolean(member)} remixCount={remixCount} />
-      ) : remixCount > 0 ? (
-        <span className="inline-flex min-h-9 items-center border-[3px] border-earth bg-card px-3 text-[13px] text-muted">
-          {copy.remixCount[lang].replace("{count}", String(remixCount))}
-        </span>
-      ) : null}
+      <button
+        type="button"
+        onClick={() =>
+          document.getElementById("creation-conversation")?.scrollIntoView({ behavior: "smooth", block: "start" })
+        }
+        aria-label={`${t.comment[lang]}, ${commentCount}`}
+        className={workActionClass}
+      >
+        <Comment width={22} height={22} aria-hidden="true" />
+        <span>{commentCount}</span>
+      </button>
       <ShareButton
         lang={lang}
         creationId={creationId}
@@ -715,6 +767,13 @@ export function CreationEngagement({
         allowArtworkDownload={allowArtworkDownload}
         isPixel={isPixel}
       />
+      {allowFork ? (
+        <ForkForm lang={lang} creationId={creationId} member={Boolean(member)} remixCount={remixCount} />
+      ) : remixCount > 0 ? (
+        <span className="inline-flex min-h-11 items-center px-2 text-[13px] text-muted">
+          {copy.remixCount[lang].replace("{count}", String(remixCount))}
+        </span>
+      ) : null}
     </div>
   )
 }
@@ -734,72 +793,97 @@ function AppreciateForm({
   const [count, setCount] = useState(initialCount)
   const [pending, setPending] = useState(false)
   const [error, setError] = useState<CommunityActionState>(null)
-  const pendingRef = useRef(false)
-  pendingRef.current = pending
+  const desiredRef = useRef(initialAppreciated)
+  const confirmedRef = useRef(initialAppreciated)
+  const baseCountRef = useRef(initialCount - (initialAppreciated ? 1 : 0))
+  const syncingRef = useRef(false)
 
   useEffect(() => {
     // Do not clobber an in-flight optimistic toggle with a stale RSC snapshot.
-    if (pendingRef.current) return
+    if (syncingRef.current) return
+    desiredRef.current = initialAppreciated
+    confirmedRef.current = initialAppreciated
+    baseCountRef.current = initialCount - (initialAppreciated ? 1 : 0)
     setAppreciated(initialAppreciated)
     setCount(initialCount)
   }, [initialAppreciated, initialCount])
 
+  const sync = useCallback(async () => {
+    if (syncingRef.current) return
+    syncingRef.current = true
+    try {
+      let rejected: CommunityActionState = null
+      const outcome = await reconcileDesiredState({
+        getDesired: () => desiredRef.current,
+        getConfirmed: () => confirmedRef.current,
+        setState: async (desired) => {
+          const formData = new FormData()
+          formData.set("creation_id", creationId)
+          formData.set("desired", String(desired))
+          const result = await toggleAppreciationAction(null, formData)
+          if (!result || !("ok" in result)) {
+            if (result && "error" in result) rejected = result
+            return { ok: false }
+          }
+          return { ok: true, state: result.liked ?? desired, count: result.count }
+        },
+        onConfirmed: (state, serverCount) => {
+          confirmedRef.current = state
+          if (typeof serverCount === "number") baseCountRef.current = serverCount - (state ? 1 : 0)
+          setAppreciated(state)
+          setCount(baseCountRef.current + (state ? 1 : 0))
+        },
+        onDesired: (state) => {
+          desiredRef.current = state
+        },
+        onRollback: (confirmed) => {
+          desiredRef.current = confirmed
+          setAppreciated(confirmed)
+          setCount(baseCountRef.current + (confirmed ? 1 : 0))
+        },
+      })
+      if (outcome === "rolled_back") {
+        setError(rejected ?? { error: "invalid_input" })
+      } else {
+        setError(null)
+      }
+    } finally {
+      syncingRef.current = false
+      setPending(false)
+    }
+  }, [creationId])
+
   function toggle() {
-    if (pendingRef.current) return
-    const previous = { appreciated, count }
-    const next = !appreciated
+    const next = !desiredRef.current
     // Commit the toggle to the DOM in this click turn so the user sees
     // active/inactive + count before the server round-trip starts.
+    desiredRef.current = next
     flushSync(() => {
       setAppreciated(next)
-      setCount(Math.max(0, count + (next ? 1 : -1)))
+      setCount(Math.max(0, baseCountRef.current + (next ? 1 : 0)))
       setPending(true)
       setError(null)
     })
-    pendingRef.current = true
-
-    const formData = new FormData()
-    formData.set("creation_id", creationId)
-    void toggleAppreciationAction(null, formData).then((result) => {
-      pendingRef.current = false
-      setPending(false)
-      if (result && "error" in result) {
-        flushSync(() => {
-          setAppreciated(previous.appreciated)
-          setCount(previous.count)
-          setError(result)
-        })
-        return
-      }
-      // Keep optimistic values until props catch up after revalidate.
-    })
+    void sync()
   }
 
   return (
     <div>
       {error && "error" in error ? (
-        <Alert tone="error" className="mb-2">
+        <Alert tone="error" flat className="mb-2">
           {copy.errors[error.error][lang]}
         </Alert>
       ) : null}
-      <Button
+      <button
         type="button"
-        size="sm"
-        variant={appreciated ? "secondary" : "outline"}
-        disabled={pending}
         aria-busy={pending || undefined}
         aria-pressed={appreciated}
         onClick={toggle}
-        className={cn(
-          // Keep the optimistic active look visible while the request runs.
-          "disabled:opacity-100",
-          appreciated && "shadow-[4px_4px_0_0_var(--fg)]",
-        )}
+        className={cn(workActionClass, "disabled:opacity-100", appreciated && "text-brick")}
       >
-        <PixelIcon name="heart" />
-        {appreciated ? copy.appreciated[lang] : copy.appreciate[lang]}
-        {count > 0 ? ` · ${count}` : ""}
-      </Button>
+        <PixelHeart filled={appreciated} />
+        <span>{count}</span>
+      </button>
     </div>
   )
 }
@@ -825,10 +909,14 @@ function ShareButton({
 
   return (
     <>
-      <Button type="button" size="sm" variant="outline" onClick={() => setOpen(true)}>
-        <PixelIcon name="share" />
-        {copy.share[lang]}
-      </Button>
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        aria-label={socialCopy.feed.share[lang]}
+        className={workActionClass}
+      >
+        <Share width={22} height={22} aria-hidden="true" />
+      </button>
       <CreationShareDialog
         open={open}
         onClose={() => setOpen(false)}
@@ -869,7 +957,7 @@ function ForkForm({
     return (
       <Link
         href={loginHref(lang, href(lang, `/creation/${creationId}`))}
-        className={buttonClassName({ size: "sm", variant: "outline" })}
+        className={workActionClass}
       >
         {copy.remixSignIn[lang]}
       </Link>
@@ -881,13 +969,18 @@ function ForkForm({
       <input type="hidden" name="lang" value={lang} />
       <input type="hidden" name="creation_id" value={creationId} />
       {state && "error" in state ? (
-        <Alert tone="error" className="mb-2">
+        <Alert tone="error" flat className="mb-2">
           {copy.errors[state.error][lang]}
         </Alert>
       ) : null}
-      <Button type="submit" size="sm" variant="outline" disabled={pending} aria-busy={pending || undefined}>
+      <button
+        type="submit"
+        disabled={pending}
+        aria-busy={pending || undefined}
+        className={workActionClass}
+      >
         {label}
-      </Button>
+      </button>
     </form>
   )
 }
@@ -907,9 +1000,9 @@ function DeleteComment({
 
   if (!confirming) {
     return (
-      <Button type="button" size="sm" variant="ghost" onClick={() => setConfirming(true)}>
+      <SocButton type="button" onClick={() => setConfirming(true)}>
         {copy.commentDelete[lang]}
-      </Button>
+      </SocButton>
     )
   }
 
@@ -928,14 +1021,18 @@ function DeleteComment({
   return (
     <form action={submit} className="flex flex-wrap items-center gap-2">
       <input type="hidden" name="id" value={id} />
-      {error && "error" in error ? <Alert tone="error">{copy.errors[error.error][lang]}</Alert> : null}
+      {error && "error" in error ? (
+        <Alert tone="error" flat>
+          {copy.errors[error.error][lang]}
+        </Alert>
+      ) : null}
       <span className="text-[13px] text-muted">{copy.commentDeleteConfirm[lang]}</span>
-      <Button type="submit" size="sm" disabled={pending} aria-busy={pending || undefined}>
+      <SocButton type="submit" variant="solid" disabled={pending} aria-busy={pending || undefined}>
         {pending ? copy.createDeleting[lang] : copy.commentDelete[lang]}
-      </Button>
-      <Button type="button" size="sm" variant="ghost" onClick={() => setConfirming(false)}>
+      </SocButton>
+      <SocButton type="button" onClick={() => setConfirming(false)}>
         {copy.createCancel[lang]}
-      </Button>
+      </SocButton>
     </form>
   )
 }

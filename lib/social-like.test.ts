@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { reconcileToggle } from "@/lib/social-like"
+import { reconcileDesiredState, reconcileToggle } from "@/lib/social-like"
 
 function harness(initial: boolean, toggle: () => Promise<boolean>) {
   const state = { desired: initial, confirmed: initial, rolledBack: null as boolean | null, calls: 0 }
@@ -99,5 +99,78 @@ describe("reconcileToggle", () => {
     h.state.desired = false
     expect(await h.run()).toBe("rolled_back")
     expect(h.state.rolledBack).toBe(true)
+  })
+})
+
+describe("reconcileDesiredState", () => {
+  function desiredHarness(initial: boolean, setState: (desired: boolean) => Promise<unknown>) {
+    const state = {
+      desired: initial,
+      confirmed: initial,
+      rolledBack: null as boolean | null,
+      confirmedValues: [] as boolean[],
+      calls: [] as boolean[],
+    }
+    const run = () =>
+      reconcileDesiredState({
+        getDesired: () => state.desired,
+        getConfirmed: () => state.confirmed,
+        setState: async (desired) => {
+          state.calls.push(desired)
+          const result = await setState(desired)
+          return result as { ok: boolean; state?: boolean; count?: number }
+        },
+        onConfirmed: (value) => {
+          state.confirmed = value
+          state.confirmedValues.push(value)
+        },
+        onDesired: (value) => {
+          state.desired = value
+        },
+        onRollback: (value) => {
+          state.rolledBack = value
+          state.desired = value
+        },
+      })
+    return { state, run }
+  }
+
+  it("sends the exact desired state instead of a blind toggle", async () => {
+    const h = desiredHarness(false, async () => ({ ok: true }))
+    h.state.desired = true
+    expect(await h.run()).toBe("synced")
+    expect(h.state.calls).toEqual([true])
+    expect(h.state.confirmed).toBe(true)
+  })
+
+  it("converges when the user changes intent mid-flight", async () => {
+    let first = true
+    const h = desiredHarness(false, async () => {
+      if (first) {
+        first = false
+        h.state.desired = false
+      }
+      return { ok: true }
+    })
+    h.state.desired = true
+    expect(await h.run()).toBe("synced")
+    expect(h.state.calls).toEqual([true, false])
+    expect(h.state.confirmed).toBe(false)
+  })
+
+  it("uses the server's authoritative state when supplied", async () => {
+    const h = desiredHarness(false, async () => ({ ok: true, state: false, count: 3 }))
+    h.state.desired = true
+    expect(await h.run()).toBe("synced")
+    expect(h.state.confirmed).toBe(false)
+    expect(h.state.desired).toBe(false)
+  })
+
+  it("rolls back on a rejected request", async () => {
+    const h = desiredHarness(false, async () => ({ ok: false }))
+    h.state.desired = true
+    expect(await h.run()).toBe("rolled_back")
+    expect(h.state.rolledBack).toBe(false)
+    expect(h.state.confirmed).toBe(false)
   })
 })

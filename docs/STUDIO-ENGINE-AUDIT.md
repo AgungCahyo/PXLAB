@@ -222,3 +222,36 @@ The group header row in the layer panel is now a drop target: dragging a layer o
 - The canvas encoder (`lib/pixel-export-canvas.ts`) and the dialog were not run in a browser. Browsers that cannot encode WebP return a PNG; that is detected and shown as an error instead of saving a PNG named .webp. Canvas may round semi-transparent colours slightly (layer-opacity-as-alpha export).
 - The document has no timeline, so "animation" means layers as frames. A real frame model would be its own milestone.
 - Nested folders in the ZIP, per-group export and animated WebP are not implemented.
+
+## 18. Bug: selection lifted transparent cells as an opaque object
+
+**Cause.** The editing buffer shows empty cells as opaque Paper. `extractRect` copied every cell of the selection rectangle with alpha 255, so a selection that included empty canvas produced a Paper-coloured block, and `blitRect` stamped that whole block over whatever was underneath when the object was dropped (moved, nudged, flipped, rotated, scaled or pasted). Selecting a sprite with a rectangle therefore dragged a white box along with it.
+
+**Fix.** `extractObject` (`lib/pixel.ts`) lifts only the cells that are inside the selection shape, on the canvas, and not Paper-coloured, and stores that as the clipboard mask. Every lift site uses it (move, nudge, resize, rotate, flip, copy, cut, paste). Consequences:
+- Moving an object over other content leaves that content visible wherever the object is empty (regression test with a sprite dropped on a column of other content).
+- The outline and hit-testing hug the object after it is lifted, so empty parts of the original rectangle are no longer grabbable.
+- A selection that covers only empty canvas has no object: move, nudge, rotate and resize do nothing instead of dragging an invisible block (`clipboardIsEmpty`).
+- While an object floats, the float is the content (the layer holds a hole), so the "same shape" reuse check no longer compares masks.
+- Paper is the document's own colour (palette entry 0), not a hard-coded value. Empty cells are the same thing as Paper-coloured cells in this indexed model, so a deliberately Paper-coloured cell inside an object is transparent too (also on the base layer).
+- Rectangle selections themselves still cover what the user drew (fills and deletes use the rectangle); only the lifted object is trimmed. 7 regression tests.
+
+## 19. M9: transformations
+
+**Engine** (`lib/pixel-transform.ts`, pure). Inverse mapping from each destination cell centre to the source.
+- **Nearest** copies palette indices: flips, 90-degree turns and integer scales are exact permutations, the palette never changes, arbitrary angles never invent colours.
+- **Bilinear / bicubic (Catmull-Rom)** blend colours. Weights are alpha-premultiplied, so a sprite edge never bleeds toward Paper and a cell is painted only when at least half its neighbourhood is (an isolated red cell upscaled stays pure red). Results map back to the palette: existing colour, else a new one while there is room, else the nearest. The dialog reports added and approximated colours.
+- Parameters: scale X/Y (5%-1600%), rotation (degrees, clockwise), flip H/V, offset. Identity is exact for every interpolation.
+- The base layer is always opaque (exposed area shows Paper); other layers expose nothing.
+- Locked layers and transparency-locked layers are skipped and reported (a transform cannot keep the painted cells fixed). Input is never mutated.
+- **Crop to selection at a fixed canvas size:** everything outside the selection is erased, the selection is scaled to fit the canvas and centred (whole-number zoom when nearest is chosen).
+
+**UI.** "Transform…" in the More panel: mode (free transform / crop to selection), scope (active layer / whole image), interpolation, scale with aspect lock, rotation with 90-degree buttons, flips, offset, live preview of the composite, colour and skip notices. Preview and Apply run the same engine. Apply is one undo step that also restores palette changes and clears the selection.
+
+**Size-changing operations (engine only, not exposed).** `cropLayers`, `resizeCanvasLayers` (3x3 anchor, art not scaled), `resizeImageLayers` (all layers, chosen interpolation) are implemented and tested, but the canvas size is locked by the product today:
+1. the server rejects a save whose dimensions differ from the stored header (`updateCreation`),
+2. the creation `category` is derived from the size,
+3. the local draft is matched by size, and the UI says "Size is locked after create".
+
+Lifting that lock is a product and data decision, so it is **not done without your approval**.
+
+**Not covered.** Transforming only the lifted selection with bilinear/bicubic (the on-canvas handles still scale and rotate with nearest); a drag-to-transform overlay on the canvas; browser verification.

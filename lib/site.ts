@@ -47,6 +47,8 @@ export function isCreationCategory(value: string): value is CreationCategory {
 }
 
 export const EXPLORE_SEARCH_MAX = 80;
+export const SEARCH_MIN_LENGTH = 2;
+export const SEARCH_CREATOR_LIMIT = 6;
 
 export function pixelObjectPath(
   userId: string,
@@ -143,6 +145,8 @@ export const SPACE_DEFAULT_CIRCLE_R = 50;
 export const REACTION_TYPE = "appreciate" as const;
 export const REACTION_TYPES = [REACTION_TYPE] as const;
 export type ReactionType = (typeof REACTION_TYPES)[number];
+/** Appreciation state changes per rolling hour (spam guard). */
+export const REACTION_PER_HOUR = 60;
 
 export const COMMENT_STATUSES = ["published", "hidden"] as const;
 export type CommentStatus = (typeof COMMENT_STATUSES)[number];

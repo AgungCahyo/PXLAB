@@ -1,0 +1,63 @@
+{
+  "viewport": "390x844, mobile emulation",
+  "profileHref": "/u/rsdy",
+  "originalCount": 1,
+  "originalState": {
+    "count": 1,
+    "cardWidth": 256,
+    "listWidth": 236,
+    "listHeight": 75,
+    "rows": 1,
+    "square": true,
+    "doc": 390,
+    "docClient": 390
+  },
+  "none": {
+    "count": 0,
+    "cardWidth": 256,
+    "listWidth": 236,
+    "listHeight": 0,
+    "rows": 0,
+    "square": null,
+    "doc": 390,
+    "docClient": 390
+  },
+  "three": {
+    "count": 3,
+    "cardWidth": 256,
+    "listWidth": 236,
+    "listHeight": 75,
+    "rows": 1,
+    "square": true,
+    "doc": 390,
+    "docClient": 390
+  },
+  "four": {
+    "count": 4,
+    "cardWidth": 256,
+    "listWidth": 236,
+    "listHeight": 155,
+    "rows": 2,
+    "square": true,
+    "doc": 390,
+    "docClient": 390
+  },
+  "restored": {
+    "count": 1,
+    "cardWidth": 256,
+    "listWidth": 236,
+    "listHeight": 75,
+    "rows": 1,
+    "square": true,
+    "doc": 390,
+    "docClient": 390
+  },
+  "assertions": {
+    "originalRenderedCount": 1,
+    "threeItemsLayout": true,
+    "cardWidth": true,
+    "noArtworkNoListGrowth": true,
+    "restoredState": true,
+    "noPageOverflow": true
+  }
+}

@@ -1,0 +1,502 @@
+{
+  "ranAt": "2026-11-22T17:37:52.125Z",
+  "allPassed": true,
+  "states": [
+    {
+      "viewport": 375,
+      "state": "all",
+      "url": "/explore?q=rs",
+      "docNoOverflow": true,
+      "bodyNoOverflow": true,
+      "listDisplay": "flex",
+      "cardWidths": [
+        256,
+        256
+      ],
+      "railCardsCompact": true,
+      "creatorsFillColumn": null,
+      "selfPresent": false,
+      "data": {
+        "path": "/explore?q=rs",
+        "doc": {
+          "scrollWidth": 360,
+          "clientWidth": 360
+        },
+        "body": {
+          "scrollWidth": 360,
+          "clientWidth": 360
+        },
+        "list": {
+          "display": "flex",
+          "overflowX": "auto",
+          "flexDirection": "row",
+          "gridTemplateColumns": "none",
+          "scrollWidth": 520,
+          "clientWidth": 336,
+          "rect": {
+            "width": 336,
+            "height": 147,
+            "top": 291
+          }
+        },
+        "cards": [
+          {
+            "profileHref": "/u/chyprsty_",
+            "width": 256,
+            "top": 291,
+            "overflowX": "hidden",
+            "innerScrollWidth": 256,
+            "innerClientWidth": 256,
+            "previews": 0,
+            "fallback": true
+          },
+          {
+            "profileHref": "/u/chyprsty__",
+            "width": 256,
+            "top": 291,
+            "overflowX": "hidden",
+            "innerScrollWidth": 256,
+            "innerClientWidth": 256,
+            "previews": 3,
+            "fallback": false
+          }
+        ],
+        "selfPresent": false
+      }
+    },
+    {
+      "viewport": 375,
+      "state": "creators",
+      "url": "/explore?q=rs&scope=creators",
+      "docNoOverflow": true,
+      "bodyNoOverflow": true,
+      "listDisplay": "grid",
+      "cardWidths": [
+        336,
+        336
+      ],
+      "railCardsCompact": null,
+      "creatorsFillColumn": true,
+      "selfPresent": false,
+      "data": {
+        "path": "/explore?q=rs&scope=creators",
+        "doc": {
+          "scrollWidth": 360,
+          "clientWidth": 360
+        },
+        "body": {
+          "scrollWidth": 360,
+          "clientWidth": 360
+        },
+        "list": {
+          "display": "grid",
+          "overflowX": "visible",
+          "flexDirection": "row",
+          "gridTemplateColumns": "336px",
+          "scrollWidth": 336,
+          "clientWidth": 336,
+          "rect": {
+            "width": 336,
+            "height": 264,
+            "top": 291
+          }
+        },
+        "cards": [
+          {
+            "profileHref": "/u/chyprsty_",
+            "width": 336,
+            "top": 291,
+            "overflowX": "hidden",
+            "innerScrollWidth": 336,
+            "innerClientWidth": 336,
+            "previews": 0,
+            "fallback": true
+          },
+          {
+            "profileHref": "/u/chyprsty__",
+            "width": 336,
+            "top": 386,
+            "overflowX": "hidden",
+            "innerScrollWidth": 336,
+            "innerClientWidth": 336,
+            "previews": 3,
+            "fallback": false
+          }
+        ],
+        "selfPresent": false
+      }
+    },
+    {
+      "viewport": 390,
+      "state": "all",
+      "url": "/explore?q=rs",
+      "docNoOverflow": true,
+      "bodyNoOverflow": true,
+      "listDisplay": "flex",
+      "cardWidths": [
+        256,
+        256
+      ],
+      "railCardsCompact": true,
+      "creatorsFillColumn": null,
+      "selfPresent": false,
+      "data": {
+        "path": "/explore?q=rs",
+        "doc": {
+          "scrollWidth": 375,
+          "clientWidth": 375
+        },
+        "body": {
+          "scrollWidth": 375,
+          "clientWidth": 375
+        },
+        "list": {
+          "display": "flex",
+          "overflowX": "auto",
+          "flexDirection": "row",
+          "gridTemplateColumns": "none",
+          "scrollWidth": 520,
+          "clientWidth": 351,
+          "rect": {
+            "width": 351,
+            "height": 147,
+            "top": 291
+          }
+        },
+        "cards": [
+          {
+            "profileHref": "/u/chyprsty_",
+            "width": 256,
+            "top": 291,
+            "overflowX": "hidden",
+            "innerScrollWidth": 256,
+            "innerClientWidth": 256,
+            "previews": 0,
+            "fallback": true
+          },
+          {
+            "profileHref": "/u/chyprsty__",
+            "width": 256,
+            "top": 291,
+            "overflowX": "hidden",
+            "innerScrollWidth": 256,
+            "innerClientWidth": 256,
+            "previews": 3,
+            "fallback": false
+          }
+        ],
+        "selfPresent": false
+      }
+    },
+    {
+      "viewport": 390,
+      "state": "creators",
+      "url": "/explore?q=rs&scope=creators",
+      "docNoOverflow": true,
+      "bodyNoOverflow": true,
+      "listDisplay": "grid",
+      "cardWidths": [
+        351,
+        351
+      ],
+      "railCardsCompact": null,
+      "creatorsFillColumn": true,
+      "selfPresent": false,
+      "data": {
+        "path": "/explore?q=rs&scope=creators",
+        "doc": {
+          "scrollWidth": 375,
+          "clientWidth": 375
+        },
+        "body": {
+          "scrollWidth": 375,
+          "clientWidth": 375
+        },
+        "list": {
+          "display": "grid",
+          "overflowX": "visible",
+          "flexDirection": "row",
+          "gridTemplateColumns": "351px",
+          "scrollWidth": 351,
+          "clientWidth": 351,
+          "rect": {
+            "width": 351,
+            "height": 269,
+            "top": 291
+          }
+        },
+        "cards": [
+          {
+            "profileHref": "/u/chyprsty_",
+            "width": 351,
+            "top": 291,
+            "overflowX": "hidden",
+            "innerScrollWidth": 351,
+            "innerClientWidth": 351,
+            "previews": 0,
+            "fallback": true
+          },
+          {
+            "profileHref": "/u/chyprsty__",
+            "width": 351,
+            "top": 386,
+            "overflowX": "hidden",
+            "innerScrollWidth": 351,
+            "innerClientWidth": 351,
+            "previews": 3,
+            "fallback": false
+          }
+        ],
+        "selfPresent": false
+      }
+    },
+    {
+      "viewport": 440,
+      "state": "all",
+      "url": "/explore?q=rs",
+      "docNoOverflow": true,
+      "bodyNoOverflow": true,
+      "listDisplay": "flex",
+      "cardWidths": [
+        256,
+        256
+      ],
+      "railCardsCompact": true,
+      "creatorsFillColumn": null,
+      "selfPresent": false,
+      "data": {
+        "path": "/explore?q=rs",
+        "doc": {
+          "scrollWidth": 425,
+          "clientWidth": 425
+        },
+        "body": {
+          "scrollWidth": 425,
+          "clientWidth": 425
+        },
+        "list": {
+          "display": "flex",
+          "overflowX": "auto",
+          "flexDirection": "row",
+          "gridTemplateColumns": "none",
+          "scrollWidth": 520,
+          "clientWidth": 401,
+          "rect": {
+            "width": 401,
+            "height": 147,
+            "top": 291
+          }
+        },
+        "cards": [
+          {
+            "profileHref": "/u/chyprsty_",
+            "width": 256,
+            "top": 291,
+            "overflowX": "hidden",
+            "innerScrollWidth": 256,
+            "innerClientWidth": 256,
+            "previews": 0,
+            "fallback": true
+          },
+          {
+            "profileHref": "/u/chyprsty__",
+            "width": 256,
+            "top": 291,
+            "overflowX": "hidden",
+            "innerScrollWidth": 256,
+            "innerClientWidth": 256,
+            "previews": 3,
+            "fallback": false
+          }
+        ],
+        "selfPresent": false
+      }
+    },
+    {
+      "viewport": 440,
+      "state": "creators",
+      "url": "/explore?q=rs&scope=creators",
+      "docNoOverflow": true,
+      "bodyNoOverflow": true,
+      "listDisplay": "grid",
+      "cardWidths": [
+        401,
+        401
+      ],
+      "railCardsCompact": null,
+      "creatorsFillColumn": true,
+      "selfPresent": false,
+      "data": {
+        "path": "/explore?q=rs&scope=creators",
+        "doc": {
+          "scrollWidth": 425,
+          "clientWidth": 425
+        },
+        "body": {
+          "scrollWidth": 425,
+          "clientWidth": 425
+        },
+        "list": {
+          "display": "grid",
+          "overflowX": "visible",
+          "flexDirection": "row",
+          "gridTemplateColumns": "401px",
+          "scrollWidth": 401,
+          "clientWidth": 401,
+          "rect": {
+            "width": 401,
+            "height": 286,
+            "top": 291
+          }
+        },
+        "cards": [
+          {
+            "profileHref": "/u/chyprsty_",
+            "width": 401,
+            "top": 291,
+            "overflowX": "hidden",
+            "innerScrollWidth": 401,
+            "innerClientWidth": 401,
+            "previews": 0,
+            "fallback": true
+          },
+          {
+            "profileHref": "/u/chyprsty__",
+            "width": 401,
+            "top": 386,
+            "overflowX": "hidden",
+            "innerScrollWidth": 401,
+            "innerClientWidth": 401,
+            "previews": 3,
+            "fallback": false
+          }
+        ],
+        "selfPresent": false
+      }
+    },
+    {
+      "viewport": 1440,
+      "state": "all",
+      "url": "/explore?q=rs",
+      "docNoOverflow": true,
+      "bodyNoOverflow": true,
+      "listDisplay": "flex",
+      "cardWidths": [
+        256,
+        256
+      ],
+      "railCardsCompact": true,
+      "creatorsFillColumn": null,
+      "selfPresent": false,
+      "data": {
+        "path": "/explore?q=rs",
+        "doc": {
+          "scrollWidth": 1425,
+          "clientWidth": 1440
+        },
+        "body": {
+          "scrollWidth": 1425,
+          "clientWidth": 1425
+        },
+        "list": {
+          "display": "flex",
+          "overflowX": "auto",
+          "flexDirection": "row",
+          "gridTemplateColumns": "none",
+          "scrollWidth": 1072,
+          "clientWidth": 1072,
+          "rect": {
+            "width": 1072,
+            "height": 147,
+            "top": 245
+          }
+        },
+        "cards": [
+          {
+            "profileHref": "/u/chyprsty_",
+            "width": 256,
+            "top": 245,
+            "overflowX": "hidden",
+            "innerScrollWidth": 256,
+            "innerClientWidth": 256,
+            "previews": 0,
+            "fallback": true
+          },
+          {
+            "profileHref": "/u/chyprsty__",
+            "width": 256,
+            "top": 245,
+            "overflowX": "hidden",
+            "innerScrollWidth": 256,
+            "innerClientWidth": 256,
+            "previews": 3,
+            "fallback": false
+          }
+        ],
+        "selfPresent": false
+      }
+    },
+    {
+      "viewport": 1440,
+      "state": "creators",
+      "url": "/explore?q=rs&scope=creators",
+      "docNoOverflow": true,
+      "bodyNoOverflow": true,
+      "listDisplay": "grid",
+      "cardWidths": [
+        352,
+        352
+      ],
+      "railCardsCompact": null,
+      "creatorsFillColumn": true,
+      "selfPresent": false,
+      "data": {
+        "path": "/explore?q=rs&scope=creators",
+        "doc": {
+          "scrollWidth": 1425,
+          "clientWidth": 1440
+        },
+        "body": {
+          "scrollWidth": 1425,
+          "clientWidth": 1425
+        },
+        "list": {
+          "display": "grid",
+          "overflowX": "visible",
+          "flexDirection": "row",
+          "gridTemplateColumns": "352px 352px 352px",
+          "scrollWidth": 1072,
+          "clientWidth": 1072,
+          "rect": {
+            "width": 1072,
+            "height": 175,
+            "top": 245
+          }
+        },
+        "cards": [
+          {
+            "profileHref": "/u/chyprsty_",
+            "width": 352,
+            "top": 245,
+            "overflowX": "hidden",
+            "innerScrollWidth": 352,
+            "innerClientWidth": 352,
+            "previews": 0,
+            "fallback": true
+          },
+          {
+            "profileHref": "/u/chyprsty__",
+            "width": 352,
+            "top": 245,
+            "overflowX": "hidden",
+            "innerScrollWidth": 352,
+            "innerClientWidth": 352,
+            "previews": 3,
+            "fallback": false
+          }
+        ],
+        "selfPresent": false
+      }
+    }
+  ]
+}

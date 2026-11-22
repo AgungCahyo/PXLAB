@@ -123,7 +123,8 @@ Pengembangan PXLB Studio dibagi menjadi beberapa milestone.
 | Milestone | Development Focus |
 |---|---|
 | M0 | Existing System Audit |
-| M1 | Workspace & Layout |
+| M1 | Workspace & Layout (fondasi chrome) |
+| WR | Complete Editor Workspace Redesign — lihat §11 |
 | M2 | Toolbar & Drawing Tools |
 | M3 | Canvas & Selection System |
 | M4 | Layer Management |
@@ -339,6 +340,44 @@ Jangan mengasumsikan bahwa fitur yang belum ditemukan dalam satu komponen berart
 Jika terdapat informasi yang belum dapat diverifikasi, tandai sebagai UNKNOWN.
 
 Hasil akhir harus menggambarkan kondisi repository yang sebenarnya, bukan kondisi ideal yang diharapkan.
+
+---
+
+# 11. WORKSTREAM WR — COMPLETE EDITOR WORKSPACE REDESIGN
+
+**Status:** PLANNED  
+**Spec:** `docs/studio/WORKSPACE-REDESIGN.md`  
+**Relation to M1:** M1 mengirim chrome parsial (header undo, minimap, tab mobile, create dialog). WR adalah redesign struktural workspace secara menyeluruh — bukan skin, bukan ulangan M1.
+
+## 11.1 Purpose
+
+Membangun arsitektur workspace yang jelas, efisien, dan skalabel, dengan hirarki visual profesional, tanpa merusak engine gambar.
+
+Lima zona wajib dievaluasi:
+
+1. Top bar — aksi global dan status dokumen.
+2. Left toolbar — hanya interaksi kanvas (alat).
+3. Center workspace — kanvas sebagai fokus utama.
+4. Right sidebar — konteks, properti, palet, layer.
+5. Bottom timeline — animasi/frame (slot; **tidak ada timeline di kode saat ini** — jangan memalsukan kontrol).
+
+## 11.2 Phases
+
+| Phase | Mode | Output |
+|---|---|---|
+| WR0 | Audit only | Arsitektur aktual, clutter, duplikasi, dependensi |
+| WR1 | Proposal only | Struktur zona, hirarki panel, collapse/resize |
+| WR2 | Implement | Layout sistematis; engine tidak disentuh |
+| WR3 | Verify | Tools, panel, zoom, overflow, regresi |
+| WR4 | Review | Bandingkan hasil vs proposal |
+
+## 11.3 Hard restrictions
+
+Jangan mengubah secara tidak sengaja: drawing engine, compositor, pixel math, layer model, history, import/export, persist, shortcut, state behavior.
+
+Tidak ada mock control. Tidak ada timeline palsu. Tidak ada dependency baru tanpa kebutuhan.
+
+M6 (Animation) tetap pemilik model frame. WR hanya menyiapkan **slot layout** bawah jika/ketika animasi ada.
 
 ---
 

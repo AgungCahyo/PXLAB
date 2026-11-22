@@ -48,8 +48,12 @@ export function ToastProvider({ children }: { children: ReactNode }) {
           <div
             key={item.id}
             className={cn(
-              "soc-toast pointer-events-auto max-w-sm px-4 py-2.5 text-[13px] font-medium text-white shadow-[0_2px_0_0_rgb(0_0_0/0.25)]",
-              item.tone === "error" ? "bg-brick" : item.tone === "info" ? "bg-fg" : "bg-grass",
+              "soc-toast pointer-events-auto max-w-sm px-4 py-2.5 text-[13px] font-medium shadow-[0_2px_0_0_rgb(0_0_0/0.25)]",
+              item.tone === "error"
+                ? "bg-brick text-fg"
+                : item.tone === "info"
+                  ? "bg-fg text-bg"
+                  : "bg-grass text-fg",
             )}
           >
             {item.message}

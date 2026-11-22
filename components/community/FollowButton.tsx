@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useRef, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import { flushSync } from "react-dom"
 import Link from "next/link"
 import { Alert } from "@/components/ui/Alert"
@@ -13,6 +13,7 @@ import {
 import { copy } from "@/lib/copy"
 import type { Lang } from "@/lib/i18n"
 import { loginHref } from "@/lib/paths"
+import { reconcileDesiredState } from "@/lib/social-like"
 
 export function FollowButton({
   lang,
@@ -21,6 +22,7 @@ export function FollowButton({
   initialFollowing,
   member,
   returnPath,
+  compact = false,
 }: {
   lang: Lang
   userId: string
@@ -29,75 +31,107 @@ export function FollowButton({
   member: boolean
   /** Path used as login next (profile or creation). */
   returnPath: string
+  /** Smaller presentation for compact creator cards; actions are unchanged. */
+  compact?: boolean
 }) {
   const [following, setFollowing] = useState(initialFollowing)
   const [pending, setPending] = useState(false)
   const [error, setError] = useState<CommunityActionState>(null)
-  const pendingRef = useRef(false)
-  pendingRef.current = pending
+  const desiredRef = useRef(initialFollowing)
+  const confirmedRef = useRef(initialFollowing)
+  const syncingRef = useRef(false)
 
   useEffect(() => {
     // Do not clobber an in-flight optimistic toggle with a stale RSC snapshot.
-    if (pendingRef.current) return
+    if (syncingRef.current) return
+    desiredRef.current = initialFollowing
+    confirmedRef.current = initialFollowing
     setFollowing(initialFollowing)
   }, [initialFollowing, userId])
 
+  const sync = useCallback(async () => {
+    if (syncingRef.current) return
+    syncingRef.current = true
+    try {
+      let rejected: CommunityActionState = null
+      const outcome = await reconcileDesiredState({
+        getDesired: () => desiredRef.current,
+        getConfirmed: () => confirmedRef.current,
+        setState: async (desired) => {
+          const formData = new FormData()
+          formData.set("user_id", userId)
+          formData.set("desired", String(desired))
+          const action = desired ? followCreatorAction : unfollowCreatorAction
+          const result = await action(null, formData)
+          if (!result || !("ok" in result)) {
+            if (result && "error" in result) rejected = result
+            return { ok: false }
+          }
+          return { ok: true, state: result.following ?? desired }
+        },
+        onConfirmed: (state) => {
+          confirmedRef.current = state
+          setFollowing(state)
+        },
+        onDesired: (state) => {
+          desiredRef.current = state
+        },
+        onRollback: (confirmed) => {
+          desiredRef.current = confirmed
+          setFollowing(confirmed)
+        },
+      })
+      setError(outcome === "rolled_back" ? (rejected ?? { error: "invalid_input" }) : null)
+    } finally {
+      syncingRef.current = false
+      setPending(false)
+    }
+  }, [userId])
+
   function toggle() {
-    if (pendingRef.current) return
-    const previous = following
-    const next = !following
+    const next = !desiredRef.current
+    desiredRef.current = next
     flushSync(() => {
       setFollowing(next)
       setPending(true)
       setError(null)
     })
-    pendingRef.current = true
-
-    const formData = new FormData()
-    formData.set("user_id", userId)
-    const action = next ? followCreatorAction : unfollowCreatorAction
-    void action(null, formData).then((result) => {
-      pendingRef.current = false
-      setPending(false)
-      if (result && "error" in result) {
-        flushSync(() => {
-          setFollowing(previous)
-          setError(result)
-        })
-        return
-      }
-      // Keep optimistic value until props catch up after revalidate.
-    })
+    void sync()
   }
 
   if (!member) {
     return (
       <Link
         href={loginHref(lang, returnPath)}
-        className={socialButtonClass({ variant: "solid", size: "sm" })}
+        className={socialButtonClass({
+          variant: "solid",
+          size: "sm",
+          className: compact ? "min-w-[4.75rem] px-2 text-[12px]" : undefined,
+        })}
       >
-        {copy.followSignIn[lang]}
+        {compact ? copy.followSignInCompact[lang] : copy.followSignIn[lang]}
       </Link>
     )
   }
 
   return (
-    <div>
+    <div className="relative">
       {error && "error" in error ? (
-        <Alert tone="error" className="mb-2">
+        <Alert tone="error" flat className="mb-2">
           {copy.errors[error.error][lang]}
         </Alert>
       ) : null}
       <button
         type="button"
-        disabled={pending}
         aria-busy={pending || undefined}
         aria-pressed={following}
         onClick={toggle}
         className={socialButtonClass({
           variant: following ? "soft" : "brand",
           size: "sm",
-          className: "min-w-28 disabled:opacity-100",
+          className: compact
+            ? "min-w-[4.75rem] px-2 text-[12px] disabled:opacity-100"
+            : "min-w-28 disabled:opacity-100",
         })}
       >
         {following ? copy.following[lang] : copy.follow[lang]}

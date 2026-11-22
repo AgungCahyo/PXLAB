@@ -5,9 +5,10 @@ type TextareaProps = TextareaHTMLAttributes<HTMLTextAreaElement> & {
   label?: ReactNode
   hint?: ReactNode
   error?: ReactNode
+  appearance?: "default" | "social"
 }
 
-export function Textarea({ className, label, hint, error, id, ...props }: TextareaProps) {
+export function Textarea({ className, label, hint, error, id, appearance = "default", ...props }: TextareaProps) {
   const describedBy = [hint ? `${id}-hint` : null, error ? `${id}-error` : null]
     .filter(Boolean)
     .join(" ") || undefined
@@ -24,8 +25,13 @@ export function Textarea({ className, label, hint, error, id, ...props }: Textar
         aria-invalid={error ? true : undefined}
         aria-describedby={describedBy}
         className={cn(
-          "min-h-28 w-full border-[3px] bg-bg px-3 py-2 text-[15px] text-fg placeholder:text-muted",
-          error ? "border-brick" : "border-earth",
+          "min-h-28 w-full px-3 py-2 text-[15px] text-fg placeholder:text-muted",
+          appearance === "social"
+            ? cn(
+                "border bg-soft focus-visible:border-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky",
+                error ? "border-brick" : "border-[color:var(--soc-hairline)]",
+              )
+            : cn("border-[3px] bg-bg", error ? "border-brick" : "border-earth"),
           className,
         )}
         {...props}

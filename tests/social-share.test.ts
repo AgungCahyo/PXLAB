@@ -96,6 +96,7 @@ describe("social sharing architecture", () => {
     const dialog = read("components/share/CreationShareDialog.tsx")
     const community = read("components/community/CreationCommunity.tsx")
     expect(community).toMatch(/CreationShareDialog/)
+    expect(read("components/social/FeedPost.tsx")).toMatch(/CreationShareDialog/)
     expect(dialog).toMatch(/navigator\.share/)
     expect(dialog).toMatch(/AbortError/)
     expect(dialog).toMatch(/whatsapp/)

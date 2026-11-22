@@ -60,7 +60,7 @@ export function CreationColorPalette({
       </div>
 
       <div
-        className="mt-2 flex h-3 w-full overflow-hidden border-[3px] border-earth sm:h-3.5"
+        className="mt-2 flex h-3 w-full overflow-hidden border border-[color:var(--soc-hairline)] sm:h-3.5"
         role="img"
         aria-label={copy.colorPaletteTitle[lang]}
       >
@@ -88,9 +88,14 @@ export function CreationColorPalette({
                 title={`${entry.hex} · ${pct}%`}
                 aria-label={copy.colorCopyHex[lang].replace("{hex}", entry.hex)}
                 onClick={() => void copyHex(entry.hex)}
-                className="h-7 w-7 border-[2px] border-earth hover:outline hover:outline-2 hover:outline-offset-1 hover:outline-sky"
-                style={{ backgroundColor: entry.hex }}
-              />
+                className="grid h-9 w-9 place-items-center border-0 hover:outline hover:outline-2 hover:outline-offset-1 hover:outline-sky"
+              >
+                <span
+                  className="h-7 w-7 border border-[color:var(--soc-hairline)]"
+                  style={{ backgroundColor: entry.hex }}
+                  aria-hidden="true"
+                />
+              </button>
             </li>
           )
         })}
@@ -103,7 +108,7 @@ export function CreationColorPalette({
             return (
               <li key={`${entry.hex}-row-${index}`} className="flex items-center gap-2.5 text-[12px]">
                 <span
-                  className="h-3.5 w-3.5 shrink-0 border-[2px] border-earth"
+                  className="h-3.5 w-3.5 shrink-0 border border-[color:var(--soc-hairline)]"
                   style={{ backgroundColor: entry.hex }}
                   aria-hidden
                 />
@@ -125,7 +130,7 @@ export function CreationColorPalette({
       {hasMore || usage.length > 4 ? (
         <button
           type="button"
-          className="mt-2 text-[12px] font-medium text-fg underline-offset-2 hover:underline"
+          className="mt-2 inline-flex min-h-9 items-center text-[12px] font-medium text-fg underline-offset-2 hover:underline"
           onClick={() => setExpanded((value) => !value)}
         >
           {expanded ? copy.colorPaletteShowLess[lang] : copy.colorPaletteShowAll[lang]}

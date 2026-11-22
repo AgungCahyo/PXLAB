@@ -1,0 +1,64 @@
+{
+  "ranAt": "2026-11-22T17:48:26.747Z",
+  "path": "/creation/b8cbd1b1-f295-4bf4-aa0f-6386fa9a4cc9",
+  "originalPressed": false,
+  "assertions": {
+    "tapChangedState": true,
+    "reloadMatchesTap": true,
+    "searchMatchesDetail": true,
+    "rapidConverged": true,
+    "originalStateRestored": true
+  },
+  "allPassed": true,
+  "log": [
+    {
+      "step": "initial-detail",
+      "state": {
+        "pressed": "false",
+        "text": "Ikuti",
+        "busy": null
+      },
+      "path": "/creation/b8cbd1b1-f295-4bf4-aa0f-6386fa9a4cc9"
+    },
+    {
+      "step": "after-tap",
+      "state": {
+        "pressed": "true",
+        "text": "Mengikuti",
+        "busy": null
+      }
+    },
+    {
+      "step": "after-reload",
+      "state": {
+        "pressed": "true",
+        "text": "Mengikuti",
+        "busy": null
+      }
+    },
+    {
+      "step": "search-card",
+      "state": {
+        "pressed": "true",
+        "text": "Mengikuti"
+      }
+    },
+    {
+      "step": "rapid-triple",
+      "state": {
+        "pressed": "false",
+        "text": "Ikuti",
+        "busy": null
+      },
+      "expected": false
+    },
+    {
+      "step": "restored",
+      "state": {
+        "pressed": "false",
+        "text": "Ikuti",
+        "busy": null
+      }
+    }
+  ]
+}

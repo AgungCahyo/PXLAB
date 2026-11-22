@@ -17,18 +17,18 @@ describe("social interactions reuse the existing backend", () => {
   const post = read("components/social/FeedPost.tsx")
   const panel = read("components/social/CommentPanel.tsx")
 
-  it("like goes through toggleAppreciationAction, optimistic, with race-safe reconcile", () => {
+  it("like goes through toggleAppreciationAction, optimistic, with explicit desired state", () => {
     expect(post).toMatch(/toggleAppreciationAction/)
-    expect(post).toMatch(/reconcileToggle/)
+    expect(post).toMatch(/reconcileDesiredState/)
+    expect(post).toMatch(/formData\.set\("desired", String\(desired\)\)/)
     expect(post).toMatch(/aria-pressed/)
     expect(post).toMatch(/loginHref/)
   })
 
-  it("share uses the native API with a clipboard fallback and toast feedback", () => {
-    expect(post).toMatch(/navigator\.share/)
-    expect(post).toMatch(/clipboard\.writeText/)
-    expect(post).toMatch(/linkCopied/)
-    expect(post).toMatch(/AbortError/)
+  it("share opens CreationShareDialog from the feed action", () => {
+    expect(post).toMatch(/CreationShareDialog/)
+    expect(post).toMatch(/setShareOpen\(true\)/)
+    expect(post).toMatch(/workActionClass/)
   })
 
   it("comments post through addCommentAction and guard double submit", () => {

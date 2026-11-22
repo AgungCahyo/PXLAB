@@ -12,15 +12,17 @@ describe("artwork detail hierarchy", () => {
     expect(page).toMatch(/isPixel \? \([\s\S]*?<CreationBody[\s\S]*?\{identity\}/)
     expect(page).toMatch(/CreationEngagement/)
     expect(page).toMatch(/<CreationCommunity/)
-    expect(page).toMatch(/page-heading-sans/)
+    expect(page).toMatch(/font-semibold leading-snug/)
     expect(page).toMatch(/displayTitle/)
     expect(page).not.toMatch(/pixel-title/)
+    expect(page).not.toMatch(/page-heading-sans/)
   })
 
   it("links artwork detail back to Explore", () => {
     expect(page).toMatch(/creationBack/)
-    expect(page).toMatch(/BackLink/)
+    expect(page).toMatch(/href\(lang, "\/explore"\)/)
     expect(page).toMatch(/\/explore/)
+    expect(page).not.toMatch(/BackLink/)
   })
 
   it("keeps engagement with the artwork shell and streams only conversation", () => {

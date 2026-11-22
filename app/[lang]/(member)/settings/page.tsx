@@ -4,7 +4,6 @@ import { connection } from "next/server"
 import { AccountSecurity } from "@/components/account/AccountSecurity"
 import { SettingsForm } from "@/components/profiles/SettingsForm"
 import { Alert } from "@/components/ui/Alert"
-import { PageHeader } from "@/components/ui/PageHeader"
 import { getCurrentAuthUser, getCurrentProfile } from "@/lib/auth/session"
 import { accountProvider } from "@/lib/auth/account-security"
 import { copy } from "@/lib/copy"
@@ -48,25 +47,30 @@ export default async function SettingsPage({
   if (!profile || !user) notFound()
 
   return (
-    <div className="mx-auto w-full min-w-0 max-w-2xl px-5 py-8 sm:px-8 sm:py-10 lg:px-16">
-      <PageHeader
-        kicker={copy.nav.settings[lang]}
-        title={copy.settingsTitle[lang]}
-        intro={copy.settingsIntro[lang]}
-      />
+    <div className="mx-auto w-full min-w-0 max-w-2xl px-3 py-4 sm:px-6 sm:py-6 lg:px-10">
+      <header className="min-w-0">
+        <h1 className="text-[17px] font-semibold text-fg">{copy.settingsTitle[lang]}</h1>
+        <p className="mt-1 max-w-xl text-[14px] leading-relaxed text-muted">{copy.settingsIntro[lang]}</p>
+      </header>
       {query.email === "updated" ? (
-        <div className="mb-6">
-          <Alert tone="info">{copy.settingsEmailUpdated[lang]}</Alert>
+        <div className="mb-6 mt-4">
+          <Alert tone="info" flat>
+            {copy.settingsEmailUpdated[lang]}
+          </Alert>
         </div>
       ) : null}
       {query.session === "others" ? (
-        <div className="mb-6">
-          <Alert tone="info">{copy.sessionOthersDone[lang]}</Alert>
+        <div className="mb-6 mt-4">
+          <Alert tone="info" flat>
+            {copy.sessionOthersDone[lang]}
+          </Alert>
         </div>
       ) : null}
       {query.error ? (
-        <div className="mb-6">
-          <Alert tone="error">{copy.errors.limit_reached[lang]}</Alert>
+        <div className="mb-6 mt-4">
+          <Alert tone="error" flat>
+            {copy.errors.limit_reached[lang]}
+          </Alert>
         </div>
       ) : null}
       <SettingsForm lang={lang} profile={profile} />

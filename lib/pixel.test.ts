@@ -20,7 +20,9 @@ import {
   encodeRle,
   blitRect,
   clearRectToPaper,
+  constrainAxisEnd,
   constrainSquareEnd,
+  linearGradientStops,
   ensurePaletteColor,
   extractRect,
   fillPaper,
@@ -255,6 +257,21 @@ describe("pixel buffer", () => {
     ])
     paintEllipse(pixels, 0, 0, 6, 4, [9, 9, 9], true, w, h)
     expect(constrainSquareEnd(0, 0, 5, 2)).toEqual({ x: 5, y: 5 })
+  })
+
+  it("snaps line ends to axis or 45 degrees", () => {
+    expect(constrainAxisEnd(0, 0, 10, 1)).toEqual({ x: 10, y: 0 })
+    expect(constrainAxisEnd(0, 0, 1, 10)).toEqual({ x: 0, y: 10 })
+    expect(constrainAxisEnd(0, 0, 8, 7)).toEqual({ x: 8, y: 8 })
+    expect(constrainAxisEnd(4, 4, 4, 4)).toEqual({ x: 4, y: 4 })
+  })
+
+  it("builds inclusive linear gradient stops", () => {
+    const stops = linearGradientStops([0, 0, 0], [14, 0, 0], 8)
+    expect(stops).toHaveLength(8)
+    expect(stops[0]).toEqual([0, 0, 0])
+    expect(stops[7]).toEqual([14, 0, 0])
+    expect(stops[1]?.[0]).toBe(2)
   })
 
   it("strokes rect and ellipse with brush width", () => {

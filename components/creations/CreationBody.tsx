@@ -25,6 +25,7 @@ export function CreationBody({
         src={coverUrl}
         alt={copy.pixelPreviewAlt[lang]}
         variant="stage"
+        framed={false}
         priority={priority}
       />
     )

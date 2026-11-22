@@ -1,73 +1,75 @@
 import Link from "next/link"
-import { ProfileAvatar } from "@/components/profiles/ProfileAvatar"
-import { socialCopy } from "@/lib/copy-social"
+import { CreatorCardList } from "@/components/creations/CreatorCardList"
+import { DiscoveryNote } from "@/components/creations/DiscoveryNote"
+import { SectionHeader } from "@/components/ui/PageHeader"
 import { copy } from "@/lib/copy"
 import { href, type Lang } from "@/lib/i18n"
-import type { NewCreatorCard } from "@/features/creations/queries"
-
-const VISIBLE = 12
+import type { CreatorWorkPreview, NewCreatorCard } from "@/features/creations/queries"
 
 /**
- * "New creators" band inside the Explore feed: a stories-style row of avatars.
- * Each avatar goes to the profile; "See all" goes to /creators.
+ * Discovery section 2: newly publishing creators. A compact horizontal rail so
+ * each card keeps its artwork preview visible without turning into a portfolio.
  */
 export function NewCreatorsStrip({
   lang,
   items,
+  previews,
+  followingIds,
+  member,
+  returnPath,
+  currentUserId = null,
+  failed = false,
   preserveScroll = false,
 }: {
   lang: Lang
   items: NewCreatorCard[]
+  previews: Record<string, CreatorWorkPreview[]>
+  followingIds: Set<string>
+  member: boolean
+  returnPath: string
+  currentUserId?: string | null
+  failed?: boolean
   /** Links inside the Explore feed opt out of Next's automatic scroll. */
   preserveScroll?: boolean
 }) {
-  if (items.length === 0) return null
   const creatorsHref = href(lang, "/creators")
   const restoreScrollProps = preserveScroll
     ? ({ scroll: false, "data-explore-resume": "true" } as const)
     : {}
 
   return (
-    <section aria-labelledby="new-creators-heading" className="min-w-0 py-2">
-      <div className="flex items-baseline justify-between gap-3 px-0.5">
-        <h2 id="new-creators-heading" className="text-[15px] font-semibold text-fg">
-          {socialCopy.explore.creatorsTitle[lang]}
-        </h2>
-        <Link
-          {...restoreScrollProps}
-          href={creatorsHref}
-          className="inline-flex min-h-9 shrink-0 items-center text-[13px] text-muted hover:text-fg"
-        >
-          {copy.newCreatorsSeeAll[lang]}
-        </Link>
-      </div>
-      <ul
-        aria-label={copy.newCreatorsTitle[lang]}
-        className="-mx-3 mt-1 flex min-w-0 flex-nowrap gap-4 overflow-x-auto px-3 pb-1 sm:mx-0 sm:px-0 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-      >
-        {items.slice(0, VISIBLE).map((creator) => {
-          const name = creator.displayName?.trim() || creator.username
-          return (
-            <li key={creator.username} className="w-[4.5rem] shrink-0">
-              <Link
-                {...restoreScrollProps}
-                href={href(lang, `/u/${creator.username}`)}
-                className="flex flex-col items-center gap-1.5 text-center"
-                title={name}
-              >
-                <ProfileAvatar
-                  src={creator.avatarUrl}
-                  avatarConfig={creator.avatarConfig}
-                  userId={creator.id}
-                  alt=""
-                  size="sm"
-                />
-                <span className="w-full truncate text-[12px] text-fg">@{creator.username}</span>
-              </Link>
-            </li>
-          )
-        })}
-      </ul>
+    <section aria-labelledby="new-creators-heading" className="min-w-0">
+      <SectionHeader
+        id="new-creators-heading"
+        title={copy.discoveryCreatorsTitle[lang]}
+        actions={
+          <Link
+            {...restoreScrollProps}
+            href={creatorsHref}
+            className="inline-flex min-h-9 shrink-0 items-center text-[13px] text-muted hover:text-fg"
+          >
+            {copy.newCreatorsSeeAll[lang]}
+          </Link>
+        }
+      />
+      {failed || items.length === 0 ? (
+        <DiscoveryNote>
+          {failed ? copy.discoverySectionError[lang] : copy.discoveryCreatorsEmpty[lang]}
+        </DiscoveryNote>
+      ) : (
+        <CreatorCardList
+          lang={lang}
+          items={items}
+          previews={previews}
+          followingIds={followingIds}
+          member={member}
+          returnPath={returnPath}
+          currentUserId={currentUserId}
+          layout="rail"
+          label={copy.discoveryCreatorsTitle[lang]}
+          preserveScroll={preserveScroll}
+        />
+      )}
     </section>
   )
 }

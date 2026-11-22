@@ -25,6 +25,8 @@ import { DeleteCreationCopy } from "@/components/creations/DeleteCreationCopy"
 import { PixelArt } from "@/components/creations/PixelArt"
 import { StudioContextMenu } from "@/components/creations/StudioContextMenu"
 import { StudioInspector } from "@/components/creations/StudioInspector"
+import { StudioMinimap, type StudioMinimapHandle } from "@/components/creations/StudioMinimap"
+import { TransformDialog } from "@/components/creations/TransformDialog"
 import { Alert } from "@/components/ui/Alert"
 import { Button, buttonClassName } from "@/components/ui/Button"
 import { Dialog } from "@/components/ui/Dialog"
@@ -125,6 +127,8 @@ export function PlaygroundForm({
 
   const router = useRouter()
   const boardRef = useRef<PixelBoardHandle>(null)
+  const minimapRef = useRef<StudioMinimapHandle>(null)
+  const [mobilePanel, setMobilePanel] = useState<"options" | "color" | "layers">("color")
   const flightRef = useRef<Promise<void>>(Promise.resolve())
   const editGen = useRef(0)
   const dirtyRef = useRef(false)
@@ -162,6 +166,7 @@ export function PlaygroundForm({
   const [fillTolerance, setFillTolerance] = useState(0)
   const [fillPattern, setFillPattern] = useState<PixelFillPattern>("solid")
   const [exportOpen, setExportOpen] = useState(false)
+  const [transformOpen, setTransformOpen] = useState(false)
   const [brushOptions, setBrushOptions] = useState<BrushOptions>(DEFAULT_BRUSH_OPTIONS)
   const [selectShape, setSelectShape] = useState<"rect" | "ellipse">("rect")
   const [editFlash, setEditFlash] = useState<string | null>(null)
@@ -614,6 +619,7 @@ export function PlaygroundForm({
   }, [])
 
   const getExportDocument = useCallback(() => boardRef.current?.getExportDocument() ?? null, [])
+  const getSelectionBounds = useCallback(() => boardRef.current?.getSelectionBounds() ?? null, [])
 
   const getNativePng = useCallback(async () => {
     const board = boardRef.current
@@ -1334,7 +1340,14 @@ export function PlaygroundForm({
             {formatPixelSize(width, height)}
           </button>
         </div>
-        {!preview ? <div className="hidden md:block">{renderZoomWell()}</div> : null}
+        {!preview ? (
+          <div className="hidden md:block">
+            <div className="studio-row">
+              {renderZoomWell()}
+              {renderHistoryButtons()}
+            </div>
+          </div>
+        ) : null}
         <div className="studio-row ml-auto shrink-0">
           {dirty || metadataDirty ? (
             <Button
@@ -1352,25 +1365,6 @@ export function PlaygroundForm({
               <PixelIcon name="save" />
             </Button>
           ) : null}
-          <Button
-            type="button"
-            disabled={pending || leaving}
-            aria-busy={(pending && busyIntent === "publish") || undefined}
-            aria-label={
-              pending && busyIntent === "publish"
-                ? copy.pixelPublishing[lang]
-                : copy.createPublish[lang]
-            }
-            title={
-              pending && busyIntent === "publish"
-                ? copy.pixelPublishing[lang]
-                : copy.createPublish[lang]
-            }
-            onClick={requestPublish}
-            className="studio-hit shrink-0 !min-h-0 px-0 shadow-none"
-          >
-            <PixelIcon name="publish" />
-          </Button>
           <button
             type="button"
             aria-label={copy.pixelMore[lang]}
@@ -1419,7 +1413,7 @@ export function PlaygroundForm({
 
         <div className="flex min-h-0 min-w-0 flex-1 flex-col">
           <div
-            className="playground-stage flex min-h-0 flex-1 flex-col px-2 py-2 sm:px-3"
+            className="playground-stage relative flex min-h-0 flex-1 flex-col px-2 py-2 sm:px-3"
             onDragOver={(event) => {
               if (preview || pending || leaving) return
               if (![...event.dataTransfer.types].includes("Files")) return
@@ -1444,6 +1438,7 @@ export function PlaygroundForm({
               />
             ) : null}
             {boardReady ? (
+              <>
               <PixelBoard
                 key={boardEpoch}
                 ref={boardRef}
@@ -1490,9 +1485,17 @@ export function PlaygroundForm({
                 }}
                 onHistoryChange={setHistory}
                 onHoverCell={reportHover}
+                onViewChange={() => minimapRef.current?.sync()}
                 onCanvasMenu={({ clientX, clientY }) => setCanvasMenu({ x: clientX, y: clientY })}
                 className={preview ? "hidden" : "min-h-0 flex-1"}
               />
+              <StudioMinimap
+                ref={minimapRef}
+                lang={lang}
+                boardRef={boardRef}
+                hidden={preview}
+              />
+              </>
             ) : (
               <div className={preview ? "hidden" : "min-h-0 flex-1"} aria-hidden="true" />
             )}
@@ -1571,7 +1574,7 @@ export function PlaygroundForm({
 
       <div className="md:hidden">{renderStatusBar()}</div>
 
-      <div className="playground-toolbar shrink-0 border-t-[3px] border-earth bg-card px-2 pt-2 sm:px-3 md:hidden">
+      <div className="playground-toolbar max-h-[45vh] shrink-0 overflow-y-auto overscroll-contain border-t-[3px] border-earth bg-card px-2 pt-2 sm:px-3 md:hidden">
         <div className="studio-stack">
           {!preview ? (
             <div
@@ -1597,72 +1600,104 @@ export function PlaygroundForm({
               </>
             ) : null}
           </div>
-          {showBrushControls ? (
-            <div className="flex w-full flex-wrap items-center gap-1.5">
-              {brushSelect(mobileBrushId)}
-            </div>
-          ) : null}
-          {brushPanel && (tool === "pencil" || tool === "circle" || tool === "eraser") ? (
-            <details className="w-full">
-              <summary className="studio-control inline-flex cursor-pointer items-center border-earth bg-card px-2 text-[12px] font-medium text-fg">
-                {copy.pixelBrushOptions[lang]}
-              </summary>
-              <div className="pt-2">{brushPanel}</div>
-            </details>
-          ) : null}
-          {tool === "fill" || tool === "selectContiguous" || tool === "selectColor" ? (
-            <div className="flex w-full items-center gap-2">
-              <label className="shrink-0 text-[12px] font-medium text-fg" htmlFor={fillToleranceId}>
-                {tool === "fill" ? copy.pixelFillTolerance[lang] : copy.pixelSelectTolerance[lang]}
-              </label>
-              <input
-                id={fillToleranceId}
-                type="range"
-                min={0}
-                max={255}
-                step={1}
-                value={fillTolerance}
-                aria-label={tool === "fill" ? copy.pixelFillTolerance[lang] : copy.pixelSelectTolerance[lang]}
-                onChange={(event) => setFillTolerance(clampFillTolerance(Number(event.target.value)))}
-                className="min-w-0 flex-1"
-              />
-              <span className="w-8 text-right text-[12px] tabular-nums text-fg">{fillTolerance}</span>
-            </div>
-          ) : null}
-          {tool === "fill" ? <div className="w-full">{fillPatternPanel}</div> : null}
-          {tool === "selectPolygon" ? (
-            <p className="w-full text-[12px] leading-relaxed text-muted">{copy.pixelSelectPolygonHint[lang]}</p>
-          ) : null}
-          {tool === "select" ? (
-            <div className="flex flex-wrap gap-1.5" role="group" aria-label={copy.pixelSelectShape[lang]}>
+          <div
+            className="studio-row w-full"
+            role="tablist"
+            aria-label={copy.pixelInspector[lang]}
+          >
+            {(
+              [
+                ["options", copy.pixelToolOptions[lang], "sliders"],
+                ["color", copy.pixelColor[lang], "palette"],
+                ["layers", copy.pixelLayers[lang], "layers"],
+              ] as const
+            ).map(([id, label, icon]) => (
               <button
+                key={id}
                 type="button"
+                role="tab"
+                aria-selected={mobilePanel === id}
                 className={cn(
-                  "studio-control inline-flex items-center border-earth px-2 text-[12px] font-medium",
-                  selectShape === "rect" ? "border-fg bg-brick text-white" : "bg-card text-fg",
+                  "studio-control inline-flex min-w-0 flex-1 items-center justify-center gap-1 border-earth px-2 text-[12px] font-medium",
+                  mobilePanel === id ? "border-fg bg-brick text-white" : "bg-card text-fg",
                 )}
-                aria-pressed={selectShape === "rect"}
-                onClick={() => setSelectShape("rect")}
+                onClick={() => setMobilePanel(id)}
               >
-                {copy.pixelSelectRect[lang]}
+                <PixelIcon name={icon} />
+                {label}
               </button>
-              <button
-                type="button"
-                className={cn(
-                  "studio-control inline-flex items-center border-earth px-2 text-[12px] font-medium",
-                  selectShape === "ellipse" ? "border-fg bg-brick text-white" : "bg-card text-fg",
-                )}
-                aria-pressed={selectShape === "ellipse"}
-                onClick={() => setSelectShape("ellipse")}
-              >
-                {copy.pixelSelectEllipse[lang]}
-              </button>
-            </div>
+            ))}
+          </div>
+          {mobilePanel === "options" ? (
+            <>
+              {showBrushControls ? (
+                <div className="flex w-full flex-wrap items-center gap-1.5">
+                  {brushSelect(mobileBrushId)}
+                </div>
+              ) : null}
+              {brushPanel && (tool === "pencil" || tool === "circle" || tool === "eraser") ? (
+                <details className="w-full">
+                  <summary className="studio-control inline-flex cursor-pointer items-center border-earth bg-card px-2 text-[12px] font-medium text-fg">
+                    {copy.pixelBrushOptions[lang]}
+                  </summary>
+                  <div className="pt-2">{brushPanel}</div>
+                </details>
+              ) : null}
+              {tool === "fill" || tool === "selectContiguous" || tool === "selectColor" ? (
+                <div className="flex w-full items-center gap-2">
+                  <label className="shrink-0 text-[12px] font-medium text-fg" htmlFor={fillToleranceId}>
+                    {tool === "fill" ? copy.pixelFillTolerance[lang] : copy.pixelSelectTolerance[lang]}
+                  </label>
+                  <input
+                    id={fillToleranceId}
+                    type="range"
+                    min={0}
+                    max={255}
+                    step={1}
+                    value={fillTolerance}
+                    aria-label={tool === "fill" ? copy.pixelFillTolerance[lang] : copy.pixelSelectTolerance[lang]}
+                    onChange={(event) => setFillTolerance(clampFillTolerance(Number(event.target.value)))}
+                    className="min-w-0 flex-1"
+                  />
+                  <span className="w-8 text-right text-[12px] tabular-nums text-fg">{fillTolerance}</span>
+                </div>
+              ) : null}
+              {tool === "fill" ? <div className="w-full">{fillPatternPanel}</div> : null}
+              {tool === "selectPolygon" ? (
+                <p className="w-full text-[12px] leading-relaxed text-muted">{copy.pixelSelectPolygonHint[lang]}</p>
+              ) : null}
+              {tool === "select" ? (
+                <div className="flex flex-wrap gap-1.5" role="group" aria-label={copy.pixelSelectShape[lang]}>
+                  <button
+                    type="button"
+                    className={cn(
+                      "studio-control inline-flex items-center border-earth px-2 text-[12px] font-medium",
+                      selectShape === "rect" ? "border-fg bg-brick text-white" : "bg-card text-fg",
+                    )}
+                    aria-pressed={selectShape === "rect"}
+                    onClick={() => setSelectShape("rect")}
+                  >
+                    {copy.pixelSelectRect[lang]}
+                  </button>
+                  <button
+                    type="button"
+                    className={cn(
+                      "studio-control inline-flex items-center border-earth px-2 text-[12px] font-medium",
+                      selectShape === "ellipse" ? "border-fg bg-brick text-white" : "bg-card text-fg",
+                    )}
+                    aria-pressed={selectShape === "ellipse"}
+                    onClick={() => setSelectShape("ellipse")}
+                  >
+                    {copy.pixelSelectEllipse[lang]}
+                  </button>
+                </div>
+              ) : null}
+              {shapeMobileOptions}
+              {selectionActions}
+            </>
           ) : null}
-          {shapeMobileOptions}
-          {selectionActions}
-          {layerActions}
-          {paletteRow}
+          {mobilePanel === "color" ? paletteRow : null}
+          {mobilePanel === "layers" ? layerActions : null}
         </div>
       </div>
 
@@ -1823,6 +1858,24 @@ export function PlaygroundForm({
 
       <Dialog open={moreOpen} onClose={() => setMoreOpen(false)} title={copy.pixelMore[lang]} closeLabel={copy.closeMenu[lang]}>
         <div className="grid gap-4">
+          <button
+            type="button"
+            className="studio-control inline-flex w-full items-center justify-center gap-2 border-[3px] border-earth bg-brick px-3 text-[14px] font-medium text-white disabled:opacity-40"
+            disabled={pending || leaving}
+            aria-busy={(pending && busyIntent === "publish") || undefined}
+            aria-label={
+              pending && busyIntent === "publish"
+                ? copy.pixelPublishing[lang]
+                : copy.createPublish[lang]
+            }
+            onClick={() => {
+              setMoreOpen(false)
+              requestPublish()
+            }}
+          >
+            <PixelIcon name="publish" />
+            {copy.createPublish[lang]}
+          </button>
           <div className="grid gap-1.5">
             <p className="text-[12px] font-medium text-muted">{copy.pixelViewControls[lang]}</p>
             <div className="grid grid-cols-4 gap-1.5 sm:gap-2" role="toolbar" aria-label={copy.pixelViewControls[lang]}>
@@ -2008,6 +2061,17 @@ export function PlaygroundForm({
             className="studio-control inline-flex w-full items-center justify-center gap-2 border-[3px] border-earth bg-bg px-3 text-[14px] font-medium text-fg hover:bg-soft"
             onClick={() => {
               setMoreOpen(false)
+              setTransformOpen(true)
+            }}
+          >
+            <PixelIcon name="select" />
+            {copy.transformOpen[lang]}
+          </button>
+          <button
+            type="button"
+            className="studio-control inline-flex w-full items-center justify-center gap-2 border-[3px] border-earth bg-bg px-3 text-[14px] font-medium text-fg hover:bg-soft"
+            onClick={() => {
+              setMoreOpen(false)
               setExportOpen(true)
             }}
           >
@@ -2030,6 +2094,23 @@ export function PlaygroundForm({
           />
         </div>
       </Dialog>
+
+      <TransformDialog
+        lang={lang}
+        open={transformOpen}
+        onClose={() => setTransformOpen(false)}
+        getDocument={getExportDocument}
+        getSelectionBounds={getSelectionBounds}
+        onApply={(request) =>
+          boardRef.current?.applyTransform(request) ?? {
+            changed: false,
+            addedColors: 0,
+            approximatedColors: 0,
+            skipped: [],
+          }
+        }
+        onApplied={() => setDocumentPalette(boardRef.current?.getPalette() ?? documentPalette)}
+      />
 
       <ExportDialog
         lang={lang}

@@ -13,11 +13,10 @@ import { RecommendationSkeleton } from "@/components/creations/RecommendationRac
 import { RemixStrip } from "@/components/creations/RemixStrip"
 import { SimilarWorksLazy } from "@/components/creations/SimilarWorksLazy"
 import { CreationCommunity, CreationEngagement } from "@/components/community/CreationCommunity"
-import { BackLink } from "@/components/ui/BackLink"
-import { buttonClassName } from "@/components/ui/Button"
+import { socialButtonClass } from "@/components/social/socialButton"
 import { PixelIcon } from "@/components/ui/PixelIcon"
 import { isFollowing } from "@/features/community/follows"
-import { getReactionSummary, listConversation } from "@/features/community/queries"
+import { countCommentsOnCreation, getReactionSummary, listConversation } from "@/features/community/queries"
 import {
   countPublishedRemixes,
   getPublishedCreation,
@@ -98,12 +97,13 @@ export default async function CreationDetailPage({
         avatarUrl: profile.avatar_url,
       }
     : null
-  const [reaction, remixCount, following] = await Promise.all([
+  const [reaction, remixCount, following, commentCount] = await Promise.all([
     getReactionSummary(creation.id, member?.id ?? null),
     creation.type === "pixel" ? countPublishedRemixes(creation.id) : Promise.resolve(0),
     profile && profile.id !== creation.user_id
       ? isFollowing(profile.id, creation.user_id)
       : Promise.resolve(false),
+    countCommentsOnCreation(creation.id),
   ])
   const isOwner = profile?.id === creation.user_id
   const title = displayTitle(creation.title, lang)
@@ -124,10 +124,10 @@ export default async function CreationDetailPage({
 
   const identity = (
     <>
-      <h1 className="page-heading-sans break-words">{title}</h1>
+      <h1 className="break-words text-[17px] font-semibold leading-snug text-fg sm:text-[19px]">{title}</h1>
       {creation.source ? <RemixStrip lang={lang} items={[]} total={0} source={creation.source} /> : null}
 
-      <div className="mt-4">
+      <div className="mt-3">
         <CreatorBlock
           lang={lang}
           author={creation.author}
@@ -135,6 +135,7 @@ export default async function CreationDetailPage({
           otherWorks={[]}
           following={following}
           canFollow={!isOwner}
+          member={Boolean(profile)}
           returnPath={returnPath}
           publishedLabel={
             [published ? formatDayMonthYear(published, lang) : null, sizeLabel]
@@ -146,7 +147,7 @@ export default async function CreationDetailPage({
       </div>
 
       {creation.caption ? (
-        <p className="mt-5 max-w-prose whitespace-pre-wrap text-[15px] leading-relaxed text-fg">
+        <p className="mt-4 max-w-prose whitespace-pre-wrap text-[14px] leading-relaxed text-muted">
           {creation.caption}
         </p>
       ) : null}
@@ -154,11 +155,11 @@ export default async function CreationDetailPage({
       <CreationTags lang={lang} tags={creation.tags} />
       {isPixel ? <CreationColorPalette lang={lang} usage={creation.color_usage} /> : null}
 
-      <div className="mt-5 flex flex-wrap items-center gap-2 border-t border-line pt-5">
+      <div className="mt-4 flex flex-wrap items-center gap-1 border-t border-[color:var(--soc-hairline)] pt-3">
         {isOwner ? (
           <Link
             href={href(lang, `/create/${creation.id}`)}
-            className={buttonClassName({ size: "sm", variant: "secondary" })}
+            className={socialButtonClass({ variant: "soft", size: "sm" })}
           >
             <PixelIcon name="pencil" />
             {copy.createEditThis[lang]}
@@ -181,6 +182,7 @@ export default async function CreationDetailPage({
           isPixel={isPixel}
           appreciated={reaction.appreciated}
           appreciateCount={reaction.count}
+          commentCount={commentCount}
           remixCount={remixCount}
           member={member}
           allowFork={!isOwner}
@@ -203,16 +205,13 @@ export default async function CreationDetailPage({
   )
 
   return (
-    <article
-      className={
-        isPixel
-          ? "mx-auto w-full min-w-0 max-w-5xl px-5 py-6 sm:px-8 sm:py-8 lg:px-16"
-          : "mx-auto w-full min-w-0 max-w-3xl px-5 py-10 sm:px-8 sm:py-12 lg:px-16"
-      }
-    >
-      <BackLink href={href(lang, "/explore")} className="mb-5">
+    <article className="mx-auto w-full min-w-0 max-w-5xl px-3 py-4 sm:px-6 sm:py-6 lg:px-10">
+      <Link
+        href={href(lang, "/explore")}
+        className="mb-4 inline-flex min-h-11 items-center text-[13px] text-muted hover:text-fg"
+      >
         {copy.creationBack[lang]}
-      </BackLink>
+      </Link>
 
       {isPixel ? (
         <>

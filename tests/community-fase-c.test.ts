@@ -63,6 +63,9 @@ describe("community experience fase C", () => {
     expect(creatorsStrip).toMatch(/\/creators/)
     expect(creatorsPage).toMatch(/listNewCreators/)
     expect(creatorsPage).toMatch(/newCreatorsIntro/)
+    expect(creatorsPage).toMatch(/CreatorCardList/)
+    expect(creatorsPage).toMatch(/listFollowingIds/)
+    expect(creatorsPage).toMatch(/getCurrentProfile/)
     expect(nextConfig).toMatch(/"\/creators"/)
   })
 

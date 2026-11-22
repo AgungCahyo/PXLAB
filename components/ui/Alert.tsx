@@ -11,6 +11,8 @@ type AlertProps = HTMLAttributes<HTMLDivElement> & {
   tone?: keyof typeof tones;
   title?: string;
   children: ReactNode;
+  /** Hairline surface for social pages; studio keeps the pixel frame. */
+  flat?: boolean;
 };
 
 export function Alert({
@@ -18,12 +20,17 @@ export function Alert({
   title,
   children,
   className,
+  flat = false,
   ...props
 }: AlertProps) {
   return (
     <div
       role={tone === "error" ? "alert" : "status"}
-      className={cn("pixel-frame px-4 py-3 text-[14px] leading-relaxed", tones[tone], className)}
+      className={cn(
+        "px-4 py-3 text-[14px] leading-relaxed",
+        flat ? "border border-[color:var(--soc-hairline)] bg-soft" : cn("pixel-frame", tones[tone]),
+        className,
+      )}
       {...props}
     >
       {title ? <p className="font-medium">{title}</p> : null}

@@ -64,7 +64,13 @@ function HomeFeedList({
 
       <div className="divide-y divide-[color:var(--soc-hairline)]">
         {items.map((post) => (
-          <FeedPost key={post.id} lang={lang} post={post} viewer={viewer} />
+          <FeedPost
+            key={post.id}
+            lang={lang}
+            post={post}
+            viewer={viewer}
+            loginNext={pageHref(lang, feed, initialPage)}
+          />
         ))}
       </div>
 
@@ -103,6 +109,11 @@ function HomeFeedList({
         className={cn("flex items-center justify-between gap-3", enhanced ? "sr-only" : "py-2")}
       >
         {prevHref ? <Link href={prevHref}>{copy.pagePrev[lang]}</Link> : <span />}
+        <p aria-current="page" className="text-[13px] text-muted">
+          {copy.explorePageStatus[lang]
+            .replace("{page}", String(lastPage))
+            .replace("{pages}", String(pageCount))}
+        </p>
         {nextHref ? <Link href={nextHref}>{copy.pageNext[lang]}</Link> : <span />}
       </nav>
 

@@ -31,9 +31,25 @@ export const deleteCommentSchema = z
   })
   .strict()
 
+/**
+ * Explicit desired state keeps rapid double taps from toggling twice. It is
+ * optional so older callers that only know "toggle" still validate. Form fields
+ * arrive as the strings "true"/"false"; do not coerce them to booleans before
+ * this schema or parse will fail with invalid_input.
+ */
+export const desiredFieldSchema = z.enum(["true", "false"])
+
+export function desiredFromForm(
+  formData: FormData,
+): z.infer<typeof desiredFieldSchema> | undefined {
+  const raw = formData.get("desired")
+  return raw === "true" || raw === "false" ? raw : undefined
+}
+
 export const toggleReactionSchema = z
   .object({
     creation_id: z.uuid(),
+    desired: desiredFieldSchema.optional(),
   })
   .strict()
 
@@ -46,6 +62,7 @@ export const forkCreationSchema = z
 export const followCreatorSchema = z
   .object({
     user_id: z.uuid(),
+    desired: desiredFieldSchema.optional(),
   })
   .strict()
 

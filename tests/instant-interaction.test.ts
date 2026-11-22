@@ -7,17 +7,24 @@ const read = (file: string) => readFileSync(path.resolve(root, file), "utf8")
 
 describe("instant interaction — appreciation", () => {
   const community = read("components/community/CreationCommunity.tsx")
+  const appreciate = community.slice(
+    community.indexOf("function AppreciateForm"),
+    community.indexOf("function ShareButton"),
+  )
 
-  it("applies optimistic appreciate state before the server returns", () => {
-    expect(community).toMatch(/toggleAppreciationAction\(null, formData\)/)
-    expect(community).toMatch(/flushSync/)
-    expect(community).toMatch(/setAppreciated\(next\)/)
-    expect(community).toMatch(/previous\.appreciated/)
-    expect(community).toMatch(/pendingRef\.current/)
-    expect(community).toMatch(/variant=\{appreciated \? "secondary" : "outline"\}/)
-    expect(community).toMatch(/type="button"/)
-    expect(community).toMatch(/disabled:opacity-100/)
-    expect(community).not.toMatch(
+  it("applies optimistic appreciate state and queues the last intent", () => {
+    expect(appreciate).toMatch(/toggleAppreciationAction\(null, formData\)/)
+    expect(appreciate).toMatch(/flushSync/)
+    expect(appreciate).toMatch(/setAppreciated\(next\)/)
+    expect(appreciate).toMatch(/desiredRef\.current/)
+    expect(appreciate).toMatch(/reconcileDesiredState/)
+    expect(appreciate).toMatch(/formData\.set\("desired", String\(desired\)\)/)
+    expect(appreciate).toMatch(/PixelHeart filled=\{appreciated\}/)
+    expect(appreciate).toMatch(/workActionClass/)
+    expect(appreciate).toMatch(/type="button"/)
+    expect(appreciate).toMatch(/disabled:opacity-100/)
+    expect(appreciate).not.toMatch(/disabled=\{pending\}/)
+    expect(appreciate).not.toMatch(
       /useActionState<CommunityActionState, FormData>\(\s*toggleAppreciationAction/,
     )
   })
@@ -27,6 +34,7 @@ describe("instant interaction — route loading shells", () => {
   it("provides page-specific loading UI for key destinations", () => {
     expect(read("app/[lang]/(public)/creation/[id]/loading.tsx")).toMatch(/ArtworkDetailSkeleton/)
     expect(read("app/[lang]/(public)/u/[username]/loading.tsx")).toMatch(/ProfileLoadingSkeleton|ProfileSkeleton/)
+    expect(read("app/[lang]/(public)/creators/loading.tsx")).toMatch(/CreatorGridSkeleton/)
     expect(read("app/[lang]/(member)/dashboard/loading.tsx")).toMatch(/WorksSkeleton/)
     expect(read("app/[lang]/(member)/create/loading.tsx")).toMatch(/CreateSkeleton/)
     expect(read("app/[lang]/(member)/create/[id]/loading.tsx")).toMatch(/StudioSkeleton/)

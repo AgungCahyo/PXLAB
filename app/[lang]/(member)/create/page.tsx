@@ -4,7 +4,6 @@ import { notFound } from "next/navigation"
 import { connection } from "next/server"
 import { CreateInspiration } from "@/components/creations/CreateInspiration"
 import { PixelNewForm } from "@/components/creations/PixelNewForm"
-import { PageHeader } from "@/components/ui/PageHeader"
 import { listPublishedCreations } from "@/features/creations/queries"
 import { copy } from "@/lib/copy"
 import { href, isLang } from "@/lib/i18n"
@@ -54,24 +53,20 @@ export default async function CreatePage({
   ) as Partial<Record<CreationCategory, CreationCard[]>>
 
   return (
-    <div className="mx-auto w-full min-w-0 max-w-5xl px-5 py-8 sm:px-8 sm:py-10 lg:px-16">
-      <PageHeader
-        kicker={copy.createEyebrow[lang]}
-        title={copy.createTitle[lang]}
-        intro={copy.createIntro[lang]}
-      >
-        <p className="mt-2 text-[13px]">
-          <Link
-            href={href(lang, "/dashboard")}
-            className="text-muted underline-offset-4 hover:text-fg hover:underline"
-          >
-            {copy.createManageLink[lang]}
-          </Link>
-        </p>
-      </PageHeader>
+    <div className="mx-auto w-full min-w-0 max-w-6xl px-3 py-4 sm:px-6 sm:py-6 lg:px-10">
+      <header className="min-w-0">
+        <h1 className="text-[17px] font-semibold text-fg">{copy.createTitle[lang]}</h1>
+        <p className="mt-1 max-w-xl text-[14px] leading-relaxed text-muted">{copy.createIntro[lang]}</p>
+        <Link
+          href={href(lang, "/dashboard")}
+          className="mt-1 inline-flex min-h-11 items-center text-[13px] text-muted hover:text-fg"
+        >
+          {copy.createManageLink[lang]}
+        </Link>
+      </header>
 
-      <div className="mt-8 min-w-0">
-        <PixelNewForm lang={lang} />
+      <div className="mt-6 min-w-0">
+        <PixelNewForm lang={lang} variant="dialog" />
       </div>
 
       <CreateInspiration lang={lang} bySize={bySize} />

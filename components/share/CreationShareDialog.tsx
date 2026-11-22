@@ -185,6 +185,7 @@ export function CreationShareDialog({
       onClose={onClose}
       title={copy.share[lang]}
       closeLabel={copy.shareClose[lang]}
+      tone="social"
       className="w-[min(calc(100%-1rem),22rem)]"
     >
       <div className="grid gap-4">
@@ -194,11 +195,11 @@ export function CreationShareDialog({
             <img
               src={coverUrl}
               alt=""
-              className="h-12 w-12 shrink-0 border-[3px] border-earth bg-card object-contain"
+              className="h-12 w-12 shrink-0 border border-[color:var(--soc-hairline)] bg-card object-contain"
               style={{ imageRendering: "pixelated" }}
             />
           ) : (
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center border-[3px] border-earth bg-soft text-[10px] font-medium text-muted">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center border border-[color:var(--soc-hairline)] bg-soft text-[10px] font-medium text-muted">
               PXLB
             </div>
           )}
@@ -212,7 +213,7 @@ export function CreationShareDialog({
           <button
             type="button"
             onClick={() => void nativeShare()}
-            className="pixel-press inline-flex min-h-11 w-full items-center justify-center gap-2 border-[3px] border-earth bg-brick px-4 text-[14px] font-medium text-white shadow-[4px_4px_0_0_var(--fg)]"
+            className="inline-flex min-h-11 w-full items-center justify-center gap-2 bg-fg px-4 text-[14px] font-semibold text-bg hover:opacity-90"
           >
             <Share2 className="size-4 shrink-0" strokeWidth={2.25} />
             {copy.shareNative[lang]}
@@ -227,10 +228,9 @@ export function CreationShareDialog({
               onClick={() => onPrimary(id)}
               aria-pressed={id === "instagram" ? igOpen : undefined}
               className={cn(
-                "flex min-h-[4.5rem] flex-col items-center justify-center gap-1.5 border-[3px] border-earth bg-card px-1 py-2 text-fg transition-colors",
-                "hover:bg-soft focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-earth",
-                "active:translate-x-px active:translate-y-px",
-                id === "instagram" && igOpen && "bg-soft",
+                "flex min-h-[4.5rem] flex-col items-center justify-center gap-1.5 bg-soft px-1 py-2 text-fg transition-colors",
+                "hover:bg-[color:var(--soc-hairline)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky",
+                id === "instagram" && igOpen && "bg-[color:var(--soc-hairline)]",
               )}
             >
               <span
@@ -245,7 +245,7 @@ export function CreationShareDialog({
         </div>
 
         {igOpen && isPixel ? (
-          <div className="grid gap-2 border-[3px] border-earth bg-soft p-3">
+          <div className="grid gap-2 border border-[color:var(--soc-hairline)] bg-soft p-3">
             <p className="text-[12px] text-muted">{copy.shareInstagramHint[lang]}</p>
             <div className="grid grid-cols-2 gap-2">
               <SecondaryAction
@@ -279,7 +279,7 @@ export function CreationShareDialog({
         <button
           type="button"
           onClick={() => void copyLink()}
-          className="inline-flex min-h-11 w-full items-center justify-center gap-2 border-[3px] border-earth bg-card px-4 text-[14px] font-medium text-fg hover:bg-soft focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-earth"
+          className="inline-flex min-h-11 w-full items-center justify-center gap-2 bg-soft px-4 text-[14px] font-semibold text-fg hover:bg-[color:var(--soc-hairline)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky"
         >
           {status === "copied" ? (
             <Check className="size-4 shrink-0 text-grass" strokeWidth={2.25} />
@@ -289,7 +289,7 @@ export function CreationShareDialog({
           {status === "copied" ? copy.shareCopied[lang] : copy.shareCopyLink[lang]}
         </button>
 
-        <div className="border-t border-line/40 pt-1">
+        <div className="border-t border-[color:var(--soc-hairline)] pt-1">
           <button
             type="button"
             onClick={() => {
@@ -320,7 +320,7 @@ export function CreationShareDialog({
                       }
                       openPlatform(id)
                     }}
-                    className="inline-flex min-h-11 items-center gap-2 border-[3px] border-earth bg-card px-3 text-[13px] font-medium hover:bg-soft"
+                    className="inline-flex min-h-11 items-center gap-2 bg-soft px-3 text-[13px] font-medium hover:bg-[color:var(--soc-hairline)]"
                   >
                     <span style={{ color }}>
                       <Icon className="size-4" />
@@ -346,7 +346,7 @@ export function CreationShareDialog({
                   value={qrFormat}
                   onChange={(e) => setQrFormat(e.target.value === "svg" ? "svg" : "png")}
                   aria-label={copy.shareQrFormat[lang]}
-                  className="min-h-11 border-[3px] border-earth bg-card px-2 text-[12px] font-medium text-fg"
+                  className="min-h-11 border border-[color:var(--soc-hairline)] bg-soft px-2 text-[12px] font-medium text-fg"
                 >
                   <option value="png">PNG</option>
                   <option value="svg">SVG</option>
@@ -359,7 +359,7 @@ export function CreationShareDialog({
                     type="button"
                     onClick={() => setExportOpen((v) => !v)}
                     aria-expanded={exportOpen}
-                    className="inline-flex min-h-11 items-center justify-between gap-2 border-[3px] border-earth bg-card px-3 text-[13px] font-medium hover:bg-soft"
+                    className="inline-flex min-h-11 items-center justify-between gap-2 bg-soft px-3 text-[13px] font-medium hover:bg-[color:var(--soc-hairline)]"
                   >
                     <span className="inline-flex items-center gap-2">
                       <ImageDown className="size-4" strokeWidth={2.25} />
@@ -372,7 +372,7 @@ export function CreationShareDialog({
                   </button>
 
                   {exportOpen ? (
-                    <div className="grid gap-2 border-[3px] border-earth bg-soft p-3">
+                    <div className="grid gap-2 border border-[color:var(--soc-hairline)] bg-soft p-3">
                       <div className="flex flex-wrap gap-1.5">
                         {(
                           [
@@ -386,10 +386,8 @@ export function CreationShareDialog({
                             type="button"
                             onClick={() => setExportFormat(id)}
                             className={cn(
-                              "min-h-9 border-[3px] px-2.5 text-[12px] font-medium",
-                              exportFormat === id
-                                ? "border-earth bg-brick text-white"
-                                : "border-earth bg-card text-fg",
+                              "min-h-9 px-2.5 text-[12px] font-semibold",
+                              exportFormat === id ? "bg-fg text-bg" : "bg-card text-muted hover:text-fg",
                             )}
                           >
                             {label[lang]}
@@ -463,7 +461,7 @@ function SecondaryAction({
       type="button"
       onClick={onClick}
       className={cn(
-        "inline-flex min-h-11 items-center justify-center gap-2 border-[3px] border-earth bg-card px-3 text-[13px] font-medium hover:bg-soft focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-earth",
+        "inline-flex min-h-11 items-center justify-center gap-2 bg-soft px-3 text-[13px] font-medium hover:bg-[color:var(--soc-hairline)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky",
         className,
       )}
     >

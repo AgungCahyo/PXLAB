@@ -18,10 +18,10 @@ export function Pill({
   return (
     <Link
       href={href}
-      aria-current={selected ? "true" : undefined}
+      aria-current={selected ? "page" : undefined}
       className={cn(
-        "inline-flex min-h-9 items-center whitespace-nowrap px-3.5 text-[13px] font-semibold transition-colors",
-        selected ? (tone === "brand" ? "bg-brick text-white" : "bg-fg text-bg") : "bg-soft text-muted hover:text-fg",
+        "inline-flex min-h-11 items-center whitespace-nowrap px-3.5 text-[13px] font-semibold transition-colors",
+        selected ? (tone === "brand" ? "bg-brick text-fg" : "bg-fg text-bg") : "bg-soft text-muted hover:text-fg",
       )}
     >
       {children}

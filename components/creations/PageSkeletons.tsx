@@ -1,38 +1,39 @@
 import { GallerySkeleton } from "@/components/creations/GallerySkeleton"
 
 function Bone({ className }: { className?: string }) {
-  return <div className={`border-[3px] border-earth bg-soft ${className ?? ""}`} />
+  return <div className={`bg-soft ${className ?? ""}`} />
 }
 
 /** Route loading shell for artwork detail — structure matches the real page. */
 export function ArtworkDetailSkeleton() {
   return (
     <div
-      className="mx-auto w-full min-w-0 max-w-5xl px-5 py-6 sm:px-8 sm:py-8 lg:px-16"
+      className="mx-auto w-full min-w-0 max-w-5xl px-3 py-4 sm:px-6 sm:py-6 lg:px-10"
+      role="status"
       aria-busy="true"
       aria-label="Loading"
     >
-      <Bone className="mb-5 h-11 w-36" />
+      <Bone className="mb-4 h-4 w-24" />
       <div className="detail-art-stage">
-        <div className="pixel-frame pixel-present">
-          <Bone className="h-full w-full border-0" />
+        <div className="pixel-present">
+          <Bone className="aspect-square w-full" />
         </div>
       </div>
-      <Bone className="mt-6 h-7 w-2/3 max-w-md sm:mt-8" />
-      <div className="mt-4 flex items-center gap-3">
+      <Bone className="mt-4 h-5 w-2/3 max-w-md" />
+      <div className="mt-3 flex items-center gap-2.5">
         <Bone className="h-10 w-10 shrink-0" />
-        <div className="min-w-0 flex-1 space-y-2">
-          <Bone className="h-4 w-40 max-w-full" />
-          <Bone className="h-3 w-56 max-w-full" />
+        <div className="min-w-0 flex-1 space-y-1.5">
+          <Bone className="h-3.5 w-32 max-w-full" />
+          <Bone className="h-3 w-24 max-w-full" />
         </div>
       </div>
-      <div className="mt-5 flex gap-2 border-t border-line pt-5">
-        <Bone className="h-9 w-28" />
+      <div className="mt-4 flex gap-2 border-t border-[color:var(--soc-hairline)] pt-3">
         <Bone className="h-9 w-24" />
+        <Bone className="h-9 w-20" />
       </div>
-      <div className="mt-10 border-t-[3px] border-earth pt-8">
-        <Bone className="h-6 w-40" />
-        <Bone className="mt-6 h-24 w-full" />
+      <div className="mt-8 border-t border-[color:var(--soc-hairline)] pt-6">
+        <Bone className="h-4 w-32" />
+        <Bone className="mt-4 h-20 w-full" />
       </div>
     </div>
   )
@@ -95,20 +96,26 @@ export function WorksSkeleton() {
 export function CreateSkeleton() {
   return (
     <div
-      className="mx-auto max-w-3xl px-5 py-16 sm:px-8 lg:px-16"
-      aria-hidden="true"
+      className="mx-auto w-full min-w-0 max-w-6xl px-3 py-4 sm:px-6 sm:py-6 lg:px-10"
+      role="status"
+      aria-busy="true"
+      aria-label="Loading"
     >
-      <div className="h-3 w-24 bg-soft" />
-      <div className="mt-3 h-8 w-48 bg-soft" />
-      <div className="mt-4 h-4 w-full max-w-lg bg-soft" />
-      <div className="mt-10 grid grid-cols-2 gap-3 sm:grid-cols-3">
-        {Array.from({ length: 6 }, (_, index) => (
-          <div key={index} className="pixel-choice grid gap-2 p-3">
-            <div className="h-24 bg-soft" />
-            <div className="h-4 w-2/3 bg-soft" />
-            <div className="h-3 w-1/2 bg-soft" />
-          </div>
-        ))}
+      <div className="h-5 w-40 bg-soft" />
+      <div className="mt-2 h-4 w-full max-w-lg bg-soft" />
+      <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,18rem)_minmax(0,1fr)]">
+        <div className="border border-[color:var(--soc-hairline)] bg-card p-3">
+          <div className="aspect-square bg-soft" />
+          <div className="mt-3 h-4 w-2/3 bg-soft" />
+        </div>
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+          {Array.from({ length: 6 }, (_, index) => (
+            <div key={index} className="grid gap-2 bg-soft p-3">
+              <div className="h-4 w-2/3 bg-card" />
+              <div className="h-3 w-1/2 bg-card" />
+            </div>
+          ))}
+        </div>
       </div>
       <div className="mt-6 h-11 w-full bg-soft" />
     </div>
@@ -128,6 +135,11 @@ export function StudioSkeleton() {
         <div className="min-w-0 flex-1">
           <div className="h-5 w-40 bg-soft" />
           <div className="mt-1 h-3 w-16 bg-soft" />
+        </div>
+        <div className="hidden md:flex gap-1.5">
+          {Array.from({ length: 6 }, (_, index) => (
+            <div key={`view-${index}`} className="h-11 w-11 shrink-0 bg-soft" />
+          ))}
         </div>
         <div className="ml-auto flex gap-1.5">
           <div className="h-11 w-11 bg-soft" />
@@ -184,7 +196,12 @@ export function EngagementSkeleton() {
 
 export function ConversationSkeleton() {
   return (
-    <div className="mt-10 border-t-[3px] border-earth pt-8" aria-hidden="true">
+    <div
+      className="mt-8 border-t border-[color:var(--soc-hairline)] pt-6"
+      role="status"
+      aria-busy="true"
+      aria-label="Loading"
+    >
       <div className="h-6 w-40 bg-soft" />
       <div className="mt-8 space-y-5">
         {Array.from({ length: 3 }, (_, index) => (

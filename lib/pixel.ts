@@ -1030,6 +1030,26 @@ export function createBezierAnchor(x: number, y: number): BezierAnchor {
   return { x, y, hiX: x, hiY: y, hoX: x, hoY: y }
 }
 
+/** Evenly spaced RGB stops from `from` to `to` (inclusive). */
+export function linearGradientStops(
+  from: readonly [number, number, number],
+  to: readonly [number, number, number],
+  count = 8,
+): Array<[number, number, number]> {
+  const n = Math.max(2, Math.round(count))
+  const last = n - 1
+  const stops: Array<[number, number, number]> = []
+  for (let i = 0; i < n; i += 1) {
+    const t = i / last
+    stops.push([
+      Math.round(from[0] + (to[0] - from[0]) * t),
+      Math.round(from[1] + (to[1] - from[1]) * t),
+      Math.round(from[2] + (to[2] - from[2]) * t),
+    ])
+  }
+  return stops
+}
+
 export function fillLinearGradient(
   pixels: Uint8ClampedArray,
   x0: number,
@@ -1541,6 +1561,25 @@ export function selectionFromEllipse(x0: number, y0: number, x1: number, y1: num
   return { ...rect, mask }
 }
 
+/**
+ * Snap a line/gradient end to horizontal, vertical, or 45° from the start.
+ * Used while Shift is held.
+ */
+export function constrainAxisEnd(x0: number, y0: number, x1: number, y1: number) {
+  const dx = x1 - x0
+  const dy = y1 - y0
+  if (dx === 0 && dy === 0) return { x: x1, y: y1 }
+  const adx = Math.abs(dx)
+  const ady = Math.abs(dy)
+  if (adx * 2 < ady) return { x: x0, y: y1 }
+  if (ady * 2 < adx) return { x: x1, y: y0 }
+  const side = Math.max(adx, ady)
+  return {
+    x: x0 + (dx < 0 ? -side : side),
+    y: y0 + (dy < 0 ? -side : side),
+  }
+}
+
 /** Constrain shape end so width === height (square / circle bounds). */
 export function constrainSquareEnd(x0: number, y0: number, x1: number, y1: number) {
   const dx = x1 - x0
@@ -1639,6 +1678,58 @@ export function extractRect(
     data,
     mask: rect.mask ? new Uint8Array(rect.mask) : undefined,
   }
+}
+
+/**
+ * Lift a selection as an object: only the cells that are really there.
+ *
+ * The editing buffer shows empty cells as opaque Paper, so a plain rectangle copy would turn
+ * every transparent cell inside (or around) the selection into a Paper-coloured block that
+ * overwrites whatever is under it when dropped. Here the clipboard mask keeps only cells that
+ * are inside the selection shape, on the canvas, and not Paper-coloured, so transparency stays
+ * transparent when the object moves, flips, rotates, scales, or is pasted. The mask is omitted
+ * when every cell of an unmasked rectangle is solid (nothing to exclude).
+ */
+export function extractObject(
+  pixels: Uint8ClampedArray,
+  rect: PixelSelection,
+  canvasWidth: number,
+  canvasHeight: number,
+  paper: readonly [number, number, number] = hexToRgb(PIXEL_PAPER),
+): PixelClipboard {
+  const clip = extractRect(pixels, rect, canvasWidth, canvasHeight)
+  const mask = new Uint8Array(rect.width * rect.height)
+  let solid = true
+  for (let row = 0; row < rect.height; row += 1) {
+    for (let col = 0; col < rect.width; col += 1) {
+      const i = row * rect.width + col
+      const sx = rect.x + col
+      const sy = rect.y + row
+      if (rect.mask && rect.mask[i] !== 1) {
+        solid = false
+        continue
+      }
+      if (!inCanvas(sx, sy, canvasWidth, canvasHeight)) {
+        solid = false
+        continue
+      }
+      const src = (sy * canvasWidth + sx) * 4
+      if (pixels[src] === paper[0] && pixels[src + 1] === paper[1] && pixels[src + 2] === paper[2]) {
+        solid = false
+        continue
+      }
+      mask[i] = 1
+    }
+  }
+  clip.mask = solid ? undefined : mask
+  return clip
+}
+
+/** True when a lifted object has no cells at all (the selection only covered empty canvas). */
+export function clipboardIsEmpty(clip: PixelClipboard) {
+  if (!clip.mask) return clip.width * clip.height === 0
+  for (let i = 0; i < clip.mask.length; i += 1) if (clip.mask[i] === 1) return false
+  return true
 }
 
 export function blitRect(

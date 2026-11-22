@@ -23,7 +23,7 @@ export function SocialEmptyState({
         </div>
       ) : null}
       <h2 className="text-[1.0625rem] font-semibold text-fg">{title}</h2>
-      <p className="max-w-sm text-[14px] leading-relaxed text-muted">{description}</p>
+      {description ? <p className="max-w-sm text-[14px] leading-relaxed text-muted">{description}</p> : null}
       {action ? <div className="mt-1 flex flex-wrap justify-center gap-2">{action}</div> : null}
     </div>
   )

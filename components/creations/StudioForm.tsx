@@ -54,6 +54,7 @@ export function StudioForm({ lang, creation }: { lang: Lang; creation: CreationR
   )
   const [preview, setPreview] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
+  const [confirmLeave, setConfirmLeave] = useState(false)
   const [title, setTitle] = useState(creation.title)
   const [caption, setCaption] = useState(creation.caption ?? "")
   const [tags, setTags] = useState<string[]>(creation.tags ?? [])
@@ -118,189 +119,197 @@ export function StudioForm({ lang, creation }: { lang: Lang; creation: CreationR
     router.push(href(lang, "/dashboard"))
   }
 
+  const discardAndLeave = () => {
+    dirtyRef.current = false
+    router.push(href(lang, "/dashboard"))
+  }
+
   return (
-    <form ref={formRef} action={action} className="grid gap-6">
-      <input type="hidden" name="lang" value={lang} />
-      <input type="hidden" name="id" value={creation.id} />
-      {creation.type === "visual" ? (
-        <input type="hidden" name="content" value={JSON.stringify(visual)} />
-      ) : null}
-      <button
-        type="button"
-        onClick={() => void leave()}
-        disabled={leaving || pending}
-        className="inline-flex h-11 w-fit items-center gap-2 border-[3px] border-earth bg-card px-3 text-[14px] font-medium disabled:opacity-50"
-      >
-        <PixelIcon name="back" />
-        {copy.createBackToWorks[lang]}
-      </button>
-      {leaveError && "error" in leaveError ? (
-        <Alert tone="error">{copy.errors[leaveError.error][lang]}</Alert>
-      ) : null}
-      {state && "error" in state ? (
-        <Alert tone="error">{copy.errors[state.error][lang]}</Alert>
-      ) : null}
-      {state && "ok" in state ? (
-        <Alert tone="info">
-          {state.unpublished
-            ? copy.createUnpublished[lang]
-            : state.published
-              ? copy.createPublished[lang]
-              : copy.createSaved[lang]}
-        </Alert>
-      ) : null}
-
-      <p className="text-[12px] tracking-[0.16em] text-muted uppercase">
-        {creation.status === "published" ? copy.createPublishedBadge[lang] : copy.createDraftBadge[lang]}
-      </p>
-
-      {preview ? (
-        <div className="grid gap-4">
-          <h2 className="pixel-title">{title}</h2>
-          <CreationBody type={creation.type} content={previewContent} lang={lang} />
-        </div>
-      ) : null}
-      <div className={preview ? "hidden" : "grid gap-6"}>
-        <Input
-          id="title"
-          name="title"
-          required
-          maxLength={CREATION_TITLE_MAX}
-          label={copy.createTitleLabel[lang]}
-          value={title}
-          onChange={(event) => {
-            setTitle(event.target.value)
-            touch()
-          }}
-        />
-        <Textarea
-          id="caption"
-          name="caption"
-          rows={3}
-          maxLength={CREATION_CAPTION_MAX}
-          label={copy.createCaptionLabel[lang]}
-          hint={copy.createCaptionHint[lang]}
-          placeholder={copy.createCaptionPlaceholder[lang]}
-          value={caption}
-          onChange={(event) => {
-            setCaption(event.target.value)
-            touch()
-          }}
-        />
-        <CreationTagInput
-          lang={lang}
-          id="tags"
-          value={tags}
-          onChange={(next) => {
-            setTags(next)
-            touch()
-          }}
-        />
+    <>
+      <form ref={formRef} action={action} className="grid gap-6">
+        <input type="hidden" name="lang" value={lang} />
+        <input type="hidden" name="id" value={creation.id} />
         {creation.type === "visual" ? (
-          <VisualEditor
-            lang={lang}
-            value={visual}
-            onChange={(value) => {
-              setVisual(value)
+          <input type="hidden" name="content" value={JSON.stringify(visual)} />
+        ) : null}
+        <button
+          type="button"
+          onClick={() => (dirtyRef.current ? setConfirmLeave(true) : discardAndLeave())}
+          disabled={leaving || pending}
+          className="inline-flex h-11 w-fit items-center gap-2 border-[3px] border-earth bg-card px-3 text-[14px] font-medium disabled:opacity-50"
+        >
+          <PixelIcon name="back" />
+          {copy.createBackToWorks[lang]}
+        </button>
+        {leaveError && "error" in leaveError ? (
+          <Alert tone="error">{copy.errors[leaveError.error][lang]}</Alert>
+        ) : null}
+        {state && "error" in state ? (
+          <Alert tone="error">{copy.errors[state.error][lang]}</Alert>
+        ) : null}
+        {state && "ok" in state ? (
+          <Alert tone="info">
+            {state.unpublished
+              ? copy.createUnpublished[lang]
+              : state.published
+                ? copy.createPublished[lang]
+                : copy.createSaved[lang]}
+          </Alert>
+        ) : null}
+
+        <p className="text-[12px] tracking-[0.16em] text-muted uppercase">
+          {creation.status === "published" ? copy.createPublishedBadge[lang] : copy.createDraftBadge[lang]}
+        </p>
+
+        {preview ? (
+          <div className="grid gap-4">
+            <h2 className="pixel-title">{title}</h2>
+            <CreationBody type={creation.type} content={previewContent} lang={lang} />
+          </div>
+        ) : null}
+        <div className={preview ? "hidden" : "grid gap-6"}>
+          <Input
+            id="title"
+            name="title"
+            required
+            maxLength={CREATION_TITLE_MAX}
+            label={copy.createTitleLabel[lang]}
+            value={title}
+            onChange={(event) => {
+              setTitle(event.target.value)
               touch()
             }}
           />
-        ) : (
-          <>
-            <Textarea
-              id="body"
-              name="body"
-              required
-              maxLength={
-                creation.type === "idea"
-                  ? CREATION_IDEA_BODY_MAX
-                  : creation.type === "story"
-                    ? CREATION_STORY_BODY_MAX
-                    : CREATION_TEXT_BODY_MAX
-              }
-              label={copy.createBodyLabel[lang]}
-              value={textBody}
-              onChange={(event) => {
-                setTextBody(event.target.value)
+          <Textarea
+            id="caption"
+            name="caption"
+            rows={3}
+            maxLength={CREATION_CAPTION_MAX}
+            label={copy.createCaptionLabel[lang]}
+            hint={copy.createCaptionHint[lang]}
+            placeholder={copy.createCaptionPlaceholder[lang]}
+            value={caption}
+            onChange={(event) => {
+              setCaption(event.target.value)
+              touch()
+            }}
+          />
+          <CreationTagInput
+            lang={lang}
+            id="tags"
+            value={tags}
+            onChange={(next) => {
+              setTags(next)
+              touch()
+            }}
+          />
+          {creation.type === "visual" ? (
+            <VisualEditor
+              lang={lang}
+              value={visual}
+              onChange={(value) => {
+                setVisual(value)
                 touch()
               }}
             />
-            {creation.type === "idea" ? (
+          ) : (
+            <>
               <Textarea
-                id="context"
-                name="context"
-                maxLength={CREATION_IDEA_CONTEXT_MAX}
-                label={copy.createContextLabel[lang]}
-                value={context}
+                id="body"
+                name="body"
+                required
+                maxLength={
+                  creation.type === "idea"
+                    ? CREATION_IDEA_BODY_MAX
+                    : creation.type === "story"
+                      ? CREATION_STORY_BODY_MAX
+                      : CREATION_TEXT_BODY_MAX
+                }
+                label={copy.createBodyLabel[lang]}
+                value={textBody}
                 onChange={(event) => {
-                  setContext(event.target.value)
+                  setTextBody(event.target.value)
                   touch()
                 }}
               />
-            ) : null}
-            {creation.type === "story" ? (
-              <Textarea
-                id="continuation_prompt"
-                name="continuation_prompt"
-                maxLength={CREATION_STORY_PROMPT_MAX}
-                label={copy.createPromptLabel[lang]}
-                hint={copy.createPromptHint[lang]}
-                value={prompt}
-                onChange={(event) => {
-                  setPrompt(event.target.value)
-                  touch()
-                }}
-              />
-            ) : null}
-          </>
-        )}
-      </div>
+              {creation.type === "idea" ? (
+                <Textarea
+                  id="context"
+                  name="context"
+                  maxLength={CREATION_IDEA_CONTEXT_MAX}
+                  label={copy.createContextLabel[lang]}
+                  value={context}
+                  onChange={(event) => {
+                    setContext(event.target.value)
+                    touch()
+                  }}
+                />
+              ) : null}
+              {creation.type === "story" ? (
+                <Textarea
+                  id="continuation_prompt"
+                  name="continuation_prompt"
+                  maxLength={CREATION_STORY_PROMPT_MAX}
+                  label={copy.createPromptLabel[lang]}
+                  hint={copy.createPromptHint[lang]}
+                  value={prompt}
+                  onChange={(event) => {
+                    setPrompt(event.target.value)
+                    touch()
+                  }}
+                />
+              ) : null}
+            </>
+          )}
+        </div>
 
-      <div className="flex flex-wrap gap-3">
-        <Button type="button" variant="secondary" onClick={() => setPreview((value) => !value)}>
-          {preview ? copy.createEdit[lang] : copy.createPreview[lang]}
-        </Button>
-        {creation.status !== "published" ? (
+        <div className="flex flex-wrap gap-3">
+          <Button type="button" variant="secondary" onClick={() => setPreview((value) => !value)}>
+            {preview ? copy.createEdit[lang] : copy.createPreview[lang]}
+          </Button>
+          {creation.status !== "published" ? (
+            <Button
+              type="submit"
+              name="intent"
+              value="draft"
+              disabled={pending || leaving}
+              aria-busy={pending || undefined}
+            >
+              {pending ? copy.pixelSaving[lang] : copy.createSaveDraft[lang]}
+            </Button>
+          ) : null}
           <Button
             type="submit"
             name="intent"
-            value="draft"
+            value="publish"
             disabled={pending || leaving}
             aria-busy={pending || undefined}
           >
-            {pending ? copy.pixelSaving[lang] : copy.createSaveDraft[lang]}
+            {pending ? copy.pixelPublishing[lang] : copy.createPublish[lang]}
           </Button>
-        ) : null}
-        <Button
-          type="submit"
-          name="intent"
-          value="publish"
-          disabled={pending || leaving}
-          aria-busy={pending || undefined}
-        >
-          {pending ? copy.pixelPublishing[lang] : copy.createPublish[lang]}
-        </Button>
-        {creation.status === "published" ? (
-          <Button
-            type="submit"
-            name="intent"
-            value="unpublish"
-            variant="outline"
-            disabled={pending || leaving}
-            aria-busy={pending || undefined}
-          >
-            {pending ? copy.pixelUnpublishing[lang] : copy.createUnpublish[lang]}
+          {creation.status === "published" ? (
+            <Button
+              type="submit"
+              name="intent"
+              value="unpublish"
+              variant="outline"
+              disabled={pending || leaving}
+              aria-busy={pending || undefined}
+            >
+              {pending ? copy.pixelUnpublishing[lang] : copy.createUnpublish[lang]}
+            </Button>
+          ) : null}
+          {creation.status === "published" ? (
+            <a href={href(lang, `/creation/${creation.id}`)} className="inline-flex min-h-11 items-center text-[14px] text-muted hover:text-fg">
+              {copy.createViewPublic[lang]}
+            </a>
+          ) : null}
+          <Button type="button" variant="ghost" onClick={() => setConfirmDelete(true)}>
+            {copy.createDelete[lang]}
           </Button>
-        ) : null}
-        {creation.status === "published" ? (
-          <a href={href(lang, `/creation/${creation.id}`)} className="inline-flex min-h-11 items-center text-[14px] text-muted hover:text-fg">
-            {copy.createViewPublic[lang]}
-          </a>
-        ) : null}
-        <Button type="button" variant="ghost" onClick={() => setConfirmDelete(true)}>
-          {copy.createDelete[lang]}
-        </Button>
-      </div>
+        </div>
+
+      </form>
 
       <Dialog
         open={confirmDelete}
@@ -324,6 +333,31 @@ export function StudioForm({ lang, creation }: { lang: Lang; creation: CreationR
           </Button>
         </div>
       </Dialog>
-    </form>
+
+      <Dialog
+        open={confirmLeave}
+        onClose={() => setConfirmLeave(false)}
+        title={copy.pixelLeaveUnsavedTitle[lang]}
+        closeLabel={copy.closeMenu[lang]}
+      >
+        <p className="text-[14px] leading-relaxed text-muted">{copy.pixelLeaveUnsavedBody[lang]}</p>
+        {leaveError && "error" in leaveError ? (
+          <Alert tone="error" className="mt-3">
+            {copy.errors[leaveError.error][lang]}
+          </Alert>
+        ) : null}
+        <div className="mt-4 flex flex-wrap gap-3">
+          <Button type="button" onClick={() => void leave()} disabled={leaving || pending}>
+            {leaving ? copy.pixelLeaving[lang] : copy.createSaveChanges[lang]}
+          </Button>
+          <Button type="button" variant="secondary" onClick={discardAndLeave}>
+            {copy.pixelLeaveDiscard[lang]}
+          </Button>
+          <Button type="button" variant="ghost" onClick={() => setConfirmLeave(false)}>
+            {copy.createCancel[lang]}
+          </Button>
+        </div>
+      </Dialog>
+    </>
   )
 }

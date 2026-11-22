@@ -1,8 +1,8 @@
-import { CreationCard } from "@/components/creations/CreationCard"
 import {
   recommendationStripItemClass,
   recommendationStripListClass,
 } from "@/components/creations/RecommendationRack"
+import { WorkTile } from "@/components/social/WorkTile"
 import { SectionHeader } from "@/components/ui/PageHeader"
 import { copy } from "@/lib/copy"
 import type { Lang } from "@/lib/i18n"
@@ -19,14 +19,14 @@ export function SimilarWorksStrip({
 
   return (
     <section
-      className="mt-8 border-t-[3px] border-earth pt-6"
+      className="mt-8 border-t border-[color:var(--soc-hairline)] pt-6"
       aria-labelledby="similar-works-heading"
     >
       <SectionHeader id="similar-works-heading" title={copy.similarWorksTitle[lang]} />
       <ul className={recommendationStripListClass}>
         {items.map((item) => (
           <li key={item.id} className={recommendationStripItemClass}>
-            <CreationCard creation={item} lang={lang} />
+            <WorkTile creation={item} lang={lang} />
           </li>
         ))}
       </ul>

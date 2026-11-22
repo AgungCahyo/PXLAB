@@ -3,6 +3,9 @@
 import { useEffect, useRef, useState } from "react"
 import { RecommendationSkeleton } from "@/components/creations/RecommendationRack"
 import { SimilarWorksStrip } from "@/components/creations/SimilarWorksStrip"
+import { socialButtonClass } from "@/components/social/socialButton"
+import { SocialEmptyState } from "@/components/social/SocialEmptyState"
+import { SectionHeader } from "@/components/ui/PageHeader"
 import { loadSimilarCreationsAction } from "@/features/creations/recommendation-actions"
 import type { CreationCard } from "@/features/creations/queries"
 import { copy } from "@/lib/copy"
@@ -105,20 +108,27 @@ export function SimilarWorksLazy({
     <div ref={rootRef}>
       {pending ? <RecommendationSkeleton label={copy.similarWorksTitle[lang]} /> : null}
       {failed ? (
-        <div className="mt-8 border-t-[3px] border-earth pt-6">
-          <button
-            type="button"
-            onClick={() => {
-              sessionCache.delete(key)
-              setItems(null)
-              setFailed(false)
-              setRetryToken((n) => n + 1)
-            }}
-            className="text-[13px] text-muted underline decoration-earth/50 underline-offset-4 hover:text-fg"
-          >
-            {copy.recommendationRetry[lang]}
-          </button>
-        </div>
+        <section className="mt-8 border-t border-[color:var(--soc-hairline)] pt-6" aria-labelledby="similar-works-heading">
+          <SectionHeader id="similar-works-heading" title={copy.similarWorksTitle[lang]} />
+          <SocialEmptyState
+            title={copy.exploreLoadError[lang]}
+            description={copy.exploreLoadHint[lang]}
+            action={
+              <button
+                type="button"
+                onClick={() => {
+                  sessionCache.delete(key)
+                  setItems(null)
+                  setFailed(false)
+                  setRetryToken((n) => n + 1)
+                }}
+                className={socialButtonClass({ variant: "soft", size: "sm" })}
+              >
+                {copy.recommendationRetry[lang]}
+              </button>
+            }
+          />
+        </section>
       ) : null}
       {effectiveItems && effectiveItems.length > 0 ? (
         <SimilarWorksStrip lang={lang} items={effectiveItems} />

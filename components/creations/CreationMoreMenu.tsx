@@ -1,6 +1,7 @@
 "use client"
 
 import { useActionState, useEffect, useMemo, useRef, useState, useTransition } from "react"
+import { socialButtonClass } from "@/components/social/socialButton"
 import { Button } from "@/components/ui/Button"
 import { Dialog } from "@/components/ui/Dialog"
 import { PixelIcon } from "@/components/ui/PixelIcon"
@@ -23,7 +24,6 @@ import {
   type DownloadExportMode,
   type DownloadExportOption,
 } from "@/lib/pixel-png-scale"
-import { cn } from "@/lib/utils"
 
 function pngFilename(
   title: string,
@@ -198,6 +198,10 @@ export function CreationMoreMenu({
 
   const out = downloadModeOutputSize(width, height, mode)
   const sizeLabel = `${out.width}×${out.height}`
+  const social = variant === "detail"
+  const fieldClass = social
+    ? "min-h-11 border border-[color:var(--soc-hairline)] bg-soft px-3 text-[14px] text-fg focus-visible:border-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky"
+    : "min-h-11 border-[3px] border-earth bg-card px-3 text-[14px] text-fg"
 
   const body = (
     <div className="grid gap-3">
@@ -207,7 +211,7 @@ export function CreationMoreMenu({
             <span className="text-[14px] font-medium text-fg">{copy.downloadScaleLabel[lang]}</span>
             <select
               id={`download-size-${creationId}`}
-              className="min-h-11 border-[3px] border-earth bg-card px-3 text-[14px] text-fg"
+              className={fieldClass}
               value={optionKey}
               onChange={(event) => setOptionKey(event.target.value)}
             >
@@ -230,7 +234,7 @@ export function CreationMoreMenu({
             <span className="text-[14px] font-medium text-fg">{copy.downloadBgLabel[lang]}</span>
             <select
               id={`download-bg-${creationId}`}
-              className="min-h-11 border-[3px] border-earth bg-card px-3 text-[14px] text-fg"
+              className={fieldClass}
               value={background}
               onChange={(event) => setBackground(event.target.value as DownloadBackground)}
             >
@@ -245,16 +249,29 @@ export function CreationMoreMenu({
               ? ` · ${copy.downloadEstimate[lang].replace("{size}", estimateLabel)}`
               : ""}
           </p>
-          <Button
-            type="button"
-            variant="outline"
-            disabled={downloadPending}
-            aria-busy={downloadPending || undefined}
-            onClick={() => void downloadScaled()}
-          >
-            <PixelIcon name="download" />
-            {downloadPending ? copy.downloadWorking[lang] : copy.downloadArtwork[lang]}
-          </Button>
+          {social ? (
+            <button
+              type="button"
+              disabled={downloadPending}
+              aria-busy={downloadPending || undefined}
+              onClick={() => void downloadScaled()}
+              className={socialButtonClass({ variant: "soft", size: "sm" })}
+            >
+              <PixelIcon name="download" />
+              {downloadPending ? copy.downloadWorking[lang] : copy.downloadArtwork[lang]}
+            </button>
+          ) : (
+            <Button
+              type="button"
+              variant="outline"
+              disabled={downloadPending}
+              aria-busy={downloadPending || undefined}
+              onClick={() => void downloadScaled()}
+            >
+              <PixelIcon name="download" />
+              {downloadPending ? copy.downloadWorking[lang] : copy.downloadArtwork[lang]}
+            </Button>
+          )}
           {downloadError ? (
             <p className="text-[13px] text-brick" role="status">
               {copy.downloadFailed[lang]}
@@ -295,10 +312,11 @@ export function CreationMoreMenu({
         type="button"
         aria-label={copy.pixelMore[lang]}
         onClick={() => setOpen(true)}
-        className={cn(
-          "inline-flex h-11 w-11 items-center justify-center border-[3px] border-earth bg-card text-fg",
-          "shadow-[4px_4px_0_0_var(--fg)]",
-        )}
+        className={socialButtonClass({
+          variant: "ghost",
+          size: "sm",
+          className: "h-11 w-11 min-h-11 px-0",
+        })}
       >
         <PixelIcon name="more" />
       </button>
@@ -307,6 +325,7 @@ export function CreationMoreMenu({
         onClose={() => setOpen(false)}
         title={copy.pixelMore[lang]}
         closeLabel={copy.closeMenu[lang]}
+        tone="social"
       >
         {body}
         {/* <div className="mt-4">

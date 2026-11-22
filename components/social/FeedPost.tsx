@@ -2,33 +2,35 @@
 
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { memo, useCallback, useRef, useState } from "react"
+import { memo, useCallback, useEffect, useRef, useState } from "react"
 import { Comment, Share } from "pixelarticons/react"
 import { PixelArt } from "@/components/creations/PixelArt"
 import { CommentPanel, type FeedViewer } from "@/components/social/CommentPanel"
 import { CreatorLine } from "@/components/social/CreatorLine"
 import { PixelHeart } from "@/components/social/PixelHeart"
+import { workActionClass } from "@/components/social/socialAction"
 import { useToast } from "@/components/social/Toast"
+import { CreationShareDialog } from "@/components/share/CreationShareDialog"
 import { toggleAppreciationAction } from "@/features/community/actions"
 import type { FeedPostData } from "@/features/feed/queries"
 import { displayTitle } from "@/lib/creations"
 import { socialCopy } from "@/lib/copy-social"
 import { href, type Lang } from "@/lib/i18n"
 import { loginHref } from "@/lib/paths"
-import { reconcileToggle } from "@/lib/social-like"
+import { reconcileDesiredState } from "@/lib/social-like"
 import { cn } from "@/lib/utils"
-
-const ACTION =
-  "inline-flex min-h-11 min-w-11 items-center justify-center gap-1.5 px-2 text-[14px] font-medium tabular-nums text-fg transition-colors hover:bg-soft focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-sky"
 
 function FeedPostBase({
   lang,
   post,
   viewer,
+  loginNext,
 }: {
   lang: Lang
   post: FeedPostData
   viewer: FeedViewer | null
+  /** Current feed URL, so a guest returns to the same tab/page after sign-in. */
+  loginNext?: string
 }) {
   const t = socialCopy.feed
   const router = useRouter()
@@ -36,31 +38,52 @@ function FeedPostBase({
   const title = displayTitle(post.title, lang)
   const workHref = href(lang, `/creation/${post.id}`)
 
-  // --- Like: optimistic, one request at a time (see reconcileToggle) ---
+  // --- Like: optimistic, one request at a time (see reconcileDesiredState) ---
   const [liked, setLiked] = useState(post.liked)
+  // Count excludes the viewer's own like, so the shown value is derived and can't drift.
+  const [baseCount, setBaseCount] = useState(post.likeCount - (post.liked ? 1 : 0))
   const [popKey, setPopKey] = useState(0)
   const desiredRef = useRef(post.liked)
   const confirmedRef = useRef(post.liked)
   const syncingRef = useRef(false)
-  // Count excludes the viewer's own like, so the shown value is derived and can't drift.
-  const baseCount = post.likeCount - (post.liked ? 1 : 0)
   const likeCount = baseCount + (liked ? 1 : 0)
+
+  // A refreshed feed can arrive while a tap is in flight; ignore it until the
+  // request settles, then adopt the fresh server snapshot.
+  useEffect(() => {
+    if (syncingRef.current) return
+    desiredRef.current = post.liked
+    confirmedRef.current = post.liked
+    setLiked(post.liked)
+    setBaseCount(post.likeCount - (post.liked ? 1 : 0))
+  }, [post.liked, post.likeCount])
 
   const sync = useCallback(async () => {
     if (syncingRef.current) return
     syncingRef.current = true
     try {
-      const outcome = await reconcileToggle({
+      const outcome = await reconcileDesiredState({
         getDesired: () => desiredRef.current,
         getConfirmed: () => confirmedRef.current,
-        setConfirmed: (value) => {
-          confirmedRef.current = value
-        },
-        toggle: async () => {
+        setState: async (desired) => {
           const formData = new FormData()
           formData.set("creation_id", post.id)
+          formData.set("desired", String(desired))
           const result = await toggleAppreciationAction(null, formData)
-          return Boolean(result && "ok" in result)
+          if (!result || !("ok" in result)) return { ok: false }
+          return {
+            ok: true,
+            state: result.liked ?? desired,
+            count: result.count,
+          }
+        },
+        onConfirmed: (state, count) => {
+          confirmedRef.current = state
+          setLiked(state)
+          if (typeof count === "number") setBaseCount(count - (state ? 1 : 0))
+        },
+        onDesired: (state) => {
+          desiredRef.current = state
         },
         onRollback: (confirmed) => {
           desiredRef.current = confirmed
@@ -75,7 +98,7 @@ function FeedPostBase({
 
   function onLike() {
     if (!viewer) {
-      router.push(loginHref(lang, href(lang, "/home")))
+      router.push(loginHref(lang, loginNext ?? href(lang, "/home")))
       return
     }
     const next = !desiredRef.current
@@ -89,22 +112,7 @@ function FeedPostBase({
   const [open, setOpen] = useState(false)
   const [mounted, setMounted] = useState(false)
   const [commentCount, setCommentCount] = useState(post.commentCount ?? 0)
-
-  // --- Share: native sheet first, clipboard fallback, toast feedback ---
-  async function onShare() {
-    const url = `${window.location.origin}${workHref}`
-    try {
-      if (typeof navigator.share === "function") {
-        await navigator.share({ title, url })
-        return
-      }
-      await navigator.clipboard.writeText(url)
-      toast(t.linkCopied[lang], "success")
-    } catch (error) {
-      if (error instanceof DOMException && error.name === "AbortError") return // user closed the sheet
-      toast(t.copyFailed[lang], "error")
-    }
-  }
+  const [shareOpen, setShareOpen] = useState(false)
 
   return (
     <article className="py-4" aria-label={title}>
@@ -118,13 +126,27 @@ function FeedPostBase({
         )}
       </Link>
 
-      <div className="-ml-2 mt-1 flex items-center gap-1">
+      <div className="mt-2 flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-1 text-[14px] leading-snug">
+        <Link href={workHref} className="font-semibold text-fg hover:underline">
+          {title}
+        </Link>
+        {post.isNew ? (
+          <span className="bg-coin px-1.5 py-0.5 text-[10px] font-semibold text-fg">
+            {socialCopy.explore.newBadge[lang]}
+          </span>
+        ) : null}
+        {post.caption ? (
+          <p className="w-full line-clamp-3 whitespace-pre-wrap text-muted">{post.caption}</p>
+        ) : null}
+      </div>
+
+      <div className="-ml-2 mt-2 flex items-center gap-1">
         <button
           type="button"
           onClick={onLike}
           aria-pressed={liked}
-          aria-label={liked ? t.unlike[lang] : t.like[lang]}
-          className={cn(ACTION, liked && "text-brick")}
+          aria-label={`${liked ? t.unlike[lang] : t.like[lang]}, ${likeCount}`}
+          className={cn(workActionClass, liked && "text-brick")}
         >
           <span key={popKey} className={cn("inline-flex", liked && popKey > 0 && "soc-pop")}>
             <PixelHeart filled={liked} />
@@ -139,26 +161,49 @@ function FeedPostBase({
           }}
           aria-expanded={open}
           aria-controls={`comments-${post.id}`}
-          aria-label={t.comment[lang]}
-          className={cn(ACTION, open && "bg-soft")}
+          aria-label={`${t.comment[lang]}, ${commentCount}`}
+          className={cn(workActionClass, open && "bg-soft")}
         >
           <Comment width={22} height={22} aria-hidden="true" />
           <span>{commentCount}</span>
         </button>
-        <button type="button" onClick={() => void onShare()} aria-label={t.share[lang]} className={ACTION}>
+        <button
+          type="button"
+          onClick={() => setShareOpen(true)}
+          aria-label={t.share[lang]}
+          className={workActionClass}
+        >
           <Share width={22} height={22} aria-hidden="true" />
         </button>
       </div>
+      <CreationShareDialog
+        open={shareOpen}
+        onClose={() => setShareOpen(false)}
+        lang={lang}
+        creationId={post.id}
+        title={title}
+        creatorLabel={
+          post.author.displayName?.trim()
+            ? `${post.author.displayName} · @${post.author.username}`
+            : `@${post.author.username}`
+        }
+        coverUrl={post.cover_url}
+        allowArtworkDownload={false}
+        isPixel
+      />
 
-      <div className="mt-1 min-w-0 text-[14px] leading-snug">
-        <Link href={workHref} className="font-semibold text-fg hover:underline">
-          {title}
-        </Link>
-        {post.caption ? <p className="mt-0.5 line-clamp-3 whitespace-pre-wrap text-muted">{post.caption}</p> : null}
-      </div>
-
-      <div id={`comments-${post.id}`} className="soc-expand mt-2" data-open={open}>
-        <div>{mounted ? <CommentPanel lang={lang} creationId={post.id} viewer={viewer} onTotal={setCommentCount} /> : null}</div>
+      <div inert={!open} id={`comments-${post.id}`} className="soc-expand mt-2" data-open={open}>
+        <div>
+          {mounted ? (
+            <CommentPanel
+              lang={lang}
+              creationId={post.id}
+              viewer={viewer}
+              onTotal={setCommentCount}
+              loginNext={loginNext}
+            />
+          ) : null}
+        </div>
       </div>
     </article>
   )

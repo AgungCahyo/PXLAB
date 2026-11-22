@@ -1,0 +1,844 @@
+[
+  {
+    "viewport": "mobile",
+    "state": "normal",
+    "url": "http://127.0.0.1:3100/explore",
+    "navs": [
+      {
+        "label": "Utama",
+        "text": "PXLB Gabung ID EN"
+      },
+      {
+        "label": "Navigasi utama",
+        "text": "Beranda Jelajah Buat Notifikasi Profil"
+      },
+      {
+        "label": "Sumber jelajah",
+        "text": "Semua Mengikuti"
+      },
+      {
+        "label": "Saring ukuran",
+        "text": "Semua 16×16 32×32 64×64 128×128 256×256 512×512 Kustom"
+      },
+      {
+        "label": "Halaman galeri",
+        "text": "Halaman 1 dari 1"
+      }
+    ],
+    "tabs": [],
+    "activeTab": null,
+    "headings": [
+      {
+        "level": "H1",
+        "text": "Jelajah",
+        "visible": true
+      },
+      {
+        "level": "H2",
+        "text": "Kreator baru",
+        "visible": true
+      },
+      {
+        "level": "H2",
+        "text": "Tulis catatan pertama",
+        "visible": true
+      }
+    ],
+    "phraseCounts": {
+      "Tidak ada hasil untuk pencarian ini.": 0,
+      "Tidak ada hasil.": 0,
+      "Belum ada karya": 0,
+      "Tidak ada kreator yang cocok.": 0,
+      "Tidak ada tag yang cocok.": 0,
+      "Masuk untuk melihat karya dari yang kamu ikuti.": 0,
+      "Hasil pencarian": 0,
+      "Untuk “rs”": 0,
+      "Lihat semua": 1
+    },
+    "sections": [],
+    "creatorCards": 11,
+    "workTiles": 9,
+    "input": "",
+    "rect": {
+      "top": 82,
+      "left": 12,
+      "width": 290,
+      "height": 48
+    },
+    "overflow": false,
+    "widths": [
+      390,
+      390,
+      390
+    ]
+  },
+  {
+    "viewport": "mobile",
+    "state": "search-all",
+    "url": "http://127.0.0.1:3100/explore?q=rs",
+    "navs": [
+      {
+        "label": "Utama",
+        "text": "PXLB Gabung ID EN"
+      },
+      {
+        "label": "Navigasi utama",
+        "text": "Beranda Jelajah Buat Notifikasi Profil"
+      },
+      {
+        "label": "Pilih jenis hasil pencarian",
+        "text": "Semua Kreator Karya"
+      },
+      {
+        "label": "Sumber jelajah",
+        "text": "Semua Mengikuti"
+      },
+      {
+        "label": "Saring ukuran",
+        "text": "Semua 16×16 32×32 64×64 128×128 256×256 512×512 Kustom"
+      }
+    ],
+    "tabs": [
+      "Semua",
+      "Kreator",
+      "Karya"
+    ],
+    "activeTab": "Semua",
+    "headings": [
+      {
+        "level": "H1",
+        "text": "Jelajah",
+        "visible": true
+      },
+      {
+        "level": "H2",
+        "text": "Hasil pencarian",
+        "visible": true
+      },
+      {
+        "level": "H3",
+        "text": "Kreator",
+        "visible": true
+      },
+      {
+        "level": "H3",
+        "text": "Karya",
+        "visible": true
+      },
+      {
+        "level": "H2",
+        "text": "Belum ada karya",
+        "visible": true
+      }
+    ],
+    "phraseCounts": {
+      "Tidak ada hasil untuk pencarian ini.": 0,
+      "Tidak ada hasil.": 2,
+      "Belum ada karya": 1,
+      "Tidak ada kreator yang cocok.": 0,
+      "Tidak ada tag yang cocok.": 1,
+      "Masuk untuk melihat karya dari yang kamu ikuti.": 0,
+      "Hasil pencarian": 1,
+      "Untuk “rs”": 1,
+      "Lihat semua": 1
+    },
+    "sections": [
+      "Kreator",
+      "Tag",
+      "Karya"
+    ],
+    "creatorCards": 3,
+    "workTiles": 0,
+    "input": "rs",
+    "rect": {
+      "top": 82,
+      "left": 12,
+      "width": 290,
+      "height": 48
+    },
+    "overflow": false,
+    "widths": [
+      390,
+      390,
+      390
+    ]
+  },
+  {
+    "viewport": "mobile",
+    "state": "search-creators",
+    "url": "http://127.0.0.1:3100/explore?q=rs&scope=creators",
+    "navs": [
+      {
+        "label": "Utama",
+        "text": "PXLB Gabung ID EN"
+      },
+      {
+        "label": "Navigasi utama",
+        "text": "Beranda Jelajah Buat Notifikasi Profil"
+      },
+      {
+        "label": "Pilih jenis hasil pencarian",
+        "text": "Semua Kreator Karya"
+      },
+      {
+        "label": "Sumber jelajah",
+        "text": "Semua Mengikuti"
+      },
+      {
+        "label": "Saring ukuran",
+        "text": "Semua 16×16 32×32 64×64 128×128 256×256 512×512 Kustom"
+      }
+    ],
+    "tabs": [
+      "Semua",
+      "Kreator",
+      "Karya"
+    ],
+    "activeTab": "Kreator",
+    "headings": [
+      {
+        "level": "H1",
+        "text": "Jelajah",
+        "visible": true
+      },
+      {
+        "level": "H2",
+        "text": "Hasil pencarian",
+        "visible": true
+      },
+      {
+        "level": "H3",
+        "text": "Kreator",
+        "visible": true
+      }
+    ],
+    "phraseCounts": {
+      "Tidak ada hasil untuk pencarian ini.": 0,
+      "Tidak ada hasil.": 0,
+      "Belum ada karya": 0,
+      "Tidak ada kreator yang cocok.": 0,
+      "Tidak ada tag yang cocok.": 0,
+      "Masuk untuk melihat karya dari yang kamu ikuti.": 0,
+      "Hasil pencarian": 1,
+      "Untuk “rs”": 1,
+      "Lihat semua": 0
+    },
+    "sections": [
+      "Kreator"
+    ],
+    "creatorCards": 3,
+    "workTiles": 0,
+    "input": "rs",
+    "rect": {
+      "top": 82,
+      "left": 12,
+      "width": 290,
+      "height": 48
+    },
+    "overflow": false,
+    "widths": [
+      390,
+      390,
+      390
+    ]
+  },
+  {
+    "viewport": "mobile",
+    "state": "search-creations",
+    "url": "http://127.0.0.1:3100/explore?q=rs&scope=creations",
+    "navs": [
+      {
+        "label": "Utama",
+        "text": "PXLB Gabung ID EN"
+      },
+      {
+        "label": "Navigasi utama",
+        "text": "Beranda Jelajah Buat Notifikasi Profil"
+      },
+      {
+        "label": "Pilih jenis hasil pencarian",
+        "text": "Semua Kreator Karya"
+      },
+      {
+        "label": "Sumber jelajah",
+        "text": "Semua Mengikuti"
+      },
+      {
+        "label": "Saring ukuran",
+        "text": "Semua 16×16 32×32 64×64 128×128 256×256 512×512 Kustom"
+      }
+    ],
+    "tabs": [
+      "Semua",
+      "Kreator",
+      "Karya"
+    ],
+    "activeTab": "Karya",
+    "headings": [
+      {
+        "level": "H1",
+        "text": "Jelajah",
+        "visible": true
+      },
+      {
+        "level": "H2",
+        "text": "Hasil pencarian",
+        "visible": true
+      },
+      {
+        "level": "H2",
+        "text": "Tidak ada hasil untuk pencarian ini.",
+        "visible": true
+      },
+      {
+        "level": "H3",
+        "text": "Karya",
+        "visible": true
+      },
+      {
+        "level": "H2",
+        "text": "Belum ada karya",
+        "visible": true
+      }
+    ],
+    "phraseCounts": {
+      "Tidak ada hasil untuk pencarian ini.": 1,
+      "Tidak ada hasil.": 2,
+      "Belum ada karya": 1,
+      "Tidak ada kreator yang cocok.": 0,
+      "Tidak ada tag yang cocok.": 0,
+      "Masuk untuk melihat karya dari yang kamu ikuti.": 0,
+      "Hasil pencarian": 1,
+      "Untuk “rs”": 1,
+      "Lihat semua": 1
+    },
+    "sections": [
+      "Karya"
+    ],
+    "creatorCards": 0,
+    "workTiles": 0,
+    "input": "rs",
+    "rect": {
+      "top": 82,
+      "left": 12,
+      "width": 290,
+      "height": 48
+    },
+    "overflow": false,
+    "widths": [
+      390,
+      390,
+      390
+    ]
+  },
+  {
+    "viewport": "mobile",
+    "state": "search-empty",
+    "url": "http://127.0.0.1:3100/explore?q=zzzznotfound",
+    "navs": [
+      {
+        "label": "Utama",
+        "text": "PXLB Gabung ID EN"
+      },
+      {
+        "label": "Navigasi utama",
+        "text": "Beranda Jelajah Buat Notifikasi Profil"
+      },
+      {
+        "label": "Pilih jenis hasil pencarian",
+        "text": "Semua Kreator Karya"
+      },
+      {
+        "label": "Sumber jelajah",
+        "text": "Semua Mengikuti"
+      },
+      {
+        "label": "Saring ukuran",
+        "text": "Semua 16×16 32×32 64×64 128×128 256×256 512×512 Kustom"
+      }
+    ],
+    "tabs": [
+      "Semua",
+      "Kreator",
+      "Karya"
+    ],
+    "activeTab": "Semua",
+    "headings": [
+      {
+        "level": "H1",
+        "text": "Jelajah",
+        "visible": true
+      },
+      {
+        "level": "H2",
+        "text": "Hasil pencarian",
+        "visible": true
+      },
+      {
+        "level": "H2",
+        "text": "Tidak ada hasil untuk pencarian ini.",
+        "visible": true
+      },
+      {
+        "level": "H3",
+        "text": "Karya",
+        "visible": true
+      },
+      {
+        "level": "H2",
+        "text": "Belum ada karya",
+        "visible": true
+      }
+    ],
+    "phraseCounts": {
+      "Tidak ada hasil untuk pencarian ini.": 1,
+      "Tidak ada hasil.": 2,
+      "Belum ada karya": 1,
+      "Tidak ada kreator yang cocok.": 0,
+      "Tidak ada tag yang cocok.": 0,
+      "Masuk untuk melihat karya dari yang kamu ikuti.": 0,
+      "Hasil pencarian": 1,
+      "Untuk “rs”": 0,
+      "Lihat semua": 1
+    },
+    "sections": [
+      "Karya"
+    ],
+    "creatorCards": 0,
+    "workTiles": 0,
+    "input": "zzzznotfound",
+    "rect": {
+      "top": 82,
+      "left": 12,
+      "width": 290,
+      "height": 48
+    },
+    "overflow": false,
+    "widths": [
+      390,
+      390,
+      390
+    ]
+  },
+  {
+    "viewport": "desktop",
+    "state": "normal",
+    "url": "http://127.0.0.1:3100/explore",
+    "navs": [
+      {
+        "label": "Utama",
+        "text": "PXLB Jelajah Buat Gabung Masuk ID EN"
+      },
+      {
+        "label": "Navigasi utama",
+        "text": "BerandaJelajahBuatNotifikasiProfil"
+      },
+      {
+        "label": "Sumber jelajah",
+        "text": "Semua Mengikuti"
+      },
+      {
+        "label": "Saring ukuran",
+        "text": "Semua 16×16 32×32 64×64 128×128 256×256 512×512 Kustom"
+      },
+      {
+        "label": "Halaman galeri",
+        "text": "Halaman 1 dari 1"
+      }
+    ],
+    "tabs": [],
+    "activeTab": null,
+    "headings": [
+      {
+        "level": "H1",
+        "text": "Jelajah",
+        "visible": true
+      },
+      {
+        "level": "H2",
+        "text": "Kreator baru",
+        "visible": true
+      },
+      {
+        "level": "H2",
+        "text": "Tulis catatan pertama",
+        "visible": true
+      }
+    ],
+    "phraseCounts": {
+      "Tidak ada hasil untuk pencarian ini.": 0,
+      "Tidak ada hasil.": 0,
+      "Belum ada karya": 0,
+      "Tidak ada kreator yang cocok.": 0,
+      "Tidak ada tag yang cocok.": 0,
+      "Masuk untuk melihat karya dari yang kamu ikuti.": 0,
+      "Hasil pencarian": 0,
+      "Untuk “rs”": 0,
+      "Lihat semua": 1
+    },
+    "sections": [],
+    "creatorCards": 11,
+    "workTiles": 9,
+    "input": "",
+    "rect": {
+      "top": 90,
+      "left": 177,
+      "width": 975,
+      "height": 48
+    },
+    "overflow": false,
+    "widths": [
+      1425,
+      1425,
+      1440
+    ]
+  },
+  {
+    "viewport": "desktop",
+    "state": "search-all",
+    "url": "http://127.0.0.1:3100/explore?q=rs",
+    "navs": [
+      {
+        "label": "Utama",
+        "text": "PXLB Jelajah Buat Gabung Masuk ID EN"
+      },
+      {
+        "label": "Navigasi utama",
+        "text": "BerandaJelajahBuatNotifikasiProfil"
+      },
+      {
+        "label": "Pilih jenis hasil pencarian",
+        "text": "Semua Kreator Karya"
+      },
+      {
+        "label": "Sumber jelajah",
+        "text": "Semua Mengikuti"
+      },
+      {
+        "label": "Saring ukuran",
+        "text": "Semua 16×16 32×32 64×64 128×128 256×256 512×512 Kustom"
+      }
+    ],
+    "tabs": [
+      "Semua",
+      "Kreator",
+      "Karya"
+    ],
+    "activeTab": "Semua",
+    "headings": [
+      {
+        "level": "H1",
+        "text": "Jelajah",
+        "visible": true
+      },
+      {
+        "level": "H2",
+        "text": "Hasil pencarian",
+        "visible": true
+      },
+      {
+        "level": "H3",
+        "text": "Kreator",
+        "visible": true
+      },
+      {
+        "level": "H3",
+        "text": "Karya",
+        "visible": true
+      },
+      {
+        "level": "H2",
+        "text": "Belum ada karya",
+        "visible": true
+      }
+    ],
+    "phraseCounts": {
+      "Tidak ada hasil untuk pencarian ini.": 0,
+      "Tidak ada hasil.": 2,
+      "Belum ada karya": 1,
+      "Tidak ada kreator yang cocok.": 0,
+      "Tidak ada tag yang cocok.": 1,
+      "Masuk untuk melihat karya dari yang kamu ikuti.": 0,
+      "Hasil pencarian": 1,
+      "Untuk “rs”": 1,
+      "Lihat semua": 1
+    },
+    "sections": [
+      "Kreator",
+      "Tag",
+      "Karya"
+    ],
+    "creatorCards": 3,
+    "workTiles": 0,
+    "input": "rs",
+    "rect": {
+      "top": 90,
+      "left": 177,
+      "width": 975,
+      "height": 48
+    },
+    "overflow": false,
+    "widths": [
+      1425,
+      1425,
+      1440
+    ]
+  },
+  {
+    "viewport": "desktop",
+    "state": "search-creators",
+    "url": "http://127.0.0.1:3100/explore?q=rs&scope=creators",
+    "navs": [
+      {
+        "label": "Utama",
+        "text": "PXLB Jelajah Buat Gabung Masuk ID EN"
+      },
+      {
+        "label": "Navigasi utama",
+        "text": "BerandaJelajahBuatNotifikasiProfil"
+      },
+      {
+        "label": "Pilih jenis hasil pencarian",
+        "text": "Semua Kreator Karya"
+      },
+      {
+        "label": "Sumber jelajah",
+        "text": "Semua Mengikuti"
+      },
+      {
+        "label": "Saring ukuran",
+        "text": "Semua 16×16 32×32 64×64 128×128 256×256 512×512 Kustom"
+      }
+    ],
+    "tabs": [
+      "Semua",
+      "Kreator",
+      "Karya"
+    ],
+    "activeTab": "Kreator",
+    "headings": [
+      {
+        "level": "H1",
+        "text": "Jelajah",
+        "visible": true
+      },
+      {
+        "level": "H2",
+        "text": "Hasil pencarian",
+        "visible": true
+      },
+      {
+        "level": "H3",
+        "text": "Kreator",
+        "visible": true
+      }
+    ],
+    "phraseCounts": {
+      "Tidak ada hasil untuk pencarian ini.": 0,
+      "Tidak ada hasil.": 0,
+      "Belum ada karya": 0,
+      "Tidak ada kreator yang cocok.": 0,
+      "Tidak ada tag yang cocok.": 0,
+      "Masuk untuk melihat karya dari yang kamu ikuti.": 0,
+      "Hasil pencarian": 1,
+      "Untuk “rs”": 1,
+      "Lihat semua": 0
+    },
+    "sections": [
+      "Kreator"
+    ],
+    "creatorCards": 3,
+    "workTiles": 0,
+    "input": "rs",
+    "rect": {
+      "top": 90,
+      "left": 177,
+      "width": 975,
+      "height": 48
+    },
+    "overflow": false,
+    "widths": [
+      1425,
+      1440,
+      1440
+    ]
+  },
+  {
+    "viewport": "desktop",
+    "state": "search-creations",
+    "url": "http://127.0.0.1:3100/explore?q=rs&scope=creations",
+    "navs": [
+      {
+        "label": "Utama",
+        "text": "PXLB Jelajah Buat Gabung Masuk ID EN"
+      },
+      {
+        "label": "Navigasi utama",
+        "text": "BerandaJelajahBuatNotifikasiProfil"
+      },
+      {
+        "label": "Pilih jenis hasil pencarian",
+        "text": "Semua Kreator Karya"
+      },
+      {
+        "label": "Sumber jelajah",
+        "text": "Semua Mengikuti"
+      },
+      {
+        "label": "Saring ukuran",
+        "text": "Semua 16×16 32×32 64×64 128×128 256×256 512×512 Kustom"
+      }
+    ],
+    "tabs": [
+      "Semua",
+      "Kreator",
+      "Karya"
+    ],
+    "activeTab": "Karya",
+    "headings": [
+      {
+        "level": "H1",
+        "text": "Jelajah",
+        "visible": true
+      },
+      {
+        "level": "H2",
+        "text": "Hasil pencarian",
+        "visible": true
+      },
+      {
+        "level": "H2",
+        "text": "Tidak ada hasil untuk pencarian ini.",
+        "visible": true
+      },
+      {
+        "level": "H3",
+        "text": "Karya",
+        "visible": true
+      },
+      {
+        "level": "H2",
+        "text": "Belum ada karya",
+        "visible": true
+      }
+    ],
+    "phraseCounts": {
+      "Tidak ada hasil untuk pencarian ini.": 1,
+      "Tidak ada hasil.": 2,
+      "Belum ada karya": 1,
+      "Tidak ada kreator yang cocok.": 0,
+      "Tidak ada tag yang cocok.": 0,
+      "Masuk untuk melihat karya dari yang kamu ikuti.": 0,
+      "Hasil pencarian": 1,
+      "Untuk “rs”": 1,
+      "Lihat semua": 1
+    },
+    "sections": [
+      "Karya"
+    ],
+    "creatorCards": 0,
+    "workTiles": 0,
+    "input": "rs",
+    "rect": {
+      "top": 90,
+      "left": 177,
+      "width": 975,
+      "height": 48
+    },
+    "overflow": false,
+    "widths": [
+      1425,
+      1425,
+      1440
+    ]
+  },
+  {
+    "viewport": "desktop",
+    "state": "search-empty",
+    "url": "http://127.0.0.1:3100/explore?q=zzzznotfound",
+    "navs": [
+      {
+        "label": "Utama",
+        "text": "PXLB Jelajah Buat Gabung Masuk ID EN"
+      },
+      {
+        "label": "Navigasi utama",
+        "text": "BerandaJelajahBuatNotifikasiProfil"
+      },
+      {
+        "label": "Pilih jenis hasil pencarian",
+        "text": "Semua Kreator Karya"
+      },
+      {
+        "label": "Sumber jelajah",
+        "text": "Semua Mengikuti"
+      },
+      {
+        "label": "Saring ukuran",
+        "text": "Semua 16×16 32×32 64×64 128×128 256×256 512×512 Kustom"
+      }
+    ],
+    "tabs": [
+      "Semua",
+      "Kreator",
+      "Karya"
+    ],
+    "activeTab": "Semua",
+    "headings": [
+      {
+        "level": "H1",
+        "text": "Jelajah",
+        "visible": true
+      },
+      {
+        "level": "H2",
+        "text": "Hasil pencarian",
+        "visible": true
+      },
+      {
+        "level": "H2",
+        "text": "Tidak ada hasil untuk pencarian ini.",
+        "visible": true
+      },
+      {
+        "level": "H3",
+        "text": "Karya",
+        "visible": true
+      },
+      {
+        "level": "H2",
+        "text": "Belum ada karya",
+        "visible": true
+      }
+    ],
+    "phraseCounts": {
+      "Tidak ada hasil untuk pencarian ini.": 1,
+      "Tidak ada hasil.": 2,
+      "Belum ada karya": 1,
+      "Tidak ada kreator yang cocok.": 0,
+      "Tidak ada tag yang cocok.": 0,
+      "Masuk untuk melihat karya dari yang kamu ikuti.": 0,
+      "Hasil pencarian": 1,
+      "Untuk “rs”": 0,
+      "Lihat semua": 1
+    },
+    "sections": [
+      "Karya"
+    ],
+    "creatorCards": 0,
+    "workTiles": 0,
+    "input": "zzzznotfound",
+    "rect": {
+      "top": 90,
+      "left": 177,
+      "width": 975,
+      "height": 48
+    },
+    "overflow": false,
+    "widths": [
+      1425,
+      1425,
+      1440
+    ]
+  }
+]

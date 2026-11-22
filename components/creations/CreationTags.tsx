@@ -12,7 +12,7 @@ export function CreationTags({ lang, tags }: { lang: Lang; tags: string[] }) {
         <li key={tag}>
           <Link
             href={exploreHref(lang, { tag })}
-            className="inline-flex border-[2px] border-earth bg-card px-2 py-1 text-[12px] font-medium text-fg hover:bg-soft"
+            className="inline-flex min-h-9 items-center bg-soft px-2.5 text-[12px] font-medium text-muted hover:text-fg"
           >
             {formatCreationTag(tag)}
           </Link>

@@ -1,0 +1,306 @@
+﻿{
+  "assertions": {
+    "selfAbsentEverywhere": true,
+    "selfOnlyShowsEmptyState": true,
+    "allUsesHorizontalRail": true,
+    "creatorsUseVerticalGrid": true,
+    "creatorsMobileStacks": true,
+    "noArtworkFallback": true,
+    "withArtworkHasNoFallback": true,
+    "noPageOverflow": true
+  },
+  "states": {
+    "390": {
+      "all-rs": {
+        "path": "/explore?q=rs",
+        "sectionText": "Kreator\nChyprsty\n@chyprsty_\nIkuti\n@chyprsty_\n\nBelum ada karya\n\nWowo\n@chyprsty__\nIkuti\n@chyprsty__",
+        "bodyText": "Lewati\nPXLB\nBeranda\nJelajah\nBuat\nNotifikasi\nProfil\nJelajah\nCari karya\nCari\nSemua\nKreator\nKarya\nHasil pencarian\nHapus pencarian\nKreator\nChyprsty\n@chyprsty_\nIkuti\n@chyprsty_\n\nBelum ada karya\n\nWowo\n@chyprsty__\nIkuti\n@chyprsty__\n\n┬⌐ 2026 PXLB\n\nPasang PXLB\n\nTambahkan ke layar utama untuk akses cepat seperti aplikasi.\n\nPasang\nMemuatΓÇª",
+        "list": {
+          "display": "flex",
+          "overflowX": "auto",
+          "overflowY": "auto",
+          "flexDirection": "row",
+          "gridTemplateColumns": "none",
+          "scrollWidth": 520,
+          "clientWidth": 366
+        },
+        "cards": [
+          {
+            "profileHref": "/u/chyprsty_",
+            "previews": 0,
+            "hasFallback": true,
+            "width": 256,
+            "top": 291
+          },
+          {
+            "profileHref": "/u/chyprsty__",
+            "previews": 3,
+            "hasFallback": false,
+            "width": 256,
+            "top": 291
+          }
+        ],
+        "profileHrefs": [
+          "/u/chyprsty_",
+          "/u/chyprsty__"
+        ],
+        "selfPresent": false,
+        "fallbackCards": [
+          "/u/chyprsty_"
+        ],
+        "sameTop": true,
+        "doc": {
+          "scrollWidth": 390,
+          "clientWidth": 390
+        }
+      },
+      "creators-rs": {
+        "path": "/explore?q=rs&scope=creators",
+        "sectionText": "Kreator\nChyprsty\n@chyprsty_\nIkuti\n@chyprsty_\n\nBelum ada karya\n\nWowo\n@chyprsty__\nIkuti\n@chyprsty__",
+        "bodyText": "Lewati\nPXLB\nBeranda\nJelajah\nBuat\nNotifikasi\nProfil\nJelajah\nCari karya\nCari\nSemua\nKreator\nKarya\nHasil pencarian\nHapus pencarian\nKreator\nChyprsty\n@chyprsty_\nIkuti\n@chyprsty_\n\nBelum ada karya\n\nWowo\n@chyprsty__\nIkuti\n@chyprsty__\n\n┬⌐ 2026 PXLB\n\nPasang PXLB\n\nTambahkan ke layar utama untuk akses cepat seperti aplikasi.\n\nPasang\nMemuatΓÇª",
+        "list": {
+          "display": "grid",
+          "overflowX": "visible",
+          "overflowY": "visible",
+          "flexDirection": "row",
+          "gridTemplateColumns": "366px",
+          "scrollWidth": 366,
+          "clientWidth": 366
+        },
+        "cards": [
+          {
+            "profileHref": "/u/chyprsty_",
+            "previews": 0,
+            "hasFallback": true,
+            "width": 256,
+            "top": 291
+          },
+          {
+            "profileHref": "/u/chyprsty__",
+            "previews": 3,
+            "hasFallback": false,
+            "width": 256,
+            "top": 386
+          }
+        ],
+        "profileHrefs": [
+          "/u/chyprsty_",
+          "/u/chyprsty__"
+        ],
+        "selfPresent": false,
+        "fallbackCards": [
+          "/u/chyprsty_"
+        ],
+        "sameTop": false,
+        "doc": {
+          "scrollWidth": 390,
+          "clientWidth": 390
+        }
+      },
+      "creators-chyprsty": {
+        "path": "/explore?q=chyprsty&scope=creators",
+        "sectionText": "Kreator\nChyprsty\n@chyprsty_\nIkuti\n@chyprsty_\n\nBelum ada karya\n\nWowo\n@chyprsty__\nIkuti\n@chyprsty__",
+        "bodyText": "Lewati\nPXLB\nBeranda\nJelajah\nBuat\nNotifikasi\nProfil\nJelajah\nCari karya\nCari\nSemua\nKreator\nKarya\nHasil pencarian\nHapus pencarian\nKreator\nChyprsty\n@chyprsty_\nIkuti\n@chyprsty_\n\nBelum ada karya\n\nWowo\n@chyprsty__\nIkuti\n@chyprsty__\n\n┬⌐ 2026 PXLB\n\nPasang PXLB\n\nTambahkan ke layar utama untuk akses cepat seperti aplikasi.\n\nPasang\nMemuatΓÇª",
+        "list": {
+          "display": "grid",
+          "overflowX": "visible",
+          "overflowY": "visible",
+          "flexDirection": "row",
+          "gridTemplateColumns": "366px",
+          "scrollWidth": 366,
+          "clientWidth": 366
+        },
+        "cards": [
+          {
+            "profileHref": "/u/chyprsty_",
+            "previews": 0,
+            "hasFallback": true,
+            "width": 256,
+            "top": 291
+          },
+          {
+            "profileHref": "/u/chyprsty__",
+            "previews": 3,
+            "hasFallback": false,
+            "width": 256,
+            "top": 386
+          }
+        ],
+        "profileHrefs": [
+          "/u/chyprsty_",
+          "/u/chyprsty__"
+        ],
+        "selfPresent": false,
+        "fallbackCards": [
+          "/u/chyprsty_"
+        ],
+        "sameTop": false,
+        "doc": {
+          "scrollWidth": 390,
+          "clientWidth": 390
+        }
+      },
+      "self-only": {
+        "path": "/explore?q=rsdy&scope=creators",
+        "sectionText": null,
+        "bodyText": "Lewati\nPXLB\nBeranda\nJelajah\nBuat\nNotifikasi\nProfil\nJelajah\nCari karya\nCari\nSemua\nKreator\nKarya\nHasil pencarian\nHapus pencarian\nTidak ada kreator yang cocok.\nHapus pencarian\n\n┬⌐ 2026 PXLB\n\nPasang PXLB\n\nTambahkan ke layar utama untuk akses cepat seperti aplikasi.\n\nPasang\nMemuatΓÇª",
+        "list": null,
+        "cards": [],
+        "profileHrefs": [],
+        "selfPresent": false,
+        "fallbackCards": [],
+        "sameTop": null,
+        "doc": {
+          "scrollWidth": 390,
+          "clientWidth": 390
+        }
+      }
+    },
+    "1440": {
+      "all-rs": {
+        "path": "/explore?q=rs",
+        "sectionText": "Kreator\nChyprsty\n@chyprsty_\nIkuti\n@chyprsty_\n\nBelum ada karya\n\nWowo\n@chyprsty__\nIkuti\n@chyprsty__",
+        "bodyText": "Lewati\nPXLB\nBeranda\nJelajah\nBuat\nNotifikasi\nProfil\nKarya saya\nPengaturan\nID\nEN\nJelajah\nCari karya\nCari\nSemua\nKreator\nKarya\nHasil pencarian\nHapus pencarian\nKreator\nChyprsty\n@chyprsty_\nIkuti\n@chyprsty_\n\nBelum ada karya\n\nWowo\n@chyprsty__\nIkuti\n@chyprsty__\n\n┬⌐ 2026 PXLB\n\nPasang PXLB\n\nTambahkan ke layar utama untuk akses cepat seperti aplikasi.\n\nPasang\nMemuatΓÇª",
+        "list": {
+          "display": "flex",
+          "overflowX": "auto",
+          "overflowY": "auto",
+          "flexDirection": "row",
+          "gridTemplateColumns": "none",
+          "scrollWidth": 1072,
+          "clientWidth": 1072
+        },
+        "cards": [
+          {
+            "profileHref": "/u/chyprsty_",
+            "previews": 0,
+            "hasFallback": true,
+            "width": 256,
+            "top": 245
+          },
+          {
+            "profileHref": "/u/chyprsty__",
+            "previews": 3,
+            "hasFallback": false,
+            "width": 256,
+            "top": 245
+          }
+        ],
+        "profileHrefs": [
+          "/u/chyprsty_",
+          "/u/chyprsty__"
+        ],
+        "selfPresent": false,
+        "fallbackCards": [
+          "/u/chyprsty_"
+        ],
+        "sameTop": true,
+        "doc": {
+          "scrollWidth": 1425,
+          "clientWidth": 1440
+        }
+      },
+      "creators-rs": {
+        "path": "/explore?q=rs&scope=creators",
+        "sectionText": "Kreator\nChyprsty\n@chyprsty_\nIkuti\n@chyprsty_\n\nBelum ada karya\n\nWowo\n@chyprsty__\nIkuti\n@chyprsty__",
+        "bodyText": "Lewati\nPXLB\nBeranda\nJelajah\nBuat\nNotifikasi\nProfil\nKarya saya\nPengaturan\nID\nEN\nJelajah\nCari karya\nCari\nSemua\nKreator\nKarya\nHasil pencarian\nHapus pencarian\nKreator\nChyprsty\n@chyprsty_\nIkuti\n@chyprsty_\n\nBelum ada karya\n\nWowo\n@chyprsty__\nIkuti\n@chyprsty__\n\n┬⌐ 2026 PXLB\n\nPasang PXLB\n\nTambahkan ke layar utama untuk akses cepat seperti aplikasi.\n\nPasang\nMemuatΓÇª",
+        "list": {
+          "display": "grid",
+          "overflowX": "visible",
+          "overflowY": "visible",
+          "flexDirection": "row",
+          "gridTemplateColumns": "352px 352px 352px",
+          "scrollWidth": 1072,
+          "clientWidth": 1072
+        },
+        "cards": [
+          {
+            "profileHref": "/u/chyprsty_",
+            "previews": 0,
+            "hasFallback": true,
+            "width": 256,
+            "top": 245
+          },
+          {
+            "profileHref": "/u/chyprsty__",
+            "previews": 3,
+            "hasFallback": false,
+            "width": 256,
+            "top": 245
+          }
+        ],
+        "profileHrefs": [
+          "/u/chyprsty_",
+          "/u/chyprsty__"
+        ],
+        "selfPresent": false,
+        "fallbackCards": [
+          "/u/chyprsty_"
+        ],
+        "sameTop": true,
+        "doc": {
+          "scrollWidth": 1425,
+          "clientWidth": 1440
+        }
+      },
+      "creators-chyprsty": {
+        "path": "/explore?q=chyprsty&scope=creators",
+        "sectionText": "Kreator\nChyprsty\n@chyprsty_\nIkuti\n@chyprsty_\n\nBelum ada karya\n\nWowo\n@chyprsty__\nIkuti\n@chyprsty__",
+        "bodyText": "Lewati\nPXLB\nBeranda\nJelajah\nBuat\nNotifikasi\nProfil\nKarya saya\nPengaturan\nID\nEN\nJelajah\nCari karya\nCari\nSemua\nKreator\nKarya\nHasil pencarian\nHapus pencarian\nKreator\nChyprsty\n@chyprsty_\nIkuti\n@chyprsty_\n\nBelum ada karya\n\nWowo\n@chyprsty__\nIkuti\n@chyprsty__\n\n┬⌐ 2026 PXLB\n\nPasang PXLB\n\nTambahkan ke layar utama untuk akses cepat seperti aplikasi.\n\nPasang\nMemuatΓÇª",
+        "list": {
+          "display": "grid",
+          "overflowX": "visible",
+          "overflowY": "visible",
+          "flexDirection": "row",
+          "gridTemplateColumns": "352px 352px 352px",
+          "scrollWidth": 1072,
+          "clientWidth": 1072
+        },
+        "cards": [
+          {
+            "profileHref": "/u/chyprsty_",
+            "previews": 0,
+            "hasFallback": true,
+            "width": 256,
+            "top": 245
+          },
+          {
+            "profileHref": "/u/chyprsty__",
+            "previews": 3,
+            "hasFallback": false,
+            "width": 256,
+            "top": 245
+          }
+        ],
+        "profileHrefs": [
+          "/u/chyprsty_",
+          "/u/chyprsty__"
+        ],
+        "selfPresent": false,
+        "fallbackCards": [
+          "/u/chyprsty_"
+        ],
+        "sameTop": true,
+        "doc": {
+          "scrollWidth": 1425,
+          "clientWidth": 1440
+        }
+      },
+      "self-only": {
+        "path": "/explore?q=rsdy&scope=creators",
+        "sectionText": null,
+        "bodyText": "Lewati\nPXLB\nBeranda\nJelajah\nBuat\nNotifikasi\nProfil\nKarya saya\nPengaturan\nID\nEN\nJelajah\nCari karya\nCari\nSemua\nKreator\nKarya\nHasil pencarian\nHapus pencarian\nTidak ada kreator yang cocok.\nHapus pencarian\n\n┬⌐ 2026 PXLB\n\nPasang PXLB\n\nTambahkan ke layar utama untuk akses cepat seperti aplikasi.\n\nPasang\nMemuatΓÇª",
+        "list": null,
+        "cards": [],
+        "profileHrefs": [],
+        "selfPresent": false,
+        "fallbackCards": [],
+        "sameTop": null,
+        "doc": {
+          "scrollWidth": 1425,
+          "clientWidth": 1440
+        }
+      }
+    }
+  }
+}

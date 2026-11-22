@@ -1,14 +1,13 @@
-import Link from "next/link"
 import { FollowButton } from "@/components/community/FollowButton"
-import { CreationCard } from "@/components/creations/CreationCard"
 import {
   recommendationStripItemClass,
   recommendationStripListClass,
 } from "@/components/creations/RecommendationRack"
-import { ProfileAvatar } from "@/components/profiles/ProfileAvatar"
+import { CreatorLine } from "@/components/social/CreatorLine"
+import { WorkTile } from "@/components/social/WorkTile"
 import { SectionHeader } from "@/components/ui/PageHeader"
 import { copy } from "@/lib/copy"
-import { href, type Lang } from "@/lib/i18n"
+import type { Lang } from "@/lib/i18n"
 import { cn } from "@/lib/utils"
 import type { CreationAuthor, CreationCard as CreationCardData } from "@/features/creations/queries"
 
@@ -19,6 +18,7 @@ export function CreatorBlock({
   otherWorks,
   following,
   canFollow,
+  member,
   returnPath,
   publishedLabel = null,
   flush = false,
@@ -29,68 +29,50 @@ export function CreatorBlock({
   otherWorks: CreationCardData[]
   following: boolean
   canFollow: boolean
+  member: boolean
   returnPath: string
   /** Optional date / size line under the creator name. */
   publishedLabel?: string | null
   /** Sit directly under artwork — no section rule; other works render separately. */
   flush?: boolean
 }) {
-  const name = author.displayName?.trim() || author.username
-  const bioLine = author.bio?.replace(/\s+/g, " ").trim() ?? ""
-  const profileHref = href(lang, `/u/${author.username}`)
   const showOtherWorks = !flush && otherWorks.length > 0
 
   return (
     <section
-      className={cn(!flush && "mt-10 border-t-[3px] border-earth pt-8")}
+      className={cn(!flush && "mt-8 border-t border-[color:var(--soc-hairline)] pt-6")}
       aria-labelledby="creator-block-heading"
     >
-      <div className="flex min-w-0 items-start gap-3 sm:gap-4">
-        <Link
-          href={profileHref}
-          className="shrink-0 border-[3px] border-earth bg-card p-0.5 shadow-[4px_4px_0_0_var(--fg)]"
-        >
-          <ProfileAvatar
-            src={author.avatarUrl}
-            avatarConfig={author.avatarConfig}
-            userId={authorId}
-            alt={name}
-            size="sm"
-            className="border-0 sm:h-16 sm:w-16"
-          />
-        </Link>
+      <div className="flex min-w-0 items-center gap-3">
         <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div className="min-w-0">
-              <h2 id="creator-block-heading" className="text-[15px] font-medium text-fg sm:text-[1.0625rem]">
-                <Link href={profileHref} className="hover:underline">
-                  {name}
-                </Link>
-              </h2>
-              <p className="mt-0.5 truncate text-[13px] text-muted">
-                <Link href={profileHref} className="hover:text-fg">
-                  @{author.username}
-                </Link>
-                {publishedLabel ? ` · ${publishedLabel}` : ""}
-              </p>
-            </div>
-            {canFollow ? (
-              <FollowButton
-                lang={lang}
-                userId={authorId}
-                username={author.username}
-                initialFollowing={following}
-                member
-                returnPath={returnPath}
-              />
-            ) : null}
-          </div>
-          {bioLine ? (
-            <p className="mt-2 line-clamp-2 max-w-2xl text-[14px] leading-snug text-muted">
-              {bioLine}
-            </p>
+          <h2 id="creator-block-heading" className="sr-only">
+            {author.displayName?.trim() || author.username}
+          </h2>
+          <CreatorLine
+            lang={lang}
+            creator={{
+              id: authorId,
+              username: author.username,
+              displayName: author.displayName,
+              avatarUrl: author.avatarUrl,
+              avatarConfig: author.avatarConfig,
+            }}
+          />
+          {publishedLabel ? (
+            <p className="mt-1 truncate text-[12px] text-muted">{publishedLabel}</p>
           ) : null}
         </div>
+        {canFollow ? (
+          <FollowButton
+            lang={lang}
+            userId={authorId}
+            username={author.username}
+            initialFollowing={following}
+            member={member}
+            returnPath={returnPath}
+            compact
+          />
+        ) : null}
       </div>
 
       {showOtherWorks ? (
@@ -114,7 +96,7 @@ export function CreatorOtherWorks({
 
   return (
     <section
-      className="mt-8 border-t-[3px] border-earth pt-6"
+      className="mt-8 border-t border-[color:var(--soc-hairline)] pt-6"
       aria-labelledby="creator-other-works-heading"
     >
       <SectionHeader
@@ -124,7 +106,7 @@ export function CreatorOtherWorks({
       <ul className={recommendationStripListClass}>
         {items.map((item) => (
           <li key={item.id} className={recommendationStripItemClass}>
-            <CreationCard creation={item} lang={lang} showAuthor={false} />
+            <WorkTile creation={item} lang={lang} showAuthor={false} />
           </li>
         ))}
       </ul>

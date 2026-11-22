@@ -1,8 +1,8 @@
 "use client"
 
 import { useActionState, useState, type ReactNode } from "react"
+import { socialButtonClass } from "@/components/social/socialButton"
 import { Alert } from "@/components/ui/Alert"
-import { Button } from "@/components/ui/Button"
 import { Input } from "@/components/ui/Input"
 import {
   changeEmailAction,
@@ -25,7 +25,7 @@ function Section({
   children: ReactNode
 }) {
   return (
-    <section className="border-[3px] border-earth bg-card p-5 shadow-[4px_4px_0_0_var(--fg)] sm:p-6">
+    <section className="border border-[color:var(--soc-hairline)] bg-card p-4 sm:p-5">
       <h2 className="text-[15px] font-medium text-fg">{title}</h2>
       {hint ? <p className="mt-1 text-[13px] leading-snug text-muted">{hint}</p> : null}
       <div className="mt-4">{children}</div>
@@ -63,6 +63,7 @@ export function AccountSecurity({
             type="password"
             required
             autoComplete="current-password"
+            appearance="social"
             label={copy.currentPasswordLabel[lang]}
           />
         ) : (
@@ -74,6 +75,7 @@ export function AccountSecurity({
             value={nonce}
             onChange={(event) => setNonce(event.target.value)}
             autoComplete="one-time-code"
+            appearance="social"
             label={copy.reauthNonceLabel[lang]}
             hint={copy.reauthNonceHint[lang]}
           />
@@ -88,14 +90,22 @@ export function AccountSecurity({
         {!isPasswordAccount ? (
           <form action={reauthAction} className="mb-4 grid gap-2">
             <input type="hidden" name="lang" value={lang} />
-            <Button type="submit" size="sm" variant="secondary" disabled={reauthPending}>
+            <button
+              type="submit"
+              disabled={reauthPending}
+              className={socialButtonClass({ variant: "soft", size: "sm" })}
+            >
               {reauthPending ? copy.reauthSending[lang] : copy.reauthSend[lang]}
-            </Button>
+            </button>
             {reauthState && "ok" in reauthState ? (
-              <Alert tone="info">{copy.reauthSent[lang]}</Alert>
+              <Alert tone="info" flat>
+                {copy.reauthSent[lang]}
+              </Alert>
             ) : null}
             {reauthState && "error" in reauthState ? (
-              <Alert tone="error">{copy.errors[reauthState.error][lang]}</Alert>
+              <Alert tone="error" flat>
+                {copy.errors[reauthState.error][lang]}
+              </Alert>
             ) : null}
           </form>
         ) : null}
@@ -109,9 +119,11 @@ export function AccountSecurity({
               type="password"
               required
               autoComplete="new-password"
+              appearance="social"
               label={copy.newPasswordLabel[lang]}
             />
             <Input
+              appearance="social"
               id="confirmPassword"
               name="confirm"
               type="password"
@@ -120,19 +132,28 @@ export function AccountSecurity({
               label={copy.confirmPasswordLabel[lang]}
             />
             <div>
-              <Button type="submit" disabled={passwordPending} aria-busy={passwordPending || undefined}>
+              <button
+                type="submit"
+                disabled={passwordPending}
+                aria-busy={passwordPending || undefined}
+                className={socialButtonClass({ variant: "solid", size: "md" })}
+              >
                 {passwordPending ? copy.passwordChanging[lang] : copy.passwordChangeSubmit[lang]}
-              </Button>
+              </button>
             </div>
             {passwordState && "error" in passwordState ? (
-              <Alert tone="error">{copy.errors[passwordState.error][lang]}</Alert>
+              <Alert tone="error" flat>
+                {copy.errors[passwordState.error][lang]}
+              </Alert>
             ) : null}
             {passwordState && "ok" in passwordState ? (
-              <Alert tone="info">{copy.passwordChanged[lang]}</Alert>
+              <Alert tone="info" flat>
+                {copy.passwordChanged[lang]}
+              </Alert>
             ) : null}
           </form>
 
-          <form action={emailAction} className="grid gap-4 border-t-[3px] border-earth pt-6">
+          <form action={emailAction} className="grid gap-4 border-t border-[color:var(--soc-hairline)] pt-6">
             <h3 className="text-[14px] font-medium text-fg">{copy.emailChangeTitle[lang]}</h3>
             <p className="text-[13px] leading-relaxed text-muted">{copy.emailChangeHint[lang]}</p>
             {reauthFields("email")}
@@ -143,18 +164,28 @@ export function AccountSecurity({
               required
               autoComplete="email"
               placeholder={email}
+              appearance="social"
               label={copy.newEmailLabel[lang]}
             />
             <div>
-              <Button type="submit" variant="secondary" disabled={emailPending} aria-busy={emailPending || undefined}>
+              <button
+                type="submit"
+                disabled={emailPending}
+                aria-busy={emailPending || undefined}
+                className={socialButtonClass({ variant: "soft", size: "md" })}
+              >
                 {emailPending ? copy.emailChanging[lang] : copy.emailChangeSubmit[lang]}
-              </Button>
+              </button>
             </div>
             {emailState && "error" in emailState ? (
-              <Alert tone="error">{copy.errors[emailState.error][lang]}</Alert>
+              <Alert tone="error" flat>
+                {copy.errors[emailState.error][lang]}
+              </Alert>
             ) : null}
             {emailState && "ok" in emailState ? (
-              <Alert tone="info">{copy.emailChangeSentGeneric[lang]}</Alert>
+              <Alert tone="info" flat>
+                {copy.emailChangeSentGeneric[lang]}
+              </Alert>
             ) : null}
           </form>
         </div>
@@ -180,15 +211,15 @@ export function AccountSecurity({
         <div className="mt-4 flex flex-wrap gap-2">
           <form action={signOutOtherDevicesAction}>
             <input type="hidden" name="lang" value={lang} />
-            <Button type="submit" size="sm" variant="secondary">
+            <button type="submit" className={socialButtonClass({ variant: "soft", size: "sm" })}>
               {copy.sessionOtherDevicesAction[lang]}
-            </Button>
+            </button>
           </form>
           <form action={signOutEverywhereAction}>
             <input type="hidden" name="lang" value={lang} />
-            <Button type="submit" size="sm" variant="ghost">
+            <button type="submit" className={socialButtonClass({ variant: "ghost", size: "sm" })}>
               {copy.sessionAllDevicesAction[lang]}
-            </Button>
+            </button>
           </form>
         </div>
       </Section>
@@ -201,16 +232,24 @@ export function AccountSecurity({
             name="confirm"
             type="text"
             required
+            appearance="social"
             label={copy.deleteAccountConfirmLabel[lang]}
             hint={copy.deleteAccountWarning[lang]}
           />
           <div>
-            <Button type="submit" variant="secondary" disabled={deletePending} aria-busy={deletePending || undefined}>
+            <button
+              type="submit"
+              disabled={deletePending}
+              aria-busy={deletePending || undefined}
+              className={socialButtonClass({ variant: "soft", size: "md" })}
+            >
               {deletePending ? copy.deleteAccountBusy[lang] : copy.deleteAccountSubmit[lang]}
-            </Button>
+            </button>
           </div>
           {deleteState && "error" in deleteState ? (
-            <Alert tone="error">{copy.errors[deleteState.error][lang]}</Alert>
+            <Alert tone="error" flat>
+              {copy.errors[deleteState.error][lang]}
+            </Alert>
           ) : null}
         </form>
       </Section>

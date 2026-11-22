@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest"
 import {
   addCommentSchema,
+  desiredFromForm,
   editCommentSchema,
+  followCreatorSchema,
   submitReportSchema,
   toggleReactionSchema,
 } from "@/lib/validations/community"
@@ -104,10 +106,38 @@ describe("submitReportSchema", () => {
 })
 
 describe("toggleReactionSchema", () => {
-  it("only accepts a creation id", () => {
+  it("accepts an explicit desired state alongside the creation id", () => {
     expect(toggleReactionSchema.safeParse({ creation_id: creationId }).success).toBe(true)
+    expect(toggleReactionSchema.safeParse({ creation_id: creationId, desired: "true" }).success).toBe(
+      true,
+    )
+    expect(toggleReactionSchema.safeParse({ creation_id: creationId, desired: "false" }).success).toBe(
+      true,
+    )
     expect(
       toggleReactionSchema.safeParse({ creation_id: creationId, reaction_type: "love" }).success,
     ).toBe(false)
+    expect(toggleReactionSchema.safeParse({ creation_id: creationId, desired: "yes" }).success).toBe(
+      false,
+    )
+    expect(toggleReactionSchema.safeParse({ creation_id: creationId, desired: true }).success).toBe(
+      false,
+    )
+  })
+})
+
+describe("desiredFromForm", () => {
+  it("keeps form strings so the schema does not reject a follow or like", () => {
+    const form = new FormData()
+    form.set("desired", "true")
+    expect(desiredFromForm(form)).toBe("true")
+    form.set("desired", "false")
+    expect(desiredFromForm(form)).toBe("false")
+    expect(desiredFromForm(new FormData())).toBeUndefined()
+    const parsed = followCreatorSchema.safeParse({
+      user_id: creationId,
+      desired: desiredFromForm(form),
+    })
+    expect(parsed.success).toBe(true)
   })
 })

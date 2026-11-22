@@ -1,0 +1,482 @@
+[
+  {
+    "viewport": "mobile390",
+    "state": "normal",
+    "url": "http://127.0.0.1:3100/explore",
+    "navLabels": [
+      "Sumber jelajah",
+      "Saring ukuran"
+    ],
+    "sectionTitles": [
+      "Kreator baru",
+      "Tulis catatan pertama"
+    ],
+    "emptyPhrases": {
+      "Tidak ada hasil untuk pencarian ini.": 0,
+      "Tidak ada hasil.": 0,
+      "Belum ada karya": 0,
+      "Tidak ada kreator yang cocok.": 0,
+      "Tidak ada karya yang cocok.": 0,
+      "Kosong untuk ukuran ini.": 0,
+      "Belum mengikuti siapa pun.": 0,
+      "Tidak ada kreator untuk ditampilkan.": 0
+    },
+    "workTiles": 9,
+    "creatorCards": 0,
+    "followButtons": 0,
+    "previewThumbs": 0,
+    "seeAll": true,
+    "input": "",
+    "rect": {
+      "top": 82,
+      "left": 12,
+      "width": 290,
+      "height": 48
+    },
+    "overflow": false,
+    "widths": [
+      390,
+      390,
+      390
+    ]
+  },
+  {
+    "viewport": "mobile390",
+    "state": "following",
+    "url": "http://127.0.0.1:3100/explore?feed=following",
+    "navLabels": [
+      "Sumber jelajah",
+      "Saring ukuran"
+    ],
+    "sectionTitles": [],
+    "emptyPhrases": {
+      "Tidak ada hasil untuk pencarian ini.": 0,
+      "Tidak ada hasil.": 0,
+      "Belum ada karya": 0,
+      "Tidak ada kreator yang cocok.": 0,
+      "Tidak ada karya yang cocok.": 0,
+      "Kosong untuk ukuran ini.": 0,
+      "Belum mengikuti siapa pun.": 0,
+      "Tidak ada kreator untuk ditampilkan.": 0
+    },
+    "workTiles": 0,
+    "creatorCards": 0,
+    "followButtons": 0,
+    "previewThumbs": 0,
+    "seeAll": false,
+    "input": "",
+    "rect": {
+      "top": 82,
+      "left": 12,
+      "width": 290,
+      "height": 48
+    },
+    "overflow": false,
+    "widths": [
+      390,
+      390,
+      390
+    ]
+  },
+  {
+    "viewport": "mobile390",
+    "state": "search-all",
+    "url": "http://127.0.0.1:3100/explore?q=rs",
+    "navLabels": [
+      "Pilih jenis hasil pencarian"
+    ],
+    "sectionTitles": [
+      "Hasil pencarian",
+      "Kreator"
+    ],
+    "emptyPhrases": {
+      "Tidak ada hasil untuk pencarian ini.": 0,
+      "Tidak ada hasil.": 0,
+      "Belum ada karya": 0,
+      "Tidak ada kreator yang cocok.": 0,
+      "Tidak ada karya yang cocok.": 0,
+      "Kosong untuk ukuran ini.": 0,
+      "Belum mengikuti siapa pun.": 0,
+      "Tidak ada kreator untuk ditampilkan.": 0
+    },
+    "workTiles": 0,
+    "creatorCards": 0,
+    "followButtons": 0,
+    "previewThumbs": 0,
+    "seeAll": false,
+    "input": "rs",
+    "rect": {
+      "top": 82,
+      "left": 12,
+      "width": 290,
+      "height": 48
+    },
+    "overflow": false,
+    "widths": [
+      390,
+      390,
+      390
+    ]
+  },
+  {
+    "viewport": "mobile390",
+    "state": "search-creators",
+    "url": "http://127.0.0.1:3100/explore?q=rs&scope=creators",
+    "navLabels": [
+      "Pilih jenis hasil pencarian"
+    ],
+    "sectionTitles": [
+      "Hasil pencarian",
+      "Kreator"
+    ],
+    "emptyPhrases": {
+      "Tidak ada hasil untuk pencarian ini.": 0,
+      "Tidak ada hasil.": 0,
+      "Belum ada karya": 0,
+      "Tidak ada kreator yang cocok.": 0,
+      "Tidak ada karya yang cocok.": 0,
+      "Kosong untuk ukuran ini.": 0,
+      "Belum mengikuti siapa pun.": 0,
+      "Tidak ada kreator untuk ditampilkan.": 0
+    },
+    "workTiles": 0,
+    "creatorCards": 0,
+    "followButtons": 0,
+    "previewThumbs": 0,
+    "seeAll": false,
+    "input": "rs",
+    "rect": {
+      "top": 82,
+      "left": 12,
+      "width": 290,
+      "height": 48
+    },
+    "overflow": false,
+    "widths": [
+      390,
+      390,
+      390
+    ]
+  },
+  {
+    "viewport": "mobile390",
+    "state": "search-creations",
+    "url": "http://127.0.0.1:3100/explore?q=rs&scope=creations",
+    "navLabels": [
+      "Pilih jenis hasil pencarian",
+      "Saring ukuran"
+    ],
+    "sectionTitles": [
+      "Hasil pencarian",
+      "Tidak ada karya yang cocok."
+    ],
+    "emptyPhrases": {
+      "Tidak ada hasil untuk pencarian ini.": 0,
+      "Tidak ada hasil.": 0,
+      "Belum ada karya": 0,
+      "Tidak ada kreator yang cocok.": 0,
+      "Tidak ada karya yang cocok.": 1,
+      "Kosong untuk ukuran ini.": 0,
+      "Belum mengikuti siapa pun.": 0,
+      "Tidak ada kreator untuk ditampilkan.": 0
+    },
+    "workTiles": 0,
+    "creatorCards": 0,
+    "followButtons": 0,
+    "previewThumbs": 0,
+    "seeAll": false,
+    "input": "rs",
+    "rect": {
+      "top": 82,
+      "left": 12,
+      "width": 290,
+      "height": 48
+    },
+    "overflow": false,
+    "widths": [
+      390,
+      390,
+      390
+    ]
+  },
+  {
+    "viewport": "mobile390",
+    "state": "search-empty",
+    "url": "http://127.0.0.1:3100/explore?q=zzzznotfound",
+    "navLabels": [
+      "Pilih jenis hasil pencarian"
+    ],
+    "sectionTitles": [
+      "Hasil pencarian",
+      "Tidak ada hasil untuk pencarian ini."
+    ],
+    "emptyPhrases": {
+      "Tidak ada hasil untuk pencarian ini.": 1,
+      "Tidak ada hasil.": 0,
+      "Belum ada karya": 0,
+      "Tidak ada kreator yang cocok.": 0,
+      "Tidak ada karya yang cocok.": 0,
+      "Kosong untuk ukuran ini.": 0,
+      "Belum mengikuti siapa pun.": 0,
+      "Tidak ada kreator untuk ditampilkan.": 0
+    },
+    "workTiles": 0,
+    "creatorCards": 0,
+    "followButtons": 0,
+    "previewThumbs": 0,
+    "seeAll": false,
+    "input": "zzzznotfound",
+    "rect": {
+      "top": 82,
+      "left": 12,
+      "width": 290,
+      "height": 48
+    },
+    "overflow": false,
+    "widths": [
+      390,
+      390,
+      390
+    ]
+  },
+  {
+    "viewport": "desktop",
+    "state": "normal",
+    "url": "http://127.0.0.1:3100/explore",
+    "navLabels": [
+      "Sumber jelajah",
+      "Saring ukuran"
+    ],
+    "sectionTitles": [
+      "Kreator baru",
+      "Tulis catatan pertama"
+    ],
+    "emptyPhrases": {
+      "Tidak ada hasil untuk pencarian ini.": 0,
+      "Tidak ada hasil.": 0,
+      "Belum ada karya": 0,
+      "Tidak ada kreator yang cocok.": 0,
+      "Tidak ada karya yang cocok.": 0,
+      "Kosong untuk ukuran ini.": 0,
+      "Belum mengikuti siapa pun.": 0,
+      "Tidak ada kreator untuk ditampilkan.": 0
+    },
+    "workTiles": 9,
+    "creatorCards": 0,
+    "followButtons": 0,
+    "previewThumbs": 0,
+    "seeAll": true,
+    "input": "",
+    "rect": {
+      "top": 90,
+      "left": 177,
+      "width": 975,
+      "height": 48
+    },
+    "overflow": false,
+    "widths": [
+      1425,
+      1425,
+      1440
+    ]
+  },
+  {
+    "viewport": "desktop",
+    "state": "following",
+    "url": "http://127.0.0.1:3100/explore?feed=following",
+    "navLabels": [
+      "Sumber jelajah",
+      "Saring ukuran"
+    ],
+    "sectionTitles": [],
+    "emptyPhrases": {
+      "Tidak ada hasil untuk pencarian ini.": 0,
+      "Tidak ada hasil.": 0,
+      "Belum ada karya": 0,
+      "Tidak ada kreator yang cocok.": 0,
+      "Tidak ada karya yang cocok.": 0,
+      "Kosong untuk ukuran ini.": 0,
+      "Belum mengikuti siapa pun.": 0,
+      "Tidak ada kreator untuk ditampilkan.": 0
+    },
+    "workTiles": 0,
+    "creatorCards": 0,
+    "followButtons": 0,
+    "previewThumbs": 0,
+    "seeAll": false,
+    "input": "",
+    "rect": {
+      "top": 90,
+      "left": 177,
+      "width": 975,
+      "height": 48
+    },
+    "overflow": false,
+    "widths": [
+      1425,
+      1440,
+      1440
+    ]
+  },
+  {
+    "viewport": "desktop",
+    "state": "search-all",
+    "url": "http://127.0.0.1:3100/explore?q=rs",
+    "navLabels": [
+      "Pilih jenis hasil pencarian"
+    ],
+    "sectionTitles": [
+      "Hasil pencarian",
+      "Kreator"
+    ],
+    "emptyPhrases": {
+      "Tidak ada hasil untuk pencarian ini.": 0,
+      "Tidak ada hasil.": 0,
+      "Belum ada karya": 0,
+      "Tidak ada kreator yang cocok.": 0,
+      "Tidak ada karya yang cocok.": 0,
+      "Kosong untuk ukuran ini.": 0,
+      "Belum mengikuti siapa pun.": 0,
+      "Tidak ada kreator untuk ditampilkan.": 0
+    },
+    "workTiles": 0,
+    "creatorCards": 0,
+    "followButtons": 0,
+    "previewThumbs": 0,
+    "seeAll": false,
+    "input": "rs",
+    "rect": {
+      "top": 90,
+      "left": 177,
+      "width": 975,
+      "height": 48
+    },
+    "overflow": false,
+    "widths": [
+      1425,
+      1440,
+      1440
+    ]
+  },
+  {
+    "viewport": "desktop",
+    "state": "search-creators",
+    "url": "http://127.0.0.1:3100/explore?q=rs&scope=creators",
+    "navLabels": [
+      "Pilih jenis hasil pencarian"
+    ],
+    "sectionTitles": [
+      "Hasil pencarian",
+      "Kreator"
+    ],
+    "emptyPhrases": {
+      "Tidak ada hasil untuk pencarian ini.": 0,
+      "Tidak ada hasil.": 0,
+      "Belum ada karya": 0,
+      "Tidak ada kreator yang cocok.": 0,
+      "Tidak ada karya yang cocok.": 0,
+      "Kosong untuk ukuran ini.": 0,
+      "Belum mengikuti siapa pun.": 0,
+      "Tidak ada kreator untuk ditampilkan.": 0
+    },
+    "workTiles": 0,
+    "creatorCards": 0,
+    "followButtons": 0,
+    "previewThumbs": 0,
+    "seeAll": false,
+    "input": "rs",
+    "rect": {
+      "top": 90,
+      "left": 177,
+      "width": 975,
+      "height": 48
+    },
+    "overflow": false,
+    "widths": [
+      1425,
+      1440,
+      1440
+    ]
+  },
+  {
+    "viewport": "desktop",
+    "state": "search-creations",
+    "url": "http://127.0.0.1:3100/explore?q=rs&scope=creations",
+    "navLabels": [
+      "Pilih jenis hasil pencarian",
+      "Saring ukuran"
+    ],
+    "sectionTitles": [
+      "Hasil pencarian",
+      "Tidak ada karya yang cocok."
+    ],
+    "emptyPhrases": {
+      "Tidak ada hasil untuk pencarian ini.": 0,
+      "Tidak ada hasil.": 0,
+      "Belum ada karya": 0,
+      "Tidak ada kreator yang cocok.": 0,
+      "Tidak ada karya yang cocok.": 1,
+      "Kosong untuk ukuran ini.": 0,
+      "Belum mengikuti siapa pun.": 0,
+      "Tidak ada kreator untuk ditampilkan.": 0
+    },
+    "workTiles": 0,
+    "creatorCards": 0,
+    "followButtons": 0,
+    "previewThumbs": 0,
+    "seeAll": false,
+    "input": "rs",
+    "rect": {
+      "top": 90,
+      "left": 177,
+      "width": 975,
+      "height": 48
+    },
+    "overflow": false,
+    "widths": [
+      1425,
+      1440,
+      1440
+    ]
+  },
+  {
+    "viewport": "desktop",
+    "state": "search-empty",
+    "url": "http://127.0.0.1:3100/explore?q=zzzznotfound",
+    "navLabels": [
+      "Pilih jenis hasil pencarian"
+    ],
+    "sectionTitles": [
+      "Hasil pencarian",
+      "Tidak ada hasil untuk pencarian ini."
+    ],
+    "emptyPhrases": {
+      "Tidak ada hasil untuk pencarian ini.": 1,
+      "Tidak ada hasil.": 0,
+      "Belum ada karya": 0,
+      "Tidak ada kreator yang cocok.": 0,
+      "Tidak ada karya yang cocok.": 0,
+      "Kosong untuk ukuran ini.": 0,
+      "Belum mengikuti siapa pun.": 0,
+      "Tidak ada kreator untuk ditampilkan.": 0
+    },
+    "workTiles": 0,
+    "creatorCards": 0,
+    "followButtons": 0,
+    "previewThumbs": 0,
+    "seeAll": false,
+    "input": "zzzznotfound",
+    "rect": {
+      "top": 90,
+      "left": 177,
+      "width": 975,
+      "height": 48
+    },
+    "overflow": false,
+    "widths": [
+      1425,
+      1440,
+      1440
+    ]
+  }
+]

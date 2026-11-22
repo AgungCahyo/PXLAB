@@ -65,12 +65,17 @@ export function StudioContextMenu({
     el.style.top = `${top}px`
   }, [open, x, y, items])
 
+  useEffect(() => {
+    if (!open || !ref.current) return
+    ref.current.querySelector<HTMLButtonElement>("button:not(:disabled)")?.focus()
+  }, [open, items])
+
   if (!open) return null
 
   return (
     <div
       ref={ref}
-      role="menu"
+      role="group"
       aria-label={copy.pixelCanvasMenu[lang]}
       className="fixed z-[80] min-w-[12rem] border-[3px] border-earth bg-card py-1 shadow-[4px_4px_0_0_var(--fg)]"
       style={{ left: x, top: y }}
@@ -87,7 +92,6 @@ export function StudioContextMenu({
           <button
             key={item.id}
             type="button"
-            role="menuitem"
             disabled={item.disabled}
             onClick={() => {
               if (item.disabled) return

@@ -3,7 +3,6 @@ import { href, type Lang } from "@/lib/i18n"
 import {
   CREATION_TAG_MAX_LEN,
   CREATION_TAG_MIN_LEN,
-  CREATION_TAGS_MAX,
   EXPLORE_SEARCH_MAX,
   isCreationCategory,
   type CreationCategory,
@@ -66,6 +65,7 @@ export function tagsForCard(tags: string[] | null | undefined) {
 
 export type ExploreCategoryFilter = CreationCategory | "all"
 export type ExploreFeed = "all" | "following"
+export type ExploreScope = "all" | "creators" | "creations"
 
 export type ExploreQuery = {
   category?: ExploreCategoryFilter
@@ -73,6 +73,8 @@ export type ExploreQuery = {
   /** Canonical tag without #. Ready for M5 filter. */
   tag?: string
   feed?: ExploreFeed
+  /** Which result family is visible while a search query is active. */
+  scope?: ExploreScope
   page?: number
 }
 
@@ -84,6 +86,10 @@ export function parseExploreCategory(value?: string): ExploreCategoryFilter {
 
 export function parseExploreFeed(value?: string): ExploreFeed {
   return value === "following" ? "following" : "all"
+}
+
+export function parseExploreScope(value?: string): ExploreScope {
+  return value === "creators" || value === "creations" ? value : "all"
 }
 
 export function parseExploreSearch(value?: string): string {
@@ -102,12 +108,38 @@ export function ilikeContains(value: string): string {
   return `%${escaped}%`
 }
 
+/** Strip an optional leading # and collapse whitespace before searching. */
+export function normalizeSearchValue(value: string): string {
+  return value.trim().replace(/^#/, "").replace(/\s+/g, " ").trim()
+}
+
+/**
+ * LIKE pattern for raw `.or()` filters. Reserved PostgREST separators are
+ * removed so the user's input cannot break the filter grammar; wildcards stay
+ * escaped so they are matched literally.
+ */
+export function searchLikePattern(value: string): string {
+  const term = normalizeSearchValue(value)
+    .replace(/[\\",.:()]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+  if (!term) return ""
+  return `%${term.replace(/%/g, "\\%").replace(/_/g, "\\_")}%`
+}
+
+/** Best-effort canonical tag derived from free-form search text. */
+export function searchTagValue(value: string): string | null {
+  const raw = normalizeSearchValue(value).replace(/\s+/g, "_")
+  return normalizeCreationTag(raw)
+}
+
 export function exploreHref(lang: Lang, query: ExploreQuery = {}, pageArg = 1) {
   const path = href(lang, "/explore")
   const category = query.category ?? "all"
   const q = parseExploreSearch(query.q)
   const tag = parseExploreTag(query.tag)
   const feed = query.feed ?? "all"
+  const scope = query.scope ?? "all"
   const page = Math.max(1, query.page ?? pageArg)
 
   const params = new URLSearchParams()
@@ -115,6 +147,7 @@ export function exploreHref(lang: Lang, query: ExploreQuery = {}, pageArg = 1) {
   if (category !== "all") params.set("category", category)
   if (q) params.set("q", q)
   if (tag) params.set("tag", tag)
+  if (scope !== "all") params.set("scope", scope)
   if (page > 1) params.set("page", String(page))
   const queryString = params.toString()
   return queryString ? `${path}?${queryString}` : path

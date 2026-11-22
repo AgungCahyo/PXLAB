@@ -1,0 +1,946 @@
+﻿{
+  "layout": {
+    "375": {
+      "normal": {
+        "path": "/explore",
+        "authenticated": true,
+        "doc": {
+          "scrollWidth": 375,
+          "clientWidth": 375,
+          "bodyScrollWidth": 375
+        },
+        "sectionIds": [
+          "explore-works-heading",
+          "new-creators-heading",
+          "quiet-rack-heading"
+        ],
+        "cards": [
+          {
+            "index": 0,
+            "self": false,
+            "profileHref": "/u/chyprsty__",
+            "width": 256,
+            "height": 143,
+            "hasFollowButton": true,
+            "hasLoginAction": false,
+            "selfLabel": false,
+            "previews": 3,
+            "previewSquare": true,
+            "rail": {
+              "w": 351,
+              "h": 147,
+              "left": 12,
+              "right": 363,
+              "sw": 351,
+              "cw": 351
+            }
+          }
+        ],
+        "selfCards": [],
+        "followButtons": 1,
+        "loginActions": 0,
+        "selfLabels": 0,
+        "newCreatorSelfCards": 0
+      },
+      "search-all": {
+        "path": "/explore?q=rs",
+        "authenticated": true,
+        "doc": {
+          "scrollWidth": 375,
+          "clientWidth": 375,
+          "bodyScrollWidth": 375
+        },
+        "sectionIds": [
+          "search-results-heading"
+        ],
+        "cards": [
+          {
+            "index": 0,
+            "self": true,
+            "profileHref": "/u/rsdy",
+            "width": 256,
+            "height": 143,
+            "hasFollowButton": false,
+            "hasLoginAction": false,
+            "selfLabel": true,
+            "previews": 1,
+            "previewSquare": true,
+            "rail": {
+              "w": 351,
+              "h": 147,
+              "left": 12,
+              "right": 363,
+              "sw": 784,
+              "cw": 351
+            }
+          },
+          {
+            "index": 1,
+            "self": false,
+            "profileHref": "/u/chyprsty_",
+            "width": 256,
+            "height": 60,
+            "hasFollowButton": true,
+            "hasLoginAction": false,
+            "selfLabel": false,
+            "previews": 0,
+            "previewSquare": null,
+            "rail": {
+              "w": 351,
+              "h": 147,
+              "left": 12,
+              "right": 363,
+              "sw": 784,
+              "cw": 351
+            }
+          },
+          {
+            "index": 2,
+            "self": false,
+            "profileHref": "/u/chyprsty__",
+            "width": 256,
+            "height": 143,
+            "hasFollowButton": true,
+            "hasLoginAction": false,
+            "selfLabel": false,
+            "previews": 3,
+            "previewSquare": true,
+            "rail": {
+              "w": 351,
+              "h": 147,
+              "left": 12,
+              "right": 363,
+              "sw": 784,
+              "cw": 351
+            }
+          }
+        ],
+        "selfCards": [
+          "/u/rsdy"
+        ],
+        "followButtons": 2,
+        "loginActions": 0,
+        "selfLabels": 1,
+        "newCreatorSelfCards": null
+      },
+      "search-creators": {
+        "path": "/explore?q=rs&scope=creators",
+        "authenticated": true,
+        "doc": {
+          "scrollWidth": 375,
+          "clientWidth": 375,
+          "bodyScrollWidth": 375
+        },
+        "sectionIds": [
+          "search-results-heading"
+        ],
+        "cards": [
+          {
+            "index": 0,
+            "self": true,
+            "profileHref": "/u/rsdy",
+            "width": 256,
+            "height": 143,
+            "hasFollowButton": false,
+            "hasLoginAction": false,
+            "selfLabel": true,
+            "previews": 1,
+            "previewSquare": true,
+            "rail": {
+              "w": 351,
+              "h": 147,
+              "left": 12,
+              "right": 363,
+              "sw": 784,
+              "cw": 351
+            }
+          },
+          {
+            "index": 1,
+            "self": false,
+            "profileHref": "/u/chyprsty_",
+            "width": 256,
+            "height": 60,
+            "hasFollowButton": true,
+            "hasLoginAction": false,
+            "selfLabel": false,
+            "previews": 0,
+            "previewSquare": null,
+            "rail": {
+              "w": 351,
+              "h": 147,
+              "left": 12,
+              "right": 363,
+              "sw": 784,
+              "cw": 351
+            }
+          },
+          {
+            "index": 2,
+            "self": false,
+            "profileHref": "/u/chyprsty__",
+            "width": 256,
+            "height": 143,
+            "hasFollowButton": true,
+            "hasLoginAction": false,
+            "selfLabel": false,
+            "previews": 3,
+            "previewSquare": true,
+            "rail": {
+              "w": 351,
+              "h": 147,
+              "left": 12,
+              "right": 363,
+              "sw": 784,
+              "cw": 351
+            }
+          }
+        ],
+        "selfCards": [
+          "/u/rsdy"
+        ],
+        "followButtons": 2,
+        "loginActions": 0,
+        "selfLabels": 1,
+        "newCreatorSelfCards": null
+      }
+    },
+    "390": {
+      "normal": {
+        "path": "/explore",
+        "authenticated": true,
+        "doc": {
+          "scrollWidth": 390,
+          "clientWidth": 390,
+          "bodyScrollWidth": 390
+        },
+        "sectionIds": [
+          "explore-works-heading",
+          "new-creators-heading",
+          "quiet-rack-heading"
+        ],
+        "cards": [
+          {
+            "index": 0,
+            "self": false,
+            "profileHref": "/u/chyprsty__",
+            "width": 256,
+            "height": 143,
+            "hasFollowButton": true,
+            "hasLoginAction": false,
+            "selfLabel": false,
+            "previews": 3,
+            "previewSquare": true,
+            "rail": {
+              "w": 366,
+              "h": 147,
+              "left": 12,
+              "right": 378,
+              "sw": 366,
+              "cw": 366
+            }
+          }
+        ],
+        "selfCards": [],
+        "followButtons": 1,
+        "loginActions": 0,
+        "selfLabels": 0,
+        "newCreatorSelfCards": 0
+      },
+      "search-all": {
+        "path": "/explore?q=rs",
+        "authenticated": true,
+        "doc": {
+          "scrollWidth": 390,
+          "clientWidth": 390,
+          "bodyScrollWidth": 390
+        },
+        "sectionIds": [
+          "search-results-heading"
+        ],
+        "cards": [
+          {
+            "index": 0,
+            "self": true,
+            "profileHref": "/u/rsdy",
+            "width": 256,
+            "height": 143,
+            "hasFollowButton": false,
+            "hasLoginAction": false,
+            "selfLabel": true,
+            "previews": 1,
+            "previewSquare": true,
+            "rail": {
+              "w": 366,
+              "h": 147,
+              "left": 12,
+              "right": 378,
+              "sw": 784,
+              "cw": 366
+            }
+          },
+          {
+            "index": 1,
+            "self": false,
+            "profileHref": "/u/chyprsty_",
+            "width": 256,
+            "height": 60,
+            "hasFollowButton": true,
+            "hasLoginAction": false,
+            "selfLabel": false,
+            "previews": 0,
+            "previewSquare": null,
+            "rail": {
+              "w": 366,
+              "h": 147,
+              "left": 12,
+              "right": 378,
+              "sw": 784,
+              "cw": 366
+            }
+          },
+          {
+            "index": 2,
+            "self": false,
+            "profileHref": "/u/chyprsty__",
+            "width": 256,
+            "height": 143,
+            "hasFollowButton": true,
+            "hasLoginAction": false,
+            "selfLabel": false,
+            "previews": 3,
+            "previewSquare": true,
+            "rail": {
+              "w": 366,
+              "h": 147,
+              "left": 12,
+              "right": 378,
+              "sw": 784,
+              "cw": 366
+            }
+          }
+        ],
+        "selfCards": [
+          "/u/rsdy"
+        ],
+        "followButtons": 2,
+        "loginActions": 0,
+        "selfLabels": 1,
+        "newCreatorSelfCards": null
+      },
+      "search-creators": {
+        "path": "/explore?q=rs&scope=creators",
+        "authenticated": true,
+        "doc": {
+          "scrollWidth": 390,
+          "clientWidth": 390,
+          "bodyScrollWidth": 390
+        },
+        "sectionIds": [
+          "search-results-heading"
+        ],
+        "cards": [
+          {
+            "index": 0,
+            "self": true,
+            "profileHref": "/u/rsdy",
+            "width": 256,
+            "height": 143,
+            "hasFollowButton": false,
+            "hasLoginAction": false,
+            "selfLabel": true,
+            "previews": 1,
+            "previewSquare": true,
+            "rail": {
+              "w": 366,
+              "h": 147,
+              "left": 12,
+              "right": 378,
+              "sw": 784,
+              "cw": 366
+            }
+          },
+          {
+            "index": 1,
+            "self": false,
+            "profileHref": "/u/chyprsty_",
+            "width": 256,
+            "height": 60,
+            "hasFollowButton": true,
+            "hasLoginAction": false,
+            "selfLabel": false,
+            "previews": 0,
+            "previewSquare": null,
+            "rail": {
+              "w": 366,
+              "h": 147,
+              "left": 12,
+              "right": 378,
+              "sw": 784,
+              "cw": 366
+            }
+          },
+          {
+            "index": 2,
+            "self": false,
+            "profileHref": "/u/chyprsty__",
+            "width": 256,
+            "height": 143,
+            "hasFollowButton": true,
+            "hasLoginAction": false,
+            "selfLabel": false,
+            "previews": 3,
+            "previewSquare": true,
+            "rail": {
+              "w": 366,
+              "h": 147,
+              "left": 12,
+              "right": 378,
+              "sw": 784,
+              "cw": 366
+            }
+          }
+        ],
+        "selfCards": [
+          "/u/rsdy"
+        ],
+        "followButtons": 2,
+        "loginActions": 0,
+        "selfLabels": 1,
+        "newCreatorSelfCards": null
+      }
+    },
+    "440": {
+      "normal": {
+        "path": "/explore",
+        "authenticated": true,
+        "doc": {
+          "scrollWidth": 440,
+          "clientWidth": 440,
+          "bodyScrollWidth": 440
+        },
+        "sectionIds": [
+          "explore-works-heading",
+          "new-creators-heading",
+          "quiet-rack-heading"
+        ],
+        "cards": [
+          {
+            "index": 0,
+            "self": false,
+            "profileHref": "/u/chyprsty__",
+            "width": 256,
+            "height": 143,
+            "hasFollowButton": true,
+            "hasLoginAction": false,
+            "selfLabel": false,
+            "previews": 3,
+            "previewSquare": true,
+            "rail": {
+              "w": 416,
+              "h": 147,
+              "left": 12,
+              "right": 428,
+              "sw": 416,
+              "cw": 416
+            }
+          }
+        ],
+        "selfCards": [],
+        "followButtons": 1,
+        "loginActions": 0,
+        "selfLabels": 0,
+        "newCreatorSelfCards": 0
+      },
+      "search-all": {
+        "path": "/explore?q=rs",
+        "authenticated": true,
+        "doc": {
+          "scrollWidth": 440,
+          "clientWidth": 440,
+          "bodyScrollWidth": 440
+        },
+        "sectionIds": [
+          "search-results-heading"
+        ],
+        "cards": [
+          {
+            "index": 0,
+            "self": true,
+            "profileHref": "/u/rsdy",
+            "width": 256,
+            "height": 143,
+            "hasFollowButton": false,
+            "hasLoginAction": false,
+            "selfLabel": true,
+            "previews": 1,
+            "previewSquare": true,
+            "rail": {
+              "w": 416,
+              "h": 147,
+              "left": 12,
+              "right": 428,
+              "sw": 784,
+              "cw": 416
+            }
+          },
+          {
+            "index": 1,
+            "self": false,
+            "profileHref": "/u/chyprsty_",
+            "width": 256,
+            "height": 60,
+            "hasFollowButton": true,
+            "hasLoginAction": false,
+            "selfLabel": false,
+            "previews": 0,
+            "previewSquare": null,
+            "rail": {
+              "w": 416,
+              "h": 147,
+              "left": 12,
+              "right": 428,
+              "sw": 784,
+              "cw": 416
+            }
+          },
+          {
+            "index": 2,
+            "self": false,
+            "profileHref": "/u/chyprsty__",
+            "width": 256,
+            "height": 143,
+            "hasFollowButton": true,
+            "hasLoginAction": false,
+            "selfLabel": false,
+            "previews": 3,
+            "previewSquare": true,
+            "rail": {
+              "w": 416,
+              "h": 147,
+              "left": 12,
+              "right": 428,
+              "sw": 784,
+              "cw": 416
+            }
+          }
+        ],
+        "selfCards": [
+          "/u/rsdy"
+        ],
+        "followButtons": 2,
+        "loginActions": 0,
+        "selfLabels": 1,
+        "newCreatorSelfCards": null
+      },
+      "search-creators": {
+        "path": "/explore?q=rs&scope=creators",
+        "authenticated": true,
+        "doc": {
+          "scrollWidth": 440,
+          "clientWidth": 440,
+          "bodyScrollWidth": 440
+        },
+        "sectionIds": [
+          "search-results-heading"
+        ],
+        "cards": [
+          {
+            "index": 0,
+            "self": true,
+            "profileHref": "/u/rsdy",
+            "width": 256,
+            "height": 143,
+            "hasFollowButton": false,
+            "hasLoginAction": false,
+            "selfLabel": true,
+            "previews": 1,
+            "previewSquare": true,
+            "rail": {
+              "w": 416,
+              "h": 147,
+              "left": 12,
+              "right": 428,
+              "sw": 784,
+              "cw": 416
+            }
+          },
+          {
+            "index": 1,
+            "self": false,
+            "profileHref": "/u/chyprsty_",
+            "width": 256,
+            "height": 60,
+            "hasFollowButton": true,
+            "hasLoginAction": false,
+            "selfLabel": false,
+            "previews": 0,
+            "previewSquare": null,
+            "rail": {
+              "w": 416,
+              "h": 147,
+              "left": 12,
+              "right": 428,
+              "sw": 784,
+              "cw": 416
+            }
+          },
+          {
+            "index": 2,
+            "self": false,
+            "profileHref": "/u/chyprsty__",
+            "width": 256,
+            "height": 143,
+            "hasFollowButton": true,
+            "hasLoginAction": false,
+            "selfLabel": false,
+            "previews": 3,
+            "previewSquare": true,
+            "rail": {
+              "w": 416,
+              "h": 147,
+              "left": 12,
+              "right": 428,
+              "sw": 784,
+              "cw": 416
+            }
+          }
+        ],
+        "selfCards": [
+          "/u/rsdy"
+        ],
+        "followButtons": 2,
+        "loginActions": 0,
+        "selfLabels": 1,
+        "newCreatorSelfCards": null
+      }
+    },
+    "1440": {
+      "normal": {
+        "path": "/explore",
+        "authenticated": true,
+        "doc": {
+          "scrollWidth": 1425,
+          "clientWidth": 1425,
+          "bodyScrollWidth": 1425
+        },
+        "sectionIds": [
+          "explore-works-heading",
+          "new-creators-heading",
+          "quiet-rack-heading"
+        ],
+        "cards": [
+          {
+            "index": 0,
+            "self": false,
+            "profileHref": "/u/chyprsty__",
+            "width": 256,
+            "height": 143,
+            "hasFollowButton": true,
+            "hasLoginAction": false,
+            "selfLabel": false,
+            "previews": 3,
+            "previewSquare": true,
+            "rail": {
+              "w": 1072,
+              "h": 147,
+              "left": 297,
+              "right": 1369,
+              "sw": 1072,
+              "cw": 1072
+            }
+          }
+        ],
+        "selfCards": [],
+        "followButtons": 1,
+        "loginActions": 0,
+        "selfLabels": 0,
+        "newCreatorSelfCards": 0
+      },
+      "search-all": {
+        "path": "/explore?q=rs",
+        "authenticated": true,
+        "doc": {
+          "scrollWidth": 1425,
+          "clientWidth": 1440,
+          "bodyScrollWidth": 1425
+        },
+        "sectionIds": [
+          "search-results-heading"
+        ],
+        "cards": [
+          {
+            "index": 0,
+            "self": true,
+            "profileHref": "/u/rsdy",
+            "width": 256,
+            "height": 143,
+            "hasFollowButton": false,
+            "hasLoginAction": false,
+            "selfLabel": true,
+            "previews": 1,
+            "previewSquare": true,
+            "rail": {
+              "w": 1072,
+              "h": 147,
+              "left": 297,
+              "right": 1369,
+              "sw": 1072,
+              "cw": 1072
+            }
+          },
+          {
+            "index": 1,
+            "self": false,
+            "profileHref": "/u/chyprsty_",
+            "width": 256,
+            "height": 60,
+            "hasFollowButton": true,
+            "hasLoginAction": false,
+            "selfLabel": false,
+            "previews": 0,
+            "previewSquare": null,
+            "rail": {
+              "w": 1072,
+              "h": 147,
+              "left": 297,
+              "right": 1369,
+              "sw": 1072,
+              "cw": 1072
+            }
+          },
+          {
+            "index": 2,
+            "self": false,
+            "profileHref": "/u/chyprsty__",
+            "width": 256,
+            "height": 143,
+            "hasFollowButton": true,
+            "hasLoginAction": false,
+            "selfLabel": false,
+            "previews": 3,
+            "previewSquare": true,
+            "rail": {
+              "w": 1072,
+              "h": 147,
+              "left": 297,
+              "right": 1369,
+              "sw": 1072,
+              "cw": 1072
+            }
+          }
+        ],
+        "selfCards": [
+          "/u/rsdy"
+        ],
+        "followButtons": 2,
+        "loginActions": 0,
+        "selfLabels": 1,
+        "newCreatorSelfCards": null
+      },
+      "search-creators": {
+        "path": "/explore?q=rs&scope=creators",
+        "authenticated": true,
+        "doc": {
+          "scrollWidth": 1425,
+          "clientWidth": 1440,
+          "bodyScrollWidth": 1425
+        },
+        "sectionIds": [
+          "search-results-heading"
+        ],
+        "cards": [
+          {
+            "index": 0,
+            "self": true,
+            "profileHref": "/u/rsdy",
+            "width": 256,
+            "height": 143,
+            "hasFollowButton": false,
+            "hasLoginAction": false,
+            "selfLabel": true,
+            "previews": 1,
+            "previewSquare": true,
+            "rail": {
+              "w": 1072,
+              "h": 147,
+              "left": 297,
+              "right": 1369,
+              "sw": 1072,
+              "cw": 1072
+            }
+          },
+          {
+            "index": 1,
+            "self": false,
+            "profileHref": "/u/chyprsty_",
+            "width": 256,
+            "height": 60,
+            "hasFollowButton": true,
+            "hasLoginAction": false,
+            "selfLabel": false,
+            "previews": 0,
+            "previewSquare": null,
+            "rail": {
+              "w": 1072,
+              "h": 147,
+              "left": 297,
+              "right": 1369,
+              "sw": 1072,
+              "cw": 1072
+            }
+          },
+          {
+            "index": 2,
+            "self": false,
+            "profileHref": "/u/chyprsty__",
+            "width": 256,
+            "height": 143,
+            "hasFollowButton": true,
+            "hasLoginAction": false,
+            "selfLabel": false,
+            "previews": 3,
+            "previewSquare": true,
+            "rail": {
+              "w": 1072,
+              "h": 147,
+              "left": 297,
+              "right": 1369,
+              "sw": 1072,
+              "cw": 1072
+            }
+          }
+        ],
+        "selfCards": [
+          "/u/rsdy"
+        ],
+        "followButtons": 2,
+        "loginActions": 0,
+        "selfLabels": 1,
+        "newCreatorSelfCards": null
+      }
+    }
+  },
+  "selfFollow": {
+    "initial": {
+      "profileHref": "/u/chyprsty_",
+      "pressed": "false",
+      "text": "Ikuti",
+      "busy": null
+    },
+    "clicked": true,
+    "target": "true",
+    "afterFirst": {
+      "pressed": "true",
+      "text": "Mengikuti",
+      "busy": null
+    },
+    "persisted": {
+      "pressed": "true",
+      "text": "Mengikuti",
+      "busy": null
+    },
+    "afterSecond": {
+      "pressed": "false",
+      "text": "Ikuti",
+      "busy": null
+    },
+    "restored": {
+      "pressed": "false",
+      "text": "Ikuti",
+      "busy": null
+    }
+  },
+  "edgeCases": {
+    "longUsername": {
+      "cardWidth": 256,
+      "railRight": 378,
+      "identityScrollWidth": 104,
+      "identityClientWidth": 104,
+      "docScrollWidth": 390,
+      "docClientWidth": 390
+    },
+    "previewVariants": {
+      "hasList": false
+    }
+  },
+  "guest": {
+    "path": "/explore?q=rs&scope=creators",
+    "authenticated": true,
+    "doc": {
+      "scrollWidth": 390,
+      "clientWidth": 390,
+      "bodyScrollWidth": 390
+    },
+    "sectionIds": [
+      "search-results-heading"
+    ],
+    "cards": [
+      {
+        "index": 0,
+        "self": false,
+        "profileHref": "/u/rsdy",
+        "width": 256,
+        "height": 143,
+        "hasFollowButton": false,
+        "hasLoginAction": true,
+        "selfLabel": false,
+        "previews": 1,
+        "previewSquare": true,
+        "rail": {
+          "w": 366,
+          "h": 147,
+          "left": 12,
+          "right": 378,
+          "sw": 784,
+          "cw": 366
+        }
+      },
+      {
+        "index": 1,
+        "self": false,
+        "profileHref": "/u/chyprsty_",
+        "width": 256,
+        "height": 60,
+        "hasFollowButton": false,
+        "hasLoginAction": true,
+        "selfLabel": false,
+        "previews": 0,
+        "previewSquare": null,
+        "rail": {
+          "w": 366,
+          "h": 147,
+          "left": 12,
+          "right": 378,
+          "sw": 784,
+          "cw": 366
+        }
+      },
+      {
+        "index": 2,
+        "self": false,
+        "profileHref": "/u/chyprsty__",
+        "width": 256,
+        "height": 143,
+        "hasFollowButton": false,
+        "hasLoginAction": true,
+        "selfLabel": false,
+        "previews": 3,
+        "previewSquare": true,
+        "rail": {
+          "w": 366,
+          "h": 147,
+          "left": 12,
+          "right": 378,
+          "sw": 784,
+          "cw": 366
+        }
+      }
+    ],
+    "selfCards": [],
+    "followButtons": 0,
+    "loginActions": 3,
+    "selfLabels": 0,
+    "newCreatorSelfCards": null
+  }
+}

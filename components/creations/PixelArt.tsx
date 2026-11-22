@@ -35,7 +35,7 @@ export function PixelArt({
         alt={alt}
         className={variant === "thumb" ? "pixel-thumb-art" : "pixel-present-art"}
         fetchPriority={priority ? "high" : undefined}
-        loading={priority ? "eager" : undefined}
+        loading={priority ? "eager" : variant === "thumb" ? "lazy" : undefined}
         decoding={priority ? "async" : undefined}
       />
     </figure>

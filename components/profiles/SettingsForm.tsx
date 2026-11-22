@@ -13,8 +13,8 @@ import { LogoutButton } from "@/components/auth/LogoutButton"
 import { LanguageSwitch } from "@/components/layout/LanguageSwitch"
 import { ProfileAvatar } from "@/components/profiles/ProfileAvatar"
 import { PwaInstall } from "@/components/pwa/PwaInstall"
+import { socialButtonClass } from "@/components/social/socialButton"
 import { Alert } from "@/components/ui/Alert"
-import { Button } from "@/components/ui/Button"
 import { Input } from "@/components/ui/Input"
 import { PixelIcon } from "@/components/ui/PixelIcon"
 import { Textarea } from "@/components/ui/Textarea"
@@ -39,7 +39,7 @@ function SettingsSection({
   children: ReactNode
 }) {
   return (
-    <section className="border-[3px] border-earth bg-card p-5 shadow-[4px_4px_0_0_var(--fg)] sm:p-6">
+    <section className="border border-[color:var(--soc-hairline)] bg-card p-4 sm:p-5">
       <h2 className="text-[15px] font-medium text-fg">{title}</h2>
       {hint ? <p className="mt-1 text-[13px] leading-snug text-muted">{hint}</p> : null}
       <div className="mt-4">{children}</div>
@@ -158,18 +158,20 @@ export function SettingsForm({ lang, profile }: { lang: Lang; profile: MemberPro
         onClick={() => void leave()}
         disabled={leaving || pending}
         aria-busy={leaving || undefined}
-        className="inline-flex h-11 w-fit items-center gap-2 border-[3px] border-earth bg-card px-3 text-[14px] font-medium hover:bg-soft disabled:opacity-50"
+        className={socialButtonClass({ variant: "ghost", size: "sm" })}
       >
         <PixelIcon name="back" />
         {leaving ? copy.settingsSaving[lang] : copy.settingsBack[lang]}
       </button>
       {leaveError && "error" in leaveError ? (
-        <Alert tone="error">{copy.errors[leaveError.error][lang]}</Alert>
+        <Alert tone="error" flat>
+          {copy.errors[leaveError.error][lang]}
+        </Alert>
       ) : null}
 
       <SettingsSection title={copy.avatarPhotoLabel[lang]} hint={copy.avatarPhotoHint[lang]}>
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-          <div className="shrink-0 self-start border-[3px] border-earth bg-soft p-1 shadow-[4px_4px_0_0_var(--fg)]">
+          <div className="shrink-0 self-start">
             <ProfileAvatar
               src={avatarSrc}
               avatarConfig={profile.avatar_config}
@@ -194,37 +196,41 @@ export function SettingsForm({ lang, profile }: { lang: Lang; profile: MemberPro
                 void onAvatarPicked(file)
               }}
             />
-            <Button
+            <button
               type="button"
-              size="sm"
-              variant="secondary"
               disabled={avatarBusy}
               onClick={() => fileRef.current?.click()}
+              className={socialButtonClass({ variant: "soft", size: "sm" })}
             >
               {preparing || uploadPending
                 ? copy.avatarUploading[lang]
                 : copy.avatarChooseFile[lang]}
-            </Button>
+            </button>
             {profile.avatar_url || preview ? (
               <form action={removeAction}>
                 <input type="hidden" name="lang" value={lang} />
-                <Button
+                <button
                   type="submit"
-                  size="sm"
-                  variant="ghost"
                   disabled={avatarBusy}
                   aria-busy={removePending || undefined}
+                  className={socialButtonClass({ variant: "ghost", size: "sm" })}
                 >
                   {removePending ? copy.avatarRemoving[lang] : copy.avatarRemove[lang]}
-                </Button>
+                </button>
               </form>
             ) : null}
           </div>
         </div>
-        {compressError ? <Alert tone="error">{copy.avatarCompressFailed[lang]}</Alert> : null}
+        {compressError ? (
+          <Alert tone="error" flat>
+            {copy.avatarCompressFailed[lang]}
+          </Alert>
+        ) : null}
         {avatarError ? (
           <div className="mt-3">
-            <Alert tone="error">{copy.errors[avatarError.error][lang]}</Alert>
+            <Alert tone="error" flat>
+              {copy.errors[avatarError.error][lang]}
+            </Alert>
           </div>
         ) : null}
       </SettingsSection>
@@ -240,10 +246,17 @@ export function SettingsForm({ lang, profile }: { lang: Lang; profile: MemberPro
         >
           <input type="hidden" name="lang" value={lang} />
           {state && "error" in state ? (
-            <Alert tone="error">{copy.errors[state.error][lang]}</Alert>
+            <Alert tone="error" flat>
+              {copy.errors[state.error][lang]}
+            </Alert>
           ) : null}
-          {state && "ok" in state ? <Alert tone="info">{copy.settingsSaved[lang]}</Alert> : null}
+          {state && "ok" in state ? (
+            <Alert tone="info" flat>
+              {copy.settingsSaved[lang]}
+            </Alert>
+          ) : null}
           <Input
+            appearance="social"
             id="displayName"
             name="displayName"
             type="text"
@@ -253,6 +266,7 @@ export function SettingsForm({ lang, profile }: { lang: Lang; profile: MemberPro
             label={copy.displayNameLabel[lang]}
           />
           <Input
+            appearance="social"
             id="username"
             name="username"
             type="text"
@@ -264,6 +278,7 @@ export function SettingsForm({ lang, profile }: { lang: Lang; profile: MemberPro
             hint={copy.usernameHint[lang]}
           />
           <Textarea
+            appearance="social"
             id="bio"
             name="bio"
             maxLength={280}
@@ -271,9 +286,14 @@ export function SettingsForm({ lang, profile }: { lang: Lang; profile: MemberPro
             label={copy.bioLabel[lang]}
           />
           <div className="pt-1">
-            <Button type="submit" disabled={pending || leaving} aria-busy={pending || undefined}>
+            <button
+              type="submit"
+              disabled={pending || leaving}
+              aria-busy={pending || undefined}
+              className={socialButtonClass({ variant: "solid", size: "md" })}
+            >
               {pending ? copy.settingsSaving[lang] : copy.settingsSave[lang]}
-            </Button>
+            </button>
           </div>
         </form>
       </SettingsSection>

@@ -3,8 +3,8 @@
 import { useActionState, useState } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
+import { socialButtonClass } from "@/components/social/socialButton"
 import { Alert } from "@/components/ui/Alert"
-import { Button } from "@/components/ui/Button"
 import { Dialog } from "@/components/ui/Dialog"
 import { Textarea } from "@/components/ui/Textarea"
 import { submitReportAction, type CommunityActionState } from "@/features/community/actions"
@@ -37,9 +37,13 @@ export function ReportButton({
 
   return (
     <>
-      <Button type="button" size="sm" variant="ghost" onClick={() => setOpen(true)}>
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className={socialButtonClass({ variant: "ghost", size: "sm" })}
+      >
         {copy.report[lang]}
-      </Button>
+      </button>
       {open ? (
         <ReportDialog
           lang={lang}
@@ -70,54 +74,73 @@ function ReportDialog({
   const submitted = Boolean(state && "ok" in state)
 
   return (
-    <Dialog open onClose={onClose} title={copy.reportTitle[lang]} closeLabel={copy.closeMenu[lang]}>
+    <Dialog
+      open
+      onClose={onClose}
+      title={copy.reportTitle[lang]}
+      closeLabel={copy.closeMenu[lang]}
+      tone="social"
+    >
       {submitted ? (
         <div className="grid gap-4">
-          <Alert>{copy.reportThanks[lang]}</Alert>
-          <Button type="button" onClick={onClose}>
+          <Alert flat>{copy.reportThanks[lang]}</Alert>
+          <button type="button" onClick={onClose} className={socialButtonClass({ variant: "solid", size: "sm" })}>
             {copy.closeMenu[lang]}
-          </Button>
+          </button>
         </div>
       ) : (
-      <form action={action} className="grid gap-4">
-        <input type="hidden" name="target_type" value={targetType} />
-        <input type="hidden" name="target_id" value={targetId} />
-        {state && "error" in state ? (
-          <Alert tone="error">{copy.errors[state.error][lang]}</Alert>
-        ) : null}
-        <div className="grid gap-1.5">
-          <label htmlFor="report-reason" className="text-[14px] font-medium">
-            {copy.reportReason[lang]}
-          </label>
-          <select
-            id="report-reason"
-            name="reason"
-            required
-            className="min-h-11 border-[3px] border-earth bg-bg px-3 text-[15px]"
-            defaultValue="spam"
-          >
-            {REPORT_REASONS.map((reason) => (
-              <option key={reason} value={reason}>
-                {copy.reportReasons[reason][lang]}
-              </option>
-            ))}
-          </select>
-        </div>
-        <Textarea
-          id="report-details"
-          name="details"
-          maxLength={REPORT_DETAILS_MAX}
-          label={copy.reportDetails[lang]}
-        />
-        <div className="flex flex-wrap gap-3">
-          <Button type="submit" disabled={pending} aria-busy={pending || undefined}>
-            {pending ? copy.reportSubmitting[lang] : copy.reportSubmit[lang]}
-          </Button>
-          <Button type="button" variant="ghost" onClick={onClose} disabled={pending}>
-            {copy.createCancel[lang]}
-          </Button>
-        </div>
-      </form>
+        <form action={action} className="grid gap-4">
+          <input type="hidden" name="target_type" value={targetType} />
+          <input type="hidden" name="target_id" value={targetId} />
+          {state && "error" in state ? (
+            <Alert tone="error" flat>
+              {copy.errors[state.error][lang]}
+            </Alert>
+          ) : null}
+          <div className="grid gap-1.5">
+            <label htmlFor="report-reason" className="text-[14px] font-medium">
+              {copy.reportReason[lang]}
+            </label>
+            <select
+              id="report-reason"
+              name="reason"
+              required
+              className="min-h-11 border border-[color:var(--soc-hairline)] bg-soft px-3 text-[15px] focus-visible:border-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky"
+              defaultValue="spam"
+            >
+              {REPORT_REASONS.map((reason) => (
+                <option key={reason} value={reason}>
+                  {copy.reportReasons[reason][lang]}
+                </option>
+              ))}
+            </select>
+          </div>
+          <Textarea
+            id="report-details"
+            name="details"
+            maxLength={REPORT_DETAILS_MAX}
+            label={copy.reportDetails[lang]}
+            appearance="social"
+          />
+          <div className="flex flex-wrap gap-3">
+            <button
+              type="submit"
+              disabled={pending}
+              aria-busy={pending || undefined}
+              className={socialButtonClass({ variant: "solid", size: "sm" })}
+            >
+              {pending ? copy.reportSubmitting[lang] : copy.reportSubmit[lang]}
+            </button>
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={pending}
+              className={socialButtonClass({ variant: "ghost", size: "sm" })}
+            >
+              {copy.createCancel[lang]}
+            </button>
+          </div>
+        </form>
       )}
     </Dialog>
   )

@@ -10,7 +10,7 @@ import { SocialEmptyState } from "@/components/social/SocialEmptyState"
 import { socialButtonClass } from "@/components/social/socialButton"
 import { WorkTile } from "@/components/social/WorkTile"
 import { isFollowing } from "@/features/community/follows"
-import { listPublishedCreationsByUser } from "@/features/creations/queries"
+import { countPublishedCreationsByUser, listPublishedCreationsByUser } from "@/features/creations/queries"
 import { getCurrentProfile, getProfileByUsername } from "@/lib/auth/session"
 import { copy } from "@/lib/copy"
 import { socialCopy } from "@/lib/copy-social"
@@ -74,8 +74,8 @@ export default async function PublicProfilePage({
   const profilePath = href(lang, `/u/${profile.username}`)
 
   return (
-    <div className="mx-auto w-full min-w-0 max-w-4xl px-4 py-6 sm:px-8 sm:py-10">
-      <header className="flex min-w-0 items-start gap-4 sm:gap-10">
+    <div className="mx-auto w-full min-w-0 max-w-5xl px-3 py-4 sm:px-6 sm:py-6 lg:px-10">
+      <header className="flex min-w-0 items-start gap-3 sm:gap-6">
         <ProfileAvatar
           src={profile.avatar_url}
           avatarConfig={profile.avatar_config}
@@ -88,8 +88,8 @@ export default async function PublicProfilePage({
         <div className="min-w-0 flex-1">
           <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-center sm:gap-5">
             <div className="min-w-0">
-              <p className="pixel-kicker">@{profile.username}</p>
-              <h1 className="page-heading-sans mt-1.5 break-words">{name}</h1>
+              <h1 className="break-words text-[17px] font-semibold leading-snug text-fg sm:text-[19px]">{name}</h1>
+              <p className="mt-0.5 truncate text-[13px] text-muted">@{profile.username}</p>
             </div>
             {!ownProfile ? (
               <FollowButton
@@ -99,6 +99,7 @@ export default async function PublicProfilePage({
                 initialFollowing={following}
                 member={Boolean(me)}
                 returnPath={profilePath}
+                compact
               />
             ) : null}
           </div>
@@ -146,7 +147,7 @@ export default async function PublicProfilePage({
         <div className="flex justify-center">
           <h2
             id="profile-works-heading"
-            className="-mt-px inline-flex min-h-11 items-center gap-2 border-t-2 border-fg px-4 text-[13px] font-semibold text-fg"
+            className="inline-flex min-h-11 items-center gap-2 text-[13px] font-semibold text-fg"
           >
             <Grid2x22 width={16} height={16} aria-hidden="true" />
             {socialCopy.profile.tabWorks[lang]}
@@ -169,8 +170,8 @@ export default async function PublicProfilePage({
 }
 
 async function ProfileWorksCount({ profileId }: { profileId: string }) {
-  const works = await loadProfileWorks(profileId)
-  return <strong className="font-semibold text-fg">{works.failed ? 0 : works.items.length}</strong>
+  const total = await countPublishedCreationsByUser(profileId)
+  return <strong className="font-semibold text-fg">{total}</strong>
 }
 
 async function ProfileWorks({

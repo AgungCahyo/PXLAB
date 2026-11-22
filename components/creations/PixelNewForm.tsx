@@ -2,8 +2,10 @@
 
 import { useActionState, useMemo, useState, type CSSProperties } from "react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
+import { socialButtonClass } from "@/components/social/socialButton"
 import { Alert } from "@/components/ui/Alert"
-import { Button, buttonClassName } from "@/components/ui/Button"
+import { Dialog } from "@/components/ui/Dialog"
 import { Input } from "@/components/ui/Input"
 import { createDraftAction, type CreationActionState } from "@/features/creations/actions"
 import { isUnnamedTitle } from "@/lib/creations"
@@ -65,7 +67,7 @@ function SizePreview({
   return (
     <div className="relative flex min-h-44 w-full items-center justify-center bg-soft py-6 sm:aspect-square sm:min-h-0 sm:py-0">
       <div
-        className="pixel-deco border-[3px] border-earth shadow-[4px_4px_0_0_var(--fg)]"
+        className="pixel-deco border border-[color:var(--soc-hairline)]"
         style={{
           width: box.width,
           height: box.height,
@@ -104,7 +106,14 @@ function SizeChoice({
   )
 }
 
-export function PixelNewForm({ lang }: { lang: Lang }) {
+export function PixelNewForm({
+  lang,
+  variant = "page",
+}: {
+  lang: Lang
+  variant?: "page" | "dialog"
+}) {
+  const router = useRouter()
   const [state, action, pending] = useActionState<CreationActionState, FormData>(
     createDraftAction,
     null,
@@ -155,7 +164,7 @@ export function PixelNewForm({ lang }: { lang: Lang }) {
     formatGroupedCount(size.width * size.height, lang),
   )
 
-  return (
+  const form = (
     <form
       action={action}
       onSubmit={(event) => {
@@ -176,9 +185,9 @@ export function PixelNewForm({ lang }: { lang: Lang }) {
       <div className="grid min-w-0 gap-8 lg:grid-cols-[minmax(0,18rem)_minmax(0,1fr)] lg:items-start lg:gap-10">
         {/* Visual stage — the promise of the blank canvas */}
         <aside className="min-w-0 lg:sticky lg:top-[5.5rem]">
-          <div className="overflow-hidden border-[3px] border-earth bg-card shadow-[4px_4px_0_0_var(--fg)]">
+          <div className="overflow-hidden border border-[color:var(--soc-hairline)] bg-card">
             <SizePreview width={size.width} height={size.height} ground={ground} />
-            <div className="border-t-[3px] border-earth bg-card px-3 py-3 text-center">
+            <div className="border-t border-[color:var(--soc-hairline)] bg-card px-3 py-3 text-center">
               <p className="text-[15px] font-medium text-fg">{sizeLabel}</p>
               <p className="mt-0.5 text-[12px] text-muted">{pixelCount}</p>
             </div>
@@ -188,7 +197,7 @@ export function PixelNewForm({ lang }: { lang: Lang }) {
 
         <div className="grid min-w-0 gap-7">
           {state && "error" in state ? (
-            <Alert tone="error">
+            <Alert tone="error" flat>
               {state.error === "title_required"
                 ? copy.createTitleRequired[lang]
                 : copy.errors[state.error][lang]}
@@ -196,6 +205,7 @@ export function PixelNewForm({ lang }: { lang: Lang }) {
           ) : null}
 
           <Input
+            appearance="social"
             id="new-artwork-title"
             name="title-field"
             maxLength={CREATION_TITLE_MAX}
@@ -261,10 +271,11 @@ export function PixelNewForm({ lang }: { lang: Lang }) {
           </fieldset>
 
           {preset === "custom" ? (
-            <div className="grid gap-3 border-[3px] border-earth bg-soft p-4">
+            <div className="grid gap-3 border border-[color:var(--soc-hairline)] bg-soft p-4">
               <p className="text-[13px] leading-snug text-muted">{customHint}</p>
               <div className="grid gap-4 sm:grid-cols-2">
                 <Input
+                  appearance="social"
                   id="custom-width"
                   type="number"
                   min={PIXEL_CANVAS_MIN}
@@ -279,6 +290,7 @@ export function PixelNewForm({ lang }: { lang: Lang }) {
                   onChange={(event) => setCustomWidth(Number(event.target.value))}
                 />
                 <Input
+                  appearance="social"
                   id="custom-height"
                   type="number"
                   min={PIXEL_CANVAS_MIN}
@@ -319,7 +331,7 @@ export function PixelNewForm({ lang }: { lang: Lang }) {
                   className="pixel-choice inline-flex items-center gap-2 px-3 py-2 text-[14px] font-medium"
                 >
                   <span
-                    className="h-6 w-6 shrink-0 border-[3px] border-earth"
+                    className="h-6 w-6 shrink-0 border border-[color:var(--soc-hairline)]"
                     style={groundFill(value)}
                     aria-hidden="true"
                   />
@@ -330,11 +342,11 @@ export function PixelNewForm({ lang }: { lang: Lang }) {
             <p className="text-[12px] text-muted">{copy.canvasBackgroundHint[lang]}</p>
           </fieldset>
 
-          <div className="flex flex-wrap items-center gap-3 border-t border-line pt-5 max-md:sticky max-md:bottom-[calc(4rem+env(safe-area-inset-bottom,0px))] max-md:z-30 max-md:-mx-5 max-md:border-t-[3px] max-md:border-earth max-md:bg-bg max-md:px-5 max-md:py-3">
+          <div className="flex flex-wrap items-center gap-3 border-t border-[color:var(--soc-hairline)] pt-5 max-md:sticky max-md:bottom-[calc(4rem+env(safe-area-inset-bottom,0px))] max-md:z-30 max-md:-mx-3 max-md:border-t max-md:border-[color:var(--soc-hairline)] max-md:bg-bg max-md:px-3 max-md:py-3 sm:max-md:-mx-6 sm:max-md:px-6">
             <p className="mr-auto hidden text-[13px] text-muted max-md:block">{sizeLabel}</p>
             <Link
               href={href(lang, "/dashboard")}
-              className={cn(buttonClassName({ variant: "outline", size: "md" }), "max-md:hidden")}
+              className={cn(socialButtonClass({ variant: "ghost", size: "md" }), "max-md:hidden")}
             >
               {copy.createCancel[lang]}
             </Link>
@@ -344,16 +356,32 @@ export function PixelNewForm({ lang }: { lang: Lang }) {
             >
               {copy.createCancel[lang]}
             </Link>
-            <Button
+            <button
               type="submit"
               disabled={pending || !sizeOk || !titleOk}
               aria-busy={pending || undefined}
+              className={socialButtonClass({ variant: "solid", size: "md" })}
             >
               {pending ? copy.sizeStarting[lang] : copy.createOpenEditor[lang]}
-            </Button>
+            </button>
           </div>
         </div>
       </div>
     </form>
+  )
+
+  if (variant !== "dialog") return form
+
+  return (
+    <Dialog
+      open
+      size="lg"
+      onClose={() => router.push(href(lang, "/dashboard"))}
+      title={copy.createNewHeading[lang]}
+      closeLabel={copy.createCancel[lang]}
+    >
+      <p className="mb-4 text-[13px] leading-relaxed text-muted">{copy.createModalHint[lang]}</p>
+      <div className="max-h-[min(75dvh,44rem)] overflow-y-auto">{form}</div>
+    </Dialog>
   )
 }

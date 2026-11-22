@@ -42,6 +42,12 @@
   --pixel-brand-ls: 0.06em;
 }
 
+/* Keep centered surfaces (notably Explore) from shifting when a state change
+   adds or removes the vertical scrollbar. */
+html {
+  scrollbar-gutter: stable;
+}
+
 @theme inline {
   --color-bg: var(--bg);
   --color-fg: var(--fg);
@@ -101,6 +107,13 @@ body {
   --studio-rail: 4rem;
   --studio-inspector: 17.5rem;
   --studio-meta: 0.75rem;
+}
+
+@media (min-width: 768px) and (max-width: 1023.98px) {
+  [data-chrome="playground"] {
+    --studio-hit: 2.25rem;
+    --studio-control: 2.25rem;
+  }
 }
 
 @media (max-width: 767.98px) {
@@ -307,18 +320,18 @@ body {
 
 /* Selected chrome lives here so .pixel-frame cannot swallow Tailwind border/shadow. */
 .pixel-choice {
-  border: 3px solid var(--earth);
-  box-shadow: var(--shadow);
+  border: 1px solid var(--soc-hairline);
+  box-shadow: none;
   background: var(--card);
   border-radius: 0;
 }
 
 .pixel-choice[aria-pressed="true"] {
-  border-color: var(--brick);
+  border-color: var(--fg);
   background: var(--soft);
-  box-shadow: 4px 4px 0 0 var(--brick);
-  outline: 3px solid var(--brick);
-  outline-offset: 3px;
+  box-shadow: none;
+  outline: 2px solid var(--sky);
+  outline-offset: 2px;
 }
 
 .pixel-choice[aria-pressed="true"] .pixel-kicker {
@@ -545,27 +558,25 @@ body:has([data-chrome="playground"]) .corner-busy-shell {
   color: var(--fg);
 }
 
-/* Artwork detail: soft stage band so the piece sits as the first composition. */
+/* Artwork detail: quiet stage so the piece sits as the first composition. */
 .detail-art-stage {
-  margin-inline: -1.25rem;
-  padding: 1.25rem;
-  border-block: 3px solid var(--earth);
-  background:
-    radial-gradient(120% 80% at 50% 0%, color-mix(in srgb, var(--sky) 14%, var(--soft)) 0%, transparent 55%),
-    linear-gradient(180deg, var(--soft) 0%, color-mix(in srgb, var(--soft) 88%, var(--earth) 12%) 100%);
+  margin-inline: -0.75rem;
+  padding: 0.75rem;
+  border-block: 1px solid var(--soc-hairline);
+  background: var(--soft);
 }
 
 @media (min-width: 640px) {
   .detail-art-stage {
-    margin-inline: -2rem;
-    padding: 1.5rem 2rem;
+    margin-inline: -1.5rem;
+    padding: 1.25rem 1.5rem;
   }
 }
 
 @media (min-width: 1024px) {
   .detail-art-stage {
-    margin-inline: -4rem;
-    padding: 1.75rem 4rem;
+    margin-inline: -2.5rem;
+    padding: 1.5rem 2.5rem;
   }
 }
 

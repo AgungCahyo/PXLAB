@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache"
 import type { AuthErrorCode } from "@/lib/auth/errors"
+import { takeRateLimit } from "@/lib/auth/rate-limit"
 import {
   canCommentOnCreation,
   canDeleteComment,
@@ -16,6 +17,7 @@ import {
   COMMENT_PER_HOUR,
   COMMENTS_PAGE_SIZE,
   FOLLOW_PER_HOUR,
+  REACTION_PER_HOUR,
   REACTION_TYPE,
   REPORT_PER_HOUR,
 } from "@/lib/site"
@@ -25,6 +27,7 @@ import {
   addCommentSchema,
   commentIdSchema,
   editCommentSchema,
+  desiredFromForm,
   followCreatorSchema,
   submitReportSchema,
   toggleReactionSchema,
@@ -38,6 +41,7 @@ import {
   getOwnedComment,
   getOwnReaction,
   getPublishedComment,
+  getReactionSummary,
   listConversation,
   type ConversationRoot,
 } from "@/features/community/queries"
@@ -54,7 +58,14 @@ export type PostedComment = {
 
 export type CommunityActionState =
   | { error: AuthErrorCode }
-  | { ok: true; comment?: PostedComment }
+  | {
+      ok: true
+      comment?: PostedComment
+      /** Authoritative interaction state returned by the guarded RPC. */
+      liked?: boolean
+      following?: boolean
+      count?: number
+    }
   | null
 
 function hourAgoIso() {
@@ -104,6 +115,73 @@ async function targetIsVisible(targetType: "creation" | "comment" | "space_eleme
 function parentFromForm(formData: FormData) {
   const raw = formData.get("parent_id")
   return typeof raw === "string" && raw.length > 0 ? raw : undefined
+}
+
+function isMissingInteractionRpc(error: { code?: string; message?: string } | null): boolean {
+  if (!error) return false
+  return (
+    error.code === "PGRST202" ||
+    error.code === "42883" ||
+    /could not find the function|schema cache|undefined function/i.test(error.message ?? "")
+  )
+}
+
+type InteractionRpcResult = {
+  error?: string
+  found?: boolean
+  limited?: boolean
+  self?: boolean
+  changed?: boolean
+  liked?: boolean
+  following?: boolean
+  count?: number
+}
+
+function readInteractionResult(value: unknown): InteractionRpcResult {
+  if (!value || typeof value !== "object") return {}
+  const result = value as Record<string, unknown>
+  return {
+    error: typeof result.error === "string" ? result.error : undefined,
+    found: typeof result.found === "boolean" ? result.found : undefined,
+    limited: result.limited === true,
+    self: result.self === true,
+    changed: typeof result.changed === "boolean" ? result.changed : undefined,
+    liked: typeof result.liked === "boolean" ? result.liked : undefined,
+    following: typeof result.following === "boolean" ? result.following : undefined,
+    count: typeof result.count === "number" ? result.count : undefined,
+  }
+}
+
+function rpcAuthError(result: InteractionRpcResult): boolean {
+  return result.error === "not_authenticated"
+}
+
+async function revalidateFollowTargets(username?: string | null, targetUserId?: string | null) {
+  revalidatePath(href("id", "/explore"))
+  revalidatePath(href("en", "/explore"))
+  revalidatePath(href("id", "/creators"))
+  revalidatePath(href("en", "/creators"))
+  revalidatePath(href("id", "/home"))
+  revalidatePath(href("en", "/home"))
+  if (username) {
+    revalidatePath(href("id", `/u/${username}`))
+    revalidatePath(href("en", `/u/${username}`))
+  }
+  if (targetUserId) {
+    const publicClient = createPublicSupabase()
+    const { data } = publicClient
+      ? await publicClient
+          .from("creations")
+          .select("id")
+          .eq("user_id", targetUserId)
+          .eq("status", "published")
+          .limit(100)
+      : { data: null }
+    for (const creation of data ?? []) {
+      revalidatePath(href("id", `/creation/${creation.id}`))
+      revalidatePath(href("en", `/creation/${creation.id}`))
+    }
+  }
 }
 
 export async function addCommentAction(
@@ -261,6 +339,7 @@ export async function toggleAppreciationAction(
 ): Promise<CommunityActionState> {
   const parsed = toggleReactionSchema.safeParse({
     creation_id: formData.get("creation_id"),
+    desired: desiredFromForm(formData),
   })
   if (!parsed.success) return { error: "invalid_input" }
 
@@ -273,29 +352,52 @@ export async function toggleAppreciationAction(
     return { error: "forbidden" }
   }
 
+  // Best-effort process guard; the RPC below keeps a durable per-user window.
+  if (!takeRateLimit(`reaction:${profile.id}`, REACTION_PER_HOUR)) {
+    return { error: "limit_reached" }
+  }
+
+  const desired = parsed.data.desired === undefined ? undefined : parsed.data.desired === "true"
   const supabase = await createServerSupabase()
   if (!supabase) return { error: "not_configured" }
 
+  const { data, error } = await supabase.rpc("set_reaction_state", {
+    p_creation_id: creation.id,
+    p_desired: desired ?? null,
+    p_limit: REACTION_PER_HOUR,
+  })
+  if (!error) {
+    const result = readInteractionResult(data)
+    if (rpcAuthError(result)) return { error: "not_authenticated" }
+    if (result.error) return { error: "invalid_input" }
+    if (result.found === false) return { error: "not_found" }
+    if (result.limited) return { error: "limit_reached" }
+    return { ok: true, liked: result.liked ?? desired, count: result.count }
+  }
+  if (!isMissingInteractionRpc(error)) return { error: "invalid_input" }
+
+  // Fallback until the guardrail migration is applied: explicit desired state
+  // plus the existing unique constraint still prevents contradictory rows.
   const existing = await getOwnReaction(creation.id)
-  if (existing) {
-    const { error } = await supabase
-      .from("reactions")
-      .delete()
-      .eq("id", existing.id)
-      .eq("user_id", profile.id)
-    if (error) return { error: "invalid_input" }
-  } else {
-    const { error } = await supabase.from("reactions").insert({
+  const shouldLike = desired ?? !existing
+  if (shouldLike) {
+    const { error: insertError } = await supabase.from("reactions").insert({
       user_id: profile.id,
       creation_id: creation.id,
       reaction_type: REACTION_TYPE,
     })
-    if (error) return { error: "invalid_input" }
+    if (insertError && insertError.code !== "23505") return { error: "invalid_input" }
+  } else if (existing) {
+    const { error: deleteError } = await supabase
+      .from("reactions")
+      .delete()
+      .eq("id", existing.id)
+      .eq("user_id", profile.id)
+    if (deleteError) return { error: "invalid_input" }
   }
 
-  // Skip revalidatePath: the client already applied optimistic UI.
-  // Refreshing the whole creation route made navigation feel like a reload.
-  return { ok: true }
+  const summary = await getReactionSummary(creation.id, profile.id)
+  return { ok: true, liked: summary.appreciated, count: summary.count }
 }
 
 export async function submitReportAction(
@@ -346,21 +448,16 @@ export async function submitReportAction(
   return { ok: true }
 }
 
-function revalidateFollowTargets(username?: string | null) {
-  revalidatePath(href("id", "/explore"))
-  revalidatePath(href("en", "/explore"))
-  if (username) {
-    revalidatePath(href("id", `/u/${username}`))
-    revalidatePath(href("en", `/u/${username}`))
-  }
-}
-
-export async function followCreatorAction(
-  _prev: CommunityActionState,
+async function mutateFollowState(
   formData: FormData,
+  defaultDesired: boolean,
 ): Promise<CommunityActionState> {
-  const parsed = followCreatorSchema.safeParse({ user_id: formData.get("user_id") })
+  const parsed = followCreatorSchema.safeParse({
+    user_id: formData.get("user_id"),
+    desired: desiredFromForm(formData),
+  })
   if (!parsed.success) return { error: "invalid_input" }
+  if (parsed.data.desired !== undefined) defaultDesired = parsed.data.desired === "true"
 
   const profile = await getCurrentProfile()
   if (!profile) return { error: "not_authenticated" }
@@ -375,54 +472,66 @@ export async function followCreatorAction(
     .maybeSingle()
   if (!target) return { error: "not_found" }
 
-  const recent = await countOwnFollowsSince(hourAgoIso())
-  if (recent >= FOLLOW_PER_HOUR) return { error: "limit_reached" }
+  // Best-effort process guard; the RPC keeps a durable history that unfollow
+  // cannot erase, so follow -> unfollow spam cannot reset the allowance.
+  if (!takeRateLimit(`follow:${profile.id}`, FOLLOW_PER_HOUR)) {
+    return { error: "limit_reached" }
+  }
 
   const supabase = await createServerSupabase()
   if (!supabase) return { error: "not_configured" }
 
-  const { error } = await supabase.from("follows").insert({
-    follower_id: profile.id,
-    following_id: parsed.data.user_id,
+  const { data, error } = await supabase.rpc("set_follow_state", {
+    p_target_user_id: parsed.data.user_id,
+    p_desired: defaultDesired,
+    p_limit: FOLLOW_PER_HOUR,
   })
-  if (error) {
-    const code = error.code ?? ""
-    if (code === "23505") {
-      revalidateFollowTargets(target.username as string)
-      return { ok: true }
-    }
-    return { error: "invalid_input" }
+  if (!error) {
+    const result = readInteractionResult(data)
+    if (rpcAuthError(result)) return { error: "not_authenticated" }
+    if (result.error) return { error: "invalid_input" }
+    if (result.found === false) return { error: "not_found" }
+    if (result.self) return { error: "invalid_input" }
+    if (result.limited) return { error: "limit_reached" }
+    await revalidateFollowTargets(target.username as string, target.id as string)
+    return { ok: true, following: result.following ?? defaultDesired }
+  }
+  if (!isMissingInteractionRpc(error)) return { error: "invalid_input" }
+
+  // Fallback until the guardrail migration is applied. The primary key makes
+  // duplicate follows idempotent; the current-row count is only a stopgap.
+  const recent = await countOwnFollowsSince(hourAgoIso())
+  if (recent >= FOLLOW_PER_HOUR) return { error: "limit_reached" }
+
+  if (defaultDesired) {
+    const { error: insertError } = await supabase.from("follows").insert({
+      follower_id: profile.id,
+      following_id: parsed.data.user_id,
+    })
+    if (insertError && insertError.code !== "23505") return { error: "invalid_input" }
+  } else {
+    const { error: deleteError } = await supabase
+      .from("follows")
+      .delete()
+      .eq("follower_id", profile.id)
+      .eq("following_id", parsed.data.user_id)
+    if (deleteError) return { error: "invalid_input" }
   }
 
-  revalidateFollowTargets(target.username as string)
-  return { ok: true }
+  await revalidateFollowTargets(target.username as string, target.id as string)
+  return { ok: true, following: defaultDesired }
+}
+
+export async function followCreatorAction(
+  _prev: CommunityActionState,
+  formData: FormData,
+): Promise<CommunityActionState> {
+  return mutateFollowState(formData, true)
 }
 
 export async function unfollowCreatorAction(
   _prev: CommunityActionState,
   formData: FormData,
 ): Promise<CommunityActionState> {
-  const parsed = followCreatorSchema.safeParse({ user_id: formData.get("user_id") })
-  if (!parsed.success) return { error: "invalid_input" }
-
-  const profile = await getCurrentProfile()
-  if (!profile) return { error: "not_authenticated" }
-
-  const publicClient = createPublicSupabase()
-  const { data: target } = publicClient
-    ? await publicClient.from("profiles").select("username").eq("id", parsed.data.user_id).maybeSingle()
-    : { data: null }
-
-  const supabase = await createServerSupabase()
-  if (!supabase) return { error: "not_configured" }
-
-  const { error } = await supabase
-    .from("follows")
-    .delete()
-    .eq("follower_id", profile.id)
-    .eq("following_id", parsed.data.user_id)
-  if (error) return { error: "invalid_input" }
-
-  revalidateFollowTargets(target?.username as string | undefined)
-  return { ok: true }
+  return mutateFollowState(formData, false)
 }

@@ -179,7 +179,7 @@ export function SocialTabBar({ lang, member }: { lang: Lang; member: NavMember }
             <Link
               href={to}
               aria-current={active ? "page" : undefined}
-              aria-label={label}
+              aria-label={badge ? `${label}, ${t.notificationsUnread[lang]}` : label}
               className={cn(
                 "relative flex min-h-14 flex-col items-center justify-center gap-0.5 px-1 text-[11px]",
                 "active:bg-soft focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-sky",

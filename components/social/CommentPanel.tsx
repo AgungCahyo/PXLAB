@@ -59,11 +59,14 @@ export function CommentPanel({
   creationId,
   viewer,
   onTotal,
+  loginNext,
 }: {
   lang: Lang
   creationId: string
   viewer: FeedViewer | null
   onTotal: (total: number) => void
+  /** Preserves the feed tab/page across guest sign-in. */
+  loginNext?: string
 }) {
   const t = socialCopy.feed
   const toast = useToast()
@@ -222,7 +225,7 @@ export function CommentPanel({
         </div>
       ) : (
         <Link
-          href={loginHref(lang, href(lang, "/home"))}
+          href={loginHref(lang, loginNext ?? href(lang, "/home"))}
           className={socialButtonClass({ variant: "soft", className: "mt-2 w-full" })}
         >
           {t.signInToComment[lang]}

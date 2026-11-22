@@ -13,6 +13,11 @@ import {
   type BrushMask,
   type BrushOptions,
 } from "@/lib/pixel-brush"
+import {
+  transformDocument,
+  type TransformRequest,
+  type TransformResult,
+} from "@/lib/pixel-transform"
 import { clampLayerOpacity, isPixelBlendMode, type PixelBlendMode } from "@/lib/pixel-blend"
 import { type PixelFillPattern } from "@/lib/pixel-pattern"
 import { PixelHistory, type HistoryFrame } from "@/lib/pixel-history"
@@ -73,11 +78,14 @@ import {
   createLayerId,
   inCanvas,
   layerThumbnailDataUrl,
+  constrainAxisEnd,
   constrainSquareEnd,
   densifyStrokeSegment,
   ensurePaletteColor,
-  extractRect,
+  clipboardIsEmpty,
+  extractObject,
   fillLinearGradient,
+  linearGradientStops,
   contractSelection,
   expandSelection,
   fillBoundsRect,
@@ -304,12 +312,27 @@ export type PixelBoardHandle = {
     palette: string[]
     layers: PixelLayerRuntime[]
     groups: PixelGroupRuntime[]
+    activeIndex: number
   }
   undo: () => void
   redo: () => void
   zoomBy: (direction: 1 | -1) => void
   fit: () => void
   getZoom: () => PixelZoom
+  /** Camera + view size for the minimap. CSS pixels. */
+  getViewSnapshot: () => {
+    canvasWidth: number
+    canvasHeight: number
+    viewWidth: number
+    viewHeight: number
+    originX: number
+    originY: number
+    scale: number
+  }
+  /** Nearest-neighbour preview of the composite into `ctx`. */
+  drawPreview: (ctx: CanvasRenderingContext2D, destWidth: number, destHeight: number) => boolean
+  /** Pan so this document cell sits at the view centre. Leaves fit-zoom. */
+  centerOnCell: (x: number, y: number) => void
   clearCanvas: () => void
   flipHorizontal: () => void
   flipVertical: () => void
@@ -321,6 +344,15 @@ export type PixelBoardHandle = {
   expandSelection: () => void
   contractSelection: () => void
   hasSelection: () => boolean
+  /** Bounding box of the current selection, or null. */
+  getSelectionBounds: () => { x: number; y: number; width: number; height: number } | null
+  /**
+   * Apply a layer/image transform at the current canvas size as one undo step. Blended results
+   * may add palette colours. Locked and transparency-locked layers are skipped and reported.
+   */
+  applyTransform: (
+    request: TransformRequest,
+  ) => Pick<TransformResult, "changed" | "addedColors" | "approximatedColors" | "skipped">
   /** Brush tip silhouette from the current selection or clipboard (max 64x64). */
   getBrushTip: (source: "selection" | "clipboard") => BrushMask | null
   copySelection: () => boolean
@@ -433,6 +465,8 @@ export type PixelBoardProps = {
   /** Right-click or touch long-press on the view canvas. */
   onCanvasMenu?: (info: { clientX: number; clientY: number }) => void
   onHoverCell?: (cell: { x: number; y: number } | null) => void
+  /** After a view redraw (pan, zoom, paint). Keep this cheap — it runs on rAF. */
+  onViewChange?: () => void
   chrome?: boolean
   className?: string
 }
@@ -471,6 +505,7 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
     onPaletteFull,
     onCanvasMenu,
     onHoverCell,
+    onViewChange,
     chrome,
     className,
   },
@@ -610,6 +645,8 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
   onCanvasMenuRef.current = onCanvasMenu
   const onHoverCellRef = useRef(onHoverCell)
   onHoverCellRef.current = onHoverCell
+  const onViewChangeRef = useRef(onViewChange)
+  onViewChangeRef.current = onViewChange
   const drawRef = useRef<{ x: number; y: number } | null>(null)
   /** Recent freehand cells for sparse-gap Catmull-Rom densify (not undo history). */
   const strokeTrailRef = useRef<PixelPoint[]>([])
@@ -1350,6 +1387,7 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
       overlay.style.width = `${Math.max(1, frame.width * scale)}px`
       overlay.style.height = `${Math.max(1, frame.height * scale)}px`
     }
+    onViewChangeRef.current?.()
   }
 
   const emitSelection = () => {
@@ -1370,20 +1408,25 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
 
   const liftSelectionClipboard = (selection: PixelSelection): PixelClipboard => {
     const held = selectionFloatRef.current
+    // While an object is floating the layer holds a hole, so the float IS the content (its mask
+    // is the object's shape and may be tighter than the selection's); otherwise only reuse a
+    // remembered copy when it has the same shape.
     if (
       held &&
       held.width === selection.width &&
       held.height === selection.height &&
-      Boolean(held.mask) === Boolean(selection.mask) &&
-      (!held.mask || !selection.mask || held.mask.length === selection.mask.length)
+      (selectionFloatingRef.current ||
+        (Boolean(held.mask) === Boolean(selection.mask) &&
+          (!held.mask || !selection.mask || held.mask.length === selection.mask.length)))
     ) {
       return cloneClipboard(held)
     }
-    return extractRect(
+    return extractObject(
       image().data,
       selection,
       canvasWidthRef.current,
       canvasHeightRef.current,
+      hexToRgb(paletteRef.current[0] ?? PIXEL_PAPER),
     )
   }
 
@@ -2139,6 +2182,7 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
     const w = canvasWidthRef.current
     const h = canvasHeightRef.current
     const floating = liftSelectionClipboard(selection)
+    if (!selectionFloatingRef.current && clipboardIsEmpty(floating)) return false
     if (!selectionFloatingRef.current) {
       pushUndo()
       clearRectToPaper(image().data, selection, w, h)
@@ -2193,6 +2237,7 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
         palette: [...paletteRef.current],
         layers: cloneLayers(layersRef.current),
         groups: cloneGroups(groupsRef.current),
+        activeIndex: activeLayerIndexRef.current,
       }
     },
     exportPng: () => {
@@ -2226,6 +2271,44 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
     },
     fit: () => applyZoomRef.current("fit"),
     getZoom: () => zoomRef.current,
+    getViewSnapshot: () => ({
+      canvasWidth: canvasWidthRef.current,
+      canvasHeight: canvasHeightRef.current,
+      viewWidth: sizeRef.current.width,
+      viewHeight: sizeRef.current.height,
+      originX: cameraRef.current.originX,
+      originY: cameraRef.current.originY,
+      scale: cameraRef.current.scale,
+    }),
+    drawPreview: (ctx, destWidth, destHeight) => {
+      const src = bufferRef.current ?? displayRef.current
+      const canvasW = canvasWidthRef.current
+      const canvasH = canvasHeightRef.current
+      if (!src || canvasW < 1 || canvasH < 1 || destWidth < 1 || destHeight < 1) return false
+      const scale = Math.min(destWidth / canvasW, destHeight / canvasH)
+      const dw = Math.max(1, Math.floor(canvasW * scale))
+      const dh = Math.max(1, Math.floor(canvasH * scale))
+      const ox = Math.floor((destWidth - dw) / 2)
+      const oy = Math.floor((destHeight - dh) / 2)
+      ctx.imageSmoothingEnabled = false
+      ctx.fillStyle = "#f4f1e8"
+      ctx.fillRect(0, 0, destWidth, destHeight)
+      ctx.drawImage(src, 0, 0, canvasW, canvasH, ox, oy, dw, dh)
+      return true
+    },
+    centerOnCell: (x, y) => {
+      const { width: viewW, height: viewH } = sizeRef.current
+      const scale = cameraRef.current.scale
+      const dpr = currentDpr()
+      const originX = viewW / 2 - (x + 0.5) * scale
+      const originY = viewH / 2 - (y + 0.5) * scale
+      cameraRef.current = {
+        scale,
+        ...snapOriginToDevicePixels(originX, originY, dpr),
+      }
+      if (zoomRef.current === "fit") emitZoom(scale)
+      scheduleView()
+    },
     clearCanvas: () => {
       placedTextsRef.current = []
       cancelTextFrame()
@@ -2277,6 +2360,47 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
     expandSelection: () => expandSelectionRef.current(),
     contractSelection: () => contractSelectionRef.current(),
     hasSelection: () => selectionRef.current !== null,
+    getSelectionBounds: () => {
+      const sel = selectionRef.current
+      return sel ? { x: sel.x, y: sel.y, width: sel.width, height: sel.height } : null
+    },
+    applyTransform: (request) => {
+      ensureSelectionCommitted()
+      syncActiveFromImage()
+      const layers = layersRef.current
+      const result = transformDocument(
+        {
+          width: canvasWidthRef.current,
+          height: canvasHeightRef.current,
+          palette: paletteRef.current,
+          layers,
+          activeIndex: activeLayerIndexRef.current,
+        },
+        request,
+      )
+      const summary = {
+        changed: result.changed,
+        addedColors: result.addedColors,
+        approximatedColors: result.approximatedColors,
+        skipped: result.skipped,
+      }
+      if (!result.changed) return summary
+      pushUndo()
+      result.layerIndices.forEach((indices, index) => {
+        if (indices) layers[index]!.indices = indices
+      })
+      growPaletteFromMerge({
+        palette: result.palette,
+        added: result.addedColors,
+        approximated: result.approximatedColors,
+      })
+      setSelection(null)
+      loadActiveIntoImage()
+      emitLayers()
+      schedule()
+      onStrokeEnd?.()
+      return summary
+    },
     getBrushTip: (source) =>
       source === "selection"
         ? brushMaskFromSelection(selectionRef.current)
@@ -2936,6 +3060,7 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
       return tag === "INPUT" || tag === "TEXTAREA" || target.isContentEditable
     }
     const onKeyDown = (event: KeyboardEvent) => {
+      if (event.defaultPrevented || document.querySelector("dialog[open]")) return
       if (typing(event.target)) return
       if (event.code === "Space" && !event.repeat) {
         event.preventDefault()
@@ -3254,7 +3379,9 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
   }
 
   const sampleColorAt = (cell: { x: number; y: number }) => {
-    const rgb = getPixelRgb(image().data, cell.x, cell.y, canvasWidthRef.current, canvasHeightRef.current)
+    const w = canvasWidthRef.current
+    const h = canvasHeightRef.current
+    const rgb = getPixelRgb(compositeImage().data, cell.x, cell.y, w, h)
     if (!rgb) return
     chooseColor(rgbToHex(rgb))
   }
@@ -3265,29 +3392,43 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
     image().data.set(base)
   }
 
-  const paintShapePreview = (end: { x: number; y: number }) => {
+  const paintShapePreview = (end: { x: number; y: number }, snapAxis = false) => {
     const start = shapeStartRef.current
     if (!start) return
     restoreShapeBase()
     if (toolRef.current !== "eraser") adoptColor(colorRef.current)
     const rgb = paintColor()
-    const x1 = end.x
-    const y1 = end.y
+    let x1 = end.x
+    let y1 = end.y
+    if (snapAxis && (toolRef.current === "line" || toolRef.current === "gradient")) {
+      const snapped = constrainAxisEnd(start.x, start.y, x1, y1)
+      x1 = snapped.x
+      y1 = snapped.y
+    }
     const w = canvasWidthRef.current
     const h = canvasHeightRef.current
     const pixels = image().data
     const clip = selectionRef.current
-    const strokeSize = toolRef.current === "gradient" ? 1 : brushRef.current
     if (toolRef.current === "line") {
       strokeBrushLine(pixels, start.x, start.y, x1, y1, rgb, brushRef.current, w, h, "circle", clip)
-    } else if (toolRef.current === "gradient") {
-      strokeBrushLine(pixels, start.x, start.y, x1, y1, rgb, 1, w, h, "square", clip)
+      const next = dirtyRectForSegment(start.x, start.y, x1, y1, brushRef.current, w, h)
+      const prev = shapePreviewDirtyRef.current
+      const dirty = next && prev ? unionDirtyRect(prev, next) : (next ?? prev)
+      shapePreviewDirtyRef.current = next
+      if (dirty) scheduleRect(dirty)
+      return
     }
-    const next = dirtyRectForSegment(start.x, start.y, x1, y1, strokeSize, w, h)
-    const prev = shapePreviewDirtyRef.current
-    const dirty = next && prev ? unionDirtyRect(prev, next) : (next ?? prev)
-    shapePreviewDirtyRef.current = next
-    if (dirty) scheduleRect(dirty)
+    if (toolRef.current === "gradient") {
+      const stops = linearGradientStops(hexToRgb(colorRef.current), hexToRgb(PIXEL_PAPER))
+      fillLinearGradient(pixels, start.x, start.y, x1, y1, stops, w, h, clip ?? undefined)
+      const next = clip
+        ? { x: clip.x, y: clip.y, width: clip.width, height: clip.height }
+        : { x: 0, y: 0, width: w, height: h }
+      const prev = shapePreviewDirtyRef.current
+      const dirty = prev ? unionDirtyRect(prev, next) : next
+      shapePreviewDirtyRef.current = next
+      if (dirty) scheduleRect(dirty)
+    }
   }
 
   const hitShapeCorner = (
@@ -3339,6 +3480,7 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
     const w = canvasWidthRef.current
     const h = canvasHeightRef.current
     const floating = liftSelectionClipboard(selection)
+    if (!selectionFloatingRef.current && clipboardIsEmpty(floating)) return
     if (!selectionFloatingRef.current) {
       pushUndo()
       clearRectToPaper(image().data, selection, w, h)
@@ -3378,6 +3520,7 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
     )
     if (nextX === selection.x && nextY === selection.y) return
     const floating = liftSelectionClipboard(selection)
+    if (!selectionFloatingRef.current && clipboardIsEmpty(floating)) return
     if (!selectionFloatingRef.current) {
       pushUndo()
       clearRectToPaper(image().data, selection, w, h)
@@ -3398,6 +3541,7 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
     const w = canvasWidthRef.current
     const h = canvasHeightRef.current
     const floating = liftSelectionClipboard(selection)
+    if (!selectionFloatingRef.current && clipboardIsEmpty(floating)) return
     if (!selectionFloatingRef.current) {
       pushUndo()
       clearRectToPaper(image().data, selection, w, h)
@@ -3452,6 +3596,7 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
   const beginSelectionMove = (cell: PixelPoint, selection: PixelSelection) => {
     selectMutatedRef.current = true
     const floating = liftSelectionClipboard(selection)
+    if (!selectionFloatingRef.current && clipboardIsEmpty(floating)) return
     if (!selectionFloatingRef.current) {
       pushUndo()
       clearRectToPaper(image().data, selection, canvasWidthRef.current, canvasHeightRef.current)
@@ -4048,7 +4193,7 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
     }
 
     if (shapeStartRef.current) {
-      paintShapePreview(cellFromEvent(event))
+      paintShapePreview(cellFromEvent(event), event.shiftKey)
       return
     }
 
@@ -4061,31 +4206,26 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
       paintStrokeFromPointerEvent(event)
     }
     const cell = cellFromEvent(event)
+    if (toolRef.current === "line" && shapeStartRef.current) {
+      paintShapePreview(cell, event.shiftKey)
+    }
     if (toolRef.current === "gradient" && shapeStartRef.current && shapeBaseRef.current) {
       const start = shapeStartRef.current
       restoreShapeBase()
-      if (start.x !== cell.x || start.y !== cell.y) {
+      const end = event.shiftKey ? constrainAxisEnd(start.x, start.y, cell.x, cell.y) : cell
+      if (start.x !== end.x || start.y !== end.y) {
         pushUndo()
         const from = hexToRgb(colorRef.current)
-        const to = hexToRgb(PIXEL_PAPER)
-        const stops: Array<[number, number, number]> = []
-        for (let i = 0; i < 8; i += 1) {
-          const t = i / 7
-          const rgb: [number, number, number] = [
-            Math.round(from[0] + (to[0] - from[0]) * t),
-            Math.round(from[1] + (to[1] - from[1]) * t),
-            Math.round(from[2] + (to[2] - from[2]) * t),
-          ]
+        const stops = linearGradientStops(from, hexToRgb(PIXEL_PAPER)).map((rgb) => {
           const hex = rgbToHex(rgb)
-          if (adoptColor(hex)) stops.push(hexToRgb(hex))
-          else stops.push(from)
-        }
+          return adoptColor(hex) ? hexToRgb(hex) : from
+        })
         fillLinearGradient(
           image().data,
           start.x,
           start.y,
-          cell.x,
-          cell.y,
+          end.x,
+          end.y,
           stops,
           canvasWidthRef.current,
           canvasHeightRef.current,

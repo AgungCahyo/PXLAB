@@ -5,6 +5,7 @@ type InputProps = InputHTMLAttributes<HTMLInputElement> & {
   label?: ReactNode;
   hint?: ReactNode;
   error?: ReactNode;
+  appearance?: "default" | "social";
 };
 
 export function Input({
@@ -13,6 +14,7 @@ export function Input({
   hint,
   error,
   id,
+  appearance = "default",
   ...props
 }: InputProps) {
   const describedBy = [
@@ -34,10 +36,17 @@ export function Input({
         aria-invalid={error ? true : undefined}
         aria-describedby={describedBy}
         className={cn(
-          "min-h-11 w-full border-[3px] bg-bg px-3 text-[15px] text-fg placeholder:text-muted",
-          "transition-[box-shadow,border-color] duration-150",
-          "focus-visible:border-fg focus-visible:outline-none focus-visible:shadow-[4px_4px_0_0_var(--fg)]",
-          error ? "border-brick" : "border-earth",
+          "min-h-11 w-full px-3 text-[15px] text-fg placeholder:text-muted",
+          appearance === "social"
+            ? cn(
+                "border bg-soft focus-visible:border-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky",
+                error ? "border-brick" : "border-[color:var(--soc-hairline)]",
+              )
+            : cn(
+                "border-[3px] bg-bg transition-[box-shadow,border-color] duration-150",
+                "focus-visible:border-fg focus-visible:outline-none focus-visible:shadow-[4px_4px_0_0_var(--fg)]",
+                error ? "border-brick" : "border-earth",
+              ),
           className,
         )}
         {...props}

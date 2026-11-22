@@ -4,31 +4,51 @@ import { describe, expect, it } from "vitest"
 
 const read = (p: string) => readFileSync(path.resolve(__dirname, "..", p), "utf8")
 
-describe("Explore discovery bands live inside the feed", () => {
+describe("Explore keeps three distinct discovery sections", () => {
   const page = read("app/[lang]/(public)/explore/page.tsx")
+  const creators = read("components/creations/NewCreatorsStrip.tsx")
+  const quiet = read("components/creations/QuietRack.tsx")
 
-  it("never renders the quiet rack or creators strip below the infinite feed", () => {
-    // They are passed as `interludes` to the gallery, not rendered after it.
-    expect(page).toMatch(/interludes/)
-    expect(page).toMatch(/QuietRackSlot/)
-    expect(page).toMatch(/NewCreatorsSlot/)
-    const afterResults = page.slice(page.indexOf("</Suspense>", page.indexOf("<ExploreResults")))
-    const jsxAfter = afterResults.slice(0, afterResults.indexOf("async function ExploreResults"))
-    expect(jsxAfter).not.toMatch(/<QuietRackSlot|<NewCreatorsSlot/)
+  it("renders Karya, Kreator baru and Karya yang masih sepi in that order", () => {
+    const works = page.indexOf("explore-works-heading")
+    const newCreators = page.indexOf("new-creators-heading")
+    const quietWorks = page.indexOf("quiet-rack-heading")
+    expect(works).toBeGreaterThan(-1)
+    expect(newCreators).toBeGreaterThan(works)
+    expect(quietWorks).toBeGreaterThan(newCreators)
   })
 
-  it("only shows bands in the unfiltered discovery view", () => {
-    expect(page).toMatch(/showDiscovery\s*\?\s*\[/)
+  it("only shows the creator and quiet sections in the unfiltered discovery view", () => {
+    expect(page).toMatch(/const showDiscovery\s*=/)
+    expect(page).toMatch(/\{showDiscovery \? \(/)
+    expect(page).toMatch(/<NewCreatorsSlot/)
+    expect(page).toMatch(/<QuietRackSlot/)
   })
 
-  it("band positions are multiples of 5 so mosaic blocks stay aligned", () => {
-    const positions = [...page.matchAll(/at:\s*(\d+)/g)].map((m) => Number(m[1]))
-    expect(positions.length).toBeGreaterThan(0)
-    for (const at of positions) expect(at % 5).toBe(0)
+  it("keeps the artwork mosaic and its pagination untouched", () => {
+    const infinite = read("components/social/ExploreInfinite.tsx")
+    expect(page).toMatch(/<ExploreGallery/)
+    expect(page).not.toMatch(/interludes=/)
+    expect(infinite).toMatch(/segmentWithBands/)
+    expect(infinite).toMatch(/useInfiniteList/)
+  })
+
+  it("gives each section its own quiet empty state", () => {
+    expect(creators).toMatch(/DiscoveryNote/)
+    expect(creators).toMatch(/discoveryCreatorsEmpty\[lang\]/)
+    expect(quiet).toMatch(/DiscoveryNote/)
+    expect(quiet).toMatch(/discoveryQuietEmpty\[lang\]/)
+    expect(page).toMatch(/discoveryWorksTitle\[lang\]/)
+  })
+
+  it("only offers See all where the existing navigation supports it", () => {
+    expect(creators).toMatch(/newCreatorsSeeAll\[lang\]/)
+    expect(creators).toMatch(/\/creators/)
+    expect(quiet).not.toMatch(/newCreatorsSeeAll|Lihat semua/)
   })
 
   it("the old confusing label is gone from the UI", () => {
-    expect(read("components/creations/QuietRack.tsx")).not.toMatch(/quietRackTitle/)
+    expect(quiet).not.toMatch(/quietRackTitle/)
     expect(read("lib/copy-social.ts")).toMatch(/Tulis catatan pertama/)
   })
 
