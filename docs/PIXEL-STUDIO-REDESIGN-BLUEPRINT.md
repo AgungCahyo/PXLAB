@@ -80,7 +80,7 @@ Commons **sudah** punya engine pixel-perfect, undo 32, draft LS/IDB, publish RLE
 
 ## 2. Rancangan struktur komponen baru
 
-Shell situs **tidak** terlihat di studio (`body.playground-open` + `fixed inset-0` — sudah). Jangan mengembalikan `md:top-[66px]`.
+Shell situs tertutup oleh overlay studio sendiri (`fixed inset-0 z-[60]`), bukan lewat selector `body:has(...)` — selector itu bisa tetap cocok saat React menahan route lama sampai view transition selesai. Jangan mengembalikan `md:top-[66px]`.
 
 ```
 Buat Karya (dashboard / nav / /create)

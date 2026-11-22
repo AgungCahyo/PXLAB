@@ -35,7 +35,7 @@ describe("Pixel World backdrop", () => {
     expect(world).toMatch(/scene === "playground"/)
   })
 
-  it("uses soft Paper atmosphere CSS and hides on playground chrome", () => {
+  it("uses soft Paper atmosphere CSS and keeps playground route-independent", () => {
     expect(css).toMatch(/\.pixel-world/)
     expect(css).toMatch(/pixel-world-sky/)
     expect(css).toMatch(/pixel-world-ground/)
@@ -46,8 +46,9 @@ describe("Pixel World backdrop", () => {
     expect(css).not.toMatch(/#c84c0c/)
     expect(css).toMatch(/pixel-world-drift/)
     expect(css).toMatch(/pixel-world-bob/)
-    expect(css).toMatch(/data-chrome="playground"\]\) \.pixel-world/)
-    expect(css).toMatch(/data-chrome="studio"\]\) \.pixel-world/)
+    expect(css).not.toMatch(/body:has\(\[data-chrome="playground"\]\) \.pixel-world/)
+    // Text/idea studio stays inside the shell, so only its backdrop is hidden.
+    expect(css).toMatch(/body:has\(\[data-chrome="studio"\]\) \.pixel-world/)
     expect(css).toMatch(/prefers-reduced-motion[\s\S]*pixel-world-bob/)
   })
 })

@@ -76,23 +76,12 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-body.playground-open {
-  overflow: hidden;
-}
-
-body.playground-open footer,
-body:has([data-chrome="studio"]) footer,
-body:has([data-chrome="playground"]) footer,
-body.playground-open .app-tabbar,
-body:has([data-chrome="playground"]) .app-tabbar {
-  display: none;
-}
-
-/* Studio owns the viewport — hide global site header (keep playground-header). */
-body.playground-open .site-header,
-body:has([data-chrome="playground"]) .site-header {
-  display: none;
-}
+/* Playground chrome is local to its fullscreen overlay (`fixed inset-0 z-[60]`).
+ * Do NOT hide the nav/scroll from `body:has([data-chrome="playground"])`:
+ * React keeps the old route mounted until `viewTransition.finished`, so a body
+ * selector can leave the nav hidden and the document scroll-locked after exit.
+ * The text/idea studio stays inside the shell; those rules are separate below.
+ */
 
 /*
  * Studio density tokens — comfortable on desktop, compact on small screens.
@@ -497,21 +486,21 @@ body:has([data-chrome="playground"]) .site-header {
   animation: pixel-world-twinkle 1.5s steps(2) infinite;
 }
 
-body.playground-open .pixel-world,
-body:has([data-chrome="playground"]) .pixel-world,
+/* Text/idea studio stays in the shell, so its footer/background can still be
+ * hidden by route; these rules never touch nav, scrolling, or hit-testing. */
+body:has([data-chrome="studio"]) footer,
 body:has([data-chrome="studio"]) .pixel-world {
   display: none;
 }
 
-/* Studio embeds its own mark above the stage — hide the shell copy to avoid doubles. */
-body.playground-open .corner-busy-shell,
+/* Playground embeds its own mark above the stage — hide the shell copy to avoid
+ * doubles. This only affects a decorative indicator, never shell interactivity. */
 body:has([data-chrome="playground"]) .corner-busy-shell {
   display: none;
 }
 
 /* Studio has no tab bar — pin the in-studio mark to the true corner. */
-body.playground-open .corner-busy-studio,
-body:has([data-chrome="playground"]) .corner-busy-studio {
+[data-chrome="playground"] .corner-busy-studio {
   bottom: max(1rem, env(safe-area-inset-bottom, 0px));
   right: max(0.75rem, env(safe-area-inset-right, 0px));
 }
@@ -766,14 +755,15 @@ body:has([data-chrome="playground"]) .corner-busy-studio {
 
 /*
  * Social shell — desktop left rail for members (SocialNav).
- * The rail is a `.site-header`, so the Studio rules above already hide it while drawing;
- * the offset below is skipped for the playground so Studio layout stays untouched.
+ * The rail is a `.site-header`; the fullscreen studio overlay covers it, so the
+ * offset can stay keyed only to the persistent shell (not to studio DOM that
+ * React may retain during a view transition).
  */
 @media (min-width: 48rem) {
-  body:has(.social-rail):not(.playground-open):not(:has([data-chrome="playground"])) .shell-content {
+  body:has(.social-rail) .shell-content {
     padding-left: 15rem;
   }
-  body:has(.social-rail):not(.playground-open):not(:has([data-chrome="playground"])) #main {
+  body:has(.social-rail) #main {
     padding-top: 0;
   }
 }

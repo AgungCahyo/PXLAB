@@ -14,6 +14,7 @@ import {
   type BrushOptions,
 } from "@/lib/pixel-brush"
 import { clampLayerOpacity, isPixelBlendMode, type PixelBlendMode } from "@/lib/pixel-blend"
+import { type PixelFillPattern } from "@/lib/pixel-pattern"
 import { PixelHistory, type HistoryFrame } from "@/lib/pixel-history"
 import {
   assignLayerToGroup as assignLayerToGroupModel,
@@ -296,6 +297,14 @@ function paletteFromSource(source: PixelSource | null) {
 export type PixelBoardHandle = {
   exportSource: () => PixelSource
   exportPng: () => Promise<Blob>
+  /** Snapshot of layers, groups and palette for the export dialog (selection committed first). */
+  getExportDocument: () => {
+    width: number
+    height: number
+    palette: string[]
+    layers: PixelLayerRuntime[]
+    groups: PixelGroupRuntime[]
+  }
   undo: () => void
   redo: () => void
   zoomBy: (direction: 1 | -1) => void
@@ -399,6 +408,8 @@ export type PixelBoardProps = {
   symmetry?: PixelSymmetry
   /** Max channel delta for the fill tool. 0 matches the clicked color exactly. */
   fillTolerance?: number
+  /** Pattern for the fill tool; default solid. */
+  fillPattern?: PixelFillPattern
   /** Marquee shape for the box-select tool. */
   selectShape?: "rect" | "ellipse"
   /** Opacity, flow, hardness, spacing, pressure and custom tip for pencil/circle/eraser. */
@@ -439,6 +450,7 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
     gridVisible: gridVisibleProp,
     symmetry: symmetryProp,
     fillTolerance: fillToleranceProp,
+    fillPattern: fillPatternProp,
     selectShape: selectShapeProp,
     brushOptions: brushOptionsProp,
     onToolChange,
@@ -625,6 +637,7 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
   const expandSelectionRef = useRef<() => void>(() => {})
   const contractSelectionRef = useRef<() => void>(() => {})
   const fillToleranceRef = useRef(0)
+  const fillPatternRef = useRef<PixelFillPattern>("solid")
   const brushOptionsRef = useRef<BrushOptions>(DEFAULT_BRUSH_OPTIONS)
   const brushStrokeRef = useRef<BrushStroke | null>(null)
   const strokePressureRef = useRef(1)
@@ -682,6 +695,7 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
   gridRef.current = gridVisible
   symmetryRef.current = symmetry
   fillToleranceRef.current = clampFillTolerance(fillToleranceProp ?? fillToleranceUi)
+  fillPatternRef.current = fillPatternProp ?? "solid"
   brushOptionsRef.current = brushOptionsProp ? clampBrushOptions(brushOptionsProp) : DEFAULT_BRUSH_OPTIONS
   selectShapeRef.current = selectShapeProp ?? selectShapeUi
 
@@ -2170,6 +2184,17 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
         groupsRef.current,
       )
     },
+    getExportDocument: () => {
+      ensureSelectionCommitted()
+      syncActiveFromImage()
+      return {
+        width: canvasWidthRef.current,
+        height: canvasHeightRef.current,
+        palette: [...paletteRef.current],
+        layers: cloneLayers(layersRef.current),
+        groups: cloneGroups(groupsRef.current),
+      }
+    },
     exportPng: () => {
       ensureSelectionCommitted()
       const buffer = bufferRef.current
@@ -3532,6 +3557,7 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
             clip,
             tolerance,
             bounds,
+            fillPatternRef.current,
           )
         : floodFill(
             image().data,
@@ -3543,6 +3569,7 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
             clip,
             tolerance,
             bounds,
+            fillPatternRef.current,
           )
       if (painted > 0 || paletteRef.current !== paletteBefore) {
         historyRef.current.push(before)

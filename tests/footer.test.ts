@@ -17,11 +17,16 @@ describe("app footer", () => {
     expect(footer).not.toMatch(/GroundStrip/)
   })
 
-  it("stays off the studio", () => {
-    expect(css).toMatch(/data-chrome="studio"/)
-    expect(css).toMatch(/data-chrome="playground"/)
+  it("stays behind the overlay, not hidden by a playground body selector", () => {
+    // Text/idea studio remains inside the shell, so its footer can be hidden
+    // by route. Playground must never use a body selector: it can linger during
+    // a view transition and hide the destination chrome too.
+    expect(css).toMatch(/body:has\(\[data-chrome="studio"\]\) footer/)
+    expect(css).not.toMatch(/body:has\(\[data-chrome="playground"\]\) footer/)
     expect(read("app/[lang]/(member)/create/page.tsx")).not.toMatch(/data-chrome=/)
     expect(read("app/[lang]/(member)/create/[id]/page.tsx")).toMatch(/data-chrome="studio"/)
-    expect(read("components/creations/PlaygroundForm.tsx")).toMatch(/data-chrome="playground"/)
+    const playground = read("components/creations/PlaygroundForm.tsx")
+    expect(playground).toMatch(/data-chrome="playground"/)
+    expect(playground).toMatch(/fixed inset-0 z-\[60\]/)
   })
 })

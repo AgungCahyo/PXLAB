@@ -40,6 +40,7 @@ export function StudioInspector({
   fillTolerance = 0,
   onFillTolerance,
   brushOptionsPanel,
+  fillPatternPanel,
   selectShape = "rect",
   onSelectShape,
   onInvertSelection,
@@ -82,6 +83,8 @@ export function StudioInspector({
   onFillTolerance?: (value: number) => void
   /** Opacity/flow/hardness/spacing/pressure/tip controls for freehand brushes. */
   brushOptionsPanel?: ReactNode
+  /** Pattern picker for the fill tool. */
+  fillPatternPanel?: ReactNode
   selectShape?: "rect" | "ellipse"
   onSelectShape?: (shape: "rect" | "ellipse") => void
   onInvertSelection?: () => void
@@ -328,6 +331,7 @@ export function StudioInspector({
               onChange={(event) => onFillTolerance?.(Number(event.target.value))}
               className="w-full"
             />
+            {tool === "fill" ? fillPatternPanel : null}
             {tool === "fill" ? (
               <p className="text-[length:var(--studio-meta,0.75rem)] leading-relaxed text-muted">
                 {copy.pixelFillGlobalHint[lang]}

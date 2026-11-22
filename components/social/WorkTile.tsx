@@ -38,7 +38,16 @@ export function WorkTile({
   const profileHref = href(lang, `/u/${creation.author.username}`)
 
   return (
-    <article className={cn("group relative h-full min-w-0 overflow-hidden bg-soft", className)}>
+    <article
+      className={cn(
+        "group relative min-w-0 overflow-hidden bg-soft",
+        // Default tiles must size themselves: landing/profile grids have no
+        // explicit row height, so `h-full` collapses them to zero. Large mosaic
+        // tiles live in MosaicGrid, whose auto-rows already define their height.
+        large ? "h-full" : "aspect-square",
+        className,
+      )}
+    >
       <Link
         href={href(lang, `/creation/${creation.id}`)}
         aria-label={

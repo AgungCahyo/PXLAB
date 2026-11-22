@@ -208,8 +208,22 @@ export function LayerPanel({
                   className={cn(
                     "flex items-center gap-1.5 border-[3px] border-earth bg-soft px-1.5 py-1",
                     !group.visible && "opacity-55",
+                    dragId !== null && dropId === `group:${group.id}` && "border-dashed border-fg bg-card",
                   )}
                   aria-label={`${copy.pixelGroup[lang]}: ${group.name}`}
+                  onDragOver={(event) => {
+                    if (!dragId) return
+                    event.preventDefault()
+                    setDropId(`group:${group.id}`)
+                  }}
+                  onDragLeave={() => setDropId((current) => (current === `group:${group.id}` ? null : current))}
+                  onDrop={(event) => {
+                    event.preventDefault()
+                    const moving = dragId
+                    setDragId(null)
+                    setDropId(null)
+                    if (moving && groupApi.onAssign(moving, group.id)) onFeedback?.("reordered")
+                  }}
                 >
                   <button
                     type="button"

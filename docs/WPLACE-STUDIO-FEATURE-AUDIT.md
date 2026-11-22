@@ -39,7 +39,7 @@ Jangan menyalin identitas, aset, atau kode proprietary Wplace. Hanya prinsip wor
 | `/[lang]/create/[id]` | `…/create/[id]/page.tsx` | `PlaygroundForm` untuk `type === "pixel"` |
 | `/[lang]/creation/[id]` | detail publik | Edit → `/create/[id]`; unduh PNG resmi |
 
-Tidak ada route terpisah bernama “playground”. Shell: `data-chrome="playground"`, full-viewport (`fixed inset-0`); site header + tabbar + footer disembunyikan (`body.playground-open`) di semua breakpoint — navigasi keluar lewat chrome studio (Kembali).
+Tidak ada route terpisah bernama “playground”. Shell: `data-chrome="playground"`, full-viewport (`fixed inset-0 z-[60]`); site header + tabbar + footer tertutup oleh overlay studio itu sendiri, bukan disembunyikan lewat `body:has(...)` (selector itu tetap cocok saat React menahan route lama sampai view transition selesai) — navigasi keluar lewat chrome studio (Kembali).
 
 ### 2.2 Rendering engine
 

@@ -1,5 +1,6 @@
 /** Shared pixel math for the Playground and the local Space prototype. */
 import { glyphRows, PIXEL_FONT_H, PIXEL_FONT_LEADING, PIXEL_FONT_TRACK, PIXEL_FONT_W } from "@/lib/pixel-font"
+import { patternHit, type PixelFillPattern } from "@/lib/pixel-pattern"
 import {
   blendChannel,
   blendOverPixel,
@@ -669,6 +670,7 @@ export function floodFill(
   clip?: PixelSelection | null,
   tolerance = 0,
   bounds?: FillBounds | null,
+  pattern: PixelFillPattern = "solid",
 ) {
   if (!inCanvas(startX, startY, width, height)) return 0
   if (clip && !pointInSelection(startX, startY, clip)) return 0
@@ -680,7 +682,10 @@ export function floodFill(
   const tol = clampFillTolerance(tolerance)
   if (tol === 0 && tr === r && tg === g && tb === b) return 0
 
-  const visited = tol > 0 ? new Uint8Array(width * height) : null
+  // A pattern leaves some region cells unpainted, so painted cells can no longer double as the
+  // visited set: use an explicit mask. The region itself is found exactly as for a solid fill.
+  const patterned = pattern !== "solid"
+  const visited = tol > 0 || patterned ? new Uint8Array(width * height) : null
   const matches = (x: number, y: number) => {
     const index = y * width + x
     if (visited && visited[index]) return false
@@ -712,13 +717,15 @@ export function floodFill(
     while (x < width && matches(x, y)) {
       const index = y * width + x
       if (visited) visited[index] = 1
-      const i = index * 4
-      pixels[i] = r
-      pixels[i + 1] = g
-      pixels[i + 2] = b
-      pixels[i + 3] = 255
-      noteFillBounds(bounds, x, y)
-      painted += 1
+      if (!patterned || patternHit(pattern, x, y)) {
+        const i = index * 4
+        pixels[i] = r
+        pixels[i + 1] = g
+        pixels[i + 2] = b
+        pixels[i + 3] = 255
+        noteFillBounds(bounds, x, y)
+        painted += 1
+      }
       if (y > 0) {
         const up = matches(x, y - 1)
         if (up && !spanUp) push(x, y - 1)
@@ -749,6 +756,7 @@ export function replaceMatchingColor(
   clip?: PixelSelection | null,
   tolerance = 0,
   bounds?: FillBounds | null,
+  pattern: PixelFillPattern = "solid",
 ) {
   if (!inCanvas(startX, startY, width, height)) return 0
   if (clip && !pointInSelection(startX, startY, clip)) return 0
@@ -773,6 +781,7 @@ export function replaceMatchingColor(
           ? pixels[i] === tr && pixels[i + 1] === tg && pixels[i + 2] === tb
           : withinFillTolerance(pixels, i, tr, tg, tb, tol)
       if (!hit) continue
+      if (pattern !== "solid" && !patternHit(pattern, x, y)) continue
       if (pixels[i] === r && pixels[i + 1] === g && pixels[i + 2] === b) continue
       pixels[i] = r
       pixels[i + 1] = g

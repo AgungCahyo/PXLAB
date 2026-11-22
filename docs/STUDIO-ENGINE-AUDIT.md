@@ -52,8 +52,8 @@ Audited commit: `main` (shallow clone, Nov 19 2026). Baseline: 340/342 tests pas
 | M5 | Fill: tolerance, global replace, selection clip; selection invert/expand/contract/ellipse | **Done** |
 | M6 | Brush engine: opacity/flow/hardness/spacing, pressure, custom tips | **Done** (not browser-verified) |
 | M7a | Layer opacity, 14 blend modes, transparency lock, V3 source + migration, blend-aware merge | **Done** (not browser-verified) |
-| M7b | Layer groups | Next |
-| M8 | Export: JPEG/WebP, per-layer, spritesheet, previews | |
+| M7b | Layer groups (one level), V4 source, isolated group compositing | **Done** (not browser-verified) |
+| M8 | Export: JPEG/WebP, GIF, sprite sheet, per-layer ZIP, scaling, preview | **Done** (browser encoder not verified) |
 | M9 | Transform: scale/rotate preview, resize/crop with interpolation options | |
 
 ## 6. M1 benchmark (vitest, Node, same machine)
@@ -164,3 +164,61 @@ Design choice: layers are palette indices, so real blending would add a palette 
 - The colour-usage histogram from a saved document counts the top painted index and ignores opacity and blend.
 - M7b groups: not started. A group needs an isolated sub-composite plus tree-aware move, delete, merge and history, so it is its own milestone.
 - Not verified in a browser.
+
+## 14. M7b: layer groups (V4)
+
+**Model** (`lib/pixel-groups.ts`, pure). One level only (no nesting). Layers stay in one flat stack; `layer.group` names the group. Invariant: a group's members are contiguous. A group has a name, visibility, opacity, blend mode and a UI-only `collapsed` flag.
+- Moving a layer decides its group from where it lands: between two members it joins, still touching its own group it stays, anywhere else it leaves. Property test: 60 random sequences of 80 operations keep the layout valid.
+- Operations: create from a layer, assign (moved next to the run), remove (a middle member is lifted above the run), ungroup, move a whole group past a layer or group, group style. Empty groups disappear.
+- Merge down works only inside one group or between two ungrouped layers. Merge visible respects hidden groups and never drops the merged layer inside a group run.
+
+**Compositing.** A group composites its members in isolation into an RGB + alpha buffer, then blends onto what is below with the group opacity and blend. A normal 100% group of plain layers renders identically to the flat stack; a lone member at opacity X in a normal group renders identically to the ungrouped layer at X; a multiply member does not see layers outside its group. Hidden and 0% groups hide members in compositor, flatten and merge. Dirty-rect compositing matches the full composite with groups. Merging visible layers with groups reproduces the displayed image exactly. Cost (512x512, 4 layers): flat 11.0 ms, plain group 9.1 ms, isolated group 24.2 ms.
+
+**Format V4.** V3 plus `groups` and `layer.group`; written only when a group exists. The parser repairs rather than rejects (malformed records skipped, unknown references and split runs ungrouped, empty groups dropped). Version 5 is rejected. Older clients cannot open a V4 document.
+
+**History.** Frames carry groups and membership. Group slider drags coalesce (900 ms); collapsing is not an undo step.
+
+## 15. Drop a layer on a group header
+
+The group header row in the layer panel is now a drop target: dragging a layer onto it moves the layer into that group (next to the run, same rule as the group select). The header highlights with a dashed outline while hovering. Works on collapsed groups. Dropping a layer already in the group does nothing. The group select remains the keyboard and touch route.
+
+## 16. Pattern fill (`lib/pixel-pattern.ts`)
+
+- 10 patterns: solid, checker, dots, dither 25%, dither 75%, horizontal lines, vertical lines, diagonal, crosshatch, bricks. Patterns are anchored to canvas coordinates, so neighbouring fills tile seamlessly; dither 25% is a subset of dither 75% (ordered Bayer thresholds).
+- The pattern paints the current colour on the cells that hit it and leaves the other cells as they were. The fill region is found exactly as for a solid fill (tolerance, selection clip, contiguous or Shift-global), so the pattern does not cut the region up: a 1-cell corridor still fills end to end. A separate visited mask is used because unpainted cells can no longer double as "visited".
+- Solid is byte-identical to the previous behaviour. Pattern picker with an 8x8 preview in the inspector (fill tool) and the mobile tool row.
+- Not included: a second pattern colour. Use two fills (different pattern or colour) for two-colour patterns.
+- 10 tests (density, periodicity incl. negative coordinates, region equality with a reference, tolerance, clip, seamless tiling, global replace).
+
+## 17. M8: export engine and dialog
+
+**Where.** "Export…" in the studio's More panel opens `ExportDialog`. It snapshots the current document (selection committed first), shows a live preview with size and byte count, and downloads. The existing PNG download for saved creations is unchanged.
+
+**Formats** (`lib/pixel-export-engine.ts`, pure; only raster encoding is injected):
+| Format | Notes |
+|---|---|
+| PNG, WebP | transparent, paper or custom background; WebP quality |
+| JPEG | no alpha, so a transparent choice falls back to paper; quality |
+| GIF | one frame (the visible image) or every visible layer as a frame; delay, loop forever or once; transparent index; disposal 2 so frames never ghost |
+| Sprite sheet | visible layers as frames in a grid (columns or auto, gap in px); PNG, or a ZIP with the PNG and a JSON map (index, name, x, y, w, h, scale) |
+| Separate layers | ZIP with one PNG per layer (`01-Name.png`, safe unique names), optional layer opacity as alpha, optional hidden layers |
+
+**Scaling.** Any whole number from 1 up to the edge limit (2560 px); nearest-neighbour blocks only. Output over the limit is refused with a message instead of being cropped.
+
+**Fidelity.**
+- Composite exports use the editor's own compositor, so blends, opacity and groups match the screen (tested against the viewport compositor on random documents with blends and groups).
+- Transparent background removes Paper only where no layer painted. A painted cell that is Paper-coloured stays opaque; semi-transparent and blended cells are baked exactly as shown (against paper).
+- Layer exports render one layer on its own; blend mode and group do not apply to a lone layer.
+- GIF frames use palette indices directly (the document is already indexed), so there is no quantisation for layer frames. A flat GIF of a blended image with more than 255 colours keeps the most frequent colours and maps the rest to the nearest.
+- Layer-frame GIF with a full 256-colour palette needs one unused index for transparency; if every index is used it reports a palette error.
+
+**Encoders written for this milestone** (no dependencies): GIF89a with LZW (`lib/pixel-gif.ts`) and a store-only ZIP writer (`lib/pixel-zip.ts`). Verified three ways: an independent decoder written from the spec in the tests (round trip for palette sizes 2-256, dictionary overflow and clear-code reset), Pillow (3 frames, loop, 120 ms, transparent index, frame sizes) and `unzip -t` on real output. CRC-32 matches the standard check value.
+
+**Speed** (512x512, 8 layers, main thread, stub raster encoder): GIF with 8 layer frames 156 ms, flat GIF 48 ms, composite 25 ms, 8-frame sheet 29 ms. No worker was added because nothing needs it yet.
+
+**Tests.** 20 engine tests + 8 GIF/ZIP tests. Suite: 599 pass, 0 fail. `tsc` clean. Lint: no new errors.
+
+**Not verified / limits.**
+- The canvas encoder (`lib/pixel-export-canvas.ts`) and the dialog were not run in a browser. Browsers that cannot encode WebP return a PNG; that is detected and shown as an error instead of saving a PNG named .webp. Canvas may round semi-transparent colours slightly (layer-opacity-as-alpha export).
+- The document has no timeline, so "animation" means layers as frames. A real frame model would be its own milestone.
+- Nested folders in the ZIP, per-group export and animated WebP are not implemented.

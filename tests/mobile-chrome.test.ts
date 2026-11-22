@@ -29,14 +29,27 @@ describe("mobile chrome — R3", () => {
     expect(playground).toMatch(/fixed inset-0/)
     expect(playground).not.toMatch(/md:top-\[66px\]/)
     expect(playground).toMatch(/playground-toolbar/)
-    expect(css).toMatch(/\[data-chrome="playground"\]\) \.site-header/)
-    expect(css).toMatch(/body\.playground-open \.site-header/)
+    // Studio chrome must be local: a body-level `:has()` selector stays true
+    // while React retains the old route during a view transition, which hid
+    // the nav and locked the document after leaving the studio.
+    expect(css).not.toMatch(/body:has\(\[data-chrome="playground"\]\) \.site-header/)
+    expect(css).not.toMatch(/body:has\(\[data-chrome="playground"\]\) \.app-tabbar/)
+    expect(css).not.toMatch(/body:has\(\[data-chrome="playground"\]\) \{/)
+    expect(css).not.toMatch(/playground-open/)
+    expect(playground).not.toMatch(/classList\.(add|remove)\("playground-open"\)/)
+    expect(playground).toMatch(/const \[navigating, setNavigating\] = useState\(false\)/)
+    expect(playground).toMatch(/setNavigating\(true\)[\s\S]*router\.push/)
+    expect(playground).toMatch(/if \(navigating\) return null/)
+    // Only decorative busy state may be route-scoped; shell nav must never be.
+    expect(css).toMatch(/body:has\(\[data-chrome="playground"\]\) \.corner-busy-shell/)
     expect(css).toMatch(/\.playground-header[\s\S]*safe-area-inset-top/)
     expect(css).not.toMatch(
       /\[data-chrome="playground"\]\) header\s*\{/,
     )
     expect(playground).toMatch(/playground-header/)
     expect(playground).toMatch(/z-\[60\]/)
+    const busy = read("components/layout/CornerBusy.tsx")
+    expect(busy).not.toMatch(/pixelWorldSceneFromPath/)
   })
 
   it("closes zoom actions and keeps size start reachable with range errors", () => {

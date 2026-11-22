@@ -11,6 +11,9 @@ import {
   type Tool,
 } from "@/components/canvas/PixelBoard"
 import { BrushOptionsPanel } from "@/components/creations/BrushOptionsPanel"
+import { ExportDialog } from "@/components/creations/ExportDialog"
+import { FillPatternPicker } from "@/components/creations/FillPatternPicker"
+import type { PixelFillPattern } from "@/lib/pixel-pattern"
 import type { LayerGroupApi } from "@/components/creations/LayerGroupControls"
 import type { PixelGroupStylePatch } from "@/lib/pixel-groups"
 import { ColorPicker } from "@/components/creations/ColorPicker"
@@ -157,6 +160,8 @@ export function PlaygroundForm({
   const [hasSelection, setHasSelection] = useState(false)
   const [hasClipboard, setHasClipboard] = useState(false)
   const [fillTolerance, setFillTolerance] = useState(0)
+  const [fillPattern, setFillPattern] = useState<PixelFillPattern>("solid")
+  const [exportOpen, setExportOpen] = useState(false)
   const [brushOptions, setBrushOptions] = useState<BrushOptions>(DEFAULT_BRUSH_OPTIONS)
   const [selectShape, setSelectShape] = useState<"rect" | "ellipse">("rect")
   const [editFlash, setEditFlash] = useState<string | null>(null)
@@ -196,6 +201,7 @@ export function PlaygroundForm({
   const [busyIntent, setBusyIntent] = useState<"draft" | "publish" | "unpublish" | null>(null)
   const [metadataDirty, setMetadataDirty] = useState(false)
   const [leaving, setLeaving] = useState(false)
+  const [navigating, setNavigating] = useState(false)
   const [leaveConfirmOpen, setLeaveConfirmOpen] = useState(false)
   const [leaveBlockedOpen, setLeaveBlockedOpen] = useState(false)
   const [state, setState] = useState<CreationActionState>(null)
@@ -430,6 +436,12 @@ export function PlaygroundForm({
     }
   }
 
+  /** Remove the fullscreen overlay from the live DOM before the route commits. */
+  const go = (dest: string) => {
+    setNavigating(true)
+    router.push(dest)
+  }
+
   const leave = async (dest = href(lang, "/dashboard")) => {
     leaveDestRef.current = dest
     window.clearTimeout(localSourceTimerRef.current)
@@ -439,7 +451,7 @@ export function PlaygroundForm({
       await discardVirginIfNeeded()
       setLeaving(false)
       leavingRef.current = false
-      router.push(dest)
+      go(dest)
       return
     }
     setLeaveConfirmOpen(true)
@@ -460,7 +472,7 @@ export function PlaygroundForm({
     }
     setLeaving(false)
     leavingRef.current = false
-    router.push(leaveDestRef.current)
+    go(leaveDestRef.current)
   }
 
   const leaveWithoutSaving = () => {
@@ -477,7 +489,7 @@ export function PlaygroundForm({
     void discardVirginIfNeeded().finally(() => {
       setLeaving(false)
       leavingRef.current = false
-      router.push(leaveDestRef.current)
+      go(leaveDestRef.current)
     })
   }
 
@@ -560,7 +572,6 @@ export function PlaygroundForm({
   }, [creation.id, height, initialSource, stageGround, width])
 
   useEffect(() => {
-    document.body.classList.add("playground-open")
     const warn = (event: BeforeUnloadEvent) => {
       if (!hasUnsavedWork()) return
       event.preventDefault()
@@ -608,9 +619,10 @@ export function PlaygroundForm({
       window.removeEventListener("offline", showOffline)
       window.removeEventListener("online", resume)
       document.removeEventListener("click", guardChromeNav, true)
-      document.body.classList.remove("playground-open")
     }
   }, [])
+
+  const getExportDocument = useCallback(() => boardRef.current?.getExportDocument() ?? null, [])
 
   const getNativePng = useCallback(async () => {
     const board = boardRef.current
@@ -690,6 +702,7 @@ export function PlaygroundForm({
     lasso: "lasso",
     selectPolygon: "polygonSelect",
   }
+  const fillPatternPanel = <FillPatternPicker lang={lang} value={fillPattern} onChange={setFillPattern} />
   const brushPanel = (
     <BrushOptionsPanel
       lang={lang}
@@ -1284,6 +1297,11 @@ export function PlaygroundForm({
       />
     ) : null
 
+  // Once navigation starts, drop the fullscreen overlay from the live DOM.
+  // React may keep the old route mounted until the view transition finishes;
+  // leaving the overlay mounted would cover the destination and block clicks.
+  if (navigating) return null
+
   return (
     <div
       data-chrome="playground"
@@ -1455,6 +1473,7 @@ export function PlaygroundForm({
                 gridVisible={gridVisible}
                 symmetry={symmetry}
                 fillTolerance={fillTolerance}
+                fillPattern={fillPattern}
                 brushOptions={brushOptions}
                 selectShape={selectShape}
                 onToolChange={setTool}
@@ -1544,6 +1563,7 @@ export function PlaygroundForm({
             fillTolerance={fillTolerance}
             onFillTolerance={(value) => setFillTolerance(clampFillTolerance(value))}
             brushOptionsPanel={brushPanel}
+            fillPatternPanel={fillPatternPanel}
             selectShape={selectShape}
             onSelectShape={setSelectShape}
             onInvertSelection={() => boardRef.current?.invertSelection()}
@@ -1623,6 +1643,7 @@ export function PlaygroundForm({
               <span className="w-8 text-right text-[12px] tabular-nums text-fg">{fillTolerance}</span>
             </div>
           ) : null}
+          {tool === "fill" ? <div className="w-full">{fillPatternPanel}</div> : null}
           {tool === "selectPolygon" ? (
             <p className="w-full text-[12px] leading-relaxed text-muted">{copy.pixelSelectPolygonHint[lang]}</p>
           ) : null}
@@ -1996,6 +2017,17 @@ export function PlaygroundForm({
               </button>
             </div>
           </div>
+          <button
+            type="button"
+            className="studio-control inline-flex w-full items-center justify-center gap-2 border-[3px] border-earth bg-bg px-3 text-[14px] font-medium text-fg hover:bg-soft"
+            onClick={() => {
+              setMoreOpen(false)
+              setExportOpen(true)
+            }}
+          >
+            <PixelIcon name="download" />
+            {copy.exportOpen[lang]}
+          </button>
           <CreationMoreMenu
             lang={lang}
             creationId={creation.id}
@@ -2012,6 +2044,14 @@ export function PlaygroundForm({
           />
         </div>
       </Dialog>
+
+      <ExportDialog
+        lang={lang}
+        open={exportOpen}
+        onClose={() => setExportOpen(false)}
+        getDocument={getExportDocument}
+        title={title}
+      />
 
       <ColorPicker
         lang={lang}

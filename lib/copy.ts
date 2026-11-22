@@ -458,6 +458,66 @@ export const copy = {
     id: "Opasitas dan blend dihitung saat tampil. Piksel tetap memakai warna palet.",
     en: "Opacity and blend apply when displayed. Pixels keep their palette colours.",
   } satisfies Bi,
+  pixelFillPattern: { id: "Pola isi", en: "Fill pattern" } satisfies Bi,
+  pixelFillPatternHint: {
+    id: "Pola memakai warna aktif di atas warna yang ada dan selalu sejajar dengan kanvas.",
+    en: "The pattern uses the current colour over what is there and always lines up with the canvas.",
+  } satisfies Bi,
+  exportOpen: { id: "Ekspor…", en: "Export…" } satisfies Bi,
+  exportTitle: { id: "Ekspor gambar", en: "Export image" } satisfies Bi,
+  exportFormat: { id: "Format", en: "Format" } satisfies Bi,
+  exportScale: { id: "Skala", en: "Scale" } satisfies Bi,
+  exportScaleHint: {
+    id: "Skala bilangan bulat. Setiap piksel menjadi blok yang tajam (nearest), tanpa interpolasi.",
+    en: "Whole-number scale. Every pixel becomes a crisp block (nearest), no interpolation.",
+  } satisfies Bi,
+  exportBackground: { id: "Latar", en: "Background" } satisfies Bi,
+  exportBgTransparent: { id: "Transparan", en: "Transparent" } satisfies Bi,
+  exportBgPaper: { id: "Kertas (warna dokumen)", en: "Paper (document colour)" } satisfies Bi,
+  exportBgColor: { id: "Warna khusus", en: "Custom colour" } satisfies Bi,
+  exportBgJpegNote: {
+    id: "JPEG tidak mendukung transparansi, jadi latar kertas dipakai.",
+    en: "JPEG has no transparency, so the paper background is used.",
+  } satisfies Bi,
+  exportBgHint: {
+    id: "Transparan hanya menghapus sel yang tidak dicat layer mana pun.",
+    en: "Transparent only removes cells that no layer painted.",
+  } satisfies Bi,
+  exportQuality: { id: "Kualitas", en: "Quality" } satisfies Bi,
+  exportGifSource: { id: "Isi GIF", en: "GIF content" } satisfies Bi,
+  exportGifFlat: { id: "Gambar utuh (1 frame)", en: "Whole image (1 frame)" } satisfies Bi,
+  exportGifLayers: { id: "Setiap layer jadi satu frame", en: "Each layer is a frame" } satisfies Bi,
+  exportGifDelay: { id: "Jeda per frame (ms)", en: "Delay per frame (ms)" } satisfies Bi,
+  exportGifLoop: { id: "Ulangi terus", en: "Loop forever" } satisfies Bi,
+  exportFramesNote: {
+    id: "Layer yang terlihat dipakai sebagai frame, dari bawah ke atas. Blend mode dan grup tidak berlaku pada satu frame.",
+    en: "Visible layers are used as frames, bottom to top. Blend modes and groups do not apply to a single frame.",
+  } satisfies Bi,
+  exportSheetColumns: { id: "Kolom (0 = otomatis)", en: "Columns (0 = auto)" } satisfies Bi,
+  exportSheetPadding: { id: "Jarak antar frame (px)", en: "Gap between frames (px)" } satisfies Bi,
+  exportSheetJson: { id: "Sertakan JSON posisi frame (jadi ZIP)", en: "Include frame-position JSON (makes a ZIP)" } satisfies Bi,
+  exportLayersOpacity: { id: "Terapkan opasitas layer ke alpha", en: "Apply layer opacity to alpha" } satisfies Bi,
+  exportLayersHidden: { id: "Sertakan layer tersembunyi", en: "Include hidden layers" } satisfies Bi,
+  exportPreview: { id: "Pratinjau", en: "Preview" } satisfies Bi,
+  exportPreparing: { id: "Menyiapkan…", en: "Preparing…" } satisfies Bi,
+  exportDownload: { id: "Unduh", en: "Download" } satisfies Bi,
+  exportFiles: { id: "Isi ZIP", en: "ZIP contents" } satisfies Bi,
+  exportFrameCount: { id: "{n} frame", en: "{n} frames" } satisfies Bi,
+  exportErrBounds: {
+    id: "Hasil melebihi {max}px per sisi. Kecilkan skala atau jumlah kolom.",
+    en: "The result is over {max}px per side. Lower the scale or the column count.",
+  } satisfies Bi,
+  exportErrScale: { id: "Skala harus bilangan bulat 1 atau lebih.", en: "Scale must be a whole number, 1 or more." } satisfies Bi,
+  exportErrNoLayers: { id: "Tidak ada layer yang terlihat.", en: "No visible layers." } satisfies Bi,
+  exportErrPalette: {
+    id: "Palet penuh: GIF transparan butuh satu warna yang tidak terpakai.",
+    en: "Palette is full: a transparent GIF needs one unused colour.",
+  } satisfies Bi,
+  exportErrEncode: {
+    id: "Peramban ini tidak bisa membuat format tersebut. Coba format lain.",
+    en: "This browser cannot create that format. Try another one.",
+  } satisfies Bi,
+  exportErrGeneric: { id: "Ekspor gagal. Coba lagi.", en: "Export failed. Try again." } satisfies Bi,
   pixelFillTolerance: { id: "Toleransi isi", en: "Fill tolerance" } satisfies Bi,
   pixelSelectTolerance: { id: "Toleransi seleksi", en: "Selection tolerance" } satisfies Bi,
   pixelFillGlobalHint: {
@@ -1001,45 +1061,17 @@ export const copy = {
   loginToRegisterPrompt: { id: "Belum punya akun?", en: "New here?" } satisfies Bi,
   loginToRegister: { id: "Buat akun", en: "Create an account" } satisfies Bi,
   loginForgotPassword: { id: "Lupa kata sandi?", en: "Forgot password?" } satisfies Bi,
-  loginRemember: { id: "Ingat saya", en: "Keep me signed in" } satisfies Bi,
+  loginRemember: { id: "Ingat saya", en: "Remember me" } satisfies Bi,
   loginResendVerification: {
     id: "Belum menerima email verifikasi?",
-    en: "Didn't get a verification email?",
-  } satisfies Bi,
-  loginResendSubmit: {
-    id: "Kirim ulang verifikasi",
-    en: "Resend verification",
+    en: "Didn't get the verification email?",
   } satisfies Bi,
   loginResendSending: { id: "Mengirim…", en: "Sending…" } satisfies Bi,
+  loginResendSubmit: { id: "Kirim ulang email", en: "Resend email" } satisfies Bi,
   loginVerifyEmailLink: {
-    id: "Buka halaman verifikasi email",
-    en: "Open the email verification page",
+    id: "Buka halaman verifikasi",
+    en: "Go to verification page",
   } satisfies Bi,
-  verifyEmailTitle: { id: "Verifikasi email Anda", en: "Verify your email" } satisfies Bi,
-  verifyEmailMeta: {
-    id: "Kirim ulang tautan verifikasi untuk melanjutkan.",
-    en: "Resend a verification link to continue.",
-  } satisfies Bi,
-  verifyEmailSubmit: { id: "Kirim ulang tautan", en: "Resend link" } satisfies Bi,
-  verifyEmailSending: { id: "Mengirim…", en: "Sending…" } satisfies Bi,
-  verifyEmailSent: {
-    id: "Jika alamat tersebut memerlukan verifikasi, tautan baru sudah dikirim.",
-    en: "If that address needs verification, a new link is on its way.",
-  } satisfies Bi,
-  verifyEmailHelp: {
-    id: "Periksa kotak masuk dan folder spam. Tautan hanya berlaku untuk waktu terbatas.",
-    en: "Check your inbox and spam folder. Links are only valid for a limited time.",
-  } satisfies Bi,
-  verifyEmailExpired: {
-    id: "Tautan verifikasi sudah kedaluwarsa. Minta tautan baru di bawah.",
-    en: "This verification link has expired. Request a new one below.",
-  } satisfies Bi,
-  verifyEmailInvalid: {
-    id: "Tautan verifikasi tidak valid atau sudah digunakan. Minta tautan baru di bawah.",
-    en: "This verification link is invalid or has already been used. Request a new one below.",
-  } satisfies Bi,
-  verifyEmailBackPrompt: { id: "Sudah terverifikasi?", en: "Already verified?" } satisfies Bi,
-  verifyEmailBack: { id: "Masuk", en: "Sign in" } satisfies Bi,
   authContinueGoogle: { id: "Lanjut dengan Google", en: "Continue with Google" } satisfies Bi,
   authContinueGoogleWorking: { id: "Mengalihkan…", en: "Redirecting…" } satisfies Bi,
   authOrEmail: { id: "atau", en: "or" } satisfies Bi,
@@ -1102,6 +1134,35 @@ export const copy = {
     en: "Confirm password",
   } satisfies Bi,
 
+  verifyEmailTitle: { id: "Verifikasi email", en: "Verify email" } satisfies Bi,
+  verifyEmailMeta: {
+    id: "Konfirmasi alamat email untuk melanjutkan.",
+    en: "Confirm your email address to continue.",
+  } satisfies Bi,
+  verifyEmailExpired: {
+    id: "Tautan verifikasi kedaluwarsa. Minta yang baru.",
+    en: "Verification link expired. Request a new one.",
+  } satisfies Bi,
+  verifyEmailInvalid: {
+    id: "Tautan verifikasi tidak valid. Minta yang baru.",
+    en: "Verification link is invalid. Request a new one.",
+  } satisfies Bi,
+  verifyEmailSent: {
+    id: "Jika terdaftar, email verifikasi dikirim.",
+    en: "If registered, a verification email was sent.",
+  } satisfies Bi,
+  verifyEmailSending: { id: "Mengirim…", en: "Sending…" } satisfies Bi,
+  verifyEmailSubmit: {
+    id: "Kirim ulang email verifikasi",
+    en: "Resend verification email",
+  } satisfies Bi,
+  verifyEmailHelp: {
+    id: "Cek inbox dan folder spam. Tautan berlaku satu jam.",
+    en: "Check your inbox and spam folder. The link lasts one hour.",
+  } satisfies Bi,
+  verifyEmailBackPrompt: { id: "Sudah terverifikasi?", en: "Already verified?" } satisfies Bi,
+  verifyEmailBack: { id: "Masuk", en: "Sign in" } satisfies Bi,
+
   registerTitle: { id: "Buat akunmu.", en: "Create your account." } satisfies Bi,
   registerMeta: {
     id: "Daftar dengan email atau Google. Identitas PXLB dipilih setelahnya.",
@@ -1153,10 +1214,7 @@ export const copy = {
     id: "3–20: a–z, 0–9, _.",
     en: "3–20: a–z, 0–9, _.",
   } satisfies Bi,
-  passwordHint: {
-    id: "Min. 8 karakter · 3 jenis karakter (atau 14+ karakter).",
-    en: "Min. 8 characters · 3 character types (or 14+).",
-  } satisfies Bi,
+  passwordHint: { id: "Min. 8 karakter.", en: "Min. 8 characters." } satisfies Bi,
   roleHint: {
     id: "Tidak bisa diubah.",
     en: "Cannot change.",
@@ -1334,80 +1392,101 @@ export const copy = {
     id: "Keluar dari perangkat ini.",
     en: "Sign out here.",
   } satisfies Bi,
+  settingsEmailUpdated: {
+    id: "Email berhasil diperbarui.",
+    en: "Email updated.",
+  } satisfies Bi,
+  sessionOthersDone: {
+    id: "Perangkat lain telah keluar.",
+    en: "Other devices were signed out.",
+  } satisfies Bi,
 
   accountSecurityTitle: { id: "Keamanan akun", en: "Account security" } satisfies Bi,
   accountSecurityIntro: {
-    id: "Perbarui kata sandi dan email, kelola sesi, atau hapus akun.",
-    en: "Update your password and email, manage sessions, or delete your account.",
+    id: "Perbarui kredensial dan kelola sesi.",
+    en: "Update credentials and manage sessions.",
   } satisfies Bi,
-  securityPasswordTitle: { id: "Kata sandi", en: "Password" } satisfies Bi,
-  securityPasswordHint: {
-    id: "Konfirmasi identitas dulu sebelum mengganti kata sandi.",
-    en: "Confirm your identity before changing your password.",
+  currentPasswordLabel: {
+    id: "Kata sandi saat ini",
+    en: "Current password",
   } satisfies Bi,
-  currentPasswordLabel: { id: "Kata sandi saat ini", en: "Current password" } satisfies Bi,
   reauthNonceLabel: { id: "Kode verifikasi", en: "Verification code" } satisfies Bi,
   reauthNonceHint: {
-    id: "Kode dikirim ke email akun. Berlaku sebentar.",
-    en: "A code was emailed to the account address. It expires shortly.",
+    id: "Kirim kode ke email akunmu, lalu masukkan di sini.",
+    en: "Send a code to your account email, then enter it here.",
   } satisfies Bi,
-  reauthSend: { id: "Kirim kode", en: "Send code" } satisfies Bi,
-  reauthSending: { id: "Mengirim…", en: "Sending…" } satisfies Bi,
+  reauthSending: { id: "Mengirim kode…", en: "Sending code…" } satisfies Bi,
+  reauthSend: {
+    id: "Kirim kode verifikasi",
+    en: "Send verification code",
+  } satisfies Bi,
   reauthSent: {
-    id: "Kode verifikasi dikirim. Periksa email akun.",
-    en: "Verification code sent. Check the account email.",
+    id: "Kode dikirim. Cek emailmu.",
+    en: "Code sent. Check your email.",
   } satisfies Bi,
   newPasswordLabel: { id: "Kata sandi baru", en: "New password" } satisfies Bi,
-  confirmPasswordLabel: { id: "Ulangi kata sandi baru", en: "Repeat new password" } satisfies Bi,
-  passwordChangeSubmit: { id: "Ganti kata sandi", en: "Change password" } satisfies Bi,
-  passwordChanging: { id: "Mengganti…", en: "Changing…" } satisfies Bi,
-  passwordChanged: {
-    id: "Kata sandi diganti. Sesi di perangkat lain dicabut.",
-    en: "Password changed. Sessions on other devices were revoked.",
+  confirmPasswordLabel: {
+    id: "Ulangi kata sandi baru",
+    en: "Confirm new password",
   } satisfies Bi,
-  emailChangeTitle: { id: "Alamat email", en: "Email address" } satisfies Bi,
+  passwordChanging: { id: "Menyimpan…", en: "Saving…" } satisfies Bi,
+  passwordChangeSubmit: {
+    id: "Ubah kata sandi",
+    en: "Change password",
+  } satisfies Bi,
+  passwordChanged: {
+    id: "Kata sandi diperbarui. Perangkat lain telah keluar.",
+    en: "Password updated. Other devices were signed out.",
+  } satisfies Bi,
+  emailChangeTitle: { id: "Ubah email", en: "Change email" } satisfies Bi,
   emailChangeHint: {
-    id: "Tautan konfirmasi dikirim ke alamat baru (dan lama jika diaktifkan di Supabase).",
-    en: "A confirmation link is sent to the new address (and the old one if enabled in Supabase).",
+    id: "Kami kirim tautan konfirmasi ke alamat baru. Alamat lama tetap aktif sampai dikonfirmasi.",
+    en: "We'll send a confirmation link to the new address. The old one stays active until confirmed.",
   } satisfies Bi,
   newEmailLabel: { id: "Email baru", en: "New email" } satisfies Bi,
-  emailChangeSubmit: { id: "Kirim tautan verifikasi", en: "Send verification link" } satisfies Bi,
   emailChanging: { id: "Mengirim…", en: "Sending…" } satisfies Bi,
+  emailChangeSubmit: {
+    id: "Kirim tautan konfirmasi",
+    en: "Send confirmation link",
+  } satisfies Bi,
   emailChangeSentGeneric: {
-    id: "Jika alamat itu perlu diverifikasi, tautan sudah dikirim.",
-    en: "If that address needs verification, a link is on its way.",
+    id: "Jika alamat bisa dipakai, tautan konfirmasi telah dikirim.",
+    en: "If the address is available, a confirmation link has been sent.",
   } satisfies Bi,
-  settingsEmailUpdated: { id: "Alamat email berhasil diperbarui.", en: "Email address updated." } satisfies Bi,
-  sessionsTitle: { id: "Sesi aktif", en: "Active sessions" } satisfies Bi,
+  sessionsTitle: { id: "Sesi", en: "Sessions" } satisfies Bi,
   sessionsHint: {
-    id: "Keluar dari perangkat lain atau dari semua perangkat.",
-    en: "Sign out of other devices or every device.",
+    id: "Keluar dari perangkat lain jika mencurigakan.",
+    en: "Sign out of other devices if anything looks suspicious.",
   } satisfies Bi,
-  sessionCurrent: { id: "Perangkat ini", en: "This device" } satisfies Bi,
-  sessionSignedIn: { id: "Masuk terakhir", en: "Last signed in" } satisfies Bi,
+  sessionCurrent: { id: "Sesi ini", en: "This session" } satisfies Bi,
   sessionProvider: { id: "Metode masuk", en: "Sign-in method" } satisfies Bi,
-  sessionOtherDevices: { id: "Perangkat lain aktif", en: "Other active devices" } satisfies Bi,
+  sessionSignedIn: { id: "Masuk terakhir", en: "Last signed in" } satisfies Bi,
   sessionOtherDevicesAction: {
     id: "Keluar dari perangkat lain",
     en: "Sign out other devices",
   } satisfies Bi,
-  sessionAllDevicesAction: { id: "Keluar dari semua perangkat", en: "Sign out everywhere" } satisfies Bi,
-  sessionOthersDone: {
-    id: "Sesi di perangkat lain sudah dicabut.",
-    en: "Sessions on other devices were revoked.",
+  sessionAllDevicesAction: {
+    id: "Keluar dari semua perangkat",
+    en: "Sign out everywhere",
   } satisfies Bi,
   deleteAccountTitle: { id: "Hapus akun", en: "Delete account" } satisfies Bi,
   deleteAccountHint: {
-    id: "Tindakan ini permanen. Profil dan karya terkait ikut terhapus.",
-    en: "This is permanent. Your profile and related works are removed.",
+    id: "Penghapusan permanen dan tidak bisa dibatalkan.",
+    en: "Permanent and cannot be undone.",
+  } satisfies Bi,
+  deleteAccountConfirmLabel: {
+    id: "Ketik DELETE untuk konfirmasi",
+    en: "Type DELETE to confirm",
   } satisfies Bi,
   deleteAccountWarning: {
-    id: "Ketik DELETE untuk mengonfirmasi.",
-    en: "Type DELETE to confirm.",
+    id: "Semua karya dan data akun akan hilang.",
+    en: "All works and account data will be removed.",
   } satisfies Bi,
-  deleteAccountConfirmLabel: { id: "Konfirmasi", en: "Confirmation" } satisfies Bi,
-  deleteAccountSubmit: { id: "Hapus akun saya", en: "Delete my account" } satisfies Bi,
   deleteAccountBusy: { id: "Menghapus…", en: "Deleting…" } satisfies Bi,
+  deleteAccountSubmit: {
+    id: "Hapus akun saya",
+    en: "Delete my account",
+  } satisfies Bi,
 
   pwaInstallTitle: { id: "Pasang PXLB", en: "Install PXLB" } satisfies Bi,
   pwaInstallHint: {
@@ -1499,33 +1578,33 @@ export const copy = {
       id: "Kata sandi terlalu lemah.",
       en: "Password is too weak.",
     } satisfies Bi,
-    password_mismatch: {
-      id: "Kata sandi tidak sama.",
-      en: "Passwords do not match.",
-    } satisfies Bi,
     invalid_current_password: {
       id: "Kata sandi saat ini salah.",
       en: "Current password is incorrect.",
     } satisfies Bi,
     reauth_required: {
-      id: "Konfirmasi identitas dulu.",
-      en: "Confirm your identity first.",
+      id: "Verifikasi identitas dulu.",
+      en: "Verify your identity first.",
     } satisfies Bi,
     reauth_failed: {
-      id: "Kode verifikasi tidak valid atau kedaluwarsa.",
-      en: "Verification code is invalid or expired.",
+      id: "Verifikasi gagal. Coba lagi.",
+      en: "Verification failed. Try again.",
     } satisfies Bi,
     email_unchanged: {
-      id: "Itu alamat email yang sekarang.",
-      en: "That is your current email address.",
+      id: "Email masih sama.",
+      en: "That's already your email.",
     } satisfies Bi,
     email_change_failed: {
-      id: "Permintaan perubahan email gagal. Coba lagi.",
-      en: "Email change request failed. Try again.",
+      id: "Gagal mengirim tautan konfirmasi.",
+      en: "Could not send the confirmation link.",
     } satisfies Bi,
     account_delete_failed: {
-      id: "Akun belum terhapus. Coba lagi.",
-      en: "Account was not deleted. Try again.",
+      id: "Gagal menghapus akun. Coba lagi.",
+      en: "Could not delete the account. Try again.",
+    } satisfies Bi,
+    password_mismatch: {
+      id: "Kata sandi tidak sama.",
+      en: "Passwords do not match.",
     } satisfies Bi,
     username_taken: {
       id: "Username dipakai.",
@@ -1628,4 +1707,26 @@ export const pixelBlendLabels = {
   "soft-light": { id: "Cahaya lembut", en: "Soft light" },
   exclusion: { id: "Eksklusi", en: "Exclusion" },
   subtract: { id: "Kurangi", en: "Subtract" },
+} as const satisfies Record<string, { id: string; en: string }>
+
+export const pixelFillPatternLabels = {
+  solid: { id: "Solid", en: "Solid" },
+  checker: { id: "Papan catur", en: "Checker" },
+  dots: { id: "Titik", en: "Dots" },
+  dither25: { id: "Dither 25%", en: "Dither 25%" },
+  dither75: { id: "Dither 75%", en: "Dither 75%" },
+  "lines-h": { id: "Garis horizontal", en: "Horizontal lines" },
+  "lines-v": { id: "Garis vertikal", en: "Vertical lines" },
+  diagonal: { id: "Diagonal", en: "Diagonal" },
+  crosshatch: { id: "Silang", en: "Crosshatch" },
+  bricks: { id: "Bata", en: "Bricks" },
+} as const satisfies Record<string, { id: string; en: string }>
+
+export const exportFormatLabels = {
+  png: { id: "PNG", en: "PNG" },
+  jpeg: { id: "JPEG", en: "JPEG" },
+  webp: { id: "WebP", en: "WebP" },
+  gif: { id: "GIF", en: "GIF" },
+  sheet: { id: "Sprite sheet", en: "Sprite sheet" },
+  layers: { id: "Layer terpisah (ZIP)", en: "Separate layers (ZIP)" },
 } as const satisfies Record<string, { id: string; en: string }>

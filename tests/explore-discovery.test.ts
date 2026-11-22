@@ -38,4 +38,10 @@ describe("Explore discovery bands live inside the feed", () => {
     expect(tile).toMatch(/displayName/)
     expect(tile).toMatch(/noComments/)
   })
+
+  it("keeps default tiles self-sized so profile and landing grids do not collapse", () => {
+    const tile = read("components/social/WorkTile.tsx")
+    expect(tile).toMatch(/large \? "h-full" : "aspect-square"/)
+    expect(tile).not.toMatch(/"group relative h-full min-w-0/)
+  })
 })
