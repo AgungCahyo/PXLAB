@@ -962,8 +962,8 @@ export const copy = {
     en: "Write a note…",
   } satisfies Bi,
   conversationPromptSize: {
-    id: "Catatan untuk kanvas {size}…",
-    en: "A note for this {size} canvas…",
+    id: "Komentari...",
+    en: "Comment...",
   } satisfies Bi,
   conversationGuestPrompt: {
     id: "Masuk untuk menulis catatan.",

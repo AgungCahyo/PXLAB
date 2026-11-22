@@ -8,8 +8,9 @@ this plan.
 
 ## 0. Preparation
 
-- Work on the current uncommitted tree. Do not stash or commit it just to run
-  this plan unless the user explicitly asks.
+- Work from the current clean tree at `25953c6` (all implementation commits are
+  in place). Do not stash, rebase, or commit just to run this plan unless the
+  user explicitly asks.
 - Prefer a production build for measurements:
 
   ```powershell
@@ -35,17 +36,18 @@ this plan.
 
 ### Optional baseline
 
-The current tree is already post-fix, so it provides the "after" numbers. A
-true before/after comparison requires a separate checkout of `HEAD`:
+The current tree is already post-fix (`25953c6`), so it provides the "after"
+numbers. A true before/after comparison requires a separate checkout of the
+pre-implementation commit:
 
 ```powershell
-git worktree add ..\pxlb-phase8-baseline HEAD
+git worktree add ..\pxlb-phase8-baseline d63dda3
 ```
 
-Run the same scenarios there, label the results `baseline @ HEAD`, then remove
-the worktree. This must not disturb the uncommitted working tree. If the
-baseline run is skipped, record the current run as `current only` rather than
-claiming a measured improvement.
+Run the same scenarios there, label the results `baseline @ d63dda3`, then
+remove the worktree. This must not disturb the working tree. If the baseline run
+is skipped, record the current run as `current only` rather than claiming a
+measured improvement.
 
 ## 1. Already covered by static guards (recap, not runtime proof)
 
