@@ -266,7 +266,6 @@ export function AppTabBar({ lang, member }: { lang: Lang; member: NavMember }) {
     <nav
       aria-label={copy.navAria[lang]}
       className="app-tabbar fixed inset-x-0 bottom-0 z-40 border-t-[3px] border-earth bg-bg md:hidden"
-      style={{ viewTransitionName: "site-tabbar" }}
     >
       <ul className={cn("grid", member ? "grid-cols-4" : "grid-cols-3")}>
         {items.map((item) => (

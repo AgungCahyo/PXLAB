@@ -1,8 +1,9 @@
-import { readFileSync } from "node:fs"
+import { existsSync, readFileSync, readdirSync } from "node:fs"
 import path from "node:path"
 import { describe, expect, it } from "vitest"
 
-const read = (file: string) => readFileSync(path.resolve(__dirname, "..", file), "utf8")
+const root = path.resolve(__dirname, "..")
+const read = (file: string) => readFileSync(path.resolve(root, file), "utf8")
 
 describe("instant interaction — appreciation", () => {
   const community = read("components/community/CreationCommunity.tsx")
@@ -29,6 +30,51 @@ describe("instant interaction — route loading shells", () => {
     expect(read("app/[lang]/(member)/dashboard/loading.tsx")).toMatch(/WorksSkeleton/)
     expect(read("app/[lang]/(member)/create/loading.tsx")).toMatch(/CreateSkeleton/)
     expect(read("app/[lang]/(member)/create/[id]/loading.tsx")).toMatch(/StudioSkeleton/)
+  })
+
+  it("gives every page route a fallback in its own or an ancestor segment", () => {
+    const appDir = path.resolve(root, "app")
+    const pageDirs: string[] = []
+    const walk = (dir: string) => {
+      for (const entry of readdirSync(dir, { withFileTypes: true })) {
+        if (!entry.isDirectory()) continue
+        const child = path.join(dir, entry.name)
+        if (existsSync(path.join(child, "page.tsx"))) pageDirs.push(child)
+        walk(child)
+      }
+    }
+    walk(appDir)
+    expect(pageDirs.length).toBeGreaterThan(0)
+
+    for (const pageDir of pageDirs) {
+      let cursor = pageDir
+      let covered = false
+      while (cursor.startsWith(appDir)) {
+        if (existsSync(path.join(cursor, "loading.tsx"))) {
+          covered = true
+          break
+        }
+        cursor = path.dirname(cursor)
+      }
+      expect(covered, path.relative(appDir, pageDir)).toBe(true)
+    }
+  })
+
+  it("streams profile works behind a real Suspense boundary", () => {
+    const page = read("app/[lang]/(public)/u/[username]/page.tsx")
+    expect(page).toMatch(/const loadProfileWorks = cache\(/)
+    expect(page).toMatch(/async function ProfileWorks\(/)
+    expect(page).toMatch(/await loadProfileWorks\(profileId\)/)
+    expect(page).toMatch(/<Suspense fallback=\{<ProfileGridSkeleton \/>\}>/)
+    expect(page).not.toMatch(/const works = await listPublishedCreationsByUser\(profile\.id/)
+  })
+
+  it("shares one auth fallback across all auth pages", () => {
+    const loading = read("app/[lang]/(auth)/loading.tsx")
+    expect(loading).toMatch(/AuthRouteSkeleton/)
+    for (const route of ["login", "register", "forgot-password", "reset-password", "verify-email"]) {
+      expect(existsSync(path.resolve(root, "app/[lang]/(auth)", route, "loading.tsx")), route).toBe(false)
+    }
   })
 })
 

@@ -172,7 +172,6 @@ export function SocialTabBar({ lang, member }: { lang: Lang; member: NavMember }
     <nav
       aria-label={t.primaryAria[lang]}
       className="app-tabbar fixed inset-x-0 bottom-0 z-40 border-t-[3px] border-earth bg-bg md:hidden"
-      style={{ viewTransitionName: "site-tabbar" }}
     >
       <ul className={cn("grid", items.length === 5 ? "grid-cols-5" : "grid-cols-4")}>
         {items.map(({ key, href: to, label, Icon, active, badge, avatar }) => (

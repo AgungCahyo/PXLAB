@@ -3,7 +3,6 @@ import Link from "next/link"
 import { notFound } from "next/navigation"
 import { connection } from "next/server"
 import { WorksRow } from "@/components/creations/WorksRow"
-import { PageTransition } from "@/components/layout/PageTransition"
 import { BackLink } from "@/components/ui/BackLink"
 import { EmptyState } from "@/components/ui/EmptyState"
 import { buttonClassName } from "@/components/ui/Button"
@@ -48,62 +47,60 @@ export default async function DashboardPage({
   const published = own.filter((item) => item.status === "published")
 
   return (
-    <PageTransition>
-      <div className="mx-auto max-w-6xl px-5 py-10 sm:px-8 sm:py-12 lg:px-16">
-        <BackLink href={href(lang, `/u/${profile.username}`)}>{copy.worksBack[lang]}</BackLink>
-        <PageHeader
-          className="mt-6"
-          title={copy.worksTitle[lang]}
-          intro={copy.worksIntro[lang]}
-          actions={
-            <>
-              <Link
-                href={href(lang, "/responses")}
-                className={buttonClassName({ size: "sm", variant: "outline" })}
-              >
-                {copy.nav.responses[lang]}
-              </Link>
+    <div className="mx-auto max-w-6xl px-5 py-10 sm:px-8 sm:py-12 lg:px-16">
+      <BackLink href={href(lang, `/u/${profile.username}`)}>{copy.worksBack[lang]}</BackLink>
+      <PageHeader
+        className="mt-6"
+        title={copy.worksTitle[lang]}
+        intro={copy.worksIntro[lang]}
+        actions={
+          <>
+            <Link
+              href={href(lang, "/responses")}
+              className={buttonClassName({ size: "sm", variant: "outline" })}
+            >
+              {copy.nav.responses[lang]}
+            </Link>
+            <Link href={href(lang, "/create")} className={buttonClassName({ size: "sm" })}>
+              {copy.worksNew[lang]}
+            </Link>
+          </>
+        }
+      />
+
+      {own.length === 0 ? (
+        <div className="mt-10">
+          <EmptyState
+            title={copy.createEmptyTitle[lang]}
+            description={copy.createEmptyBody[lang]}
+            action={
               <Link href={href(lang, "/create")} className={buttonClassName({ size: "sm" })}>
                 {copy.worksNew[lang]}
               </Link>
-            </>
-          }
-        />
-
-        {own.length === 0 ? (
-          <div className="mt-10">
-            <EmptyState
-              title={copy.createEmptyTitle[lang]}
-              description={copy.createEmptyBody[lang]}
-              action={
-                <Link href={href(lang, "/create")} className={buttonClassName({ size: "sm" })}>
-                  {copy.worksNew[lang]}
-                </Link>
-              }
-            />
-          </div>
-        ) : (
-          <div className="mt-10 grid gap-12">
-            <WorksGroup
-              lang={lang}
-              headingId="works-drafts"
-              title={copy.worksDrafts[lang]}
-              empty={copy.worksEmptyDrafts[lang]}
-              items={drafts}
-              primary="continue"
-            />
-            <WorksGroup
-              lang={lang}
-              headingId="works-published"
-              title={copy.worksPublished[lang]}
-              empty={copy.worksEmptyPublished[lang]}
-              items={published}
-              primary="view"
-            />
-          </div>
-        )}
-      </div>
-    </PageTransition>
+            }
+          />
+        </div>
+      ) : (
+        <div className="mt-10 grid gap-12">
+          <WorksGroup
+            lang={lang}
+            headingId="works-drafts"
+            title={copy.worksDrafts[lang]}
+            empty={copy.worksEmptyDrafts[lang]}
+            items={drafts}
+            primary="continue"
+          />
+          <WorksGroup
+            lang={lang}
+            headingId="works-published"
+            title={copy.worksPublished[lang]}
+            empty={copy.worksEmptyPublished[lang]}
+            items={published}
+            primary="view"
+          />
+        </div>
+      )}
+    </div>
   )
 }
 

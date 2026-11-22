@@ -43,7 +43,7 @@ export function CreateInspiration({
               <ul className="mt-3 grid min-w-0 grid-cols-2 gap-3 sm:grid-cols-4">
                 {section.items.map((item) => (
                   <li key={item.id} className="min-w-0">
-                    <CreationCard creation={item} lang={lang} artTransition={false} />
+                    <CreationCard creation={item} lang={lang} />
                   </li>
                 ))}
               </ul>

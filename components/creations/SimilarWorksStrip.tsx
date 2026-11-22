@@ -26,7 +26,7 @@ export function SimilarWorksStrip({
       <ul className={recommendationStripListClass}>
         {items.map((item) => (
           <li key={item.id} className={recommendationStripItemClass}>
-            <CreationCard creation={item} lang={lang} artTransition={false} />
+            <CreationCard creation={item} lang={lang} />
           </li>
         ))}
       </ul>

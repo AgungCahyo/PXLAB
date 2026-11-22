@@ -201,7 +201,6 @@ export function PlaygroundForm({
   const [busyIntent, setBusyIntent] = useState<"draft" | "publish" | "unpublish" | null>(null)
   const [metadataDirty, setMetadataDirty] = useState(false)
   const [leaving, setLeaving] = useState(false)
-  const [navigating, setNavigating] = useState(false)
   const [leaveConfirmOpen, setLeaveConfirmOpen] = useState(false)
   const [leaveBlockedOpen, setLeaveBlockedOpen] = useState(false)
   const [state, setState] = useState<CreationActionState>(null)
@@ -436,12 +435,6 @@ export function PlaygroundForm({
     }
   }
 
-  /** Remove the fullscreen overlay from the live DOM before the route commits. */
-  const go = (dest: string) => {
-    setNavigating(true)
-    router.push(dest)
-  }
-
   const leave = async (dest = href(lang, "/dashboard")) => {
     leaveDestRef.current = dest
     window.clearTimeout(localSourceTimerRef.current)
@@ -451,7 +444,7 @@ export function PlaygroundForm({
       await discardVirginIfNeeded()
       setLeaving(false)
       leavingRef.current = false
-      go(dest)
+      router.push(dest)
       return
     }
     setLeaveConfirmOpen(true)
@@ -472,7 +465,7 @@ export function PlaygroundForm({
     }
     setLeaving(false)
     leavingRef.current = false
-    go(leaveDestRef.current)
+    router.push(leaveDestRef.current)
   }
 
   const leaveWithoutSaving = () => {
@@ -489,7 +482,7 @@ export function PlaygroundForm({
     void discardVirginIfNeeded().finally(() => {
       setLeaving(false)
       leavingRef.current = false
-      go(leaveDestRef.current)
+      router.push(leaveDestRef.current)
     })
   }
 
@@ -582,12 +575,6 @@ export function PlaygroundForm({
     const guardChromeNav = (event: MouseEvent) => {
       if (event.defaultPrevented || event.button !== 0) return
       if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return
-      if (leavingRef.current) {
-        event.preventDefault()
-        event.stopPropagation()
-        return
-      }
-      if (!hasUnsavedWork()) return
       const target = event.target
       if (!(target instanceof Element)) return
       const anchor = target.closest("a[href]")
@@ -603,8 +590,12 @@ export function PlaygroundForm({
       const next = `${url.pathname}${url.search}${url.hash}`
       const current = `${window.location.pathname}${window.location.search}${window.location.hash}`
       if (next === current) return
+      // Swallow only chrome links that would navigate while a save/discard is
+      // in flight; every other click must stay interactive.
+      if (!leavingRef.current && !hasUnsavedWork()) return
       event.preventDefault()
       event.stopPropagation()
+      if (leavingRef.current) return
       void leaveRef.current(next)
     }
     if (typeof navigator !== "undefined") setOffline(!navigator.onLine)
@@ -1296,11 +1287,6 @@ export function PlaygroundForm({
         onOpenSheet={setLayerSheetId}
       />
     ) : null
-
-  // Once navigation starts, drop the fullscreen overlay from the live DOM.
-  // React may keep the old route mounted until the view transition finishes;
-  // leaving the overlay mounted would cover the destination and block clicks.
-  if (navigating) return null
 
   return (
     <div

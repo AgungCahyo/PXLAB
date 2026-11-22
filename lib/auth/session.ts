@@ -1,3 +1,5 @@
+import { cache } from "react"
+
 import { parseAvatarConfig, type AvatarConfig } from "@/lib/avatar-gen"
 import { createPublicSupabase } from "@/lib/supabase/public"
 import { createServerSupabase } from "@/lib/supabase/server"
@@ -39,31 +41,32 @@ export function needsOnboarding(profile: {
   return !profile?.onboarding_completed_at
 }
 
-export async function getSessionUserId() {
-  const supabase = await createServerSupabase()
-  if (!supabase) return null
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  return user?.id ?? null
-}
-
-export async function getCurrentAuthUser() {
+/**
+ * Request-scoped identity primitive. React `cache()` memoizes the result for a
+ * single render pass only — it never shares data across requests or accounts.
+ * (Server Actions and Route Handlers are outside a render pass, so the wrapper
+ * is a no-op there and those callers still read fresh session state.)
+ */
+export const getCurrentAuthUser = cache(async () => {
   const supabase = await createServerSupabase()
   if (!supabase) return null
   const {
     data: { user },
   } = await supabase.auth.getUser()
   return user ?? null
-}
+})
 
-export async function getCurrentProfile(): Promise<MemberProfile | null> {
+export const getSessionUserId = cache(async () => {
+  const user = await getCurrentAuthUser()
+  return user?.id ?? null
+})
+
+export const getCurrentProfile = cache(async (): Promise<MemberProfile | null> => {
+  const user = await getCurrentAuthUser()
+  if (!user) return null
+
   const supabase = await createServerSupabase()
   if (!supabase) return null
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) return null
 
   const { data } = await supabase
     .from("profiles")
@@ -72,7 +75,7 @@ export async function getCurrentProfile(): Promise<MemberProfile | null> {
     .maybeSingle()
 
   return data ? (mapProfile(data) as MemberProfile) : null
-}
+})
 
 export async function getProfileByUsername(username: string): Promise<PublicProfile | null> {
   const supabase = createPublicSupabase()

@@ -96,7 +96,12 @@ export function ExploreInfinite({
         // Deferred: avoids a synchronous setState inside the effect body.
         frame = requestAnimationFrame(() => {
           restore({ items: saved.items, page: saved.page, pageCount: saved.pageCount })
-          frame = requestAnimationFrame(() => window.scrollTo(0, saved.y))
+          // `instant` overrides the global CSS smooth scrolling; Next's own
+          // smooth-scroll guard only covers its route transition, not this
+          // post-commit restore.
+          frame = requestAnimationFrame(() =>
+            window.scrollTo({ top: saved.y, left: 0, behavior: "instant" }),
+          )
         })
       }
     } catch {}
@@ -152,7 +157,9 @@ export function ExploreInfinite({
 
       <div
         onClickCapture={(event) => {
-          if ((event.target as Element).closest("a[href]")) markResume()
+          // Only opted-in links set the resume marker. Links without it keep
+          // Next's normal scroll behavior and never race with the restore.
+          if ((event.target as Element).closest("a[data-explore-resume]")) markResume()
         }}
         className="grid min-w-0 gap-2 sm:gap-3"
       >
@@ -164,7 +171,12 @@ export function ExploreInfinite({
                 const large = isLargeTile(index, items.length, !hasMore)
                 return (
                   <li key={item.id} className={cn("min-w-0", mosaicTileClass(index, large))}>
-                    <WorkTile creation={item} lang={lang} size={large ? "large" : "default"} />
+                    <WorkTile
+                      creation={item}
+                      lang={lang}
+                      size={large ? "large" : "default"}
+                      preserveScroll
+                    />
                   </li>
                 )
               })}

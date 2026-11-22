@@ -25,6 +25,13 @@ describe("back and cancel keep unsaved work", () => {
     expect(playground).toMatch(/guardChromeNav/)
     expect(playground).toMatch(/app-tabbar/)
     expect(playground).toMatch(/leaveRef\.current/)
+    expect(playground).toMatch(/router\.push\(leaveDestRef\.current\)/)
+    // The guard resolves the chrome anchor first; unrelated clicks and
+    // non-navigating clicks are never swallowed.
+    expect(playground).toMatch(
+      /target\.closest\("a\[href\]"\)[\s\S]*if \(!leavingRef\.current && !hasUnsavedWork\(\)\) return/,
+    )
+    expect(playground).not.toMatch(/if \(leavingRef\.current\) \{[\s\S]{0,80}event\.preventDefault\(\)/)
   })
 
   it("offers retry or leave without saving when leave save fails", () => {

@@ -120,6 +120,22 @@ and identify the actual cause.
 **Exit criteria:** The main causes of slow or disruptive navigation are
 understood and documented.
 
+> **Implementation status (22 Nov 2026): audit complete.** Findings and the
+> recommended sequence are in
+> `docs/master-plan/NAVIGATION-RENDERING-AUDIT.md`. Follow-up work already
+> applied: Phase 6 (transition removal), studio-exit simplification,
+> request-scoped identity dedupe (audit Section M step 3), full loading
+> coverage with an early profile boundary (audit Section M step 5), pinned
+> stale-content policy (step 4), and hardened Explore scroll restoration
+> (step 6). The dedupe makes `getCurrentAuthUser()` the single React
+> `cache()`-wrapped primitive and derives `getSessionUserId()`/`getCurrentProfile()`
+> from it; static guard: `tests/session-identity.test.ts`. All 19 page routes
+> now have a fallback (`tests/instant-interaction.test.ts`); cache ownership is
+> guarded by `tests/cache-policy.test.ts` and Explore restore by
+> `tests/scroll-restoration.test.ts`. The Phase 8 manual validation checklist is
+> ready in `docs/master-plan/PHASE-8-RUNTIME-VALIDATION.md` but has not been
+> executed.
+
 ------------------------------------------------------------------------
 
 ## 3. Phase 2 --- Persistent Application Shell
@@ -233,6 +249,15 @@ listeners, and leave realtime subscriptions running.
     contexts.
 -   Memory use remains controlled.
 
+> **Implementation status (22 Nov 2026): Explore restore hardened (partial).**
+> `docs/master-plan/NAVIGATION-RENDERING-AUDIT.md` Section V records the fix:
+> only opted-in Explore links use `scroll={false}` and carry
+> `data-explore-resume`; the restore uses `behavior: "instant"` so the global
+> smooth-scroll CSS cannot race it. Home/Profile intentionally have no
+> bespoke restoration and no Keep-Alive/generic keeper was added. Static guard:
+> `tests/scroll-restoration.test.ts`. Real-browser Back/Forward timing remains
+> a Phase 8 measurement.
+
 ------------------------------------------------------------------------
 
 ## 5. Phase 4 --- Data Caching & Background Refresh
@@ -304,6 +329,17 @@ caching only where it solves a measured problem.
 -   Background refresh does not unnecessarily blank the page.
 -   Duplicate requests are reduced.
 -   Cache invalidation is predictable and secure.
+
+> **Implementation status (22 Nov 2026): policy defined (partial).** Cache
+> ownership and staleness are documented in
+> `docs/master-plan/NAVIGATION-RENDERING-AUDIT.md` (Section U) and guarded by
+> `tests/cache-policy.test.ts`. `staleTimes` is pinned to `{ dynamic: 0,
+> static: 180 }` so private routes are never reused from the client cache;
+> React `cache()` handles request-scope dedupe and Server Actions own
+> invalidation. The broader "show previously loaded content immediately /
+> background refresh" behavior of this phase is intentionally **not**
+> implemented: no cache library or new server-output cache was added, because
+> the audited pages are viewer-specific and correctness takes priority.
 
 ------------------------------------------------------------------------
 
@@ -379,6 +415,14 @@ THE COMMONS currently has a `PageTransition` component using React
 
 The project owner has indicated that this animation is no longer needed
 because it adds overhead to the page experience.
+
+> **Implementation status (22 Nov 2026): complete.** Phase 6 was pulled
+> forward ahead of Phases 2–5 because view-transition retention contributed
+> to the reported studio-exit regression. All 9 `PageTransition` wrappers,
+> the `creation-art-*` morphs, shell `viewTransitionName` metadata, the
+> route-transition CSS, the abort filter, and its instrumentation have been
+> removed. Static regression guard: `tests/route-transitions.test.ts`.
+> Findings: `docs/master-plan/NAVIGATION-RENDERING-AUDIT.md`.
 
 ### Tasks
 
@@ -496,6 +540,13 @@ Record before-and-after measurements for:
 
 Use real measurements rather than relying only on subjective
 impressions.
+
+> **Implementation status (22 Nov 2026): plan ready, not executed.** The manual
+> browser checklist is `docs/master-plan/PHASE-8-RUNTIME-VALIDATION.md`, with
+> per-scenario pass/fail rules, Console probes, an evidence template, and an
+> optional `HEAD` worktree baseline. No browser-test dependency was installed
+> and no runtime measurement has been recorded yet. This phase stays open until
+> the evidence folder is populated.
 
 ------------------------------------------------------------------------
 

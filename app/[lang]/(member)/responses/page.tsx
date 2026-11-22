@@ -2,7 +2,6 @@ import type { Metadata } from "next"
 import { notFound } from "next/navigation"
 import { connection } from "next/server"
 import { ResponsesInbox } from "@/components/community/ResponsesInbox"
-import { PageTransition } from "@/components/layout/PageTransition"
 import { PageHeader } from "@/components/ui/PageHeader"
 import { listCreationResponses } from "@/features/community/activity"
 import { getCurrentProfile } from "@/lib/auth/session"
@@ -44,14 +43,12 @@ export default async function ResponsesPage({
   const items = await listCreationResponses({ markSeen: true })
 
   return (
-    <PageTransition>
-      <div className="mx-auto w-full max-w-xl px-4 py-6 sm:px-0 sm:py-10">
-        <PageHeader
-          title={socialCopy.notifications.title[lang]}
-          intro={copy.responsesIntro[lang]}
-        />
-        <ResponsesInbox lang={lang} items={items} />
-      </div>
-    </PageTransition>
+    <div className="mx-auto w-full max-w-xl px-4 py-6 sm:px-0 sm:py-10">
+      <PageHeader
+        title={socialCopy.notifications.title[lang]}
+        intro={copy.responsesIntro[lang]}
+      />
+      <ResponsesInbox lang={lang} items={items} />
+    </div>
   )
 }

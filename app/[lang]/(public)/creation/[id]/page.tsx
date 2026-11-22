@@ -13,7 +13,6 @@ import { RecommendationSkeleton } from "@/components/creations/RecommendationRac
 import { RemixStrip } from "@/components/creations/RemixStrip"
 import { SimilarWorksLazy } from "@/components/creations/SimilarWorksLazy"
 import { CreationCommunity, CreationEngagement } from "@/components/community/CreationCommunity"
-import { PageTransition } from "@/components/layout/PageTransition"
 import { BackLink } from "@/components/ui/BackLink"
 import { buttonClassName } from "@/components/ui/Button"
 import { PixelIcon } from "@/components/ui/PixelIcon"
@@ -204,84 +203,81 @@ export default async function CreationDetailPage({
   )
 
   return (
-    <PageTransition>
-      <article
-        className={
-          isPixel
-            ? "mx-auto w-full min-w-0 max-w-5xl px-5 py-6 sm:px-8 sm:py-8 lg:px-16"
-            : "mx-auto w-full min-w-0 max-w-3xl px-5 py-10 sm:px-8 sm:py-12 lg:px-16"
-        }
-      >
-        <BackLink href={href(lang, "/explore")} className="mb-5">
-          {copy.creationBack[lang]}
-        </BackLink>
+    <article
+      className={
+        isPixel
+          ? "mx-auto w-full min-w-0 max-w-5xl px-5 py-6 sm:px-8 sm:py-8 lg:px-16"
+          : "mx-auto w-full min-w-0 max-w-3xl px-5 py-10 sm:px-8 sm:py-12 lg:px-16"
+      }
+    >
+      <BackLink href={href(lang, "/explore")} className="mb-5">
+        {copy.creationBack[lang]}
+      </BackLink>
 
-        {isPixel ? (
-          <>
-            <div className="detail-art-stage">
-              <CreationBody
-                type={creation.type}
-                content={creation.content}
-                lang={lang}
-                coverUrl={coverUrl}
-                creationId={creation.id}
-                priority
-              />
-            </div>
-            <div className="mt-6 sm:mt-8">{identity}</div>
-          </>
-        ) : (
-          <>
-            <p className="pixel-kicker mb-3">{creationTypeLabels[creation.type][lang]}</p>
-            {identity}
-            <div className="mt-10">
-              <CreationBody
-                type={creation.type}
-                content={creation.content}
-                lang={lang}
-                coverUrl={coverUrl}
-              />
-            </div>
-          </>
-        )}
+      {isPixel ? (
+        <>
+          <div className="detail-art-stage">
+            <CreationBody
+              type={creation.type}
+              content={creation.content}
+              lang={lang}
+              coverUrl={coverUrl}
+              priority
+            />
+          </div>
+          <div className="mt-6 sm:mt-8">{identity}</div>
+        </>
+      ) : (
+        <>
+          <p className="pixel-kicker mb-3">{creationTypeLabels[creation.type][lang]}</p>
+          {identity}
+          <div className="mt-10">
+            <CreationBody
+              type={creation.type}
+              content={creation.content}
+              lang={lang}
+              coverUrl={coverUrl}
+            />
+          </div>
+        </>
+      )}
 
-        <Suspense fallback={<ConversationSkeleton />}>
-          <CreationConversationSlot
-            lang={lang}
-            creationId={creation.id}
-            title={title}
-            source={creation.source}
-            forkedFrom={creation.forked_from}
-            member={member}
-            prompt={conversationPrompt}
-          />
-        </Suspense>
+      <Suspense fallback={<ConversationSkeleton />}>
+        <CreationConversationSlot
+          lang={lang}
+          creationId={creation.id}
+          title={title}
+          source={creation.source}
+          forkedFrom={creation.forked_from}
+          member={member}
+          prompt={conversationPrompt}
+        />
+      </Suspense>
 
+      <Suspense fallback={<RecommendationSkeleton />}>
+        <CreatorOtherWorksSlot
+          lang={lang}
+          userId={creation.user_id}
+          username={creation.author.username}
+          excludeId={creation.id}
+        />
+      </Suspense>
+
+      {!creation.source && remixCount > 0 ? (
         <Suspense fallback={<RecommendationSkeleton />}>
-          <CreatorOtherWorksSlot
-            lang={lang}
-            userId={creation.user_id}
-            username={creation.author.username}
-            excludeId={creation.id}
-          />
+          <RemixStripSlot lang={lang} creationId={creation.id} />
         </Suspense>
+      ) : null}
 
-        {!creation.source && remixCount > 0 ? (
-          <Suspense fallback={<RecommendationSkeleton />}>
-            <RemixStripSlot lang={lang} creationId={creation.id} />
-          </Suspense>
-        ) : null}
-
-        {isPixel ? (
-          <SimilarWorksLazy
-            lang={lang}
-            creationId={creation.id}
-            category={creation.category}
-            tags={creation.tags}
-          />
-        ) : null}
-      </article>
-    </PageTransition>
+      {isPixel ? (
+        <SimilarWorksLazy
+          lang={lang}
+          creationId={creation.id}
+          category={creation.category}
+          tags={creation.tags}
+        />
+      ) : null}
+    </article>
   )
 }
 

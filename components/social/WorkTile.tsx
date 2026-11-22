@@ -21,6 +21,7 @@ export function WorkTile({
   className,
   showAuthor = true,
   size = "default",
+  preserveScroll = false,
 }: {
   creation: CreationCard
   lang: Lang
@@ -28,6 +29,8 @@ export function WorkTile({
   /** Hide the creator chip where the creator is already the page (profile). */
   showAuthor?: boolean
   size?: "default" | "large"
+  /** Opt in for feeds that restore their own scroll position (Explore only). */
+  preserveScroll?: boolean
 }) {
   const t = socialCopy.explore
   const title = displayTitle(creation.title, lang)
@@ -36,6 +39,9 @@ export function WorkTile({
   const authorName = creation.author.displayName?.trim() || creation.author.username
   const comments = creation.commentCount ?? 0
   const profileHref = href(lang, `/u/${creation.author.username}`)
+  const restoreScrollProps = preserveScroll
+    ? ({ scroll: false, "data-explore-resume": "true" } as const)
+    : {}
 
   return (
     <article
@@ -49,6 +55,7 @@ export function WorkTile({
       )}
     >
       <Link
+        {...restoreScrollProps}
         href={href(lang, `/creation/${creation.id}`)}
         aria-label={
           showAuthor ? `${title} — ${socialCopy.landing.workBy[lang]} @${creation.author.username}` : title
@@ -80,6 +87,7 @@ export function WorkTile({
           <div className="min-w-0">
             <p className="truncate text-[14px] font-semibold leading-tight">{title}</p>
             <Link
+              {...restoreScrollProps}
               href={profileHref}
               className="pointer-events-auto mt-1.5 inline-flex max-w-full items-center gap-2"
             >
@@ -110,6 +118,7 @@ export function WorkTile({
 
       {showAuthor && !large ? (
         <Link
+          {...restoreScrollProps}
           href={profileHref}
           className="absolute bottom-1.5 left-1.5 z-[2] flex max-w-[calc(100%-0.75rem)] items-center gap-1.5 bg-fg/75 py-1 pl-1 pr-2.5 text-white"
         >

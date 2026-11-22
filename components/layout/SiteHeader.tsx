@@ -17,7 +17,6 @@ export function SiteHeader({ lang, member }: { lang: Lang; member: NavMember }) 
           "site-header fixed inset-x-0 top-0 z-50 border-b-[3px] border-earth bg-bg",
           member && "md:hidden",
         )}
-        style={{ viewTransitionName: "site-header" }}
       >
         <div className="h-1.5 bg-sky" aria-hidden="true" />
         <nav
@@ -38,7 +37,6 @@ export function SiteHeader({ lang, member }: { lang: Lang; member: NavMember }) 
       {member ? (
         <header
           className="site-header social-rail fixed inset-y-0 left-0 z-50 hidden w-60 border-r-[3px] border-earth bg-bg md:block"
-          style={{ viewTransitionName: "site-sidebar" }}
         >
           <SocialSidebar lang={lang} member={member} />
         </header>

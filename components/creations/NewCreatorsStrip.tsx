@@ -14,12 +14,18 @@ const VISIBLE = 12
 export function NewCreatorsStrip({
   lang,
   items,
+  preserveScroll = false,
 }: {
   lang: Lang
   items: NewCreatorCard[]
+  /** Links inside the Explore feed opt out of Next's automatic scroll. */
+  preserveScroll?: boolean
 }) {
   if (items.length === 0) return null
   const creatorsHref = href(lang, "/creators")
+  const restoreScrollProps = preserveScroll
+    ? ({ scroll: false, "data-explore-resume": "true" } as const)
+    : {}
 
   return (
     <section aria-labelledby="new-creators-heading" className="min-w-0 py-2">
@@ -28,6 +34,7 @@ export function NewCreatorsStrip({
           {socialCopy.explore.creatorsTitle[lang]}
         </h2>
         <Link
+          {...restoreScrollProps}
           href={creatorsHref}
           className="inline-flex min-h-9 shrink-0 items-center text-[13px] text-muted hover:text-fg"
         >
@@ -43,6 +50,7 @@ export function NewCreatorsStrip({
           return (
             <li key={creator.username} className="w-[4.5rem] shrink-0">
               <Link
+                {...restoreScrollProps}
                 href={href(lang, `/u/${creator.username}`)}
                 className="flex flex-col items-center gap-1.5 text-center"
                 title={name}

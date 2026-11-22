@@ -1,5 +1,4 @@
 import Link from "next/link"
-import { ViewTransition } from "react"
 import { PixelArt } from "@/components/creations/PixelArt"
 import { ProfileAvatar } from "@/components/profiles/ProfileAvatar"
 import { displayTitle } from "@/lib/creations"
@@ -12,15 +11,12 @@ export function CreationCard({
   lang,
   hrefPath,
   showAuthor = true,
-  /** Shared morph to detail. Off when the same id may also appear in another list. */
-  artTransition = true,
 }: {
   creation: CreationCardData
   lang: Lang
   hrefPath?: string
   /** Hide @username on profile grids where the author is already known. */
   showAuthor?: boolean
-  artTransition?: boolean
 }) {
   const path = hrefPath ?? `/creation/${creation.id}`
   const cover = creation.type === "pixel" ? creation.cover_url : null
@@ -43,18 +39,11 @@ export function CreationCard({
     <article className="pixel-frame relative h-full min-w-0 bg-card">
       <Link
         href={href(lang, path)}
-        transitionTypes={["nav-forward"]}
         className="absolute inset-0 z-0"
         aria-label={title}
       />
       <div className="pointer-events-none relative z-[1]">
-        {cover && artTransition ? (
-          <ViewTransition name={`creation-art-${creation.id}`} share="morph" default="none">
-            {thumb}
-          </ViewTransition>
-        ) : (
-          thumb
-        )}
+        {thumb}
         {creation.isNew ? (
           <span className="absolute left-2 top-2 border-[2px] border-earth bg-card px-1.5 py-0.5 text-[10px] font-medium text-fg">
             {copy.feedNewBadge[lang]}

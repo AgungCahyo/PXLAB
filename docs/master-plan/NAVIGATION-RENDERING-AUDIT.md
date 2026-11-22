@@ -156,7 +156,7 @@ Shared chrome is outside these wrappers, so animations apply only to page bodies
 
 - React `cache()` is used on only four public reads in `features/creations/queries.ts:224,287,429,456`.
 - `use cache` appears only in `components/layout/SiteFooter.tsx:4-12`.
-- No `unstable_cache`, `revalidateTag`, `cacheTag`, `staleTimes`, or tag-based invalidation exists in app source.
+- At audit time no `unstable_cache`, `revalidateTag`, `cacheTag`, `staleTimes`, or tag-based invalidation existed in app source. Section U now pins explicit `staleTimes`.
 - One external fetch has a time cache: `lib/share-server.ts:88-95` (`revalidate: 3600`).
 
 ### Dynamic reads dominate
@@ -195,17 +195,17 @@ A single member route render can therefore repeat `auth.getUser()` + profile loo
 
 ## G. Scroll behavior (NAV-06)
 
-- Global smooth scrolling: `globals.css:63-67` plus `<html data-scroll-behavior="smooth">` at `[lang]/layout.tsx:77`; reduced-motion override at `globals.css:717-720`.
-- No `scroll={false}` on any `Link`; no `history.scrollRestoration`; no global route scroll reset. Default Next Link scroll-to-top applies to client navigations.
+- Global smooth scrolling: `globals.css:63-67` plus `<html data-scroll-behavior="smooth">` at `[lang]/layout.tsx:77`; reduced-motion override at `globals.css:717-720`. Next detects that attribute and disables smooth scrolling only during its own route-transition scroll.
+- Default Next Link scroll behavior still applies everywhere except opted-in Explore links (`scroll={false}`); no `history.scrollRestoration` and no global route scroll reset were added.
 - Explore is the only page with explicit restoration:
-  - `components/social/ExploreInfinite.tsx:65-106` reads `sessionStorage`, restores with `window.scrollTo(0, saved.y)` at `:99` inside nested `requestAnimationFrame`s.
-  - `:108-128` saves items/page/scroll on scroll, `pagehide`, and unmount.
-  - `:153-157` sets the resume marker only when a tile-grid anchor is clicked.
+  - `components/social/ExploreInfinite.tsx` reads `sessionStorage` and restores with `window.scrollTo({ top: saved.y, left: 0, behavior: "instant" })` inside nested `requestAnimationFrame`s (Section V).
+  - It saves items/page/scroll on scroll, `pagehide`, and unmount.
+  - The resume marker is now set only for links carrying `data-explore-resume` (opted-in tiles and Explore interludes), not for any anchor in the grid.
   - `components/social/useInfiniteList.ts:64-81` provides `restore()` and IntersectionObserver.
-- Home feed has no equivalent (`HomeFeed.tsx:57-103`) and is remounted by `home/page.tsx:148`.
+- Home feed has no equivalent (`HomeFeed.tsx:57-103`) and is remounted by `home/page.tsx:148`; this is intentional — no generic keeper was added.
 - Container scroll locks are local to studio dialogs/rails; `globals.css:79-84` explicitly forbids body-level playground scroll locking.
 
-**Finding NAV-06:** Explore restoration exists but is bespoke and races with two mechanisms: Next’s default scroll-to-top and CSS smooth scrolling. Home/Profile/Notifications have no restoration.
+**Finding NAV-06:** Explore restoration is now scoped to opted-in links and restores with an explicit non-smooth scroll, removing the race with Next's default scroll and CSS smooth scrolling (Section V). Home/Profile/Notifications still have no bespoke restoration, as decided in the change plan.
 
 ---
 
@@ -234,7 +234,7 @@ Route-level `loading.tsx` files now exist for:
 - `(public)/home`, `(public)/explore`, `(public)/creation/[id]`, `(public)/u/[username]`
 - `(member)/dashboard`, `(member)/responses`, `(member)/create`, `(member)/create/[id]`
 
-Missing route-level fallbacks: landing `/`, `/creators`, `/space`, all `(auth)` pages, `/admin`, `(member)/settings`, `(member)/welcome`.
+Missing route-level fallbacks (at audit time): landing `/`, `/creators`, `/space`, all `(auth)` pages, `/admin`, `(member)/settings`, `(member)/welcome`. These were added in Section T; all 19 page routes now have fallback coverage.
 
 Suspense/skeleton usage:
 
@@ -242,7 +242,7 @@ Suspense/skeleton usage:
 - Explore discovery bands with `fallback={null}`: `explore/page.tsx:75-87`
 - Explore results: `:98-108` (`TileGridSkeleton`)
 - Home results: `home/page.tsx:65` (`FeedSkeleton`)
-- Profile: `u/[username]/page.tsx:152-161` (`ProfileGridSkeleton`) — but profile data is awaited at `:57-70`, so this boundary is too late to stream early
+- Profile: `u/[username]/page.tsx` (`ProfileGridSkeleton`) — at audit time the boundary was too late because works were awaited at `:65`; Section T moves works into async Suspense children
 - Detail slots: `creation/[id]/page.tsx:248-273` (conversation, other works, remix)
 - Skeleton library: `components/social/Skeleton.tsx:5-84`, `components/creations/PageSkeletons.tsx:8-189`
 
@@ -310,7 +310,7 @@ Minor unrelated gaps: `PixelBoard.tsx:872-878` has no `cancelAnimationFrame`; `T
 - All data reads are dynamic (`connection()` in `queries.ts:182` etc.) and no `staleTimes`/tag cache keeps old content visible.
 - `getCurrentProfile()` repeats across shell, layout, page, and activity.
 - Explore search uses a document GET form (`ExploreGallery.tsx:36`).
-- Explore scroll restore can fight Next's default scroll-to-top and global smooth scrolling.
+- Explore scroll restore could fight Next's default scroll-to-top and global smooth scrolling; fixed in Section V with opt-in `scroll={false}` and `behavior: "instant"`. Runtime measurement is still a Phase 8 deliverable.
 
 ### 3. Detail/profile show blank or slow content
 
@@ -342,7 +342,7 @@ None found; deprioritize NAV-09.
 3. **Deduplicate identity reads request-scoped.** Introduce a request-scoped accessor for `getCurrentProfile()`/`getSessionUserId()` so shell, layout, page, and activity share one `auth.getUser()` + profile query. Verify cache semantics with local Next docs before implementation because these helpers read cookies.
 4. **Define stale-content policy.** Add explicit `staleTimes` where safe, keep `instant = false` where auth correctness matters, and ensure loading boundaries show a skeleton rather than blank `main`. Do not cache private data by public keys.
 5. **Finish loading coverage.** Add `loading.tsx` or an early Suspense boundary for landing, creators, space, settings, welcome, auth routes, admin, and move the profile boundary before the awaited data.
-6. **Unify scroll restoration.** For Explore, disable Link's automatic scroll (`scroll={false}`) where manual restore is used and call `window.scrollTo` with an explicit non-smooth behavior. Decide whether Home/Profile need the same; do not add a generic keeper.
+6. **Unify scroll restoration.** For Explore, disable Link's automatic scroll (`scroll={false}`) where manual restore is used and call `window.scrollTo` with an explicit non-smooth behavior. Decide whether Home/Profile need the same; do not add a generic keeper. (Done — Section V; Home/Profile intentionally unchanged.)
 7. **Eliminate full loads where safe.** Convert `LanguageSwitch` to a client navigation only after verifying `<html lang>` updates correctly; convert Explore search to a client-side URL push only after verifying Back/Forward and filter state.
 8. **Add runtime validation before claiming done.** Current tests are static/SSR only. Add a browser-level test (or documented manual measurement) for studio exit → nav clickable/scroll unlocked → Back/Forward → Explore restore. Do not install a browser-test stack solely for this audit; decide when Phase 8 starts.
 
@@ -374,12 +374,15 @@ Phases 3 and 4 of the original roadmap can still run in parallel after step 2, p
 
 ### Existing guards
 
-- `tests/mobile-chrome.test.ts:17-53` — studio chrome locality, no `playground-open`, no body playground nav/scroll selector, `navigating` early return.
-- `tests/footer.test.ts:20-31` — footer not hidden by playground body selector; studio CSS still route-scoped.
-- `tests/pixel-world.test.ts:13-18,38-53` — backdrop mount, scene mapping, no playground body selector.
-- `tests/back-navigation.test.ts:12-69` — static studio/settings back strings, save/discard guards.
-- `tests/view-transition-guard.test.ts:8-41` — real unit test of benign abort classification + static install checks.
-- `tests/instant-interaction.test.ts:25-32` — static existence of key loading skeletons.
+- `tests/mobile-chrome.test.ts` — studio chrome locality, no `playground-open`, no body playground nav/scroll selector, no `navigating` early return.
+- `tests/footer.test.ts` — footer not hidden by playground body selector; studio CSS still route-scoped.
+- `tests/pixel-world.test.ts` — backdrop mount, scene mapping, no playground body selector.
+- `tests/back-navigation.test.ts` — static studio/settings back strings, save/discard guards, narrowed chrome-link guard.
+- `tests/route-transitions.test.ts` — static guard that no transition consumer or orphan CSS returns (Phase 6).
+- `tests/session-identity.test.ts` — static guard for the single request-scoped `auth.getUser()` primitive (Section S).
+- `tests/instant-interaction.test.ts` — key loading skeletons, full page-route fallback coverage, shared auth fallback, and the profile's early Suspense boundary (Section T).
+- `tests/cache-policy.test.ts` — static owner/TTL policy, blocking private segments, and mutation invalidation (Section U).
+- `tests/scroll-restoration.test.ts` — opt-in Explore resume links, explicit instant scroll, and no generic scroll keeper (Section V).
 - `tests/explore-layout.test.ts:63-69`, `tests/explore-render.test.ts:44-87`, `tests/feed-render.test.ts:37-73` — static/SSR shape.
 - `tests/pwa.test.ts:37-58`, `tests/pwa-dev.test.ts:7-25` — SW strategy and dev cleanup.
 
@@ -389,15 +392,15 @@ No test currently covers:
 
 - real shell mount identity across client navigation;
 - `popstate`, `history.back()`, `router.back()`, or direct/back-across-route-group loads;
-- actual network request counts or duplicate `auth.getUser()` calls;
-- studio exit with slow/failing/successful save and post-exit clickability/scroll unlock;
-- scroll restoration timing (including smooth-scroll race);
+- actual network request counts at runtime (the dedupe source shape is guarded statically in `tests/session-identity.test.ts`);
+- studio exit with slow/failing/successful save and post-exit clickability/scroll unlock (happy path confirmed manually by the user);
+- scroll restoration timing in a real browser (static guards now cover the opt-in marker and explicit `instant` restore — Section V);
 - listener/fetch-patch lifecycle counts;
-- account-switch cache isolation;
-- transition removal completeness or runtime aborted transitions;
+- account-switch cache isolation at runtime;
+- runtime transition behavior (transition machinery is removed and guarded statically by `tests/route-transitions.test.ts`);
 - before/after performance measurements.
 
-Test infrastructure is `vitest` with `environment: "node"` (`package.json:11`, `vitest.config.ts:4-8`); there is no browser-test dependency. These gaps are expected for Phase 1 and become mandatory inputs to Phase 8.
+Test infrastructure is `vitest` with `environment: "node"` (`package.json:11`, `vitest.config.ts:4-8`); there is no browser-test dependency. These gaps are expected for Phase 1 and become mandatory inputs to Phase 8; the manual checklist is `docs/master-plan/PHASE-8-RUNTIME-VALIDATION.md` (Section W).
 
 ---
 
@@ -413,4 +416,117 @@ Test infrastructure is `vitest` with `environment: "node"` (`package.json:11`, `
 | Main causes of slow/disruptive navigation understood and documented | Yes — Sections A, L |
 | Real measurements before/after | Not Phase 1; tracked in Phase 8 |
 
-**Phase 1 is complete.** No implementation changes were made by this audit. All auth/nav/studio fixes remain uncommitted in the working tree.
+**Phase 1 is complete.** The audit itself made no code changes. The auth/nav/studio fixes present when it was written were committed in `d63dda3` before implementation began.
+
+---
+
+## Q. Implementation status — Phase 6
+
+Completed on 22 Nov 2026, ahead of Phases 2–5, because `ViewTransition` retention was the confirmed mechanism behind the studio-exit regression (Section L).
+
+| Step | Result |
+|---|---|
+| `PageTransition` wrappers | Removed from all 9 pages; component deleted |
+| `creation-art-*` morphs | Removed from `CreationCard`/`CreationBody`; `artTransition` and `creationId` transition-only props removed with their callers updated |
+| Shell transition metadata | `viewTransitionName` removed from `SiteHeader`, `SiteNav`, `SocialNav` |
+| Route-transition CSS | Duration tokens, `::view-transition` rules, `.fade`/`.nav-forward`/`.nav-back`/`.morph` rules, and `vt-*` keyframes removed; reduced-motion overrides for other animations kept |
+| Abort filter | `lib/view-transition-abort.ts`, `ViewTransitionGuard`, and `instrumentation-client.ts` deleted; `PublicShell` mount removed |
+| Regression guard | `tests/route-transitions.test.ts` scans `app`, `components`, `features`, `lib` for any reintroduced transition consumer or orphan CSS |
+| Roadmap | Phase 6 implementation note added |
+
+All Section N implementation steps are now addressed. Browser-level measurement remains a Phase 8 deliverable; runtime studio-exit verification was confirmed safe by the user (see Section R).
+
+---
+
+## R. Implementation status — studio exit simplification
+
+Completed on 22 Nov 2026, directly after Phase 6 (Section N step 3).
+
+| Step | Result |
+|---|---|
+| `navigating` state | Removed from `components/creations/PlaygroundForm.tsx`; the overlay now unmounts naturally when the route commits |
+| `go()` wrapper | Removed; all three leave paths call `router.push()` directly |
+| `guardChromeNav` | Still defers a chrome link while a save/discard is in flight, but now resolves `a[href]` in `header.fixed`/`.app-tabbar` first and only swallows that navigation — unrelated clicks and same-page links stay interactive |
+| Regression guards | `tests/mobile-chrome.test.ts` asserts no `navigating` early return; `tests/back-navigation.test.ts` asserts the narrowed guard and direct `router.push` exit |
+
+`StudioForm` was left unchanged: it already uses a plain `router.push` and has no overlay-drop workaround. The user confirmed in-browser that navigation returns immediately after leaving the pixel studio and the destination stays interactive, including save/discard paths.
+
+---
+
+## S. Implementation status — request-scoped identity dedupe
+
+Completed on 22 Nov 2026 (Section N step 4). Verified against the local Next.js guides before coding: `01-app/02-guides/authentication.md:1137-1181` recommends React `cache()` for a request-scoped DAL, and notes that it dedupes within a render pass only — Server Actions and Route Handlers are outside a render pass and still read fresh state.
+
+| Step | Result |
+|---|---|
+| Shared primitive | `getCurrentAuthUser()` is now the single `cache()`-wrapped accessor that calls `auth.getUser()` |
+| Derived accessors | `getSessionUserId()` and `getCurrentProfile()` call `getCurrentAuthUser()` instead of each running their own `getUser()`; both are also `cache()`-wrapped so the profile query dedupes too |
+| Cross-request safety | React `cache()` scopes memoization to one render pass, so no result is shared across requests or accounts; `getProfileByUsername()` stays on the cookie-less public client |
+| Actions | No behavior change: `cache()` is a no-op in Server Actions/Route Handlers, where fresh post-login/post-revalidation state is required |
+| Regression guard | `tests/session-identity.test.ts` asserts a single `auth.getUser()`, the shared primitive usage, and independent public reads |
+
+A single member render (shell + layout + page + activity badge + query helpers) now performs one `auth.getUser()` and one profile query instead of repeating them per caller. No cross-navigation client cache was introduced.
+
+---
+
+## T. Implementation status — loading coverage and early profile boundary
+
+Completed on 22 Nov 2026 (Section N step 5). Checked against the local Next.js `loading` and `instant` references before coding: a `loading.tsx` wraps `page.js` in a Suspense boundary, and `instant = false` still allows prerendering and streaming, so the new fallbacks are compatible with the existing blocking auth routes.
+
+| Step | Result |
+|---|---|
+| Shared fallbacks | `components/ui/RouteSkeletons.tsx` adds `RouteSkeleton` and `AuthRouteSkeleton` built on the existing `Skeleton` primitive |
+| New route fallbacks | `loading.tsx` added for landing, creators, space, settings, welcome and admin; one `(auth)/loading.tsx` covers all five auth pages |
+| Coverage | All 19 `page.tsx` routes now resolve to a fallback in their own or an ancestor segment; the 8 pre-existing bespoke skeletons are unchanged |
+| Profile boundary | `u/[username]/page.tsx` no longer awaits works before rendering: `ProfileWorks` and a new `ProfileWorksCount` are async children behind real Suspense boundaries, sharing one cached `loadProfileWorks(profileId)` query via a stable options object |
+| Auth layout caveat | `(member)` and `admin` layouts intentionally still await identity for redirects; their page fallbacks therefore appear after that gate, which preserves auth correctness |
+
+`tests/instant-interaction.test.ts` now enumerates every page route and asserts fallback coverage, verifies the auth group has a single shared loading file, and checks the profile's async Suspense structure. No visual design changes were made to the real pages.
+
+---
+
+## U. Implementation status — stale-content policy and cache ownership
+
+Completed on 22 Nov 2026 (Section N step 4). Checked against the local Next.js `staleTimes`, `cacheLife`, `loading` and Client Cache references first.
+
+| Layer | Owner | Policy |
+|---|---|---|
+| Client Cache (RSC payload) | `next.config.ts` | `experimental.staleTimes = { dynamic: 0, static: 180 }` — dynamic/private routes are never reused across navigations; static non-personalized segments keep the 5-minute default. Pinned explicitly because Next 15 changed the `dynamic` default from 30s to 0s, so a future default change cannot silently cache account data. |
+| Request-scope dedupe | `lib/auth/session.ts`, `features/creations/queries.ts` | React `cache()` only; scoped to one render pass, never shared across requests |
+| Server output cache | `components/layout/SiteFooter.tsx` | The only `'use cache'` consumer; static site name and copyright year. No private data is cached by a public key |
+| Auth gates | `(auth)`, `(member)`, `admin` segments | All still export `instant = false`; redirects and viewer-specific reads stay blocking |
+| Invalidation | Server Actions | `revalidatePath` in auth/creation actions and `router.refresh()` in `SpaceBoard` clear the client cache immediately; no blanket cache library was added |
+
+The policy is enforced statically by `tests/cache-policy.test.ts`. No client-cache library, `unstable_cache`, or new `'use cache'` consumer was introduced. This keeps the audit's rule that private data must never be served from a public cache key.
+
+---
+
+## V. Implementation status — unified Explore scroll restoration
+
+Completed on 22 Nov 2026 (Section N step 6). Checked against the local Next.js `link` and `use-router` references: `scroll={false}` / `{ scroll: false }` disables Next's automatic scroll to the new page, while `data-scroll-behavior="smooth"` lets Next temporarily set `scroll-behavior: auto` during its own route transition.
+
+| Step | Result |
+|---|---|
+| Opt-in links | `WorkTile` and `NewCreatorsStrip` accept `preserveScroll`; when true they set `scroll={false}` and `data-explore-resume="true"` on their links. Other usages are unchanged |
+| Explore feed | `ExploreInfinite` passes `preserveScroll` to grid tiles and now marks resume only for `a[data-explore-resume]`, not any anchor in the grid |
+| Interludes | `QuietRack` forwards the prop; the Explore-only `NewCreatorsSlot` and `QuietRackSlot` enable it, so band links follow the same policy |
+| Restore call | `window.scrollTo({ top: saved.y, left: 0, behavior: "instant" })` replaces the previous two-argument call, so global CSS smooth scrolling cannot animate the restore |
+| Scope | No `history.scrollRestoration`, no global route scroll reset, and no changes to Home/Profile. No Keep-Alive library or generic scroll keeper was introduced |
+
+The local Next smooth-scroll helper only wraps Next's own transition scroll; this manual restore happens in a later `requestAnimationFrame`, which is why the explicit `instant` behavior is still required. `tests/scroll-restoration.test.ts` guards the opt-in marker, the explicit scroll call, and the absence of a generic keeper. Browser timing measurement remains Phase 8 work.
+
+---
+
+## W. Phase 8 runtime validation plan
+
+All Section N implementation steps are complete; the remaining deliverable is
+runtime proof, not more source changes. The manual checklist is in
+`docs/master-plan/PHASE-8-RUNTIME-VALIDATION.md`. It covers shell identity after
+studio exit, Explore restore (all opt-in link types), loading boundaries,
+account-switch cache isolation, runtime `auth.getUser()` counts, Back/Forward
+and direct URLs, auth regression smoke, repeated-navigation memory, and
+Pull-to-Refresh/offline.
+
+No browser-test stack was installed, and no evidence was generated yet. The
+plan explicitly keeps the current uncommitted tree untouched and treats a
+`HEAD` worktree baseline as optional.

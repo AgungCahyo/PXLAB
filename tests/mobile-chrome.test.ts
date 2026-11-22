@@ -29,17 +29,19 @@ describe("mobile chrome — R3", () => {
     expect(playground).toMatch(/fixed inset-0/)
     expect(playground).not.toMatch(/md:top-\[66px\]/)
     expect(playground).toMatch(/playground-toolbar/)
-    // Studio chrome must be local: a body-level `:has()` selector stays true
-    // while React retains the old route during a view transition, which hid
-    // the nav and locked the document after leaving the studio.
+    // Studio chrome must be local: a body-level `:has()` selector could stay
+    // true while React retained the old route during a view transition, which
+    // hid the nav and locked the document after leaving the studio.
     expect(css).not.toMatch(/body:has\(\[data-chrome="playground"\]\) \.site-header/)
     expect(css).not.toMatch(/body:has\(\[data-chrome="playground"\]\) \.app-tabbar/)
     expect(css).not.toMatch(/body:has\(\[data-chrome="playground"\]\) \{/)
     expect(css).not.toMatch(/playground-open/)
     expect(playground).not.toMatch(/classList\.(add|remove)\("playground-open"\)/)
-    expect(playground).toMatch(/const \[navigating, setNavigating\] = useState\(false\)/)
-    expect(playground).toMatch(/setNavigating\(true\)[\s\S]*router\.push/)
-    expect(playground).toMatch(/if \(navigating\) return null/)
+    // Without route transitions the overlay unmounts on commit; no early
+    // return may hide the studio before the destination is ready.
+    expect(playground).not.toMatch(/navigating|setNavigating/)
+    expect(playground).toMatch(/router\.push\(dest\)/)
+    expect(playground).toMatch(/router\.push\(leaveDestRef\.current\)/)
     // Only decorative busy state may be route-scoped; shell nav must never be.
     expect(css).toMatch(/body:has\(\[data-chrome="playground"\]\) \.corner-busy-shell/)
     expect(css).toMatch(/\.playground-header[\s\S]*safe-area-inset-top/)

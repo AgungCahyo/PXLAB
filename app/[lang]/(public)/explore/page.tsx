@@ -9,7 +9,6 @@ import {
 } from "@/components/creations/ExploreGallery"
 import { NewCreatorsStrip } from "@/components/creations/NewCreatorsStrip"
 import { QuietRack } from "@/components/creations/QuietRack"
-import { PageTransition } from "@/components/layout/PageTransition"
 import { TileGridSkeleton } from "@/components/social/Skeleton"
 import { SocialEmptyState } from "@/components/social/SocialEmptyState"
 import { socialButtonClass } from "@/components/social/socialButton"
@@ -89,26 +88,24 @@ export default async function ExplorePage({
     : undefined
 
   return (
-    <PageTransition>
-      <div className="mx-auto w-full min-w-0 max-w-6xl px-3 py-4 sm:px-6 sm:py-6 lg:px-10">
-        <h1 className="sr-only">{copy.exploreTitle[lang]}</h1>
+    <div className="mx-auto w-full min-w-0 max-w-6xl px-3 py-4 sm:px-6 sm:py-6 lg:px-10">
+      <h1 className="sr-only">{copy.exploreTitle[lang]}</h1>
 
-        <ExploreFilters lang={lang} category={category} q={q} feed={feed} />
+      <ExploreFilters lang={lang} category={category} q={q} feed={feed} />
 
-        <div className="mt-3 min-w-0 sm:mt-4">
-          <Suspense fallback={<TileGridSkeleton />}>
-            <ExploreResults
-              lang={lang}
-              category={category}
-              q={q}
-              page={page}
-              feed={feed}
-              interludes={interludes}
-            />
-          </Suspense>
-        </div>
+      <div className="mt-3 min-w-0 sm:mt-4">
+        <Suspense fallback={<TileGridSkeleton />}>
+          <ExploreResults
+            lang={lang}
+            category={category}
+            q={q}
+            page={page}
+            feed={feed}
+            interludes={interludes}
+          />
+        </Suspense>
       </div>
-    </PageTransition>
+    </div>
   )
 }
 
@@ -212,11 +209,11 @@ async function ExploreResults({
 async function QuietRackSlot({ lang }: { lang: Lang }) {
   const quiet = await listQuietPublishedCreations(6)
   if (quiet.failed || quiet.items.length === 0) return null
-  return <QuietRack lang={lang} items={quiet.items} />
+  return <QuietRack lang={lang} items={quiet.items} preserveScroll />
 }
 
 async function NewCreatorsSlot({ lang }: { lang: Lang }) {
   const creators = await listNewCreators(12)
   if (creators.failed || creators.items.length === 0) return null
-  return <NewCreatorsStrip lang={lang} items={creators.items} />
+  return <NewCreatorsStrip lang={lang} items={creators.items} preserveScroll />
 }

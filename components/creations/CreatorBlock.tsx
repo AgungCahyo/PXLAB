@@ -124,7 +124,7 @@ export function CreatorOtherWorks({
       <ul className={recommendationStripListClass}>
         {items.map((item) => (
           <li key={item.id} className={recommendationStripItemClass}>
-            <CreationCard creation={item} lang={lang} showAuthor={false} artTransition={false} />
+            <CreationCard creation={item} lang={lang} showAuthor={false} />
           </li>
         ))}
       </ul>

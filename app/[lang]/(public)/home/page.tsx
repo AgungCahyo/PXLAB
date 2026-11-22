@@ -2,7 +2,6 @@ import type { Metadata } from "next"
 import Link from "next/link"
 import { notFound } from "next/navigation"
 import { Suspense } from "react"
-import { PageTransition } from "@/components/layout/PageTransition"
 import type { FeedViewer } from "@/components/social/CommentPanel"
 import { HomeFeed } from "@/components/social/HomeFeed"
 import { TabLink } from "@/components/social/Pill"
@@ -50,23 +49,21 @@ export default async function HomePage({
   const t = socialCopy.feed
 
   return (
-    <PageTransition>
-      <div className="mx-auto w-full min-w-0 max-w-xl px-4 pb-10 pt-2 sm:px-0 sm:pt-6">
-        <h1 className="sr-only">{t.title[lang]}</h1>
-        <nav aria-label={t.tabsAria[lang]} className="flex border-b border-[color:var(--soc-hairline)]">
-          <TabLink href={href(lang, "/home")} selected={feed === "all"}>
-            {t.forYou[lang]}
-          </TabLink>
-          <TabLink href={`${href(lang, "/home")}?feed=following`} selected={feed === "following"}>
-            {t.following[lang]}
-          </TabLink>
-        </nav>
+    <div className="mx-auto w-full min-w-0 max-w-xl px-4 pb-10 pt-2 sm:px-0 sm:pt-6">
+      <h1 className="sr-only">{t.title[lang]}</h1>
+      <nav aria-label={t.tabsAria[lang]} className="flex border-b border-[color:var(--soc-hairline)]">
+        <TabLink href={href(lang, "/home")} selected={feed === "all"}>
+          {t.forYou[lang]}
+        </TabLink>
+        <TabLink href={`${href(lang, "/home")}?feed=following`} selected={feed === "following"}>
+          {t.following[lang]}
+        </TabLink>
+      </nav>
 
-        <Suspense key={`${feed}-${page}`} fallback={<FeedSkeleton />}>
-          <HomeResults lang={lang} feed={feed} page={page} />
-        </Suspense>
-      </div>
-    </PageTransition>
+      <Suspense key={`${feed}-${page}`} fallback={<FeedSkeleton />}>
+        <HomeResults lang={lang} feed={feed} page={page} />
+      </Suspense>
+    </div>
   )
 }
 

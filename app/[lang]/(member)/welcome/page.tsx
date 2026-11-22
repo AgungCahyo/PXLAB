@@ -1,7 +1,6 @@
 import type { Metadata } from "next"
 import { notFound, redirect } from "next/navigation"
 import { connection } from "next/server"
-import { PageTransition } from "@/components/layout/PageTransition"
 import { WelcomeForm } from "@/components/profiles/WelcomeForm"
 import { PageHeader } from "@/components/ui/PageHeader"
 import { getCurrentProfile, needsOnboarding } from "@/lib/auth/session"
@@ -50,11 +49,9 @@ export default async function WelcomePage({
   }
 
   return (
-    <PageTransition>
-      <div className="mx-auto w-full min-w-0 max-w-xl px-5 py-10 sm:px-8 sm:py-14 lg:px-16">
-        <PageHeader title={copy.welcomeTitle[lang]} intro={copy.welcomeIntro[lang]} />
-        <WelcomeForm lang={lang} profile={profile} next={destination} />
-      </div>
-    </PageTransition>
+    <div className="mx-auto w-full min-w-0 max-w-xl px-5 py-10 sm:px-8 sm:py-14 lg:px-16">
+      <PageHeader title={copy.welcomeTitle[lang]} intro={copy.welcomeIntro[lang]} />
+      <WelcomeForm lang={lang} profile={profile} next={destination} />
+    </div>
   )
 }

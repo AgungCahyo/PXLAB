@@ -10,9 +10,12 @@ import type { CreationCard as CreationCardData } from "@/features/creations/quer
 export function QuietRack({
   lang,
   items,
+  preserveScroll = false,
 }: {
   lang: Lang
   items: CreationCardData[]
+  /** Forwarded to tiles when this rack is an Explore interlude. */
+  preserveScroll?: boolean
 }) {
   if (items.length === 0) return null
   const t = socialCopy.explore
@@ -26,7 +29,7 @@ export function QuietRack({
       <ul className="-mx-3 mt-3 flex min-w-0 flex-nowrap gap-1.5 overflow-x-auto px-3 pb-1 sm:mx-0 sm:px-0 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {items.slice(0, 6).map((item) => (
           <li key={item.id} className="aspect-square w-40 shrink-0 sm:w-44">
-            <WorkTile creation={item} lang={lang} />
+            <WorkTile creation={item} lang={lang} preserveScroll={preserveScroll} />
           </li>
         ))}
       </ul>

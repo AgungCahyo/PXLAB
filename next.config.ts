@@ -25,6 +25,17 @@ const indonesianRoutes = [
 const nextConfig: NextConfig = {
   cacheComponents: true,
   partialPrefetching: true,
+  experimental: {
+    // Stale-content policy: dynamic routes (every private/viewer-specific
+    // page here) are never reused from the client cache across navigations.
+    // Next 15 changed this default from 30s to 0s; pinning it prevents a
+    // future default change from silently serving account data to another
+    // account. Static, non-personalized segments keep the 5-minute default.
+    staleTimes: {
+      dynamic: 0,
+      static: 180,
+    },
+  },
   turbopack: {
     root: projectRoot,
     rules: {
