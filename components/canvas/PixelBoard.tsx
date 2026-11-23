@@ -24,7 +24,7 @@ import { PixelHistory, type HistoryFrame } from "@/lib/pixel-history"
 import {
   assignLayerToGroup as assignLayerToGroupModel,
   cloneGroups,
-  createGroupFromLayer,
+  createGroupFromLayers as createGroupFromLayersModel,
   findGroup,
   layerEffectivelyHidden,
   moveGroup as moveGroupModel,
@@ -390,8 +390,12 @@ export type PixelBoardHandle = {
   setActiveLayer: (id: string) => boolean
   setLayerVisible: (id: string, visible: boolean) => boolean
   setLayerLocked: (id: string, locked: boolean) => boolean
-  /** New group wrapping one ungrouped layer. Returns the group id. */
-  createGroup: (layerId: string, name?: string) => string | null
+  /**
+   * One undo step. With layer ids: a new group holding those ungrouped layers (gathered at the
+   * topmost one). With none: a new group holding a fresh blank layer (a group always has a member,
+   * so the saved document format is unchanged). Returns the group id, or null when not possible.
+   */
+  createGroupFromLayers: (layerIds: string[], name?: string) => string | null
   /** Move a layer into an existing group (next to its run). */
   assignLayerToGroup: (layerId: string, groupId: string) => boolean
   removeLayerFromGroup: (layerId: string) => boolean
@@ -2588,17 +2592,38 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
       return true
     },
     getGroups: () => groupInfoList(groupsRef.current),
-    createGroup: (layerId, name) => {
-      const target = layersRef.current.find((layer) => layer.id === layerId)
-      if (!target || target.group) return null
+    createGroupFromLayers: (layerIds, name) => {
+      const ids = [...new Set<string>(layerIds)]
+      const stack = layersRef.current
+      if (ids.length === 0) {
+        if (stack.length >= PIXEL_LAYER_MAX) return null
+      } else if (!ids.every((id) => stack.some((layer) => layer.id === id && !layer.group))) {
+        return null
+      }
       pushUndo()
       syncActiveFromImage()
-      const group = createGroupFromLayer(
-        layersRef.current,
+      const activeId = stack[activeLayerIndexRef.current]?.id
+      let members = ids
+      if (ids.length === 0) {
+        const blank = createEmptyLayer(
+          canvasWidthRef.current,
+          canvasHeightRef.current,
+          `Layer ${stack.length + 1}`,
+        )
+        stack.push(blank)
+        members = [blank.id]
+      }
+      const group = createGroupFromLayersModel(
+        stack,
         groupsRef.current,
-        layerId,
+        members,
         name ?? `Group ${groupsRef.current.length + 1}`,
       )
+      // Gathering can shift indices; keep the same layer active (a new blank layer becomes active).
+      const keepId = ids.length === 0 ? members[0] : activeId
+      const at = stack.findIndex((layer) => layer.id === keepId)
+      if (at >= 0) activeLayerIndexRef.current = at
+      loadActiveIntoImage()
       emitLayers()
       schedule()
       onStrokeEnd?.()

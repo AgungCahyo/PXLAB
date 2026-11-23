@@ -173,15 +173,32 @@ export function moveLayerInStack(
   return to
 }
 
-/** New group containing one ungrouped layer. Returns the group or null (unknown layer / already grouped). */
-export function createGroupFromLayer(
+/**
+ * New group containing the given ungrouped layers. Returns the group or null (unknown layer,
+ * already grouped, or nothing given).
+ *
+ * The members must form one contiguous run, so the picked layers are gathered at the position of
+ * the topmost one while keeping their relative order (like Photoshop). Every other layer keeps its
+ * relative order and existing groups stay whole, because only ungrouped layers are ever moved.
+ * Picking a contiguous range therefore never reorders anything.
+ */
+export function createGroupFromLayers(
   layers: PixelLayerRuntime[],
   groups: PixelGroupRuntime[],
-  layerId: string,
+  layerIds: readonly string[],
   name: string,
 ): PixelGroupRuntime | null {
-  const layer = layers.find((item) => item.id === layerId)
-  if (!layer || layer.group) return null
+  const wanted = new Set(layerIds)
+  if (wanted.size === 0) return null
+  const picked = layers.filter((layer) => wanted.has(layer.id))
+  if (picked.length !== wanted.size || picked.some((layer) => layer.group)) return null
+  const topId = picked[picked.length - 1]!.id
+  const next: PixelLayerRuntime[] = []
+  for (const layer of layers) {
+    if (!wanted.has(layer.id)) next.push(layer)
+    else if (layer.id === topId) next.push(...picked)
+  }
+  layers.splice(0, layers.length, ...next)
   const group: PixelGroupRuntime = {
     id: createGroupId(),
     name: clampGroupName(name) || "Group",
@@ -191,8 +208,18 @@ export function createGroupFromLayer(
     collapsed: false,
   }
   groups.push(group)
-  layer.group = group.id
+  for (const layer of picked) layer.group = group.id
   return group
+}
+
+/** New group containing one ungrouped layer. Returns the group or null (unknown layer / already grouped). */
+export function createGroupFromLayer(
+  layers: PixelLayerRuntime[],
+  groups: PixelGroupRuntime[],
+  layerId: string,
+  name: string,
+): PixelGroupRuntime | null {
+  return createGroupFromLayers(layers, groups, [layerId], name)
 }
 
 function runOf(layers: readonly PixelLayerRuntime[], groupId: string) {

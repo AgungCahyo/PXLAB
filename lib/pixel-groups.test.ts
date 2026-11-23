@@ -3,6 +3,7 @@ import { createEmptyLayer, type PixelLayerRuntime } from "@/lib/pixel"
 import {
   assignLayerToGroup,
   createGroupFromLayer,
+  createGroupFromLayers,
   isGroupLayoutValid,
   layerEffectivelyHidden,
   layerSegments,
@@ -220,5 +221,49 @@ describe("segments, visibility and style", () => {
     expect([g.opacity, g.blend, g.name]).toEqual([100, "multiply", "Trees"])
     expect(updateGroupStyle(g, { opacity: 40 })).toBe(true)
     expect(updateGroupStyle(g, { opacity: 40, name: "   ", blend: "bogus" as never })).toBe(false)
+  })
+})
+
+describe("grouping several layers at once", () => {
+  it("wraps a contiguous range without reordering anything", () => {
+    const layers = stack(5)
+    const groups: PixelGroupRuntime[] = []
+    const g = createGroupFromLayers(layers, groups, ["l1", "l2", "l3"], "Trees")!
+    expect(order(layers)).toEqual(["l0", "l1", "l2", "l3", "l4"])
+    expect(layers.filter((l) => l.group === g.id).map((l) => l.id)).toEqual(["l1", "l2", "l3"])
+    expect(isGroupLayoutValid(layers, groups)).toBe(true)
+  })
+
+  it("gathers a gapped pick at the topmost layer and keeps relative order", () => {
+    const layers = stack(6)
+    const groups: PixelGroupRuntime[] = []
+    const g = createGroupFromLayers(layers, groups, ["l3", "l0", "l4"], "G")!
+    expect(order(layers)).toEqual(["l1", "l2", "l0", "l3", "l4", "l5"])
+    expect(layers.filter((l) => l.group === g.id).map((l) => l.id)).toEqual(["l0", "l3", "l4"])
+    expect(isGroupLayoutValid(layers, groups)).toBe(true)
+  })
+
+  it("never splits an existing group when gathering around it", () => {
+    const layers = stack(6)
+    const groups: PixelGroupRuntime[] = []
+    const existing = createGroupFromLayer(layers, groups, "l2", "Old")!
+    assignLayerToGroup(layers, groups, "l3", existing.id)
+    const g = createGroupFromLayers(layers, groups, ["l1", "l4"], "New")!
+    expect(order(layers)).toEqual(["l0", "l2", "l3", "l1", "l4", "l5"])
+    expect(layers.filter((l) => l.group === existing.id).map((l) => l.id)).toEqual(["l2", "l3"])
+    expect(layers.filter((l) => l.group === g.id).map((l) => l.id)).toEqual(["l1", "l4"])
+    expect(isGroupLayoutValid(layers, groups)).toBe(true)
+  })
+
+  it("refuses empty picks, unknown layers and layers that are already grouped", () => {
+    const layers = stack(4)
+    const groups: PixelGroupRuntime[] = []
+    expect(createGroupFromLayers(layers, groups, [], "x")).toBeNull()
+    expect(createGroupFromLayers(layers, groups, ["l1", "nope"], "x")).toBeNull()
+    createGroupFromLayer(layers, groups, "l1", "G")
+    const before = order(layers)
+    expect(createGroupFromLayers(layers, groups, ["l1", "l2"], "x")).toBeNull()
+    expect(order(layers)).toEqual(before)
+    expect(groups).toHaveLength(1)
   })
 })

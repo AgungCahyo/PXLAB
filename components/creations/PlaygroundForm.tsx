@@ -14,7 +14,7 @@ import { BrushOptionsPanel } from "@/components/creations/BrushOptionsPanel"
 import { ExportDialog } from "@/components/creations/ExportDialog"
 import { FillPatternPicker } from "@/components/creations/FillPatternPicker"
 import type { PixelFillPattern } from "@/lib/pixel-pattern"
-import type { LayerGroupApi } from "@/components/creations/LayerGroupControls"
+import { nextGroupName, type LayerGroupApi } from "@/components/creations/LayerGroupControls"
 import type { PixelGroupStylePatch } from "@/lib/pixel-groups"
 import { ColorPicker } from "@/components/creations/ColorPicker"
 import { CreationMoreMenu } from "@/components/creations/CreationMoreMenu"
@@ -136,6 +136,7 @@ export function PlaygroundForm({
   const [preview, setPreview] = useState(false)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const [moreOpen, setMoreOpen] = useState(false)
+  const [inspectorOpen, setInspectorOpen] = useState(true)
   const [detailsOpen, setDetailsOpen] = useState(false)
   const [paletteOpen, setPaletteOpen] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
@@ -788,21 +789,20 @@ export function PlaygroundForm({
     <>
       {toolButton("pencil", "square", copy.pixelSquareBrush[lang], "B")}
       {toolButton("circle", "circle", copy.pixelCircleBrush[lang], "C")}
-      {toolButton("fill", "fill", copy.pixelFill[lang], "G")}
-      {toolButton("polygon", "polygon", copy.pixelPolygon[lang], "P")}
+      {toolButton("eraser", "eraser", copy.pixelEraser[lang], "E")}
+      {toolButton("text", "text", copy.pixelTextTool[lang], "T")}
+      {toolDivider}
+      {toolDividerMobile}
       {toolButton("line", "line", copy.pixelLine[lang], "L")}
       {toolButton("rect", "rect", copy.pixelRect[lang], "U")}
       {toolButton("ellipse", "ellipse", copy.pixelEllipse[lang], "O")}
+      {toolButton("polygon", "polygon", copy.pixelPolygon[lang], "P")}
       {toolButton("bezier", "bezier", copy.pixelBezier[lang], "Q")}
-      {toolButton("eraser", "eraser", copy.pixelEraser[lang], "E")}
       {toolDivider}
       {toolDividerMobile}
-      {toolButton("eyedropper", "eyedropper", copy.pixelEyedropper[lang], "I")}
-      {toolButton("pan", "pan", copy.pixelMove[lang], "H")}
-      {toolDivider}
-      {toolDividerMobile}
-      {toolButton("text", "text", copy.pixelTextTool[lang], "T")}
+      {toolButton("fill", "fill", copy.pixelFill[lang], "G")}
       {toolButton("gradient", "gradient", copy.pixelGradient[lang], "N")}
+      {toolButton("eyedropper", "eyedropper", copy.pixelEyedropper[lang], "I")}
       {toolDivider}
       {toolDividerMobile}
       {toolButton("select", "select", copy.pixelSelectBox[lang], "V")}
@@ -810,6 +810,7 @@ export function PlaygroundForm({
       {toolButton("selectColor", "colorSelect", copy.pixelSelectColor[lang], "K")}
       {toolButton("lasso", "lasso", copy.pixelSelectLasso[lang], "S")}
       {toolButton("selectPolygon", "polygonSelect", copy.pixelSelectPolygon[lang], "Y")}
+      {toolButton("pan", "pan", copy.pixelMove[lang], "H")}
     </>
   )
 
@@ -1047,6 +1048,7 @@ export function PlaygroundForm({
       >
         <PixelIcon name="grid" />
       </button>
+      <div className="mx-0.5 h-7 w-[2px] shrink-0 bg-earth md:w-[3px]" aria-hidden="true" />
       <button
         type="button"
         aria-label={copy.pixelUndo[lang]}
@@ -1070,7 +1072,7 @@ export function PlaygroundForm({
     </>
   )
 
-  const renderStatusBar = () =>
+  const renderStatusBar = (surface: "desktop" | "mobile") =>
     preview ? null : (
       <div
         className="editor-status flex shrink-0 flex-wrap items-center gap-x-2 gap-y-1 border-t-[3px] border-earth bg-card px-2 py-1 text-[length:var(--studio-meta,0.75rem)] text-muted"
@@ -1083,28 +1085,34 @@ export function PlaygroundForm({
         <span aria-hidden="true">·</span>
         <span className="inline-flex items-center gap-1.5" title={`${toolLabel} ${color}`}>
           <PixelIcon name={toolIcons[tool]} className="text-fg" />
-          <span
-            className="inline-block h-3 w-3 border border-earth"
-            style={{ backgroundColor: color }}
-            aria-hidden="true"
-          />
+          {surface === "mobile" || !inspectorOpen ? (
+            <span
+              className="inline-block h-3 w-3 border border-earth"
+              style={{ backgroundColor: color }}
+              aria-hidden="true"
+            />
+          ) : null}
           <span className="sr-only">{`${toolLabel} ${color}`}</span>
         </span>
-        <span aria-hidden="true">·</span>
-        <span
-          className={cn(
-            "inline-flex items-center gap-1",
-            saveStatus === "unsaved" ? "text-brick" : "text-fg",
-          )}
-          title={saveLabel}
-          role="status"
-          aria-live="polite"
-        >
-          <PixelIcon
-            name={saveStatus === "saving" ? "save" : saveStatus === "unsaved" ? "clear" : "apply"}
-          />
-          <span>{saveLabel}</span>
-        </span>
+        {surface === "mobile" ? (
+          <>
+            <span aria-hidden="true">·</span>
+            <span
+              className={cn(
+                "inline-flex items-center gap-1",
+                saveStatus === "unsaved" ? "text-brick" : "text-fg",
+              )}
+              title={saveLabel}
+              role="status"
+              aria-live="polite"
+            >
+              <PixelIcon
+                name={saveStatus === "saving" ? "save" : saveStatus === "unsaved" ? "clear" : "apply"}
+              />
+              <span>{saveLabel}</span>
+            </span>
+          </>
+        ) : null}
         {editFlash ? (
           <>
             <span aria-hidden="true">·</span>
@@ -1212,6 +1220,7 @@ export function PlaygroundForm({
         deleted: copy.pixelLayerDeleted[lang],
         duplicated: copy.pixelLayerDuplicated[lang],
         merged: copy.pixelLayerMerged[lang],
+        grouped: copy.pixelGroupCreated[lang],
         reordered: copy.pixelLayerReordered[lang],
         active: copy.pixelLayerActive[lang],
         locked: copy.pixelLayerLockedFlash[lang],
@@ -1270,7 +1279,8 @@ export function PlaygroundForm({
     onStyle: (id: string, patch: PixelLayerStylePatch) => boardRef.current?.setLayerStyle(id, patch) ?? false,
     groupApi: {
       groups,
-      onCreate: (layerId: string) => boardRef.current?.createGroup(layerId) != null,
+      onCreate: (layerIds: string[], name?: string) =>
+        boardRef.current?.createGroupFromLayers(layerIds, name) != null,
       onAssign: (layerId: string, groupId: string) => boardRef.current?.assignLayerToGroup(layerId, groupId) ?? false,
       onRemove: (layerId: string) => boardRef.current?.removeLayerFromGroup(layerId) ?? false,
       onUngroup: (groupId: string) => boardRef.current?.ungroup(groupId) ?? false,
@@ -1288,6 +1298,7 @@ export function PlaygroundForm({
         thumbEpoch={layerThumbEpoch}
         getThumbnail={layerApi.getThumbnail}
         onAdd={layerApi.onAdd}
+        onCreateGroup={() => layerApi.groupApi.onCreate([], nextGroupName(lang, groups))}
         onActive={layerApi.onActive}
         onFeedback={flashLayer}
         onOpenSheet={setLayerSheetId}
@@ -1339,6 +1350,21 @@ export function PlaygroundForm({
           >
             {formatPixelSize(width, height)}
           </button>
+          <span
+            className={cn(
+              "ml-1.5 hidden items-center gap-1 text-[12px] md:inline-flex",
+              saveStatus === "unsaved" ? "text-brick" : "text-muted",
+            )}
+            title={saveLabel}
+            role="status"
+            aria-live="polite"
+          >
+            <span aria-hidden="true">·</span>
+            <PixelIcon
+              name={saveStatus === "saving" ? "save" : saveStatus === "unsaved" ? "clear" : "apply"}
+            />
+            <span>{saveLabel}</span>
+          </span>
         </div>
         {!preview ? (
           <div className="hidden md:block">
@@ -1349,22 +1375,37 @@ export function PlaygroundForm({
           </div>
         ) : null}
         <div className="studio-row ml-auto shrink-0">
-          {dirty || metadataDirty ? (
-            <Button
-              type="button"
-              variant="outline"
-              disabled={pending || leaving}
-              aria-busy={(pending && busyIntent === "draft") || undefined}
-              aria-label={
-                pending && busyIntent === "draft" ? copy.pixelSaving[lang] : saveButtonLabel
-              }
-              title={pending && busyIntent === "draft" ? copy.pixelSaving[lang] : saveButtonLabel}
-              onClick={() => void saveExplicit()}
-              className="studio-hit shrink-0 !min-h-0 px-0 shadow-none"
-            >
-              <PixelIcon name="save" />
-            </Button>
+          {!preview ? (
+            <div className="hidden md:block">
+              <button
+                type="button"
+                aria-label={copy.pixelInspector[lang]}
+                title={copy.pixelInspector[lang]}
+                aria-pressed={inspectorOpen}
+                onClick={() => setInspectorOpen((value) => !value)}
+                className={cn(
+                  "studio-hit",
+                  inspectorOpen ? "border-fg bg-brick text-white" : "border-earth bg-bg text-fg",
+                )}
+              >
+                <PixelIcon name="sliders" />
+              </button>
+            </div>
           ) : null}
+          <Button
+            type="button"
+            variant="outline"
+            disabled={pending || leaving || !(dirty || metadataDirty)}
+            aria-busy={(pending && busyIntent === "draft") || undefined}
+            aria-label={
+              pending && busyIntent === "draft" ? copy.pixelSaving[lang] : saveButtonLabel
+            }
+            title={pending && busyIntent === "draft" ? copy.pixelSaving[lang] : saveButtonLabel}
+            onClick={() => void saveExplicit()}
+            className="studio-hit shrink-0 !min-h-0 px-0 shadow-none disabled:opacity-40"
+          >
+            <PixelIcon name="save" />
+          </Button>
           <button
             type="button"
             aria-label={copy.pixelMore[lang]}
@@ -1403,12 +1444,6 @@ export function PlaygroundForm({
           aria-label={copy.pixelTools[lang]}
         >
           {toolButtons}
-          {showSymmetryControls ? (
-            <>
-              {toolDivider}
-              {renderSymmetryButton()}
-            </>
-          ) : null}
         </aside>
 
         <div className="flex min-h-0 min-w-0 flex-1 flex-col">
@@ -1501,10 +1536,10 @@ export function PlaygroundForm({
             )}
           </div>
 
-          <div className="hidden md:block">{renderStatusBar()}</div>
+          <div className="hidden md:block">{renderStatusBar("desktop")}</div>
         </div>
 
-        {!preview ? (
+        {!preview && inspectorOpen ? (
           <StudioInspector
             lang={lang}
             color={color}
@@ -1568,11 +1603,14 @@ export function PlaygroundForm({
             onShapeHeight={(height) => boardRef.current?.updateShapeDraft({ height })}
             onShapeApply={() => boardRef.current?.applyShapeDraft()}
             onShapeCancel={() => boardRef.current?.cancelShapeDraft()}
+            toolLabel={toolLabel}
+            symmetryControl={renderSymmetryButton()}
+            symmetryStatus={symmetryModeLabel}
           />
         ) : null}
       </div>
 
-      <div className="md:hidden">{renderStatusBar()}</div>
+      <div className="md:hidden">{renderStatusBar("mobile")}</div>
 
       <div className="playground-toolbar max-h-[45vh] shrink-0 overflow-y-auto overscroll-contain border-t-[3px] border-earth bg-card px-2 pt-2 sm:px-3 md:hidden">
         <div className="studio-stack">

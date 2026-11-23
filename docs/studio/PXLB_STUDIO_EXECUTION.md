@@ -11,7 +11,7 @@ This file tracks milestone status against the **actual repository**, not the ide
 |---|---|---|
 | M0 | Existing System Audit | **DONE** — `docs/studio/01_SYSTEM_AUDIT.md` |
 | M1 | Workspace & Layout (fondasi chrome) | **DONE** — `02_WORKSPACE_LAYOUT.md` |
-| **WR** | Complete Editor Workspace Redesign | **PLANNED** — `WORKSPACE-REDESIGN.md` (master plan §11). Extends M1; do not fake a timeline |
+| **WR** | Complete Editor Workspace Redesign | **IMPLEMENTED (pending browser verification)** — `04_WORKSPACE_REDESIGN_REPORT.md`. Timeline slot intentionally empty |
 | M2 | Toolbar & Drawing Tools | **PARTIAL** — M2.1 composite eyedropper, gradient preview, Shift-axis line (`03_TOOL_DOCUMENTATION.md`) |
 | M3 | Canvas & Selection System | **PARTIAL** — engine M9 transform + selection-object lift (`lib/pixel-transform.ts`, `TransformDialog`; canvas size still locked) |
 | M4 | Layer Management | NOT STARTED |

@@ -10,7 +10,12 @@ import {
   type PointerEvent as ReactPointerEvent,
 } from "react"
 import type { PixelLayerInfo, PixelLayerStylePatch } from "@/components/canvas/PixelBoard"
-import { LayerGroupControls, type LayerGroupApi } from "@/components/creations/LayerGroupControls"
+import {
+  GroupStyleControls,
+  LayerGroupActions,
+  nextGroupName,
+  type LayerGroupApi,
+} from "@/components/creations/LayerGroupControls"
 import { LayerStyleControls } from "@/components/creations/LayerStyleControls"
 import { Dialog } from "@/components/ui/Dialog"
 import { PixelIcon } from "@/components/ui/PixelIcon"
@@ -24,6 +29,7 @@ export type LayerPanelFeedback =
   | "deleted"
   | "duplicated"
   | "merged"
+  | "grouped"
   | "reordered"
   | "active"
   | "locked"
@@ -50,7 +56,21 @@ type LayerPanelProps = {
   onFeedback?: (kind: LayerPanelFeedback) => void
 }
 
-type MenuState = { id: string; x: number; y: number } | null
+type MenuState =
+  | { kind: "layer" | "group"; id: string; x: number; y: number }
+  | { kind: "more"; x: number; y: number }
+  | null
+
+type MenuItem =
+  | { separator: true; key: string }
+  | {
+      separator?: false
+      key: string
+      label: string
+      icon: ComponentProps<typeof PixelIcon>["name"]
+      disabled?: boolean
+      run: () => void
+    }
 
 function stackIndexOf(layers: PixelLayerInfo[], id: string) {
   return layers.findIndex((layer) => layer.id === id)
@@ -59,6 +79,22 @@ function stackIndexOf(layers: PixelLayerInfo[], id: string) {
 function displayLayers(layers: PixelLayerInfo[]) {
   return [...layers].reverse()
 }
+
+/** Icon with a small "+" badge: reads as "new …" without a second icon set. */
+function NewIcon({ name }: { name: ComponentProps<typeof PixelIcon>["name"] }) {
+  return (
+    <span className="relative inline-flex">
+      <PixelIcon name={name} />
+      <span className="absolute -bottom-1 -right-1.5 inline-flex bg-bg text-fg" aria-hidden="true">
+        <PixelIcon name="plus" className="h-2.5 w-2.5" />
+      </span>
+    </span>
+  )
+}
+
+const toolbarButton =
+  "relative inline-flex h-9 w-9 items-center justify-center border-[3px] border-earth bg-bg text-fg hover:bg-soft disabled:opacity-40"
+const rowIconButton = "inline-flex h-8 w-8 items-center justify-center text-muted hover:text-fg"
 
 export function LayerPanel({
   lang,
@@ -80,10 +116,16 @@ export function LayerPanel({
   onFeedback,
 }: LayerPanelProps) {
   const [editingId, setEditingId] = useState<string | null>(null)
+  const [editingGroupId, setEditingGroupId] = useState<string | null>(null)
   const [menu, setMenu] = useState<MenuState>(null)
   const [dragId, setDragId] = useState<string | null>(null)
   const [dropId, setDropId] = useState<string | null>(null)
+  /** Layers picked together (Ctrl/Shift+click) to become one group. UI state only. */
+  const [marked, setMarked] = useState<string[]>([])
+  /** Group whose properties are shown instead of the active layer's. UI state only. */
+  const [focusedGroupId, setFocusedGroupId] = useState<string | null>(null)
   const renameRef = useRef<HTMLInputElement | null>(null)
+  const groupRenameRef = useRef<HTMLInputElement | null>(null)
   const thumbKey = layers.map((layer) => `${layer.id}:${layer.visible}:${layer.active}`).join("|")
   const thumbVersion = `${thumbKey}|${thumbEpoch}`
   const thumbs = useMemo(() => {
@@ -102,11 +144,33 @@ export function LayerPanel({
   }, [editingId])
 
   useEffect(() => {
+    if (editingGroupId) {
+      groupRenameRef.current?.focus()
+      groupRenameRef.current?.select()
+    }
+  }, [editingGroupId])
+
+  useEffect(() => {
     if (!menu) return
     const close = () => setMenu(null)
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") close()
+    }
     window.addEventListener("click", close)
-    return () => window.removeEventListener("click", close)
+    window.addEventListener("keydown", onKey)
+    return () => {
+      window.removeEventListener("click", close)
+      window.removeEventListener("keydown", onKey)
+    }
   }, [menu])
+
+  const activeLayer = layers.find((layer) => layer.active)
+  // Only ungrouped layers can be picked, and a pick needs at least two layers to mean anything.
+  const pickedIds = marked.filter((id) => layers.some((layer) => layer.id === id && !layer.group))
+  const selection = pickedIds.length >= 2 ? pickedIds : []
+  const focusedGroup = focusedGroupId
+    ? (groupApi.groups.find((group) => group.id === focusedGroupId) ?? null)
+    : null
 
   const runAdd = () => {
     if (layers.length >= PIXEL_LAYER_MAX) {
@@ -116,8 +180,51 @@ export function LayerPanel({
     if (onAdd()) onFeedback?.("added")
   }
 
+  const runCreateGroup = (layerIds: string[]) => {
+    if (layerIds.length === 0 && layers.length >= PIXEL_LAYER_MAX) {
+      onFeedback?.("max")
+      return
+    }
+    if (groupApi.onCreate(layerIds, nextGroupName(lang, groupApi.groups))) {
+      setMarked([])
+      onFeedback?.("grouped")
+    }
+  }
+
   const activate = (id: string) => {
     if (onActive(id)) onFeedback?.("active")
+  }
+
+  /** Plain click activates; Ctrl/Cmd+click toggles a pick; Shift+click picks the range from the active layer. */
+  const selectRow = (
+    event: { shiftKey: boolean; ctrlKey: boolean; metaKey: boolean },
+    layer: PixelLayerInfo,
+  ) => {
+    setFocusedGroupId(null)
+    const anchor = activeLayer && !activeLayer.group ? activeLayer : null
+    if (!layer.group && anchor && event.shiftKey) {
+      const a = stackIndexOf(layers, anchor.id)
+      const b = stackIndexOf(layers, layer.id)
+      setMarked(
+        layers
+          .slice(Math.min(a, b), Math.max(a, b) + 1)
+          .filter((item) => !item.group)
+          .map((item) => item.id),
+      )
+      return
+    }
+    if (!layer.group && (event.ctrlKey || event.metaKey)) {
+      const base = selection.length > 0 ? selection : anchor ? [anchor.id] : []
+      setMarked(base.includes(layer.id) ? base.filter((id) => id !== layer.id) : [...base, layer.id])
+      return
+    }
+    setMarked([])
+    activate(layer.id)
+  }
+
+  const focusGroup = (id: string) => {
+    setMarked([])
+    setFocusedGroupId((current) => (current === id ? null : id))
   }
 
   const toggleLock = (layer: PixelLayerInfo) => {
@@ -131,8 +238,8 @@ export function LayerPanel({
     setEditingId(null)
   }
 
-  const openMenu = (id: string, clientX: number, clientY: number) => {
-    setMenu({ id, x: clientX, y: clientY })
+  const openMenu = (state: NonNullable<MenuState>) => {
+    setMenu(state)
   }
 
   const onDragStart = (id: string) => {
@@ -157,11 +264,161 @@ export function LayerPanel({
     setDropId(null)
   }
 
-  const menuLayer = menu ? layers.find((layer) => layer.id === menu.id) : null
+  const menuLayer = menu?.kind === "layer" ? layers.find((layer) => layer.id === menu.id) : null
+  const menuGroup = menu?.kind === "group" ? groupApi.groups.find((group) => group.id === menu.id) : null
   const menuStack = menuLayer ? stackIndexOf(layers, menuLayer.id) : -1
   // A layer can only bake into the one below when both are in the same group (or both outside one).
   const canMergeDown = menuStack > 0 && menuLayer !== null && menuLayer !== undefined && (layers[menuStack - 1]?.group ?? null) === (menuLayer.group ?? null)
   const canMergeVisible = layers.filter((layer) => layer.visible).length >= 2
+  const dragLayer = dragId ? layers.find((layer) => layer.id === dragId) : undefined
+
+  const menuItems: MenuItem[] = []
+  if (menuLayer) {
+    menuItems.push(
+      {
+        key: "duplicate",
+        label: copy.pixelLayerDuplicate[lang],
+        icon: "duplicate",
+        disabled: layers.length >= PIXEL_LAYER_MAX,
+        run: () => {
+          if (onDuplicate(menuLayer.id)) onFeedback?.("duplicated")
+        },
+      },
+      {
+        key: "rename",
+        label: copy.pixelLayerRename[lang],
+        icon: "pencil",
+        run: () => setEditingId(menuLayer.id),
+      },
+      {
+        key: "merge-down",
+        label: copy.pixelLayerMergeDown[lang],
+        icon: "merge",
+        disabled: !canMergeDown,
+        run: () => {
+          if (onMergeDown(menuLayer.id)) onFeedback?.("merged")
+        },
+      },
+      { separator: true, key: "sep-group" },
+    )
+    if (menuLayer.group) {
+      menuItems.push({
+        key: "remove-from-group",
+        label: copy.pixelGroupRemove[lang],
+        icon: "folder",
+        run: () => {
+          if (groupApi.onRemove(menuLayer.id)) onFeedback?.("reordered")
+        },
+      })
+    } else {
+      menuItems.push({
+        key: "group-layer",
+        label: copy.pixelGroupNew[lang],
+        icon: "folder",
+        run: () => runCreateGroup([menuLayer.id]),
+      })
+    }
+    for (const group of groupApi.groups) {
+      if (group.id === menuLayer.group) continue
+      menuItems.push({
+        key: `move-to-${group.id}`,
+        label: copy.pixelGroupMoveTo[lang].replace("{name}", group.name),
+        icon: "folder",
+        run: () => {
+          if (groupApi.onAssign(menuLayer.id, group.id)) onFeedback?.("reordered")
+        },
+      })
+    }
+    menuItems.push(
+      { separator: true, key: "sep-delete" },
+      {
+        key: "delete",
+        label: copy.pixelLayerDelete[lang],
+        icon: "trash",
+        disabled: layers.length <= 1,
+        run: () => {
+          if (onDelete(menuLayer.id)) onFeedback?.("deleted")
+        },
+      },
+    )
+  } else if (menuGroup) {
+    const members = layers.flatMap((layer, index) => (layer.group === menuGroup.id ? [index] : []))
+    menuItems.push(
+      {
+        key: "rename-group",
+        label: copy.pixelLayerRename[lang],
+        icon: "pencil",
+        run: () => setEditingGroupId(menuGroup.id),
+      },
+      {
+        key: "group-up",
+        label: copy.pixelGroupMoveUp[lang],
+        icon: "publish",
+        disabled: members.length === 0 || Math.max(...members) >= layers.length - 1,
+        run: () => {
+          if (groupApi.onMove(menuGroup.id, 1)) onFeedback?.("reordered")
+        },
+      },
+      {
+        key: "group-down",
+        label: copy.pixelGroupMoveDown[lang],
+        icon: "download",
+        disabled: members.length === 0 || Math.min(...members) <= 0,
+        run: () => {
+          if (groupApi.onMove(menuGroup.id, -1)) onFeedback?.("reordered")
+        },
+      },
+      { separator: true, key: "sep-ungroup" },
+      {
+        key: "ungroup",
+        label: copy.pixelGroupUngroup[lang],
+        icon: "close",
+        run: () => {
+          if (groupApi.onUngroup(menuGroup.id)) onFeedback?.("reordered")
+        },
+      },
+    )
+  } else if (menu?.kind === "more") {
+    menuItems.push({
+      key: "merge-visible",
+      label: copy.pixelLayerMergeVisible[lang],
+      icon: "merge",
+      disabled: !canMergeVisible,
+      run: () => {
+        if (onMergeVisible()) onFeedback?.("merged")
+      },
+    })
+    if (groupApi.groups.length > 0) {
+      menuItems.push(
+        { separator: true, key: "sep-groups" },
+        {
+          key: "expand-all",
+          label: copy.pixelGroupExpandAll[lang],
+          icon: "plus",
+          disabled: !groupApi.groups.some((group) => group.collapsed),
+          run: () => {
+            for (const group of groupApi.groups) groupApi.onStyle(group.id, { collapsed: false })
+          },
+        },
+        {
+          key: "collapse-all",
+          label: copy.pixelGroupCollapseAll[lang],
+          icon: "minus",
+          disabled: groupApi.groups.every((group) => group.collapsed),
+          run: () => {
+            for (const group of groupApi.groups) groupApi.onStyle(group.id, { collapsed: true })
+          },
+        },
+      )
+    }
+  }
+
+  const createLabel =
+    selection.length > 0
+      ? copy.pixelGroupCreateFromN[lang].replace("{n}", String(selection.length))
+      : layers.length >= PIXEL_LAYER_MAX
+        ? copy.pixelLayerMax[lang]
+        : copy.pixelGroupCreateTip[lang]
 
   return (
     <section className="border-b-[3px] border-earth px-3 py-3" aria-label={copy.pixelLayers[lang]}>
@@ -169,11 +426,14 @@ export function LayerPanel({
         <h3 className="flex items-center gap-1.5 text-[13px] font-medium text-fg">
           <PixelIcon name="layers" />
           <span className="sr-only">{copy.pixelLayers[lang]}</span>
+          <span className="text-[11px] font-normal tabular-nums text-muted" aria-hidden="true">
+            {layers.length}/{PIXEL_LAYER_MAX}
+          </span>
         </h3>
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1" role="toolbar" aria-label={copy.pixelLayers[lang]}>
           <button
             type="button"
-            className="inline-flex h-9 w-9 items-center justify-center border-[3px] border-earth bg-bg text-fg hover:bg-soft disabled:opacity-40"
+            className={toolbarButton}
             aria-label={copy.pixelLayerAdd[lang]}
             title={copy.pixelLayerAdd[lang]}
             disabled={layers.length >= PIXEL_LAYER_MAX}
@@ -183,15 +443,36 @@ export function LayerPanel({
           </button>
           <button
             type="button"
-            className="inline-flex h-9 w-9 items-center justify-center border-[3px] border-earth bg-bg text-fg hover:bg-soft disabled:opacity-40"
-            aria-label={copy.pixelLayerMergeVisible[lang]}
-            title={copy.pixelLayerMergeVisible[lang]}
-            disabled={!canMergeVisible}
-            onClick={() => {
-              if (onMergeVisible()) onFeedback?.("merged")
+            className={toolbarButton}
+            aria-label={createLabel}
+            title={createLabel}
+            disabled={selection.length === 0 && layers.length >= PIXEL_LAYER_MAX}
+            onClick={() => runCreateGroup(selection)}
+          >
+            <NewIcon name="folder" />
+            {selection.length > 0 ? (
+              <span
+                className="absolute -right-1.5 -top-1.5 min-w-4 bg-brick px-1 text-center text-[10px] font-medium leading-4 text-white"
+                aria-hidden="true"
+              >
+                {selection.length}
+              </span>
+            ) : null}
+          </button>
+          <button
+            type="button"
+            className={toolbarButton}
+            aria-label={copy.pixelLayersMore[lang]}
+            title={copy.pixelLayersMore[lang]}
+            aria-haspopup="menu"
+            aria-expanded={menu?.kind === "more"}
+            onClick={(event) => {
+              event.stopPropagation()
+              const rect = event.currentTarget.getBoundingClientRect()
+              openMenu({ kind: "more", x: rect.left, y: rect.bottom })
             }}
           >
-            <PixelIcon name="merge" />
+            <PixelIcon name="more" />
           </button>
         </div>
       </div>
@@ -200,19 +481,26 @@ export function LayerPanel({
         {displayLayers(layers).map((layer, displayIndex, list) => {
           const group = layer.group ? groupApi.groups.find((item) => item.id === layer.group) : undefined
           const startsGroup = Boolean(group) && list[displayIndex - 1]?.group !== layer.group
+          const endsGroup = Boolean(group) && list[displayIndex + 1]?.group !== layer.group
           if (group && group.collapsed && !startsGroup) return null
           const hidden = !layer.visible || Boolean(group && (!group.visible || group.opacity === 0))
           const isDrop = dropId === layer.id && dragId !== layer.id
+          const isPicked = selection.includes(layer.id)
           return (
             <Fragment key={layer.id}>
               {group && startsGroup ? (
                 <li
                   className={cn(
-                    "flex items-center gap-1.5 border-[3px] border-earth bg-soft px-1.5 py-1",
+                    "flex items-center gap-1 border-[3px] border-earth bg-soft px-1 py-1",
+                    focusedGroup?.id === group.id && "border-fg",
                     !group.visible && "opacity-55",
                     dragId !== null && dropId === `group:${group.id}` && "border-dashed border-fg bg-card",
                   )}
                   aria-label={`${copy.pixelGroup[lang]}: ${group.name}`}
+                  onContextMenu={(event) => {
+                    event.preventDefault()
+                    openMenu({ kind: "group", id: group.id, x: event.clientX, y: event.clientY })
+                  }}
                   onDragOver={(event) => {
                     if (!dragId) return
                     event.preventDefault()
@@ -237,203 +525,241 @@ export function LayerPanel({
                   >
                     <PixelIcon name={group.collapsed ? "plus" : "minus"} />
                   </button>
-                  <PixelIcon name="folder" />
-                  <span className="min-w-0 flex-1 truncate text-[13px] font-medium text-fg">{group.name}</span>
+                  <PixelIcon name="folder" className="shrink-0" />
+                  {editingGroupId === group.id ? (
+                    <input
+                      ref={groupRenameRef}
+                      type="text"
+                      defaultValue={group.name}
+                      maxLength={48}
+                      aria-label={copy.pixelGroupName[lang]}
+                      className="h-8 min-w-0 flex-1 border-[2px] border-earth bg-bg px-1.5 text-[12px] text-fg"
+                      onBlur={(event) => {
+                        groupApi.onStyle(group.id, { name: event.target.value })
+                        setEditingGroupId(null)
+                      }}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter") event.currentTarget.blur()
+                        if (event.key === "Escape") setEditingGroupId(null)
+                      }}
+                    />
+                  ) : (
+                    <button
+                      type="button"
+                      className="min-w-0 flex-1 truncate text-left text-[13px] font-medium text-fg"
+                      title={group.name}
+                      aria-pressed={focusedGroup?.id === group.id}
+                      onClick={() => focusGroup(group.id)}
+                      onDoubleClick={() => setEditingGroupId(group.id)}
+                    >
+                      {group.name}
+                    </button>
+                  )}
+                  <span className="shrink-0 text-[11px] tabular-nums text-muted" aria-hidden="true">
+                    {layers.filter((item) => item.group === group.id).length}
+                  </span>
                   <button
                     type="button"
-                    className="inline-flex h-8 w-8 items-center justify-center text-muted hover:text-fg"
+                    className={rowIconButton}
                     aria-label={group.visible ? copy.pixelLayerHide[lang] : copy.pixelGroupVisible[lang]}
                     title={group.visible ? copy.pixelLayerHide[lang] : copy.pixelGroupVisible[lang]}
                     onClick={() => groupApi.onStyle(group.id, { visible: !group.visible })}
                   >
                     <PixelIcon name={group.visible ? "eye" : "eyeOff"} />
                   </button>
-                </li>
-              ) : null}
-            <li
-              draggable
-              onDragStart={() => onDragStart(layer.id)}
-              onDragOver={(event) => onDragOver(event, layer.id)}
-              onDragEnd={() => {
-                setDragId(null)
-                setDropId(null)
-              }}
-              onDrop={() => onDrop(layer.id)}
-              onContextMenu={(event) => {
-                event.preventDefault()
-                openMenu(layer.id, event.clientX, event.clientY)
-              }}
-              className={cn(
-                "flex items-center gap-1.5 border-[3px] border-earth px-1.5 py-1.5",
-                group && "ml-4",
-                layer.active ? "border-fg bg-soft" : "bg-card",
-                hidden && "opacity-55",
-                isDrop && "border-dashed border-fg",
-                dragId === layer.id && "opacity-70",
-              )}
-            >
-              <span
-                className="inline-flex h-8 w-5 cursor-grab items-center justify-center text-muted active:cursor-grabbing"
-                aria-label={copy.pixelLayerReorder[lang]}
-                title={copy.pixelLayerReorder[lang]}
-              >
-                <PixelIcon name="grip" />
-              </span>
-
-              <button
-                type="button"
-                className="relative h-10 w-10 shrink-0 border-[2px] border-earth bg-[length:8px_8px] bg-[linear-gradient(45deg,#e8e4d8_25%,transparent_25%,transparent_75%,#e8e4d8_75%),linear-gradient(45deg,#e8e4d8_25%,transparent_25%,transparent_75%,#e8e4d8_75%)] bg-[position:0_0,4px_4px]"
-                aria-label={layer.active ? copy.pixelLayerActive[lang] : layer.name}
-                onClick={() => activate(layer.id)}
-              >
-                {thumbs[layer.id] ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={thumbs[layer.id]}
-                    alt=""
-                    className="h-full w-full object-contain [image-rendering:pixelated]"
-                    draggable={false}
-                  />
-                ) : null}
-              </button>
-
-              <div className="min-w-0 flex-1">
-                {editingId === layer.id ? (
-                  <input
-                    ref={renameRef}
-                    type="text"
-                    defaultValue={layer.name}
-                    aria-label={copy.pixelLayerRename[lang]}
-                    className="h-8 w-full border-[2px] border-earth bg-bg px-1.5 text-[12px] text-fg"
-                    onBlur={(event) => commitRename(layer.id, event.target.value)}
-                    onKeyDown={(event) => {
-                      if (event.key === "Enter") event.currentTarget.blur()
-                      if (event.key === "Escape") setEditingId(null)
-                    }}
-                  />
-                ) : (
                   <button
                     type="button"
-                    className={cn(
-                      "block w-full truncate text-left text-[13px] font-medium",
-                      layer.active ? "text-fg" : "text-fg/90",
-                    )}
-                    onClick={() => activate(layer.id)}
-                    onDoubleClick={() => setEditingId(layer.id)}
+                    className={rowIconButton}
+                    aria-label={copy.pixelGroup[lang]}
+                    title={copy.pixelGroup[lang]}
+                    aria-haspopup="menu"
+                    onClick={(event) => {
+                      event.stopPropagation()
+                      openMenu({ kind: "group", id: group.id, x: event.clientX, y: event.clientY })
+                    }}
                   >
-                    {layer.name}
+                    <PixelIcon name="more" />
                   </button>
-                )}
-              </div>
-
-              <button
-                type="button"
-                className="inline-flex h-8 w-8 items-center justify-center text-muted hover:text-fg"
-                aria-label={hidden ? copy.pixelLayerShow[lang] : copy.pixelLayerHide[lang]}
-                title={hidden ? copy.pixelLayerShow[lang] : copy.pixelLayerHide[lang]}
-                onClick={() => onVisible(layer.id, !layer.visible)}
-              >
-                <PixelIcon name={hidden ? "eyeOff" : "eye"} />
-              </button>
-              <button
-                type="button"
-                className="inline-flex h-8 w-8 items-center justify-center text-muted hover:text-fg"
-                aria-label={layer.locked ? copy.pixelLayerUnlock[lang] : copy.pixelLayerLock[lang]}
-                title={layer.locked ? copy.pixelLayerUnlock[lang] : copy.pixelLayerLock[lang]}
-                onClick={() => toggleLock(layer)}
-              >
-                <PixelIcon name={layer.locked ? "lock" : "unlock"} />
-              </button>
-              <button
-                type="button"
-                className="inline-flex h-8 w-8 items-center justify-center text-muted hover:text-fg"
-                aria-label={copy.pixelLayerMore[lang]}
-                title={copy.pixelLayerMore[lang]}
-                onClick={(event) => {
-                  event.stopPropagation()
-                  openMenu(layer.id, event.clientX, event.clientY)
+                </li>
+              ) : null}
+              <li
+                draggable
+                onDragStart={() => onDragStart(layer.id)}
+                onDragOver={(event) => onDragOver(event, layer.id)}
+                onDragEnd={() => {
+                  setDragId(null)
+                  setDropId(null)
                 }}
+                onDrop={() => onDrop(layer.id)}
+                onContextMenu={(event) => {
+                  event.preventDefault()
+                  openMenu({ kind: "layer", id: layer.id, x: event.clientX, y: event.clientY })
+                }}
+                className={cn(
+                  "flex items-center gap-1.5 border-[3px] border-earth px-1.5 py-1.5",
+                  group && "ml-4",
+                  layer.active ? "border-fg bg-soft" : isPicked ? "border-sky bg-soft" : "bg-card",
+                  isPicked && "shadow-[inset_4px_0_0_0_var(--sky)]",
+                  hidden && "opacity-55",
+                  isDrop && "border-dashed border-fg",
+                  dragId === layer.id && "opacity-70",
+                )}
               >
-                <PixelIcon name="more" />
-              </button>
-            </li>
+                <span
+                  className="inline-flex h-8 w-5 cursor-grab items-center justify-center text-muted active:cursor-grabbing"
+                  aria-label={copy.pixelLayerReorder[lang]}
+                  title={copy.pixelLayerReorder[lang]}
+                >
+                  <PixelIcon name="grip" />
+                </span>
+
+                <button
+                  type="button"
+                  className="relative h-10 w-10 shrink-0 border-[2px] border-earth bg-[length:8px_8px] bg-[linear-gradient(45deg,#e8e4d8_25%,transparent_25%,transparent_75%,#e8e4d8_75%),linear-gradient(45deg,#e8e4d8_25%,transparent_25%,transparent_75%,#e8e4d8_75%)] bg-[position:0_0,4px_4px]"
+                  aria-label={layer.active ? copy.pixelLayerActive[lang] : layer.name}
+                  onClick={(event) => selectRow(event, layer)}
+                >
+                  {thumbs[layer.id] ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={thumbs[layer.id]}
+                      alt=""
+                      className="h-full w-full object-contain [image-rendering:pixelated]"
+                      draggable={false}
+                    />
+                  ) : null}
+                </button>
+
+                <div className="min-w-0 flex-1">
+                  {editingId === layer.id ? (
+                    <input
+                      ref={renameRef}
+                      type="text"
+                      defaultValue={layer.name}
+                      aria-label={copy.pixelLayerRename[lang]}
+                      className="h-8 w-full border-[2px] border-earth bg-bg px-1.5 text-[12px] text-fg"
+                      onBlur={(event) => commitRename(layer.id, event.target.value)}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter") event.currentTarget.blur()
+                        if (event.key === "Escape") setEditingId(null)
+                      }}
+                    />
+                  ) : (
+                    <button
+                      type="button"
+                      className={cn(
+                        "block w-full truncate text-left text-[13px] font-medium",
+                        layer.active ? "text-fg" : "text-fg/90",
+                      )}
+                      onClick={(event) => selectRow(event, layer)}
+                      onDoubleClick={() => setEditingId(layer.id)}
+                    >
+                      {layer.name}
+                      {isPicked ? <span className="sr-only"> — {copy.pixelLayerSelected[lang]}</span> : null}
+                    </button>
+                  )}
+                </div>
+
+                <button
+                  type="button"
+                  className={rowIconButton}
+                  aria-label={hidden ? copy.pixelLayerShow[lang] : copy.pixelLayerHide[lang]}
+                  title={hidden ? copy.pixelLayerShow[lang] : copy.pixelLayerHide[lang]}
+                  onClick={() => onVisible(layer.id, !layer.visible)}
+                >
+                  <PixelIcon name={hidden ? "eyeOff" : "eye"} />
+                </button>
+                <button
+                  type="button"
+                  className={rowIconButton}
+                  aria-label={layer.locked ? copy.pixelLayerUnlock[lang] : copy.pixelLayerLock[lang]}
+                  title={layer.locked ? copy.pixelLayerUnlock[lang] : copy.pixelLayerLock[lang]}
+                  onClick={() => toggleLock(layer)}
+                >
+                  <PixelIcon name={layer.locked ? "lock" : "unlock"} />
+                </button>
+                <button
+                  type="button"
+                  className={rowIconButton}
+                  aria-label={copy.pixelLayerMore[lang]}
+                  title={copy.pixelLayerMore[lang]}
+                  aria-haspopup="menu"
+                  onClick={(event) => {
+                    event.stopPropagation()
+                    openMenu({ kind: "layer", id: layer.id, x: event.clientX, y: event.clientY })
+                  }}
+                >
+                  <PixelIcon name="more" />
+                </button>
+              </li>
+              {group && endsGroup && dragLayer?.group === group.id ? (
+                <li
+                  className={cn(
+                    "ml-4 border-[3px] border-dashed border-earth px-2 py-1.5 text-center text-[length:var(--studio-meta,0.75rem)] text-muted",
+                    dropId === `out:${group.id}` && "border-fg bg-card text-fg",
+                  )}
+                  onDragOver={(event) => {
+                    event.preventDefault()
+                    setDropId(`out:${group.id}`)
+                  }}
+                  onDragLeave={() => setDropId((current) => (current === `out:${group.id}` ? null : current))}
+                  onDrop={(event) => {
+                    event.preventDefault()
+                    const moving = dragId
+                    setDragId(null)
+                    setDropId(null)
+                    if (moving && groupApi.onRemove(moving)) onFeedback?.("reordered")
+                  }}
+                >
+                  {copy.pixelGroupDropOut[lang]}
+                </li>
+              ) : null}
             </Fragment>
           )
         })}
       </ul>
 
-      {(() => {
-        const activeLayer = layers.find((layer) => layer.active)
-        return activeLayer ? (
-          <LayerStyleControls
-            lang={lang}
-            layer={activeLayer}
-            isBase={stackIndexOf(layers, activeLayer.id) === 0}
-            onStyle={onStyle}
-          />
-        ) : null
-      })()}
-      {(() => {
-        const activeLayer = layers.find((layer) => layer.active)
-        return activeLayer ? <LayerGroupControls lang={lang} layer={activeLayer} api={groupApi} /> : null
-      })()}
+      {focusedGroup ? (
+        <GroupStyleControls lang={lang} group={focusedGroup} api={groupApi} />
+      ) : activeLayer ? (
+        <LayerStyleControls
+          lang={lang}
+          layer={activeLayer}
+          isBase={stackIndexOf(layers, activeLayer.id) === 0}
+          onStyle={onStyle}
+        />
+      ) : null}
 
-      {menu && menuLayer ? (
+      {menu && menuItems.length > 0 ? (
         <div
           role="menu"
-          className="fixed z-[80] min-w-[12rem] border-[3px] border-earth bg-card py-1 shadow-[4px_4px_0_0_var(--earth)]"
-          style={{ left: Math.min(menu.x, window.innerWidth - 200), top: Math.min(menu.y, window.innerHeight - 220) }}
+          className="fixed z-[80] max-h-[min(24rem,calc(100vh-1rem))] min-w-[12rem] overflow-y-auto border-[3px] border-earth bg-card py-1 shadow-[4px_4px_0_0_var(--earth)]"
+          style={{
+            left: Math.max(8, Math.min(menu.x, window.innerWidth - 220)),
+            top: Math.max(8, Math.min(menu.y, window.innerHeight - 260)),
+          }}
           onClick={(event) => event.stopPropagation()}
         >
-          {(
-            [
-              {
-                label: copy.pixelLayerDuplicate[lang],
-                icon: "duplicate" as const,
-                disabled: layers.length >= PIXEL_LAYER_MAX,
-                run: () => {
-                  if (onDuplicate(menuLayer.id)) onFeedback?.("duplicated")
-                },
-              },
-              {
-                label: copy.pixelLayerRename[lang],
-                icon: "pencil" as const,
-                disabled: false,
-                run: () => setEditingId(menuLayer.id),
-              },
-              {
-                label: copy.pixelLayerMergeDown[lang],
-                icon: "merge" as const,
-                disabled: !canMergeDown,
-                run: () => {
-                  if (onMergeDown(menuLayer.id)) onFeedback?.("merged")
-                },
-              },
-              {
-                label: copy.pixelLayerDelete[lang],
-                icon: "trash" as const,
-                disabled: layers.length <= 1,
-                run: () => {
-                  if (onDelete(menuLayer.id)) onFeedback?.("deleted")
-                },
-              },
-            ] as const
-          ).map((item) => (
-            <button
-              key={item.label}
-              type="button"
-              role="menuitem"
-              disabled={item.disabled}
-              className="flex w-full items-center gap-2 px-3 py-2 text-left text-[13px] text-fg hover:bg-soft disabled:opacity-40"
-              onClick={() => {
-                item.run()
-                setMenu(null)
-              }}
-            >
-              <PixelIcon name={item.icon} />
-              {item.label}
-            </button>
-          ))}
+          {menuItems.map((item) =>
+            item.separator ? (
+              <div key={item.key} role="separator" className="my-1 h-[3px] bg-earth/30" />
+            ) : (
+              <button
+                key={item.key}
+                type="button"
+                role="menuitem"
+                disabled={item.disabled}
+                className="flex w-full items-center gap-2 px-3 py-2 text-left text-[13px] text-fg hover:bg-soft disabled:opacity-40"
+                onClick={() => {
+                  item.run()
+                  setMenu(null)
+                }}
+              >
+                <PixelIcon name={item.icon} className="shrink-0" />
+                <span className="min-w-0 truncate">{item.label}</span>
+              </button>
+            ),
+          )}
         </div>
       ) : null}
     </section>
@@ -446,6 +772,7 @@ export function LayerMobileStrip({
   thumbEpoch = 0,
   getThumbnail,
   onAdd,
+  onCreateGroup,
   onActive,
   onFeedback,
   onOpenSheet,
@@ -455,6 +782,8 @@ export function LayerMobileStrip({
   thumbEpoch?: number
   getThumbnail: (id: string) => string | null
   onAdd: () => boolean
+  /** New group holding a blank layer (the mobile strip has no multi-select). */
+  onCreateGroup: () => boolean
   onActive: (id: string) => boolean
   onFeedback?: (kind: LayerPanelFeedback) => void
   onOpenSheet: (id: string) => void
@@ -512,6 +841,21 @@ export function LayerMobileStrip({
         }}
       >
         <PixelIcon name="plus" />
+      </button>
+      <button
+        type="button"
+        className="studio-thumb inline-flex items-center justify-center border-[3px] border-earth bg-bg text-fg"
+        aria-label={copy.pixelGroupCreate[lang]}
+        title={copy.pixelGroupCreateTip[lang]}
+        onClick={() => {
+          if (layers.length >= PIXEL_LAYER_MAX) {
+            onFeedback?.("max")
+            return
+          }
+          if (onCreateGroup()) onFeedback?.("grouped")
+        }}
+      >
+        <NewIcon name="folder" />
       </button>
       {displayLayers(layers).map((layer) => (
         <Fragment key={layer.id}>
@@ -613,6 +957,7 @@ export function LayerMobileSheet({
   const layer = layerId ? layers.find((item) => item.id === layerId) : null
   const stack = layer ? stackIndexOf(layers, layer.id) : -1
   const thumb = layer ? getThumbnail(layer.id) : null
+  const sheetGroup = layer?.group ? (groupApi.groups.find((item) => item.id === layer.group) ?? null) : null
   const sourceName = layer?.name ?? ""
   const [draft, setDraft] = useState({
     id: layer?.id ?? null,
@@ -751,7 +1096,16 @@ export function LayerMobileSheet({
       </div>
 
       <LayerStyleControls lang={lang} layer={layer} isBase={stack === 0} onStyle={onStyle} />
-      <LayerGroupControls lang={lang} layer={layer} api={groupApi} />
+      <LayerGroupActions
+        lang={lang}
+        layer={layer}
+        api={groupApi}
+        onDone={(kind) => {
+          onFeedback?.(kind)
+          onClose()
+        }}
+      />
+      {sheetGroup ? <GroupStyleControls lang={lang} group={sheetGroup} api={groupApi} showStructure /> : null}
     </Dialog>
   )
 }

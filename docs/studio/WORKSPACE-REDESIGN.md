@@ -1,7 +1,7 @@
 # PXLB Studio — Complete Editor Workspace Redesign
 
 **Workstream:** WR  
-**Status:** PLANNED  
+**Status:** IMPLEMENTED — see `04_WORKSPACE_REDESIGN_REPORT.md`  
 **Date added:** 23 Nov 2026  
 **Master plan:** `docs/master-plan/PXLB-STUDIO-MASTER-EXECUTION-PLAN.md` §11  
 **Current implementation facts:** `docs/studio/01_SYSTEM_AUDIT.md`  

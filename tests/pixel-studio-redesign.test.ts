@@ -191,4 +191,79 @@ describe("pixel studio redesign S0–S1", () => {
     expect(icons).toMatch(/lock:/)
     expect(icons).toMatch(/layers:/)
   })
+
+  it("organizes the workspace into stable, independently scrolling regions (WR2)", () => {
+    const inspector = read("components/creations/StudioInspector.tsx")
+    const playground = read("components/creations/PlaygroundForm.tsx")
+    // Right sidebar: collapsible panels, layers keep the flexible space, no whole-column scroll.
+    expect(inspector).toMatch(/function InspectorSection/)
+    expect(inspector).toMatch(/aria-expanded=\{open\}/)
+    expect(inspector).toMatch(/shrink-0 flex-col overflow-hidden border-l-\[3px\]/)
+    expect(inspector).toMatch(/min-h-\[8rem\] flex-1 overflow-y-auto/)
+    expect(inspector).toMatch(/hasToolOptions/)
+    expect(inspector).toMatch(/symmetryControl/)
+    // The current colour lives in the palette header instead of a second row.
+    expect(inspector).not.toMatch(/studio-hit border-earth"\s+style=\{\{ backgroundColor: color \}\}/)
+    // Swatches are fluid squares, so the grid cannot overflow the sidebar.
+    expect(inspector).toMatch(/aspect-square/)
+    // Top bar: Save keeps its slot, the inspector can be collapsed, status sits with the title.
+    expect(playground).toMatch(/disabled=\{pending \|\| leaving \|\| !\(dirty \|\| metadataDirty\)\}/)
+    expect(playground).not.toMatch(/\{dirty \|\| metadataDirty \? \(\s*<Button/)
+    expect(playground).toMatch(/setInspectorOpen/)
+    expect(playground).toMatch(/!preview && inspectorOpen/)
+    expect(playground).toMatch(/renderStatusBar\("desktop"\)/)
+    expect(playground).toMatch(/renderStatusBar\("mobile"\)/)
+    // Left rail: tools only. Symmetry is a tool option and lives in the inspector on desktop.
+    const rail = playground.slice(
+      playground.indexOf('className="playground-tool-rail'),
+      playground.indexOf("</aside>", playground.indexOf('className="playground-tool-rail')),
+    )
+    expect(rail).toMatch(/toolButtons/)
+    expect(rail).not.toMatch(/renderSymmetryButton/)
+    expect(playground).toMatch(/symmetryControl=\{renderSymmetryButton\(\)\}/)
+    // Tool groups: draw, shapes, fill & colour, then selection & navigation.
+    const order = ["pencil", "line", "fill", "select", "pan"].map((tool) =>
+      playground.indexOf(`{toolButton("${tool}"`),
+    )
+    expect(order.every((index) => index >= 0)).toBe(true)
+    expect([...order].sort((a, b) => a - b)).toEqual(order)
+  })
+
+  it("makes group creation a layer-list action, not a layer property (WR3)", () => {
+    const panel = read("components/creations/LayerPanel.tsx")
+    const controls = read("components/creations/LayerGroupControls.tsx")
+    const playground = read("components/creations/PlaygroundForm.tsx")
+    const board = read("components/canvas/PixelBoard.tsx")
+    const groups = read("lib/pixel-groups.ts")
+    const copyFile = read("lib/copy.ts")
+    // The "Grup" dropdown is gone from the properties area.
+    expect(controls).not.toMatch(/<select[\s\S]*pixelGroupNone/)
+    expect(controls).not.toMatch(/NEW_VALUE/)
+    expect(copyFile).not.toMatch(/pixelGroupNone/)
+    expect(panel).not.toMatch(/<LayerGroupControls/)
+    // Toolbar: layer + group side by side, overflow for secondary actions.
+    expect(panel).toMatch(/aria-label=\{copy\.pixelLayerAdd\[lang\]\}[\s\S]*aria-label=\{createLabel\}[\s\S]*aria-label=\{copy\.pixelLayersMore\[lang\]\}/)
+    expect(panel).toMatch(/copy\.pixelGroupCreateTip\[lang\]/)
+    expect(panel).toMatch(/runCreateGroup\(selection\)/)
+    expect(panel).toMatch(/pixelLayerMergeVisible/)
+    // Multi-select, rename, expand/collapse, drag in and out.
+    expect(panel).toMatch(/event\.shiftKey/)
+    expect(panel).toMatch(/event\.ctrlKey \|\| event\.metaKey/)
+    expect(panel).toMatch(/setEditingGroupId/)
+    expect(panel).toMatch(/collapsed: !group\.collapsed/)
+    expect(panel).toMatch(/groupApi\.onAssign\(moving, group\.id\)/)
+    expect(panel).toMatch(/groupApi\.onRemove\(moving\)/)
+    // Layer opacity, blend and transparency lock stay layer properties.
+    expect(panel).toMatch(/<LayerStyleControls/)
+    expect(panel).toMatch(/<GroupStyleControls/)
+    // One grouping system: the board reuses the model and records one undo step.
+    expect(groups).toMatch(/export function createGroupFromLayers/)
+    expect(groups).toMatch(/return createGroupFromLayers\(layers, groups, \[layerId\], name\)/)
+    expect(board).toMatch(/createGroupFromLayersModel/)
+    expect(board).not.toMatch(/createGroup: \(/)
+    expect(playground).toMatch(/createGroupFromLayers\(layerIds, name\)/)
+    expect(playground).toMatch(/onCreateGroup=/)
+    // Mobile has no drag and drop, so the sheet carries the structural actions.
+    expect(panel).toMatch(/<LayerGroupActions/)
+  })
 })
