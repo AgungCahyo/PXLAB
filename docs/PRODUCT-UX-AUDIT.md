@@ -1,5 +1,15 @@
 # THE COMMONS — Product UX Audit
 
+> **Document purpose:** Point-in-time product UX audit from 16 Nov 2026.
+> **Status:** HISTORICAL SNAPSHOT — NOT CURRENT FEATURE STATUS.
+> **Updated:** 2026-11-24 (marker added).
+> **Implementation evidence:** VERIFIED IN CODE — explicit save with browser-local recovery (`components/creations/PlaygroundForm.tsx:431`); autosave wording in the checklist below is historical. Current inventory: `docs/studio/01_SYSTEM_AUDIT.md`.
+> **Completed:** Original audit report recorded; later B2–B7 work changed the workflows it describes.
+> **Open:** Re-validate any issue against current code and browser before acting; production QA is an operator task.
+> **Dependencies:** `PRODUCT-SPEC.md`, `IMPLEMENTATION-PLAN.md`, `docs/studio/01_SYSTEM_AUDIT.md`.
+> **Next action:** Read-only archive; do not treat the checklist as current acceptance criteria.
+> **Status labels:** VERIFIED IN CODE / VERIFIED BY TEST / VERIFIED IN BROWSER / VERIFIED IN PRODUCTION / OPERATOR ACTION REQUIRED / PROPOSED — AWAITING OWNER DECISION.
+
 **Dokumen:** PRODUCT-UX-AUDIT.md  
 **Tanggal:** 16 Nov 2026  
 **Sifat:** Audit dan usulan. Tidak mengubah aplikasi, skema, atau spesifikasi Artwork Conversation.  

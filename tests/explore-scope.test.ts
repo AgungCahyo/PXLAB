@@ -47,13 +47,15 @@ describe("Explore result scope", () => {
 
   it("keeps creator cards horizontal in All and vertical in Creators", () => {
     const results = read("components/search/SearchResults.tsx")
+    const list = read("components/creations/CreatorCardList.tsx")
     expect(results).toContain('const creatorsVertical = scope === "creators"')
-    expect(results).toContain(
+    expect(results).toContain('layout={creatorsVertical ? "grid" : "rail"}')
+    expect(list).toContain(
       "mt-1 grid min-w-0 max-w-full grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3",
     )
-    expect(results).toContain("snap-x snap-mandatory flex-nowrap gap-2 overflow-x-auto")
-    expect(results).toContain("fluid={creatorsVertical}")
-    expect(results).not.toMatch(/overflow-y-auto/)
+    expect(list).toContain("snap-x snap-mandatory flex-nowrap gap-2 overflow-x-auto")
+    expect(list).toContain("fluid={vertical}")
+    expect(list).not.toMatch(/overflow-y-auto/)
   })
 
   it("shows one primary navigation system per context", () => {

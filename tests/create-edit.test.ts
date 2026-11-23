@@ -20,6 +20,7 @@ describe("edit existing work instead of copying it", () => {
   const createPage = read("app/[lang]/(member)/create/page.tsx")
   const dashboard = read("app/[lang]/(member)/dashboard/page.tsx")
   const detail = read("app/[lang]/(public)/creation/[id]/page.tsx")
+  const community = read("components/community/CreationCommunity.tsx")
   const fork = read("features/creations/actions.ts")
 
   it("keeps Create as new-work only and lists own works on My Works", () => {
@@ -35,10 +36,16 @@ describe("edit existing work instead of copying it", () => {
     expect(row).toMatch(/\/create\/\$\{item\.id\}/)
   })
 
-  it("gives the owner an edit CTA on the public page and hides self-fork", () => {
-    expect(detail).toMatch(/createEditThis/)
+  it("puts the owner's icon-only edit CTA after share and hides self-fork", () => {
+    expect(detail).toMatch(/editHref=\{isOwner/)
     expect(detail).toMatch(/\/create\/\$\{creation\.id\}/)
+    expect(detail).toMatch(/editLabel=\{copy\.createEditThis\[lang\]\}/)
     expect(detail).toMatch(/allowFork=\{!isOwner\}/)
+    expect(community).toMatch(/<ShareButton[\s\S]*?editHref \? \([\s\S]*?<PixelIcon name="pencil" \/>/)
+    expect(community).toMatch(/aria-label=\{editLabel\}/)
+    expect(community).toMatch(/title=\{editLabel\}/)
+    expect(community).toMatch(/className=\{workActionClass\}/)
+    expect(community.indexOf("<ShareButton")).toBeLessThan(community.indexOf("editHref ? ("))
   })
 
   it("opens the original when the owner tries to fork their own work", () => {

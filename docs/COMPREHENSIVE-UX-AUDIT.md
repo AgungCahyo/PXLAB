@@ -1,5 +1,15 @@
 # THE COMMONS — Comprehensive UX Audit
 
+> **Document purpose:** Point-in-time UX audit from commit `66503eb` (17 Nov 2026), useful for reasoning about the redesign but not for current feature status.
+> **Status:** HISTORICAL SNAPSHOT — NOT CURRENT FEATURE STATUS.
+> **Updated:** 2026-11-24 (marker added; original findings preserved).
+> **Implementation evidence:** VERIFIED IN CODE — current Studio uses explicit server save with browser-local recovery (`components/creations/PlaygroundForm.tsx:431`), so the autosave findings below are historical. Current inventory: `docs/studio/01_SYSTEM_AUDIT.md`.
+> **Completed:** Original audit and its issue list were recorded; many layout/workflow findings were addressed by later B2–B7 and Studio work.
+> **Open:** Browser verification of any finding before acting; production QA remains an operator task.
+> **Dependencies:** `PRODUCT-SPEC.md`, `IMPLEMENTATION-PLAN.md`, `docs/studio/01_SYSTEM_AUDIT.md`.
+> **Next action:** Treat this file as read-only history. Do not implement P0/P1 items from it without re-validating against current code and browser behavior.
+> **Status labels:** VERIFIED IN CODE / VERIFIED BY TEST / VERIFIED IN BROWSER / VERIFIED IN PRODUCTION / OPERATOR ACTION REQUIRED / PROPOSED — AWAITING OWNER DECISION.
+
 **Dokumen:** `docs/COMPREHENSIVE-UX-AUDIT.md`
 **Tanggal:** 17 Nov 2026
 **Sifat:** Audit dan perencanaan. Tidak ada kode, CSS, komponen, konfigurasi, atau database yang diubah.

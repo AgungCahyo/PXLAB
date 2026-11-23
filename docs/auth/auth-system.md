@@ -1,5 +1,18 @@
 # PXLB Authentication System — Phase 1 Audit
 
+> **Status: SUPERSEDED**
+> **Updated:** 2026-11-24.
+> **Reason:** This is a pre-migration Phase 1 audit. It predates Google OAuth, avatar uploads, unified onboarding, interaction guardrails and the recorded RLS/current-schema state.
+> **Replacement:** [TECHNICAL-SPEC.md](../TECHNICAL-SPEC.md) for current auth/schema decisions, [IMPLEMENTATION-PLAN.md](../IMPLEMENTATION-PLAN.md) for launch gates and operator work, and `features/auth/actions.ts` plus `supabase/migrations/` for code evidence.
+> **Coding agent instruction:** Do not treat the findings below as current defects or as permission to refactor auth. Verify against current source and migrations first.
+> **Document purpose:** Historical Phase 1 authentication audit.
+> **Completed:** The original audit was recorded; later identity work shipped email/password plus Google OAuth, generated/photo avatars and onboarding fields.
+> **Open:** No active task from this document; production auth validation is an operator task in `IMPLEMENTATION-PLAN.md` §14.
+> **Dependencies:** Superseded by current specs and migrations.
+> **Next action:** Read-only archive; do not use as an implementation checklist.
+> **Implementation evidence:** VERIFIED IN CODE — `features/auth/actions.ts:226-242`, `features/profiles/actions.ts:161`, `supabase/migrations/20261118009000_oauth_profile_meta.sql`, `supabase/migrations/20261119011000_unified_onboarding.sql`; VERIFIED BY TEST — `tests/profile-avatar.test.ts`.
+> **Status labels:** VERIFIED IN CODE / VERIFIED BY TEST / VERIFIED IN BROWSER / VERIFIED IN PRODUCTION / OPERATOR ACTION REQUIRED / PROPOSED — AWAITING OWNER DECISION.
+
 ## Objective
 
 Conduct a comprehensive audit of the existing PXLB authentication system before implementing any changes.

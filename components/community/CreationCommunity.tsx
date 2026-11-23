@@ -14,7 +14,8 @@ import { useRouter } from "next/navigation"
 import { Comment, Share } from "pixelarticons/react"
 import { ProfileAvatar } from "@/components/profiles/ProfileAvatar"
 import { PixelHeart } from "@/components/social/PixelHeart"
-import { workActionClass } from "@/components/social/socialAction"
+import { PixelIcon } from "@/components/ui/PixelIcon"
+import { workActionBaseClass, workActionClass } from "@/components/social/socialAction"
 import { Alert } from "@/components/ui/Alert"
 import { socialButtonClass } from "@/components/social/socialButton"
 import { Textarea } from "@/components/ui/Textarea"
@@ -709,6 +710,8 @@ export function CreationEngagement({
   remixCount = 0,
   member,
   allowFork = false,
+  editHref = null,
+  editLabel,
 }: {
   lang: Lang
   creationId: string
@@ -723,6 +726,8 @@ export function CreationEngagement({
   remixCount?: number
   member: CommunityMember | null
   allowFork?: boolean
+  editHref?: string | null
+  editLabel?: string
 }) {
   const t = socialCopy.feed
   const router = useRouter()
@@ -767,6 +772,16 @@ export function CreationEngagement({
         allowArtworkDownload={allowArtworkDownload}
         isPixel={isPixel}
       />
+      {editHref ? (
+        <Link
+          href={editHref}
+          aria-label={editLabel}
+          title={editLabel}
+          className={workActionClass}
+        >
+          <PixelIcon name="pencil" />
+        </Link>
+      ) : null}
       {allowFork ? (
         <ForkForm lang={lang} creationId={creationId} member={Boolean(member)} remixCount={remixCount} />
       ) : remixCount > 0 ? (
@@ -879,7 +894,11 @@ function AppreciateForm({
         aria-busy={pending || undefined}
         aria-pressed={appreciated}
         onClick={toggle}
-        className={cn(workActionClass, "disabled:opacity-100", appreciated && "text-brick")}
+        className={cn(
+          workActionBaseClass,
+          appreciated ? "text-brick" : "text-fg",
+          "disabled:opacity-100",
+        )}
       >
         <PixelHeart filled={appreciated} />
         <span>{count}</span>

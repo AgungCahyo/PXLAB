@@ -1,5 +1,18 @@
 # THE COMMONS — Pixel Playground Design Features Audit & Roadmap
 
+> **Status: SUPERSEDED**
+> **Updated:** 2026-11-24.
+> **Reason:** It still claims fill, eyedropper, shapes and selection are absent. Those tools are shipped, and its replacement chain also moved to the current studio audit.
+> **Replacement:** [docs/studio/01_SYSTEM_AUDIT.md](studio/01_SYSTEM_AUDIT.md) for current feature inventory; [PRODUCT-SPEC.md](PRODUCT-SPEC.md) for product decisions; [PXLB_STUDIO_EXECUTION.md](studio/PXLB_STUDIO_EXECUTION.md) for milestone status.
+> **Coding agent instruction:** Do not use this audit to decide whether a tool exists. Treat all status tables below as historical.
+> **Document purpose:** Historical design-feature audit and roadmap for the pixel playground.
+> **Completed:** Its tool-gap analysis was overtaken by later Studio work; no implementation should be derived from it.
+> **Open:** None from this document.
+> **Dependencies:** Superseded by current studio docs.
+> **Next action:** Read-only archive; verify against code before claiming a feature is missing.
+> **Implementation evidence:** VERIFIED IN CODE — `lib/pixel.ts:85-104`, `components/canvas/PixelBoard.tsx`; VERIFIED BY TEST — `tests/pixel-studio-redesign.test.ts`, `tests/palette-ux.test.ts`.
+> **Status labels:** VERIFIED IN CODE / VERIFIED BY TEST / VERIFIED IN BROWSER / VERIFIED IN PRODUCTION / OPERATOR ACTION REQUIRED / PROPOSED — AWAITING OWNER DECISION.
+
 **Dokumen:** PIXEL-PLAYGROUND-DESIGN-FEATURES-AUDIT.md  
 **Tanggal:** 17 Nov 2026  
 **Sifat:** Audit + perencanaan fitur **desain**. Bukan izin implementasi. Tidak mengubah kode, skema, migrasi, RLE, PNG, RLS, atau UI.

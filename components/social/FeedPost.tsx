@@ -8,7 +8,7 @@ import { PixelArt } from "@/components/creations/PixelArt"
 import { CommentPanel, type FeedViewer } from "@/components/social/CommentPanel"
 import { CreatorLine } from "@/components/social/CreatorLine"
 import { PixelHeart } from "@/components/social/PixelHeart"
-import { workActionClass } from "@/components/social/socialAction"
+import { workActionBaseClass, workActionClass } from "@/components/social/socialAction"
 import { useToast } from "@/components/social/Toast"
 import { CreationShareDialog } from "@/components/share/CreationShareDialog"
 import { toggleAppreciationAction } from "@/features/community/actions"
@@ -146,7 +146,7 @@ function FeedPostBase({
           onClick={onLike}
           aria-pressed={liked}
           aria-label={`${liked ? t.unlike[lang] : t.like[lang]}, ${likeCount}`}
-          className={cn(workActionClass, liked && "text-brick")}
+          className={cn(workActionBaseClass, liked ? "text-brick" : "text-fg")}
         >
           <span key={popKey} className={cn("inline-flex", liked && popKey > 0 && "soc-pop")}>
             <PixelHeart filled={liked} />

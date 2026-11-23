@@ -27,10 +27,23 @@ describe("Create and My Works stay separate", () => {
     expect(dashboard).not.toMatch(/dashboardHello/)
   })
 
-  it("links My Works back to the owner profile", () => {
+  it("links My Works back to the owner profile with flat chrome", () => {
     expect(dashboard).toMatch(/worksBack/)
-    expect(dashboard).toMatch(/BackLink/)
     expect(dashboard).toMatch(/\/u\/\$\{profile\.username\}/)
+    expect(dashboard).not.toMatch(/BackLink/)
+  })
+
+  it("uses the same flat social theme as home and explore", () => {
+    const row = read("components/creations/WorksRow.tsx")
+    expect(dashboard).toMatch(/socialButtonClass/)
+    expect(dashboard).toMatch(/SocialEmptyState/)
+    expect(dashboard).toMatch(/SectionHeader/)
+    expect(dashboard).toMatch(/text-\[17px\] font-semibold leading-snug text-fg/)
+    expect(dashboard).not.toMatch(/<PageHeader/)
+    expect(dashboard).not.toMatch(/<EmptyState/)
+    expect(dashboard).not.toMatch(/buttonClassName/)
+    expect(row).toMatch(/socialButtonClass/)
+    expect(row).not.toMatch(/buttonClassName/)
   })
 
   it("links the owner profile and account menu to My Works", () => {
@@ -43,7 +56,7 @@ describe("Create and My Works stay separate", () => {
   })
 
   it("keeps a minimal public profile header with avatar and works grid", () => {
-    expect(profile).toMatch(/w-full min-w-0 max-w-4xl/)
+    expect(profile).toMatch(/w-full min-w-0 max-w-5xl/)
     expect(profile).toMatch(/ProfileAvatar/)
     expect(profile).toMatch(/avatar_url/)
     expect(profile).toMatch(/showAuthor=\{false\}/)

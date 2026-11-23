@@ -1,5 +1,15 @@
 # THE COMMONS — Artwork Metadata & Explore Experience Audit
 
+> **Document purpose:** Audit/blueprint for artwork metadata, Color Palette and Explore behavior, including the 17 Nov locked product decisions.
+> **Status:** Active reference for recorded decisions; historical snapshot for implementation status. Source-format facts corrected 2026-11-24.
+> **Updated:** 2026-11-24.
+> **Implementation evidence:** VERIFIED IN CODE — `lib/pixel.ts:194-214`, `lib/validations/creation.ts:171-188`, `components/creations/PlaygroundForm.tsx:431`; VERIFIED BY TEST — `tests/palette-ux.test.ts`, `tests/works-home.test.ts`, `tests/explore-scope.test.ts`.
+> **Completed:** Locked decisions on caption, Paper exclusion, `color_usage`, fork metadata, explicit save and Explore hierarchy.
+> **Open:** Operator migration/production QA; any future change to source versions, palette ceiling or canvas limits must re-open this audit.
+> **Dependencies:** `PRODUCT-SPEC.md`, `TECHNICAL-SPEC.md`, `IMPLEMENTATION-PLAN.md`, `docs/studio/01_SYSTEM_AUDIT.md`.
+> **Next action:** Use the locked decisions as-is; re-verify any implementation-status claim against current code before acting.
+> **Status labels:** VERIFIED IN CODE / VERIFIED BY TEST / VERIFIED IN BROWSER / VERIFIED IN PRODUCTION / OPERATOR ACTION REQUIRED / PROPOSED — AWAITING OWNER DECISION.
+
 **Dokumen:** ARTWORK-METADATA-EXPLORE-AUDIT.md  
 **Tanggal:** 17 Nov 2026  
 **Sifat:** Audit + blueprint. Bukan izin implementasi. Tidak mengubah kode, skema, migrasi, RLE, PNG, RLS, atau UI.
@@ -69,7 +79,7 @@ Belum ada caption, hashtag, atau Color Palette.
 
 ### 1.5 RLE dan akses source
 
-- Format `PixelSourceV1`: `palette[]` (index 0 = Paper `#FFFDF7` = kosong/penghapus), `runs` pasangan `[index, count]`, max 64 warna, max 512×512.
+- Format `PixelSource` V1–V4: `palette[]` (index 0 = Paper `#FFFDF7` = kosong/penghapus), `runs` pasangan `[index, count]`, max **256** warna (`Uint8`), sisi 8–1024 dengan luas ≤ 512×512. V2 menambah layer, V3 opacity/blend/lockAlpha, V4 groups; v1 tetap readable. VERIFIED IN CODE (`lib/pixel.ts:194-214`, `lib/validations/creation.ts:171-188`).
 - `parsePixelSource` / `decodeRle` / `encodeRle` di `lib/pixel.ts` sudah cukup untuk histogram akurat.
 - **Cover PNG** publik (`pixel_covers_public_select`).
 - **source.json** hanya: pemilik; atau anggota terautentikasi untuk karya **published** (fork). Tamu **tidak** bisa unduh source. Komentar migrasi: gallery does not link source.json.

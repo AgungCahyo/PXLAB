@@ -1,5 +1,18 @@
 # THE COMMONS — Pixel Studio Redesign Blueprint
 
+> **Status: SUPERSEDED**
+> **Updated:** 2026-11-24.
+> **Reason:** Its 2026-11-18 layout targets (palette max 64, LayersPanel and inspector as “later”) predate the shipped Studio work. The current source is the 23/24 Nov system audit plus the execution tracker.
+> **Replacement:** [docs/studio/01_SYSTEM_AUDIT.md](studio/01_SYSTEM_AUDIT.md) for current inventory, [PXLB_STUDIO_EXECUTION.md](studio/PXLB_STUDIO_EXECUTION.md) for milestone state, and [PRODUCT-SPEC.md](PRODUCT-SPEC.md) for product decisions.
+> **Coding agent instruction:** Do not use this blueprint as an implementation target. Treat it as historical design reasoning only. Do not restore retired constraints such as palette 64 or “layers later”.
+> **Document purpose:** Historical redesign blueprint for the pixel studio workspace and create dialog.
+> **Completed:** The M1/WR work that followed it shipped the workspace chrome, inspector, minimap, layers/groups and V1–V4 source.
+> **Open:** No active task from this document; current follow-ups are listed in the studio tracker and browser checklists.
+> **Dependencies:** Superseded by current studio docs.
+> **Next action:** Read-only archive; consult current inventory before changing Studio UI.
+> **Implementation evidence:** VERIFIED IN CODE — `StudioInspector.tsx`, `StudioMinimap.tsx`, `LayerPanel.tsx`, `lib/pixel.ts:194-214`; VERIFIED BY TEST — `tests/pixel-studio-redesign.test.ts`, `tests/palette-ux.test.ts`.
+> **Status labels:** VERIFIED IN CODE / VERIFIED BY TEST / VERIFIED IN BROWSER / VERIFIED IN PRODUCTION / OPERATOR ACTION REQUIRED / PROPOSED — AWAITING OWNER DECISION.
+
 **Dokumen:** PIXEL-STUDIO-REDESIGN-BLUEPRINT.md  
 **Tanggal:** 18 Nov 2026  
 **Sifat:** Audit + spesifikasi desain. **Bukan izin implementasi.** Tidak mengubah source, CSS, skema, migrasi, RLE, atau UI.  

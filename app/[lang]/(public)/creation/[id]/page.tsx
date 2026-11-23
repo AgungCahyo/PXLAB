@@ -13,8 +13,6 @@ import { RecommendationSkeleton } from "@/components/creations/RecommendationRac
 import { RemixStrip } from "@/components/creations/RemixStrip"
 import { SimilarWorksLazy } from "@/components/creations/SimilarWorksLazy"
 import { CreationCommunity, CreationEngagement } from "@/components/community/CreationCommunity"
-import { socialButtonClass } from "@/components/social/socialButton"
-import { PixelIcon } from "@/components/ui/PixelIcon"
 import { isFollowing } from "@/features/community/follows"
 import { countCommentsOnCreation, getReactionSummary, listConversation } from "@/features/community/queries"
 import {
@@ -156,15 +154,6 @@ export default async function CreationDetailPage({
       {isPixel ? <CreationColorPalette lang={lang} usage={creation.color_usage} /> : null}
 
       <div className="mt-4 flex flex-wrap items-center gap-1 border-t border-[color:var(--soc-hairline)] pt-3">
-        {isOwner ? (
-          <Link
-            href={href(lang, `/create/${creation.id}`)}
-            className={socialButtonClass({ variant: "soft", size: "sm" })}
-          >
-            <PixelIcon name="pencil" />
-            {copy.createEditThis[lang]}
-          </Link>
-        ) : null}
         <CreationEngagement
           lang={lang}
           creationId={creation.id}
@@ -186,6 +175,8 @@ export default async function CreationDetailPage({
           remixCount={remixCount}
           member={member}
           allowFork={!isOwner}
+          editHref={isOwner ? href(lang, `/create/${creation.id}`) : null}
+          editLabel={copy.createEditThis[lang]}
         />
         {isPixel ? (
           <CreationMoreMenu

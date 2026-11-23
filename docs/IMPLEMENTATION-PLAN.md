@@ -5,6 +5,16 @@
 **Source of truth:** `PRODUCT-SPEC.md` and `TECHNICAL-SPEC.md`  
 **Visual identity:** `PIXEL-ART-DESIGN-SYSTEM.md`
 
+> **Document purpose:** Implementation sequencing, launch gates and operator handoff for the existing PXLB application.
+> **Status:** Current / source of truth for sequencing. B7 code/policy gates pass; operator and runtime proof remain open. B6 is not started.
+> **Updated:** 2026-11-24.
+> **Implementation evidence:** VERIFIED IN CODE — `supabase/migrations/` through `20261123000000_interaction_guardrails.sql`, `features/creations/actions.ts`, `lib/auth/permissions.ts`; VERIFIED BY TEST — community, download, pixel, interaction-guardrail and route suites. OPERATOR ACTION REQUIRED — apply migrations, production smoke tests, domain/redirect checks, Phase 8 browser run.
+> **Completed:** Original MVP 0–5, B0–B5, B7 code/policy work, Artwork Conversation, pixel fork, community metadata, reports/admin, interaction guardrails in source.
+> **Open:** migration application, signed-in live walkthrough, production domain/redirect verification, Phase 8 runtime evidence, WR/layer-group browser checklists, B6 (vision only).
+> **Dependencies:** `PRODUCT-SPEC.md`, `TECHNICAL-SPEC.md`, `docs/master-plan/PHASE-8-RUNTIME-VALIDATION.md`, `docs/evidence/` results.
+> **Next action:** Operator works through §14; no agent should start B6 or realtime.
+> **Status labels:** VERIFIED IN CODE / VERIFIED BY TEST / VERIFIED IN BROWSER / VERIFIED IN PRODUCTION / OPERATOR ACTION REQUIRED / PROPOSED — AWAITING OWNER DECISION.
+
 Original MVP Phases 0–5 are complete (apply `supabase/migrations` on the Supabase project if not already applied). Playground owns PixelBoard. `/space` is a secondary later-canvas page with the SVG board archived in place. **Do not run original Phase 6 or B6 as a Common Space launch.** Product languages: Indonesian (default) and English.
 
 ---
@@ -158,8 +168,8 @@ B0–B5 and B7 are in the repo. Common Space tiles remain out of scope. Do not s
 
 ### B2.2 — Clean Playground UI
 
-- Header: back, title, save status, Preview, Publish. Autosave drafts; no dominant Save.
-- Icon toolbar: pencil, eraser, pan, undo, redo. Active tool is Brick.
+- Header: back, title, save status, explicit Save draft, Preview, Publish; undo/redo on desktop. No server autosave; browser-local recovery only. VERIFIED IN CODE (`components/creations/PlaygroundForm.tsx:431`).
+- Icon toolbar: pencil, circle, eraser, pan, eyedropper, fill, shapes, selection, text, gradient; undo/redo. Active tool is Brick. VERIFIED IN CODE (`lib/pixel.ts:85-104`).
 - Compact horizontally scrolling document palette + Palette control that opens a custom picker (free color, HEX, recent, favorites). Colors used are stored in source; changing the active color does not rewrite drawn pixels.
 - Canvas is the largest region on mobile. Keep original aspect on detail; do not crop.
 
@@ -392,13 +402,24 @@ Before finishing:
 
 ## 14. Next implementation task (after B7)
 
-B7 QA is recorded. There is no B8. Do not start **B6 Giant Common Space**.
+B7 QA is recorded. There is no B8. Do not start **B6 Giant Common Space**, and do not add realtime, `canvas_tiles`, stroke RPCs, presence, broadcast, or `postgres_changes`.
 
-Operator launch work, not an agent coding phase:
+No item in the table below was executed by the documentation agent. All are manual operator or runtime tasks. `VERIFIED IN CODE` / `VERIFIED BY TEST` does not change their status.
 
-1. Apply `supabase/migrations` on the project (including pixel storage and Artwork Conversation).
-2. Walk signed-in Playground persist, conversation, pixel fork, and admin hide.
-3. Deploy. Do not wait on B6.
+| # | Pekerjaan | Dokumen terkait | Kondisi saat ini | Tindakan diperlukan | Bukti yang dikumpulkan | Status |
+|---|---|---|---|---|---|---|
+| 1 | Apply migrasi Supabase | `IMPLEMENTATION-PLAN.md` §11/§14; `COMMUNITY-EXPERIENCE.md:119`; `ARTWORK-DOWNLOAD-PERMISSION-AUDIT.md:288-294` | 21+ migration files exist in repo through `20261123000000_interaction_guardrails.sql`; no repo proof they are applied to the project. | Apply pending migrations in order. Do not rewrite old migrations. | Supabase migration history + RLS/policy smoke notes. | READY FOR OPERATOR |
+| 2 | Signed-in launch walkthrough | `IMPLEMENTATION-PLAN.md:310,316` | Code/policy gates pass; live logged-in pass not re-run. | Save/reopen/publish/unpublish pixel source; fork; conversation/reply; admin hide; verify draft privacy. | Dated checklist with account, project, observations and screenshots. | READY FOR OPERATOR |
+| 3 | Download permission validation | `docs/ARTWORK-DOWNLOAD-PERMISSION-AUDIT.md` | DL1–DL3 VERIFIED IN CODE/BY TEST; production behavior unproven. | Smoke anon vs member, draft vs published, `allow_png_download` OFF/ON, `no-store`, audit log, redirect behavior. | Request/response table for each case. | READY FOR OPERATOR |
+| 4 | Community Experience validation | `docs/COMMUNITY-EXPERIENCE.md` | Fase A–C shipped with regression tests; migration application and live walkthrough pending. | Follow one-way, Following filter, ResponsesInbox, one-level reply, report→admin hide, rate-limit RPC behavior. | Signed-in checklist per Fase A–C. | READY FOR OPERATOR |
+| 5 | Domain and redirect verification | `docs/PXLB-REBRANDING.md` | Canonical `pxlb.fun` and PXLB mark VERIFIED IN CODE; DNS/Vercel/env/Supabase redirect allowlist unproven. | Check DNS cutover, Vercel domain, legacy redirect, `NEXT_PUBLIC_SITE_URL`, auth callback URLs, OG/canonical output. | DNS/domain screenshots, login result, canonical/OG inspection. | READY FOR OPERATOR |
+| 6 | Phase 8 runtime validation | `docs/master-plan/PHASE-8-RUNTIME-VALIDATION.md`; `docs/evidence/phase8-20261122/RESULTS.md` | Evidence file is still a template: `NOT EXECUTED`. Do not claim completion. | Run production build + browser scenarios, record measured values and screenshots. | Completed `RESULTS.md`, build output, browser evidence. | NOT STARTED |
+| 7 | Workspace Redesign browser verification | `docs/studio/04_WORKSPACE_REDESIGN_REPORT.md:74-83` | Source-pattern/unit evidence only; browser checks explicitly not verified. | Run the WR browser checklist for chrome, minimap, tabs and panels. | Signed-off browser checklist with viewport notes. | NOT STARTED |
+| 8 | Layer/Group UX browser verification | `docs/studio/05_LAYER_GROUP_UX.md:48-54` | Model, UI wiring and unit/source tests exist. Drag/keyboard and follow-ups are not browser-verified. | Run drag/keyboard checks; then decide on Ctrl+G, draggable group headers and multi-pick bulk. | Browser checklist + decision notes for follow-ups. | NOT STARTED |
+
+Status definitions used here: **NOT STARTED** — no evidence collected; **BLOCKED** — cannot proceed without owner/operator decision or access; **READY FOR OPERATOR** — code is ready, manual work can begin; **VERIFIED** — production/browser evidence collected and attached.
+
+Deploy only after items 1–5 are verified. Item 6 is a separate runtime gate. Do not wait on B6.
 
 ---
 

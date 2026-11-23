@@ -3,6 +3,7 @@
 import { useState } from "react"
 import { useFormStatus } from "react-dom"
 import { DeleteCreationCopy } from "@/components/creations/DeleteCreationCopy"
+import { socialButtonClass } from "@/components/social/socialButton"
 import { Button } from "@/components/ui/Button"
 import { Dialog } from "@/components/ui/Dialog"
 import { deleteCreationAction } from "@/features/creations/actions"
@@ -36,9 +37,13 @@ export function WorksDeleteButton({
 
   return (
     <>
-      <Button type="button" size="sm" variant="ghost" onClick={() => setOpen(true)}>
+      <button
+        type="button"
+        className={socialButtonClass({ variant: "ghost", size: "sm" })}
+        onClick={() => setOpen(true)}
+      >
         {copy.createDelete[lang]}
-      </Button>
+      </button>
       <Dialog
         open={open}
         onClose={() => setOpen(false)}

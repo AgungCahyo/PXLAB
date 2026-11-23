@@ -5,6 +5,16 @@
 **Stack:** Next.js App Router, TypeScript, Supabase, Vercel  
 **Product source of truth:** [PRODUCT-SPEC.md](PRODUCT-SPEC.md)
 
+> **Document purpose:** Architecture and data-model source of truth for the existing Next.js + Supabase application.
+> **Status:** Current / source of truth. Factual drift corrected 2026-11-24 from code, migrations and tests; architecture unchanged.
+> **Updated:** 2026-11-24.
+> **Implementation evidence:** VERIFIED IN CODE — `lib/pixel.ts`, `lib/validations/creation.ts`, `features/auth/actions.ts`, `features/profiles/actions.ts`, `components/creations/PlaygroundForm.tsx`; VERIFIED BY TEST — `tests/pixel-canvas-size.test.ts`, `tests/palette-ux.test.ts`, `tests/profile-avatar.test.ts`; VERIFIED IN CODE (migrations) — `supabase/migrations/20261117006000_avatars_bucket.sql`, `20261118009000_oauth_profile_meta.sql`, `20261119011000_unified_onboarding.sql`.
+> **Completed:** RLE source + PNG covers in `pixel-creations`, RLS/server validation, Server Actions, Google OAuth, avatar bucket and generated/photo avatars, V1–V4 indexed source.
+> **Open:** operator migration application, production RLS/storage verification, data retention policy; no realtime or `canvas_tiles`.
+> **Dependencies:** `PRODUCT-SPEC.md`, `IMPLEMENTATION-PLAN.md`, `docs/studio/01_SYSTEM_AUDIT.md` for current studio inventory.
+> **Next action:** Operator applies migrations and verifies storage policies in production; owner decides any future collaboration feature before it enters this spec.
+> **Status labels:** VERIFIED IN CODE / VERIFIED BY TEST / VERIFIED IN BROWSER / VERIFIED IN PRODUCTION / OPERATOR ACTION REQUIRED / PROPOSED — AWAITING OWNER DECISION. Source-level proof is not browser or production proof.
+
 ---
 
 ## 1. Technical objectives
@@ -69,7 +79,7 @@ Two pixel surfaces share drawing math (`lib/pixel.ts`) and must **not** share wo
 
 | Surface | When | Model |
 |---|---|---|
-| Pixel Art Playground | Community MVP | Owner-chosen resolution (8–512 per side), persisted as editor source + rendered PNG |
+| Pixel Art Playground | Community MVP | Owner-chosen resolution (8–1024 per side, area ≤ 512×512), persisted as editor source + rendered PNG |
 | Common Space | After community MVP | Sparse tiles, camera/viewport, grow-on-demand with a documented extent cap |
 
 ### Architectural rules
@@ -152,17 +162,17 @@ Use UUID primary keys and `timestamptz` timestamps. Add indexes for common filte
 
 ### 6.1 `profiles`
 
-Unchanged.
+Current schema (extended after the original baseline).
 
 - `id uuid primary key references auth.users(id) on delete cascade`
-- `username text not null`
-- `display_name text`
-- `bio text`
-- `avatar_url text`
+- `username text` — nullable during onboarding; required before onboarding is completed.
+- `display_name text`, `bio text`
+- `avatar_url text`, `avatar_config jsonb` (generated avatar seed/style)
 - `role text not null default 'member'`
+- `onboarding_completed_at timestamptz`, `activity_seen_at timestamptz`
 - `created_at` / `updated_at` timestamptz
 
-Constraints: unique `lower(username)`; format `^[a-z0-9_]{3,20}$`; `role` in `member`, `admin`. Members cannot self-assign admin.
+Constraints: unique partial index on `lower(username)` where non-null; format `^[a-z0-9_]{3,20}$` when present; reserved names blocked; `role` in `member`, `admin`. Members cannot self-assign admin. VERIFIED IN CODE (`supabase/migrations/20261119011000_unified_onboarding.sql`, `20261117007000_activity_seen_at.sql`).
 
 ### 6.2 `creations`
 
@@ -317,7 +327,7 @@ Required mutation operations (existing, keep):
 Community-MVP additions (implementation phase, not this docs pass):
 
 - Create `pixel` draft.
-- Persist **editor source** (validated RLE JSON) and regenerate **PNG** from that source. Server checks ownership, `#RRGGBB` palette (max 64, Paper at index 0), indices, MIME, and size.
+- Persist **editor source** (validated RLE JSON) and regenerate **PNG** from that source. Server checks ownership, `#RRGGBB` palette (max **256**, Paper at index 0), indices, MIME, and size. Accepts source versions 1–4 while keeping v1 readable. VERIFIED IN CODE (`lib/validations/creation.ts:171-188`).
 - Reopen Playground from source, never from PNG.
 - Preview, publish, unpublish (`published` → `draft` without delete), delete.
 - Fork pixel work by copying **source** (then regenerating PNG), not by trusting a client-supplied PNG.
@@ -346,8 +356,8 @@ Behavior:
 - Size picker at `/create` before the editor; size is immutable after insert.
 - Owner-only edits.
 - Local undo/redo is allowed (personal document, not a shared world).
-- Pencil/eraser, document palette + custom color picker (native picker, HEX, recent, favorites), pan, Pointer Events, Bresenham `walkLine`. Zoom via pinch and wheel; Fit in an extra menu.
-- Studio layout: header, canvas (flex), icon toolbar, compact document palette. Autosave drafts. Changing the active color does not rewrite existing indices.
+- Studio tools include pencil/circle/eraser, eyedropper, fill, shapes, selection, text and gradient, document palette + custom color picker (native picker, HEX, recent, favorites), pan, Pointer Events, Bresenham `walkLine`. Zoom via pinch and wheel; Fit in an extra menu. VERIFIED IN CODE (`lib/pixel.ts:85-104`) and inventoried in `docs/studio/01_SYSTEM_AUDIT.md`.
+- Studio layout: header, canvas (flex), icon toolbar, inspector, minimap, compact document palette. **Explicit server save** writes source + PNG; a debounced browser-only draft is recovery-only. Changing the active color does not rewrite existing indices. VERIFIED IN CODE (`components/creations/PlaygroundForm.tsx:431`).
 - Disable image smoothing when scaling.
 - Persist on save/publish through Server Actions, not one request per pixel.
 - Save writes **source first**, then derives the PNG from that source (client may propose both blobs; server validates source and may ignore a PNG that does not match).
@@ -389,7 +399,7 @@ Recorded default:
   - `{user_id}/{creation_id}/source.json` — editor source (palette + RLE indices). **Required to reopen.**
   - `{user_id}/{creation_id}/cover.png` — rendered thumbnail/detail image, generated from source.
 - Public display URL is `/api/pixel-cover/{creation_id}` (status-checked). Stored on `cover_url`.
-- Source: JSON, `version` integer (current `1`), encoding `rle-index`, palette entries `#RRGGBB` (`palette[0]` Paper, max 64, append-only — not the UI swatch allowlist), indices in range, decoded length `width * height`. Ceiling **512 KiB**. On load (B2): reject unknown versions; keep v1 readable; reject truncated/overlong RLE and out-of-range indices before hydrating the canvas.
+- Source: JSON, `version` integer (**1–4 accepted**; v2 layers, v3 opacity/blend/lockAlpha, v4 groups; v1 remains readable), encoding `rle-index`, palette entries `#RRGGBB` (`palette[0]` Paper, max **256**, append-only — not the UI swatch allowlist), indices in range, decoded length `width * height`. Ceiling **512 KiB**. On load: reject unknown versions; reject truncated/overlong RLE and out-of-range indices before hydrating the canvas. VERIFIED IN CODE (`lib/pixel.ts:194-212`, `lib/validations/creation.ts:171-188`) and VERIFIED BY TEST (`tests/palette-ux.test.ts`, `lib/pixel.test.ts`).
 - Cover: MIME `image/png` only. Ceiling **512 KiB** for a 512 × 512 indexed PNG.
 - Draft source and draft PNG: readable by owner (and admin); not publicly listable.
 - Published covers: public read so Explore/detail/OG images work.
@@ -524,7 +534,7 @@ Do not make security-sensitive assumptions silently.
 Package versions in this repository:
 
 - Next.js `16.4.6`
-- React / React DOM `19.3.0`
+- React / React DOM `19.3.1` (VERIFIED IN CODE: `package.json:20-21`)
 - Tailwind CSS `4.3.3` via `@tailwindcss/turbopack`
 - TypeScript `^5` (strict mode enabled)
 - ESLint `^9` with `eslint-config-next` `16.4.6`
@@ -545,7 +555,7 @@ Languages: Indonesian is the default at `/`. English lives at `/en`. Internally 
 
 ### Recorded at Phase 2 setup
 
-- Auth: email + password via Supabase Auth. No extra OAuth providers.
+- Auth: email + password plus Google OAuth via Supabase Auth (`features/auth/actions.ts:226-242`). VERIFIED IN CODE.
 - Email verification follows the Supabase project setting. If confirmation is on, register shows a generic “if this address can be used” message and `/auth/callback` exchanges the code.
 - SSR: `@supabase/ssr` with `getAll`/`setAll` cookies. `middleware.ts` refreshes the session with `getUser()`. Identity on the server uses `getUser()`, never cookie-only `getSession()`.
 - Mutations: Server Actions. Session identity is derived from the authenticated user.
@@ -553,7 +563,7 @@ Languages: Indonesian is the default at `/`. English lives at `/en`. Internally 
 - Profile insert: `security definer` trigger on `auth.users`. Clients cannot insert profile rows.
 - Public profile reads use a cookie-less anon client so Cache Components can prerender public pages. Session identity stays on the SSR cookie client. The header member state streams behind `Suspense`. Login, register, and member routes set `instant = false`.
 - Role: `member` | `admin`. Members cannot update `role` (column not granted). Admin is assigned with trusted SQL.
-- Avatar uploads are deferred; `avatar_url` exists but has no UI yet.
+- Avatars are shipped: generated avatars (`avatar_config`) during onboarding and owner photo uploads through `SettingsForm` / `uploadAvatarAction`. Bucket `avatars` is public-read, 512 KiB, JPEG/PNG/WebP. VERIFIED IN CODE (`supabase/migrations/20261117006000_avatars_bucket.sql`, `features/profiles/actions.ts:161`) and VERIFIED BY TEST (`tests/profile-avatar.test.ts`).
 - `.env.example` placeholders: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `NEXT_PUBLIC_SITE_URL`. Service role stays server-only and is unused by the app.
 
 ### Recorded at Phase 3 setup

@@ -1,5 +1,18 @@
 # THE COMMONS — Pixel Canvas Migration Plan
 
+> **Status: SUPERSEDED**
+> **Updated:** 2026-11-24.
+> **Reason:** It sequenced the product around a fixed 512×512 shared Common Space with realtime. Current product center is the personal Playground; the sparse giant canvas is B6, after community launch, and is not a launch requirement.
+> **Replacement:** [IMPLEMENTATION-PLAN.md](IMPLEMENTATION-PLAN.md) for sequencing, [PRODUCT-SPEC.md](PRODUCT-SPEC.md) for product, [PIXEL-CANVAS-SPEC.md](PIXEL-CANVAS-SPEC.md) for Playground vs B6 engine notes.
+> **Coding agent instruction:** Do not implement Phase 2–7 from this file. Treat everything below as historical context only. Do not add `canvas_tiles`, stroke RPCs, realtime, presence, or WebSocket.
+> **Document purpose:** Historical pixel-canvas migration audit and superseded phase plan.
+> **Completed:** Phase 0 audit and Phase 1 local prototype happened; PixelBoard and `lib/pixel.ts` remain.
+> **Open:** No active task from this document. B6 requires a separate owner decision.
+> **Dependencies:** None for current work.
+> **Next action:** Read-only archive; do not use as a task source.
+> **Implementation evidence:** VERIFIED IN CODE — `/space` keeps archived SVG; VERIFIED BY TEST — `tests/resource-cleanup.test.ts` forbids realtime APIs.
+> **Status labels:** VERIFIED IN CODE / VERIFIED BY TEST / VERIFIED IN BROWSER / VERIFIED IN PRODUCTION / OPERATOR ACTION REQUIRED / PROPOSED — AWAITING OWNER DECISION.
+
 **Status:** Superseded for sequencing and product center.  
 **Use instead:** [IMPLEMENTATION-PLAN.md](IMPLEMENTATION-PLAN.md)  
 **Product:** [PRODUCT-SPEC.md](PRODUCT-SPEC.md)  

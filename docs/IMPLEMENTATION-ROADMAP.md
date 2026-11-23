@@ -1,5 +1,15 @@
 # THE COMMONS — Implementation Roadmap
 
+> **Document purpose:** Historical working sequence after the 16 Nov audits; not the current launch plan.
+> **Status:** HISTORICAL SNAPSHOT — NOT CURRENT SEQUENCING.
+> **Updated:** 2026-11-24 (marker added).
+> **Implementation evidence:** VERIFIED IN CODE — current sequencing and launch gates live in `IMPLEMENTATION-PLAN.md`; shipped Studio state in `docs/studio/01_SYSTEM_AUDIT.md` and `docs/studio/PXLB_STUDIO_EXECUTION.md`.
+> **Completed:** The slices listed here informed B0–B5/B7 work; no new task should be started from this file.
+> **Open:** Operator actions are recorded in `IMPLEMENTATION-PLAN.md` §14.
+> **Dependencies:** Superseded for sequencing by `IMPLEMENTATION-PLAN.md`.
+> **Next action:** Read-only archive; consult the implementation plan before scheduling work.
+> **Status labels:** VERIFIED IN CODE / VERIFIED BY TEST / VERIFIED IN BROWSER / VERIFIED IN PRODUCTION / OPERATOR ACTION REQUIRED / PROPOSED — AWAITING OWNER DECISION.
+
 **Dokumen:** IMPLEMENTATION-ROADMAP.md  
 **Tanggal:** 16 Nov 2026  
 **Sifat:** Urutan kerja setelah audit disetujui. Bukan izin untuk mulai mengkode.

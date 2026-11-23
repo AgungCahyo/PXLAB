@@ -1,5 +1,18 @@
 # THE COMMONS — Wplace Pixel-art Studio Feature Audit
 
+> **Status: SUPERSEDED**
+> **Updated:** 2026-11-24.
+> **Reason:** Its “Belum” inventory (layers, inspector, minimap, palette 64, several tools) no longer matches the code. It was explicitly named stale by the current studio tracker.
+> **Replacement:** [docs/studio/01_SYSTEM_AUDIT.md](studio/01_SYSTEM_AUDIT.md) for inventory; [PXLB_STUDIO_EXECUTION.md](studio/PXLB_STUDIO_EXECUTION.md) for milestone status; [PRODUCT-SPEC.md](PRODUCT-SPEC.md) for product decisions.
+> **Coding agent instruction:** Do not treat this audit as current feature status. Use it only as historical reference for the original Wplace comparison.
+> **Document purpose:** Historical external-reference audit of pixel studio features.
+> **Completed:** Historical comparison recorded; later M1/WR/M2 work superseded its gaps.
+> **Open:** None from this document; current follow-ups live in the studio tracker and `05_LAYER_GROUP_UX.md`.
+> **Dependencies:** Superseded by current studio docs.
+> **Next action:** Read-only archive; check current inventory before claiming a tool is missing.
+> **Implementation evidence:** VERIFIED IN CODE — `StudioInspector.tsx`, `StudioMinimap.tsx`, `LayerPanel.tsx`, `lib/pixel.ts:194-214`; VERIFIED BY TEST — `tests/pixel-studio-redesign.test.ts`, `tests/palette-ux.test.ts`.
+> **Status labels:** VERIFIED IN CODE / VERIFIED BY TEST / VERIFIED IN BROWSER / VERIFIED IN PRODUCTION / OPERATOR ACTION REQUIRED / PROPOSED — AWAITING OWNER DECISION.
+
 **Dokumen:** WPLACE-STUDIO-FEATURE-AUDIT.md  
 **Tanggal:** 17 Nov 2026 · **Diperbarui:** 18 Nov 2026 (arah produk studio)  
 **Sifat:** Audit only. Tidak mengubah kode, skema, migrasi, CSS, atau UI.  

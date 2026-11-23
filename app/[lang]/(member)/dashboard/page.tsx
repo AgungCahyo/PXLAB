@@ -3,10 +3,9 @@ import Link from "next/link"
 import { notFound } from "next/navigation"
 import { connection } from "next/server"
 import { WorksRow } from "@/components/creations/WorksRow"
-import { BackLink } from "@/components/ui/BackLink"
-import { EmptyState } from "@/components/ui/EmptyState"
-import { buttonClassName } from "@/components/ui/Button"
-import { PageHeader } from "@/components/ui/PageHeader"
+import { SocialEmptyState } from "@/components/social/SocialEmptyState"
+import { socialButtonClass } from "@/components/social/socialButton"
+import { SectionHeader } from "@/components/ui/PageHeader"
 import { listOwnCreations } from "@/features/creations/queries"
 import { getCurrentProfile } from "@/lib/auth/session"
 import { copy } from "@/lib/copy"
@@ -47,41 +46,50 @@ export default async function DashboardPage({
   const published = own.filter((item) => item.status === "published")
 
   return (
-    <div className="mx-auto max-w-6xl px-5 py-10 sm:px-8 sm:py-12 lg:px-16">
-      <BackLink href={href(lang, `/u/${profile.username}`)}>{copy.worksBack[lang]}</BackLink>
-      <PageHeader
-        className="mt-6"
-        title={copy.worksTitle[lang]}
-        intro={copy.worksIntro[lang]}
-        actions={
-          <>
-            <Link
-              href={href(lang, "/responses")}
-              className={buttonClassName({ size: "sm", variant: "outline" })}
-            >
-              {copy.nav.responses[lang]}
-            </Link>
-            <Link href={href(lang, "/create")} className={buttonClassName({ size: "sm" })}>
-              {copy.worksNew[lang]}
-            </Link>
-          </>
-        }
-      />
+    <div className="mx-auto w-full min-w-0 max-w-6xl px-3 py-4 sm:px-6 sm:py-6 lg:px-10">
+      <Link
+        href={href(lang, `/u/${profile.username}`)}
+        className="mb-4 inline-flex min-h-11 items-center text-[13px] text-muted hover:text-fg"
+      >
+        {copy.worksBack[lang]}
+      </Link>
+
+      <div className="flex min-w-0 flex-wrap items-end justify-between gap-4">
+        <div className="min-w-0 max-w-2xl">
+          <h1 className="text-[17px] font-semibold leading-snug text-fg sm:text-[19px]">
+            {copy.worksTitle[lang]}
+          </h1>
+          <p className="mt-2 max-w-xl text-[14px] leading-relaxed text-muted">
+            {copy.worksIntro[lang]}
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Link
+            href={href(lang, "/responses")}
+            className={socialButtonClass({ variant: "soft" })}
+          >
+            {copy.nav.responses[lang]}
+          </Link>
+          <Link href={href(lang, "/create")} className={socialButtonClass({ variant: "solid" })}>
+            {copy.worksNew[lang]}
+          </Link>
+        </div>
+      </div>
 
       {own.length === 0 ? (
-        <div className="mt-10">
-          <EmptyState
+        <div className="mt-6">
+          <SocialEmptyState
             title={copy.createEmptyTitle[lang]}
             description={copy.createEmptyBody[lang]}
             action={
-              <Link href={href(lang, "/create")} className={buttonClassName({ size: "sm" })}>
+              <Link href={href(lang, "/create")} className={socialButtonClass({ variant: "solid" })}>
                 {copy.worksNew[lang]}
               </Link>
             }
           />
         </div>
       ) : (
-        <div className="mt-10 grid gap-12">
+        <div className="mt-6 grid gap-8">
           <WorksGroup
             lang={lang}
             headingId="works-drafts"
@@ -121,13 +129,11 @@ function WorksGroup({
 }) {
   return (
     <section aria-labelledby={headingId}>
-      <h2 id={headingId} className="text-[15px] font-medium text-fg">
-        {title}
-      </h2>
+      <SectionHeader id={headingId} title={title} />
       {items.length === 0 ? (
-        <p className="mt-4 text-[15px] text-muted">{empty}</p>
+        <p className="mt-3 text-[13px] text-muted">{empty}</p>
       ) : (
-        <ul className="mt-5 grid min-w-0 grid-cols-2 gap-3 lg:grid-cols-3 lg:gap-4 xl:grid-cols-4">
+        <ul className="mt-3 grid min-w-0 grid-cols-2 gap-3 lg:grid-cols-3 lg:gap-4 xl:grid-cols-4">
           {items.map((item) => (
             <WorksRow key={item.id} lang={lang} item={item} primary={primary} />
           ))}

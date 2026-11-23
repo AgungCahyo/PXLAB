@@ -1,5 +1,15 @@
 # THE COMMONS — User Journey
 
+> **Document purpose:** 16 Nov description of existing and recommended user flows.
+> **Status:** HISTORICAL SNAPSHOT — NOT CURRENT FEATURE STATUS.
+> **Updated:** 2026-11-24 (marker added).
+> **Implementation evidence:** VERIFIED IN CODE — current save flow is explicit with browser-local recovery (`components/creations/PlaygroundForm.tsx:431`); autosave wording below is historical. Current inventory: `docs/studio/01_SYSTEM_AUDIT.md`.
+> **Completed:** Original journey map recorded; later B2–B7 work changed the save/publish details.
+> **Open:** Browser verification of the current journey remains an operator task.
+> **Dependencies:** `PRODUCT-SPEC.md`, `IMPLEMENTATION-PLAN.md`, `docs/studio/01_SYSTEM_AUDIT.md`.
+> **Next action:** Read-only archive; re-check against current routes and UI before using as acceptance criteria.
+> **Status labels:** VERIFIED IN CODE / VERIFIED BY TEST / VERIFIED IN BROWSER / VERIFIED IN PRODUCTION / OPERATOR ACTION REQUIRED / PROPOSED — AWAITING OWNER DECISION.
+
 **Dokumen:** USER-JOURNEY.md  
 **Tanggal:** 16 Nov 2026  
 **Sifat:** Alur yang ada di kode hari ini, dan alur yang direkomendasikan. Bukan implementasi.

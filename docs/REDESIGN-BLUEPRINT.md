@@ -1,5 +1,15 @@
 # THE COMMONS — Redesign Blueprint
 
+> **Document purpose:** 16 Nov experience blueprint for the pixel community redesign.
+> **Status:** HISTORICAL SNAPSHOT — NOT CURRENT FEATURE STATUS.
+> **Updated:** 2026-11-24 (marker added).
+> **Implementation evidence:** VERIFIED IN CODE — current Studio uses explicit save with browser-only recovery (`components/creations/PlaygroundForm.tsx:431`); the 1200 ms autosave line below is historical. Current inventory: `docs/studio/01_SYSTEM_AUDIT.md`.
+> **Completed:** Its information hierarchy and visual-identity direction informed later B1/B2/B7 work.
+> **Open:** Browser and production verification remain operator tasks in `IMPLEMENTATION-PLAN.md` §14.
+> **Dependencies:** `PRODUCT-SPEC.md`, `IMPLEMENTATION-PLAN.md`, `PIXEL-ART-DESIGN-SYSTEM.md`, `docs/studio/01_SYSTEM_AUDIT.md`.
+> **Next action:** Read-only archive; do not implement autosave or layout details from this file without re-validation.
+> **Status labels:** VERIFIED IN CODE / VERIFIED BY TEST / VERIFIED IN BROWSER / VERIFIED IN PRODUCTION / OPERATOR ACTION REQUIRED / PROPOSED — AWAITING OWNER DECISION.
+
 **Dokumen:** REDESIGN-BLUEPRINT.md  
 **Tanggal:** 16 Nov 2026  
 **Sifat:** Rancangan pengalaman. Tidak mengubah kode pada tahap ini.

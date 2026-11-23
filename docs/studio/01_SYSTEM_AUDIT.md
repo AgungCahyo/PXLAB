@@ -1,10 +1,21 @@
 # PXLB Studio — M0 Existing System Audit
 
 **Document:** `docs/studio/01_SYSTEM_AUDIT.md`  
-**Date:** 23 Nov 2026  
-**Status:** COMPLETE (audit only)  
+**Original audit:** 23 Nov 2026
+**Inventory refresh:** 24 Nov 2026
+**Status:** Active reference / audit only
 **Execution mode:** No application code, dependencies, database, or architecture changes.  
 **Scope:** Pixel Studio (`PlaygroundForm` + `PixelBoard` + `lib/pixel*`). Not Common Space (`SpaceBoard`) and not legacy non-pixel `StudioForm`.
+
+> **Document purpose:** Current studio inventory and the baseline that supersedes older studio audits.
+> **Status:** Active reference. Inventory refreshed 2026-11-24 from code and tests; runtime/browser claims remain explicitly unverified.
+> **Updated:** 2026-11-24.
+> **Implementation evidence:** VERIFIED IN CODE — `components/creations/PlaygroundForm.tsx`, `components/creations/StudioMinimap.tsx`, `components/canvas/PixelBoard.tsx`, `lib/pixel.ts`, `lib/pixel-groups.ts`; VERIFIED BY TEST — `tests/pixel-studio-redesign.test.ts`, `lib/pixel-groups.test.ts`, `tests/pixel-canvas-size.test.ts`, `tests/palette-ux.test.ts`.
+> **Completed:** M0 audit, M1 workspace chrome, minimap, desktop undo/redo, layer/group model, V1–V4 source, brush/fill/export engine.
+> **Open:** browser verification of WR and layer/group interactions, drag/keyboard group follow-ups, non-square whole-canvas rotate, stylus pressure; plus any operator/production proof.
+> **Dependencies:** `PXLB_STUDIO_EXECUTION.md` tracker, `04_WORKSPACE_REDESIGN_REPORT.md`, `05_LAYER_GROUP_UX.md`.
+> **Next action:** Run the browser checklists in `04_WORKSPACE_REDESIGN_REPORT.md:74-83` and `05_LAYER_GROUP_UX.md:48`; then close those follow-ups.
+> **Status labels:** VERIFIED IN CODE / VERIFIED BY TEST / VERIFIED IN BROWSER / VERIFIED IN PRODUCTION / OPERATOR ACTION REQUIRED / PROPOSED — AWAITING OWNER DECISION.
 
 This report describes the **repository as it is**. Items that could not be verified in a browser or with a stylus are marked **UNKNOWN**.
 
@@ -113,11 +124,11 @@ Status key: **Completed** in code with tests or a wired UI; **Partial** if the c
 | Feature | Implementation | Status | Dependencies | Known issues | Improvement | Priority |
 |---|---|---|---|---|---|---|
 | Full-bleed studio overlay | `PlaygroundForm` `data-chrome="playground"` | Completed | Site chrome hidden by overlay, not `body:has` | — | Split into `StudioShell` / header / rail / stage (blueprint names do not exist as files) | Medium |
-| Desktop header | Back, title, size label, zoom well, save, publish, more | Partial | Persist, dialogs | Publish still dominates header; undo/redo **not** in desktop header (only mobile dock + context menu + Ctrl+Z) | Header closer to “document chrome”; undo/redo visible on desktop | High |
+| Desktop header | Back, title, size label, zoom well, undo/redo (`renderHistoryButtons()`), save, publish, more | Completed (code) | Persist, dialogs | Publish still visually prominent; browser behaviour UNKNOWN | Header closer to “document chrome” only if product asks | Low |
 | Left tool rail | Vertical `playground-tool-rail` `md:flex` | Completed | `toolButtons` | Many tools in one column; overflow-y | Keep; do not hide live tools | Low |
 | Right inspector | `StudioInspector` `hidden md:flex` | Completed | Palette, options, layers | Desktop-only | Keep; avoid duplicating every control on mobile | Medium |
 | Status bar | Cursor x,y · tool + swatch · save live region · edit flash | Completed | `onHoverCell` | HEX not shown next to swatch (only title) | Optional HEX | Low |
-| Minimap | No `minimap` / `StudioMinimap` in TS/TSX | **Missing** | Board buffer + camera | — | Floating stage navigator | Medium |
+| Minimap | `StudioMinimap` with `onViewChange` sync | Completed (code) | Board buffer + camera | Browser behaviour UNKNOWN | Keep; verify in browser | Low |
 | Mobile dock | Bottom toolbar: zoom/history, tools, brush, options, palette, layers | Partial | Same form as desktop | All panels stacked; `max-h-[45vh]` scroll | Tab/sheet inspector (planned, not built as named components) | High |
 | Context menu | Right-click / long-press → `StudioContextMenu` | Completed | Board `onCanvasMenu` | — | Keep | Low |
 | New artwork modal | `PixelNewForm` is a **page**, not `NewArtworkDialog` | Partial | `createDraftSchema` rejects unnamed titles | Blueprint wanted a modal over dashboard/create | Modal is a presentation change, not an engine change | Medium |
@@ -140,8 +151,8 @@ Status key: **Completed** in code with tests or a wired UI; **Partial** if the c
 | Rect / ellipse (`u` / `o`) | Draft + apply/cancel; fill/stroke; Shift constrain | Completed | `ShapeDraft` | — | Keep | Low |
 | Polygon draw (`polygon`, P) | Click vertices; stroke/fill | Completed | `rasterizePolygon` | Distinct from polygon **select** (Y) | Keep labels clear | Medium |
 | Bezier (`bezier`, Q) | Anchors + handles; `rasterizeCubicPath` | Completed | Shape draft | UNKNOWN in browser | Keep | Low |
-| Gradient (`gradient`, N) | Linear fill, 8 stops from current color → Paper (`fillLinearGradient`) | **Partial** | Palette adoption | Drag preview is a 1px line, not the fill. No second color, no radial. Palette-full mid-gradient falls back to the start colour. | Live preview + extra stops | Medium |
-| Eyedropper (`eyedropper`, I) | Tool + Alt sample via `sampleColorAt` on the **active-layer** RGBA buffer | **Partial** | Active edit buffer | Empty cells on non-base layers are Paper in that buffer, so pick can disagree with the composited view | Sample the composite (skip index 0 on non-base) | High |
+| Gradient (`gradient`, N) | Linear fill, 8 stops from current color → Paper; drag preview calls `fillLinearGradient` (`PixelBoard.tsx:3420-3454`) | Partial | Palette adoption | No second color, no radial. Palette-full mid-gradient still falls back to the start colour. Browser feel UNKNOWN. | Extra stops / second color | Medium |
+| Eyedropper (`eyedropper`, I) | Tool + Alt sample via `sampleColorAt` on `compositeImage()` (`PixelBoard.tsx:3406-3412`) | Completed (code) | Composited image | Browser/stylus behaviour UNKNOWN | Keep; verify in browser | Low |
 | Text (`text`, T) | Point vs paragraph frames; 5×7 bitmap font; rasterized into layer | Partial | `lib/pixel-font.ts` | Not a live text layer; no fonts beyond bitmap | Richer text later | Medium |
 | Pan (`pan`, H) | Tool + Space hold + middle mouse | Completed | Camera | Clicking inside a selection with the pan tool **moves the selection** | Modifier to force pan | Low |
 | Symmetry | `off \| x \| y \| xy` on freehand | Completed | Brush | Button cycles; not in inspector as four-way | Clearer control | Low |
@@ -248,13 +259,13 @@ Inspector shows a short cheat-sheet (`copy.pixelStatusShortcuts`). **Discoverabi
 
 ### 2.11 Tests (this audit run)
 
-`npm test` on 23 Nov 2026:
+Test history and current state:
 
-- **742 passed / 2 failed / 744 total** (99 files: 97 passed, 2 failed).
-- Failures are **not Studio engine**:
-  - `tests/explore-scope.test.ts` — stale source-grep for creator grid class.
-  - `tests/works-home.test.ts` — stale source-grep `max-w-4xl` vs profile `max-w-5xl`.
-- Studio-related suites (pixel-*, lib/pixel-*) all passed in this run.
+- 23 Nov audit run: **742 passed / 2 failed / 744 total** (99 files). Both failures were stale source-grep assertions, not Studio engine defects:
+  - `tests/explore-scope.test.ts` — expected creator grid classes inline in `SearchResults`; implementation moved them to `CreatorCardList`.
+  - `tests/works-home.test.ts` — expected `max-w-4xl`; public profile uses `max-w-5xl`.
+- 24 Nov refresh: VERIFIED BY TEST — both assertions were updated to the actual implementation and their targeted suites pass (`tests/explore-scope.test.ts` 8/8, `tests/works-home.test.ts` 6/6). No UI or app behavior changed.
+- Studio-related suites (pixel-*, lib/pixel-*) passed in both runs.
 - Many UI tests are **source-grep** tests (`pixel-studio-redesign.test.ts`). They prove strings exist, not that tools work in a browser.
 - Engine unit tests are strong (brush, fill, groups, blend, history, export, polygon select).
 

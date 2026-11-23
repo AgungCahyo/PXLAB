@@ -22,6 +22,7 @@ describe("social interactions reuse the existing backend", () => {
     expect(post).toMatch(/reconcileDesiredState/)
     expect(post).toMatch(/formData\.set\("desired", String\(desired\)\)/)
     expect(post).toMatch(/aria-pressed/)
+    expect(post).toMatch(/liked \? "text-brick" : "text-fg"/)
     expect(post).toMatch(/loginHref/)
   })
 

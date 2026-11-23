@@ -4,7 +4,7 @@ import { useState } from "react"
 import Link from "next/link"
 import { PixelArt } from "@/components/creations/PixelArt"
 import { WorksDeleteButton } from "@/components/creations/WorksDeleteButton"
-import { buttonClassName } from "@/components/ui/Button"
+import { socialButtonClass } from "@/components/social/socialButton"
 import { displayTitle } from "@/lib/creations"
 import { copy } from "@/lib/copy"
 import { formatDayMonthYear } from "@/lib/format"
@@ -60,13 +60,13 @@ export function WorksRow({
               <>
                 <Link
                   href={href(lang, `/creation/${item.id}`)}
-                  className={buttonClassName({ size: "sm", variant: "secondary", className: "px-2.5" })}
+                  className={socialButtonClass({ variant: "soft", size: "sm" })}
                 >
                   {copy.worksView[lang]}
                 </Link>
                 <Link
                   href={href(lang, `/create/${item.id}`)}
-                  className={buttonClassName({ size: "sm", variant: "outline", className: "px-2.5" })}
+                  className={socialButtonClass({ variant: "soft", size: "sm" })}
                 >
                   {copy.createEdit[lang]}
                 </Link>
@@ -74,7 +74,7 @@ export function WorksRow({
             ) : (
               <Link
                 href={href(lang, `/create/${item.id}`)}
-                className={buttonClassName({ size: "sm", className: "px-2.5" })}
+                className={socialButtonClass({ variant: "solid", size: "sm" })}
               >
                 {copy.worksContinue[lang]}
               </Link>

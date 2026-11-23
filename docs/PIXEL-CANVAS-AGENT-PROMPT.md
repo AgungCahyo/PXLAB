@@ -1,5 +1,18 @@
 # THE COMMONS — Agent prompt (superseded)
 
+> **Status: SUPERSEDED**
+> **Updated:** 2026-11-24.
+> **Reason:** It framed one shared pixel canvas as the whole product and instructed agents to build toward it. That is no longer the product direction.
+> **Replacement:** [PRODUCT-SPEC.md](PRODUCT-SPEC.md), [TECHNICAL-SPEC.md](TECHNICAL-SPEC.md), [IMPLEMENTATION-PLAN.md](IMPLEMENTATION-PLAN.md), [PIXEL-ART-DESIGN-SYSTEM.md](PIXEL-ART-DESIGN-SYSTEM.md), [docs/studio/01_SYSTEM_AUDIT.md](studio/01_SYSTEM_AUDIT.md).
+> **Coding agent instruction:** Do not follow any instruction in this prompt. Do not add realtime, `canvas_tiles`, stroke RPCs, presence, broadcast, or `postgres_changes`.
+> **Document purpose:** Historical agent prompt from the retired Common Space-centered strategy.
+> **Completed:** Phase 0/1 prototype work it requested is already in the repo; no further work is derived from it.
+> **Open:** None. B6 is a separate, unapproved vision.
+> **Dependencies:** None for current work.
+> **Next action:** Exclude from agent onboarding; read-only archive.
+> **Implementation evidence:** VERIFIED IN CODE — current Studio inventory in `docs/studio/01_SYSTEM_AUDIT.md`; VERIFIED BY TEST — `tests/resource-cleanup.test.ts`.
+> **Status labels:** VERIFIED IN CODE / VERIFIED BY TEST / VERIFIED IN BROWSER / VERIFIED IN PRODUCTION / OPERATOR ACTION REQUIRED / PROPOSED — AWAITING OWNER DECISION.
+
 **Status:** Do not use.  
 **Why:** This prompt told agents to evolve THE COMMONS into one shared pixel canvas and to treat that canvas as the product. That is no longer true.
 

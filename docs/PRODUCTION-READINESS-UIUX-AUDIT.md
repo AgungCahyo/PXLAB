@@ -1,6 +1,16 @@
 # PXLB — Production Readiness & UI/UX Polish Audit
 
-**Tanggal:** 18 November 2026  
+> **Document purpose:** Point-in-time production-readiness and UI/UX audit from 18 Nov 2026. Use for intent and issue history, not as the current UI status.
+> **Status:** HISTORICAL SNAPSHOT — NOT CURRENT FEATURE STATUS.
+> **Updated:** 2026-11-24 (marker added; dashboard finding corrected after chrome alignment).
+> **Implementation evidence:** VERIFIED IN CODE — dashboard now uses `socialButtonClass`, `SocialEmptyState`, `SectionHeader`, a sans `h1`, and a flat back link in `app/[lang]/(member)/dashboard/page.tsx`; `WorksRow` owner-card actions use `socialButtonClass`. VERIFIED BY TEST — `tests/works-home.test.ts`. No browser verification recorded.
+> **Completed:** Point-inventory and issue list recorded; dashboard page chrome and owner-card actions were aligned with the flat social theme on 2026-11-24.
+> **Open:** Landing atmosphere, PixelWorldBackdrop runtime mount, Responses/Auth/Admin consistency, and all browser/production validations remain open.
+> **Dependencies:** `PIXEL-ART-DESIGN-SYSTEM.md`, `IMPLEMENTATION-PLAN.md`, `tests/works-home.test.ts`.
+> **Next action:** Treat the bullets below as historical unless re-validated in code and browser. Do not treat the "uneven dashboard" verdict as current.
+> **Status labels:** VERIFIED IN CODE / VERIFIED BY TEST / VERIFIED IN BROWSER / VERIFIED IN PRODUCTION / OPERATOR ACTION REQUIRED / PROPOSED — AWAITING OWNER DECISION.
+
+**Tanggal:** 18 November 2026
 **Sifat:** audit saja — **tidak ada perubahan kode aplikasi** pada pass ini.  
 **Arah visual target:** *Modern Pixel Playground* (identitas pixel ceria + platform kreatif modern).  
 **Sumber kebenaran kode yang dibaca:** routes di `app/`, shell di `components/layout/`, UI di `components/ui/`, `app/globals.css`, `lib/copy.ts`, `docs/PIXEL-ART-DESIGN-SYSTEM.md`, tes layout/typography/pixel-world.
@@ -57,7 +67,7 @@ Shell bersama: `PublicShell` → `SiteHeader` + `SiteNav` / `AppTabBar` + `main#
 | `/reset-password` | `(auth)/reset-password/page.tsx` | PublicShell | Adequate | |
 | `/create` | `(member)/create/page.tsx` | PublicShell + member | **Uneven** | Tidak ada `h1.pixel-title`; size picker + inspiration |
 | `/create/[id]` | `(member)/create/[id]/page.tsx` | PublicShell + member | **Strong (pixel)** / legacy StudioForm | Playground full-bleed chrome; header site disembunyikan |
-| `/dashboard` | `(member)/dashboard/page.tsx` | PublicShell + member | **Uneven** | “My Works” list rows — terasa admin list, bukan gallery bangga |
+| `/dashboard` | `(member)/dashboard/page.tsx` | PublicShell + member | **Aligned (2026-11-24)** | My Works memakai flat social chrome + kartu galeri; lihat §2.5 |
 | `/responses` | `(member)/responses/page.tsx` | PublicShell + member | Adequate | Inbox respons |
 | `/settings` | `(member)/settings/page.tsx` | PublicShell + member | Adequate | Form profil |
 | `/admin` | `admin/page.tsx` | PublicShell + admin | Adequate / utilitarian | Filter reports + cards |
@@ -134,12 +144,14 @@ Rewrites: `next.config.ts` memetakan path tanpa prefix → `/id/...`; `/en/...` 
 
 **Yang baik:** pisah draft/published, empty state, CTA create + responses.
 
-**Masalah:**
+**Masalah pada 18 Nov 2026 (historis):**
 - `WorksRow` = list horizontal mirip file manager (thumb 80px + banyak tombol). **Tidak** memakai bahasa gallery `CreationCard` yang membuat profil/explore bangga.
 - Section titles memakai `pixel-title` untuk “Draf” / “Terbit” — berat untuk H2 berulang.
 - Back control custom (bukan Button) — pola diulang di Responses.
 
-**Product unity:** terasa “admin milik saya”, bukan rumah kreator PXLB.
+**Product unity saat audit:** terasa “admin milik saya”, bukan rumah kreator PXLB.
+
+**Kondisi saat ini (2026-11-24):** VERIFIED IN CODE / VERIFIED BY TEST — halaman memakai container dan back link flat seperti detail karya, `h1` sans, aksi `socialButtonClass`, `SocialEmptyState`, dan `SectionHeader`; `WorksRow` memakai `socialButtonClass` untuk View/Edit/Continue dan trigger hapus. Temuan versi lama di atas sudah tidak menggambarkan source saat ini. **VERIFIED IN BROWSER** belum dilakukan.
 
 ### 2.6 Profile `/u/[username]`
 

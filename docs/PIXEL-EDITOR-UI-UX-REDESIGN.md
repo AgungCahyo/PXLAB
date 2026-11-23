@@ -1,5 +1,18 @@
 # THE COMMONS — Pixel Editor UI/UX Redesign Recommendations
 
+> **Status: SUPERSEDED**
+> **Updated:** 2026-11-24.
+> **Reason:** Its workspace, create-dialog, inspector, minimap and publish-layout recommendations were superseded first by the redesign blueprint and now by shipped Studio work.
+> **Replacement:** [docs/studio/01_SYSTEM_AUDIT.md](studio/01_SYSTEM_AUDIT.md) for current inventory, [PXLB_STUDIO_EXECUTION.md](studio/PXLB_STUDIO_EXECUTION.md) for milestone state, [PRODUCT-SPEC.md](PRODUCT-SPEC.md) for product decisions.
+> **Coding agent instruction:** Do not implement §3–§6 as current layout targets. Only the visual-identity principles and anti-pattern discussion remain useful historical context.
+> **Document purpose:** Historical UI/UX recommendation report for the pixel editor.
+> **Completed:** Later Studio work implemented the shipped workspace; this report is not an implementation source.
+> **Open:** No active task from this document.
+> **Dependencies:** Superseded by current studio docs.
+> **Next action:** Read-only archive.
+> **Implementation evidence:** VERIFIED IN CODE — `components/creations/PlaygroundForm.tsx`, `components/creations/StudioMinimap.tsx`, `components/creations/StudioInspector.tsx`; VERIFIED BY TEST — `tests/pixel-studio-redesign.test.ts`.
+> **Status labels:** VERIFIED IN CODE / VERIFIED BY TEST / VERIFIED IN BROWSER / VERIFIED IN PRODUCTION / OPERATOR ACTION REQUIRED / PROPOSED — AWAITING OWNER DECISION.
+
 **Dokumen:** PIXEL-EDITOR-UI-UX-REDESIGN.md  
 **Tanggal:** 17 Nov 2026 · **Diperbarui:** 18 Nov 2026  
 **Sifat:** Rekomendasi desain saja. Tidak mengimplementasikan UI.  

@@ -1,5 +1,15 @@
 # THE COMMONS — Pixel Editor Technical Architecture (Wplace adaptation)
 
+> **Document purpose:** Historical compatibility analysis for the Wplace-inspired editor expansion.
+> **Status:** HISTORICAL SNAPSHOT — NOT CURRENT TECHNICAL SOURCE OF TRUTH.
+> **Updated:** 2026-11-24 (marker added).
+> **Implementation evidence:** VERIFIED IN CODE — `lib/pixel.ts:194-214` accepts source V1–V4 with palette max 256; `lib/validations/creation.ts:171-188`; current inventory in `docs/studio/01_SYSTEM_AUDIT.md`. Palette-64 / V1-only statements below are stale.
+> **Completed:** Original technical comparison recorded; later Studio work shipped layers/groups and larger indexed palettes.
+> **Open:** Use current specs for any change; browser/production proof remains an operator task.
+> **Dependencies:** `TECHNICAL-SPEC.md`, `PIXEL-CANVAS-SPEC.md`, `docs/studio/01_SYSTEM_AUDIT.md`.
+> **Next action:** Read-only archive; do not restore retired palette-64 or V1-only constraints.
+> **Status labels:** VERIFIED IN CODE / VERIFIED BY TEST / VERIFIED IN BROWSER / VERIFIED IN PRODUCTION / OPERATOR ACTION REQUIRED / PROPOSED — AWAITING OWNER DECISION.
+
 **Dokumen:** PIXEL-EDITOR-TECHNICAL-ARCHITECTURE.md  
 **Tanggal:** 17 Nov 2026 · **Diperbarui:** 18 Nov 2026  
 **Sifat:** Analisis kompatibilitas teknis. Tidak mengubah skema/kode.  

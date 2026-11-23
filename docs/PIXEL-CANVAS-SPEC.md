@@ -4,13 +4,23 @@
 **Product source of truth:** [PRODUCT-SPEC.md](PRODUCT-SPEC.md)  
 **Sequencing:** [IMPLEMENTATION-PLAN.md](IMPLEMENTATION-PLAN.md)
 
+> **Document purpose:** Engine notes that distinguish the personal Playground from the later Common Space world; not the product center.
+> **Status:** Active reference. Factual drift corrected 2026-11-24 from code; Common Space/B6 decisions unchanged.
+> **Updated:** 2026-11-24.
+> **Implementation evidence:** VERIFIED IN CODE — `lib/pixel.ts:24-35,85-104,128-149,194-214`, `app/[lang]/(public)/space/page.tsx`; VERIFIED BY TEST — `tests/pixel-canvas-size.test.ts`, `lib/pixel.test.ts`; VERIFIED IN CODE — `tests/resource-cleanup.test.ts` forbids realtime APIs.
+> **Completed:** Playground owns PixelBoard; `/space` is a secondary archived SVG page; indexed V1–V4 source + PNG covers; Studio tools/layers.
+> **Open:** B6 sparse tiles, camera, realtime and stroke RPC — vision only, not started.
+> **Dependencies:** `PRODUCT-SPEC.md`, `TECHNICAL-SPEC.md`, `docs/studio/01_SYSTEM_AUDIT.md` for current tool inventory.
+> **Next action:** Do not start B6. Keep realtime gated; refresh constants only when code changes again.
+> **Status labels:** VERIFIED IN CODE / VERIFIED BY TEST / VERIFIED IN BROWSER / VERIFIED IN PRODUCTION / OPERATOR ACTION REQUIRED / PROPOSED — AWAITING OWNER DECISION.
+
 This file used to say THE COMMONS is one shared pixel canvas. That framing is retired.
 
 There are two pixel surfaces. They share drawing math. They do not share a world model.
 
 | Mode | Role | Canvas model | When |
 |---|---|---|---|
-| **Pixel Art Playground** | Primary Create path | Fixed 512 × 512, owner-only | Community MVP (phase B2) |
+| **Pixel Art Playground** | Primary Create path | Variable 8–1024 per side, area ≤ 512×512, owner-only | Community MVP (phase B2) |
 | **Common Space** | Secondary giant world | Sparse tiles, camera, grow-on-demand | After community MVP (phase B6) |
 
 Visual identity: [PIXEL-ART-DESIGN-SYSTEM.md](PIXEL-ART-DESIGN-SYSTEM.md).
@@ -32,11 +42,11 @@ These apply to both modes unless a section overrides them.
 - Never one network request per pixel.
 - Never trust client user IDs, colors, or coordinates without server validation.
 
-Constants live in `lib/pixel.ts` (`PIXEL_CANVAS_SIZE` 512, `PIXEL_TILE_SIZE` 32, swatches, `walkLine`, `clientToCell`).
+Constants live in `lib/pixel.ts` (`PIXEL_CANVAS_MIN` 8, `PIXEL_CANVAS_MAX` 1024, `PIXEL_CANVAS_AREA_MAX` 512², `PIXEL_TILE_SIZE` 32 for later B6, `PIXEL_DOCUMENT_PALETTE_MAX` 256, source versions 1–4, swatches, `walkLine`, `clientToCell`). VERIFIED BY TEST (`tests/pixel-canvas-size.test.ts`).
 
-Eyedropper and fill bucket stay deferred until PRODUCT-SPEC approves them. The Playground custom color picker is approved (free color, HEX, recent, favorites).
+Eyedropper and fill are shipped; layers/groups, shapes, selection, text and import/export are also present in the Playground. Animation timeline and a non-indexed per-pixel alpha model remain out of scope. The custom color picker remains approved (free color, HEX, recent, favorites).
 
-**Design-tool expansion (beyond MVP pencil/eraser/pan):** audit and phased roadmap live in [PIXEL-PLAYGROUND-DESIGN-FEATURES-AUDIT.md](PIXEL-PLAYGROUND-DESIGN-FEATURES-AUDIT.md). That document is planning-only until an explicit D1+ slice is approved. Do not treat this SPEC’s “deferred” list as a denial of that roadmap — only as the current shipped baseline.
+**Design-tool inventory:** use [docs/studio/01_SYSTEM_AUDIT.md](studio/01_SYSTEM_AUDIT.md), not the older design-feature audit. The latter is superseded. Do not treat historical “deferred” lists as current status.
 
 ---
 
@@ -50,7 +60,7 @@ In-app editor at `/create` and `/create/[id]`. Not a separate application.
   - **Editor source:** palette + RLE of palette indices (`source.json`). Required to reopen and keep editing.
   - **Rendered PNG:** generated from source on save/publish. Display only (thumbnail, Explore, profile, detail).
 - Playground hydrates from source, never by sampling the PNG. On load, validate format version (keep v1 readable), encoded size, RLE decode length, and palette-index bounds before painting.
-- Loop: save draft → preview → publish. Owner can unpublish without delete.
+- Loop: explicit Save draft → preview → explicit Publish. A debounced browser-only draft is recovery-only. Owner can unpublish without delete.
 - Auth required to save or publish.
 - Fork copies **source** (then regenerates PNG) into a new draft.
 

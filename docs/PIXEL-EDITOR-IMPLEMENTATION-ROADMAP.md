@@ -1,5 +1,15 @@
 # THE COMMONS — Pixel Editor Implementation Roadmap (Wplace-inspired)
 
+> **Document purpose:** Historical priority list from the Wplace-inspired editor audit.
+> **Status:** HISTORICAL SNAPSHOT — NOT AN IMPLEMENTATION BACKLOG.
+> **Updated:** 2026-11-24 (marker added).
+> **Implementation evidence:** VERIFIED IN CODE — tools below marked pending (eyedropper, fill, shapes, selection, layers, inspector, minimap) are shipped; see `lib/pixel.ts:85-104`, `docs/studio/01_SYSTEM_AUDIT.md`. Palette-64 statements are stale; current max is 256.
+> **Completed:** The roadmap was consumed by later Studio milestones; do not re-open its items as new work.
+> **Open:** Current follow-ups are listed in `docs/studio/PXLB_STUDIO_EXECUTION.md` and browser checklists in `01_SYSTEM_AUDIT.md`, `04_WORKSPACE_REDESIGN_REPORT.md`, `05_LAYER_GROUP_UX.md`.
+> **Dependencies:** Superseded for status by current studio docs.
+> **Next action:** Read-only archive; verify against current inventory before claiming a tool is missing.
+> **Status labels:** VERIFIED IN CODE / VERIFIED BY TEST / VERIFIED IN BROWSER / VERIFIED IN PRODUCTION / OPERATOR ACTION REQUIRED / PROPOSED — AWAITING OWNER DECISION.
+
 **Dokumen:** PIXEL-EDITOR-IMPLEMENTATION-ROADMAP.md  
 **Tanggal:** 17 Nov 2026 · **Diperbarui:** 18 Nov 2026  
 **Sifat:** Roadmap prioritas setelah audit. **Belum izin implementasi** sampai disetujui terpisah.  
