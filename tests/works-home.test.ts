@@ -27,6 +27,17 @@ describe("Create and My Works stay separate", () => {
     expect(dashboard).not.toMatch(/dashboardHello/)
   })
 
+  it("keeps the work grid and card actions usable on narrow screens", () => {
+    const row = read("components/creations/WorksRow.tsx")
+    const skeleton = read("components/creations/PageSkeletons.tsx")
+    expect(dashboard).toMatch(/grid min-w-0 grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4/)
+    expect(skeleton).toMatch(/grid min-w-0 grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4/)
+    expect(row).toMatch(/flex flex-wrap items-center gap-1\.5 pt-1/)
+    expect(row).toMatch(/min-w-0 flex-1 basis-24/)
+    expect(row).toMatch(/min-w-0 truncate/)
+    expect(row).toMatch(/<li className="min-w-0">/)
+  })
+
   it("links My Works back to the owner profile with flat chrome", () => {
     expect(dashboard).toMatch(/worksBack/)
     expect(dashboard).toMatch(/\/u\/\$\{profile\.username\}/)

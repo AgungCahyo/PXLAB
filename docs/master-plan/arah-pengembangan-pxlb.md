@@ -7,6 +7,7 @@
 > **Completed:** Fondasi fork/remix, salinan source + PNG, atribusi dua arah, dan permissions dasar sudah ada di kode.
 > **Open:** Keputusan owner tentang aturan izin remix, desain/lifecycle Challenge, nama dan model Community Assets, serta status kolaborasi langsung. Semua masih PROPOSED — AWAITING OWNER DECISION.
 > **Dependencies:** `PRODUCT-SPEC.md`, `TECHNICAL-SPEC.md`, `IMPLEMENTATION-PLAN.md`, `docs/studio/01_SYSTEM_AUDIT.md`, dan operator actions di `IMPLEMENTATION-PLAN.md` §14.
+> **Preparation brief:** `PREPARATION-REMIX-CHALLENGE-ASSETS.md` berisi audit status A–C dan rencana bertahap; tidak mengubah status backlog atau memberi izin implementasi.
 > **Next action:** Owner mengambil keputusan untuk A–C terlebih dahulu. Tidak ada agent yang boleh memulai implementasi atau B6 dari dokumen ini.
 > **Status labels:** VERIFIED IN CODE / VERIFIED BY TEST / VERIFIED IN BROWSER / VERIFIED IN PRODUCTION / OPERATOR ACTION REQUIRED / PROPOSED — AWAITING OWNER DECISION. Bukti level source/test bukan bukti browser atau produksi.
 

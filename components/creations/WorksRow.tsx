@@ -12,6 +12,7 @@ import { formatDayMonthYear } from "@/lib/format"
 import { href, type Lang } from "@/lib/i18n"
 import { cn } from "@/lib/utils"
 import type { CreationCard } from "@/features/creations/queries"
+import { Calendar } from "lucide-react"
 
 /** Ellipsis dropdown for secondary actions (Delete). */
 function WorksCardMenu({
@@ -93,7 +94,7 @@ export function WorksRow({
       : copy.createDraftBadge[lang]
 
   return (
-    <li>
+    <li className="min-w-2">
       <article className="group flex h-full min-w-0 flex-col rounded-2xl border border-slate-200/80 bg-card p-3 shadow-sm transition-all hover:border-slate-300 hover:shadow-md">
         {/* Thumbnail with rounded corners and subtle overlay */}
         <Link
@@ -120,44 +121,42 @@ export function WorksRow({
 
           {/* Date & Status Metadata */}
           <div className="mt-1 flex items-center gap-1.5 text-[12px] text-muted">
-            <span role="img" aria-hidden="true" className="text-xs">
-              📅
-            </span>
-            <span>
+            <Calendar className="h-3.5 w-3.5 shrink-0 text-muted" aria-hidden="true" />
+            <span className="min-w-0 truncate">
               {statusLabel} · {formatDayMonthYear(item.updated_at, lang)}
             </span>
           </div>
 
           {/* Action Button Row matching Screenshot */}
-          <div className="mt-4 flex items-center gap-1.5 pt-1">
+          <div className="mt-4 flex flex-wrap items-center gap-1.5 pt-1">
             {primary === "view" ? (
               <>
                 <Link
                   href={href(lang, `/creation/${item.id}`)}
-                  className="inline-flex h-8 items-center gap-1.5 rounded-xl border border-slate-200/90 bg-slate-50/80 px-3 text-[12px] font-medium text-slate-700 transition-colors hover:bg-slate-100 hover:text-fg"
+                  className="inline-flex h-8 min-w-0 flex-1 basis-24 items-center justify-center gap-1.5 rounded-xl border border-slate-200/90 bg-slate-50/80 px-2.5 text-[12px] font-medium text-slate-700 transition-colors hover:bg-slate-100 hover:text-fg sm:flex-none sm:px-3"
                 >
                   <PixelIcon name="eye" className="h-3.5 w-3.5 shrink-0 text-muted" />
-                  {copy.worksView[lang]}
+                  <span className="truncate">{copy.worksView[lang]}</span>
                 </Link>
                 <Link
                   href={href(lang, `/create/${item.id}`)}
-                  className="inline-flex h-8 items-center gap-1.5 rounded-xl border border-slate-200/90 bg-slate-50/80 px-3 text-[12px] font-medium text-slate-700 transition-colors hover:bg-slate-100 hover:text-fg"
+                  className="inline-flex h-8 min-w-0 flex-1 basis-24 items-center justify-center gap-1.5 rounded-xl border border-slate-200/90 bg-slate-50/80 px-2.5 text-[12px] font-medium text-slate-700 transition-colors hover:bg-slate-100 hover:text-fg sm:flex-none sm:px-3"
                 >
                   <PixelIcon name="pencil" className="h-3.5 w-3.5 shrink-0 text-muted" />
-                  {copy.createEdit[lang]}
+                  <span className="truncate">{copy.createEdit[lang]}</span>
                 </Link>
               </>
             ) : (
               <Link
                 href={href(lang, `/create/${item.id}`)}
-                className="inline-flex h-8 items-center gap-1.5 rounded-xl bg-[#6355d8] px-3.5 text-[12px] font-medium text-white shadow-sm transition-colors hover:bg-[#5245c7]"
+                className="inline-flex h-8 min-w-0 flex-1 basis-24 items-center justify-center gap-1.5 rounded-xl bg-[#6355d8] px-3 text-[12px] font-medium text-white shadow-sm transition-colors hover:bg-[#5245c7] sm:flex-none sm:px-3.5"
               >
                 <PixelIcon name="pencil" className="h-3.5 w-3.5 shrink-0" />
-                {copy.worksContinue[lang]}
+                <span className="truncate">{copy.worksContinue[lang]}</span>
               </Link>
             )}
 
-            <div className="ml-auto">
+            <div className="ml-auto shrink-0">
               <WorksCardMenu
                 lang={lang}
                 creationId={item.id}
