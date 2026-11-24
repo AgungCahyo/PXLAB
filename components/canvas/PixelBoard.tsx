@@ -3065,7 +3065,7 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
     const typing = (target: EventTarget | null) => {
       if (!(target instanceof HTMLElement)) return false
       const tag = target.tagName
-      return tag === "INPUT" || tag === "TEXTAREA" || target.isContentEditable
+      return tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || target.isContentEditable
     }
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.defaultPrevented || document.querySelector("dialog[open]")) return
@@ -3241,6 +3241,7 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
           return
         }
       }
+      if (event.altKey) return
       if (key === "b") chooseToolRef.current("pencil")
       else if (key === "c") chooseToolRef.current("circle")
       else if (key === "e") chooseToolRef.current("eraser")
@@ -4348,10 +4349,10 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
     <div
       ref={wrapRef}
       className={cn(
-        "pixel-frame relative overflow-hidden overscroll-none bg-soft",
+        "relative overflow-hidden overscroll-none",
         variant === "studio"
-          ? "h-full min-h-0 w-full"
-          : "mx-auto aspect-square w-full max-w-[min(100%,calc(100dvh-16rem),52rem)]",
+          ? "h-full min-h-0 w-full rounded-xl border border-white/[0.08] bg-[#12111f]"
+          : "pixel-frame mx-auto aspect-square w-full max-w-[min(100%,calc(100dvh-16rem),52rem)] bg-soft",
         className,
       )}
     >

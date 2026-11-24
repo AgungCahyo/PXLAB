@@ -149,7 +149,7 @@ function FeedPostBase({
             onClick={onLike}
             aria-pressed={liked}
             aria-label={`${liked ? t.unlike[lang] : t.like[lang]}, ${likeCount}`}
-            className={cn(workActionBaseClass, liked ? "text-rose-500" : "text-fg")}
+            className={cn(workActionBaseClass, liked ? "text-brick" : "text-fg")}
           >
             <span key={popKey} className={cn("inline-flex", liked && popKey > 0 && "soc-pop")}>
               <PixelHeart filled={liked} />

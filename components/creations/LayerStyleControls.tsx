@@ -19,13 +19,13 @@ export function LayerStyleControls({ lang, layer, isBase, onStyle }: Props) {
   const blendId = useId()
   const lockId = useId()
   return (
-    <div className="mt-3 grid gap-2.5 border-t-[3px] border-earth pt-3" role="group" aria-label={copy.pixelLayerStyle[lang]}>
+    <div className="mt-3 grid gap-2.5 border-t border-white/[0.08] pt-3" role="group" aria-label={copy.pixelLayerStyle[lang]}>
       <div className="space-y-1">
         <div className="flex items-center gap-2">
-          <label className="min-w-0 flex-1 text-[13px] font-medium text-fg" htmlFor={opacityId}>
+          <label className="min-w-0 flex-1 text-[12px] font-medium text-[#e8e3f8]/80" htmlFor={opacityId}>
             {copy.pixelLayerOpacity[lang]}
           </label>
-          <span className="w-12 text-right text-[13px] tabular-nums text-fg">{layer.opacity}%</span>
+          <span className="w-12 text-right text-[12px] tabular-nums text-[#e8e3f8]">{layer.opacity}%</span>
         </div>
         <input
           id={opacityId}
@@ -34,18 +34,18 @@ export function LayerStyleControls({ lang, layer, isBase, onStyle }: Props) {
           max={100}
           step={1}
           value={layer.opacity}
-          className="w-full"
+          className="w-full accent-[#8b5cf6]"
           onChange={(event) => onStyle(layer.id, { opacity: Number(event.target.value) })}
         />
       </div>
       <div className="flex items-center gap-2">
-        <label className="shrink-0 text-[13px] font-medium text-fg" htmlFor={blendId}>
+        <label className="shrink-0 text-[12px] font-medium text-[#e8e3f8]/80" htmlFor={blendId}>
           {copy.pixelLayerBlend[lang]}
         </label>
         <select
           id={blendId}
           value={layer.blend}
-          className="studio-control min-w-0 flex-1 border-[3px] border-earth bg-bg px-2 text-[13px] text-fg"
+          className="studio-control min-w-0 flex-1 rounded-md border border-white/10 bg-[#231f35] px-2 text-[12px] text-[#e8e3f8]"
           onChange={(event) => onStyle(layer.id, { blend: event.target.value as PixelBlendMode })}
         >
           {PIXEL_BLEND_MODES.map((mode) => (
@@ -55,7 +55,7 @@ export function LayerStyleControls({ lang, layer, isBase, onStyle }: Props) {
           ))}
         </select>
       </div>
-      <label className="flex items-center gap-2 text-[13px] text-fg" htmlFor={lockId} title={isBase ? copy.pixelLayerLockAlphaBase[lang] : undefined}>
+      <label className="flex items-center gap-2 text-[12px] text-[#e8e3f8]/85" htmlFor={lockId} title={isBase ? copy.pixelLayerLockAlphaBase[lang] : undefined}>
         <input
           id={lockId}
           type="checkbox"
@@ -65,7 +65,7 @@ export function LayerStyleControls({ lang, layer, isBase, onStyle }: Props) {
         />
         {copy.pixelLayerLockAlpha[lang]}
       </label>
-      <p className="text-[length:var(--studio-meta,0.75rem)] leading-relaxed text-muted">
+      <p className="text-[length:var(--studio-meta,0.75rem)] leading-relaxed text-[#e8e3f8]/45">
         {copy.pixelLayerStyleHint[lang]}
       </p>
     </div>

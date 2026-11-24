@@ -14,7 +14,7 @@ function PatternPreview({ pattern }: { pattern: PixelFillPattern }) {
   return (
     <svg
       viewBox={`0 0 ${PREVIEW} ${PREVIEW}`}
-      className="h-8 w-8 shrink-0 border-[2px] border-earth bg-bg text-fg [image-rendering:pixelated]"
+      className="h-8 w-8 shrink-0 rounded-md border border-white/15 bg-[#231f35] text-[#e8e3f8] [image-rendering:pixelated]"
       shapeRendering="crispEdges"
       aria-hidden="true"
     >
@@ -32,13 +32,13 @@ export function FillPatternPicker({ lang, value, onChange }: Props) {
   return (
     <div className="space-y-1.5">
       <div className="flex items-center gap-2">
-        <label className="shrink-0 text-[13px] font-medium text-fg" htmlFor={id}>
+        <label className="shrink-0 text-[12px] font-medium text-[#e8e3f8]/80" htmlFor={id}>
           {copy.pixelFillPattern[lang]}
         </label>
         <select
           id={id}
           value={value}
-          className="studio-control min-w-0 flex-1 border-[3px] border-earth bg-bg px-2 text-[13px] text-fg"
+          className="studio-control min-w-0 flex-1 rounded-md border border-white/10 bg-[#231f35] px-2 text-[12px] text-[#e8e3f8]"
           onChange={(event) => onChange(event.target.value as PixelFillPattern)}
         >
           {PIXEL_FILL_PATTERNS.map((pattern) => (
@@ -50,7 +50,7 @@ export function FillPatternPicker({ lang, value, onChange }: Props) {
         <PatternPreview pattern={value} />
       </div>
       {value !== "solid" ? (
-        <p className="text-[length:var(--studio-meta,0.75rem)] leading-relaxed text-muted">
+        <p className="text-[length:var(--studio-meta,0.75rem)] leading-relaxed text-[#e8e3f8]/50">
           {copy.pixelFillPatternHint[lang]}
         </p>
       ) : null}

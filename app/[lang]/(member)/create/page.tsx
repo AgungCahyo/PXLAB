@@ -1,4 +1,5 @@
 import type { Metadata } from "next"
+import Link from "next/link"
 import { notFound } from "next/navigation"
 import { connection } from "next/server"
 import { PixelCatDecoration } from "@/components/brand/PixelCatDecoration"
@@ -6,7 +7,7 @@ import { CreateInspiration } from "@/components/creations/CreateInspiration"
 import { PixelNewForm } from "@/components/creations/PixelNewForm"
 import { listPublishedCreations } from "@/features/creations/queries"
 import { copy } from "../../../../lib/copy"
-import { isLang } from "@/lib/i18n"
+import { href, isLang } from "@/lib/i18n"
 import { pageMeta } from "@/lib/meta"
 import type { CreationCategory } from "@/lib/site"
 import type { CreationCard } from "@/features/creations/queries"
@@ -62,6 +63,11 @@ export default async function CreatePage({
             {copy.createTitle[lang]}
           </h1>
           <p className="mt-2 max-w-xl text-[14px] leading-relaxed text-muted">{copy.createIntro[lang]}</p>
+          <div className="mt-3">
+            <Link href={href(lang, "/dashboard")} className="text-[13px] font-medium text-[#6355d8] hover:underline">
+              {copy.createManageLink[lang]} →
+            </Link>
+          </div>
         </div>
       </header>
 

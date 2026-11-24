@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { PixelCat } from "@/components/brand/PixelCat"
 import { Button } from "@/components/ui/Button"
 import { Dialog } from "@/components/ui/Dialog"
 import { Input } from "@/components/ui/Input"
@@ -75,7 +76,10 @@ export function DocumentPaletteDialog({
           aria-label={copy.pixelPaletteManage[lang]}
         >
           {swatches.length === 0 ? (
-            <p className="col-span-full text-[13px] text-muted">{copy.pixelPaletteEmpty[lang]}</p>
+            <div className="col-span-full flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50/70 p-3">
+              <PixelCat variant="palette" size="sm" />
+              <p className="text-[13px] text-muted">{copy.pixelPaletteEmpty[lang]}</p>
+            </div>
           ) : (
             swatches.map((hex) => (
               <button
@@ -91,10 +95,10 @@ export function DocumentPaletteDialog({
                   setNotice(null)
                 }}
                 className={cn(
-                  "pixel-swatch aspect-square w-full min-h-10 border-[3px]",
+                  "pixel-swatch aspect-square w-full min-h-10 rounded-xl border-2 transition-transform hover:scale-105",
                   normalizePixelHex(selected) === normalizePixelHex(hex)
-                    ? "border-fg ring-2 ring-fg/30"
-                    : "border-earth",
+                    ? "border-[#6355d8] ring-2 ring-[#6355d8]/30"
+                    : "border-slate-200",
                 )}
                 style={{ backgroundColor: hex }}
               />

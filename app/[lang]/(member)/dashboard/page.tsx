@@ -2,7 +2,7 @@ import type { Metadata } from "next"
 import Link from "next/link"
 import { notFound } from "next/navigation"
 import { connection } from "next/server"
-import { PixelCatDecoration } from "@/components/brand/PixelCatDecoration"
+import { PeekingPixelCat, PixelCat, PixelCatDecoration } from "@/components/brand"
 import { WorksRow } from "@/components/creations/WorksRow"
 import { PixelIcon } from "@/components/ui/PixelIcon"
 import { SectionHeader } from "@/components/ui/PageHeader"
@@ -39,47 +39,6 @@ type WorksTab = "all" | "draft" | "published"
 function parseTab(value: string | undefined): WorksTab {
   if (value === "draft" || value === "published") return value
   return "all"
-}
-
-/** Peeking pixel cat mascot matching the reference screenshot */
-function PeekingPixelCat({ className }: { className?: string }) {
-  return (
-    <svg
-      viewBox="0 0 120 70"
-      className={cn("pixel-deco select-none", className)}
-      aria-hidden="true"
-    >
-      {/* Cat body & head silhouette */}
-      <rect x="25" y="30" width="70" height="40" fill="#ffffff" />
-      <rect x="35" y="15" width="50" height="35" fill="#ffffff" />
-      {/* Ears */}
-      <rect x="30" y="10" width="15" height="15" fill="#ffffff" />
-      <rect x="75" y="10" width="15" height="15" fill="#ffffff" />
-      {/* Inner ears */}
-      <rect x="33" y="13" width="7" height="7" fill="#fecdd3" />
-      <rect x="80" y="13" width="7" height="7" fill="#fecdd3" />
-      {/* Black pixel outlines */}
-      <path
-        d="M28,60 H23 V30 H28 V20 H33 V10 H45 V15 H75 V10 H87 V20 H92 V30 H97 V60 H92 V70 H28 Z"
-        fill="none"
-        stroke="#1e1b4b"
-        strokeWidth="3"
-        strokeLinejoin="miter"
-      />
-      {/* Eyes */}
-      <rect x="42" y="27" width="4" height="4" fill="#1e1b4b" />
-      <rect x="74" y="27" width="4" height="4" fill="#1e1b4b" />
-      {/* Nose & mouth */}
-      <rect x="58" y="31" width="4" height="3" fill="#fb7185" />
-      <path
-        d="M54,36 H58 V38 H54 Z M62,36 H66 V38 H62 Z M58,36 V39 H62 V36"
-        fill="#1e1b4b"
-      />
-      {/* Paws on border */}
-      <rect x="20" y="48" width="14" height="16" rx="4" fill="#ffffff" stroke="#1e1b4b" strokeWidth="3" />
-      <rect x="86" y="48" width="14" height="16" rx="4" fill="#ffffff" stroke="#1e1b4b" strokeWidth="3" />
-    </svg>
-  )
 }
 
 export default async function DashboardPage({
@@ -181,8 +140,8 @@ export default async function DashboardPage({
           </div>
         </div>
 
-        {/* Mascot Cat Peeking on the Right */}
-        <div className="pointer-events-none absolute bottom-0 right-10 hidden sm:block">
+        {/* Mascot Cat Peeking on the Right matching reference screenshot */}
+        <div className="pointer-events-none absolute bottom-0 right-60 hidden md:block lg:right-72">
           <PeekingPixelCat className="h-16 w-28 opacity-95" />
         </div>
       </section>
@@ -246,12 +205,11 @@ export default async function DashboardPage({
         ) : visibleItems.length === 0 ? (
           <div className="flex flex-col items-center justify-center rounded-2xl border border-slate-200/80 bg-card py-16 text-center">
             <div className="mb-2" aria-hidden="true">
-              <img
-                src={`/pixel-cats/${tab === "draft" ? "peeking" : "celebrating"}.svg`}
-                alt=""
-                width={96}
-                height={96}
-                className="select-none [image-rendering:pixelated] motion-safe:animate-[pxlb-float_4s_ease-in-out_infinite]"
+              <PixelCat
+                variant={tab === "draft" ? "drawing" : "celebrating"}
+                size="lg"
+                animated="float"
+                glow
               />
             </div>
             <p className="mt-4 text-[15px] font-semibold text-fg">

@@ -131,9 +131,9 @@ export function TransformDialog({ lang, open, onClose, getDocument, getSelection
     onClose()
   }
 
-  const field = "min-h-11 border-[3px] border-earth bg-card px-3 text-[14px] text-fg"
-  const label = "text-[14px] font-medium text-fg"
-  const note = "text-[13px] text-muted"
+  const field = "min-h-10 rounded-xl border border-slate-200 bg-slate-50/70 px-3 text-[14px] text-fg focus:border-[#6355d8] focus:bg-card focus:outline-none"
+  const label = "text-[13px] font-semibold text-fg"
+  const note = "text-[12px] text-muted"
   const checkbox = "flex items-center gap-2 text-[14px] text-fg"
   const lockedCount = result?.skipped.filter((item) => item.reason === "locked").length ?? 0
   const alphaCount = result?.skipped.filter((item) => item.reason === "lockAlpha").length ?? 0
@@ -240,7 +240,7 @@ export function TransformDialog({ lang, open, onClose, getDocument, getSelection
                 <input id={ids.rot} type="number" step={1} value={rotation} className={`${field} w-28`} onChange={(event) => setRotation(num(event.target.value, 0))} />
                 <button
                   type="button"
-                  className="studio-control inline-flex items-center border-[3px] border-earth bg-bg px-2 text-[13px] font-medium text-fg hover:bg-soft"
+                  className="studio-control inline-flex items-center rounded-xl border border-slate-200 bg-slate-50 px-2.5 text-[13px] font-medium text-fg hover:bg-slate-100"
                   aria-label={copy.transformRotateLeft[lang]}
                   title={copy.transformRotateLeft[lang]}
                   onClick={() => setRotation((value) => value - 90)}
@@ -249,7 +249,7 @@ export function TransformDialog({ lang, open, onClose, getDocument, getSelection
                 </button>
                 <button
                   type="button"
-                  className="studio-control inline-flex items-center border-[3px] border-earth bg-bg px-2 text-[13px] font-medium text-fg hover:bg-soft"
+                  className="studio-control inline-flex items-center rounded-xl border border-slate-200 bg-slate-50 px-2.5 text-[13px] font-medium text-fg hover:bg-slate-100"
                   aria-label={copy.transformRotateRight[lang]}
                   title={copy.transformRotateRight[lang]}
                   onClick={() => setRotation((value) => value + 90)}
@@ -289,7 +289,7 @@ export function TransformDialog({ lang, open, onClose, getDocument, getSelection
 
         <div className="grid gap-2" aria-live="polite">
           <span className={label}>{copy.transformPreview[lang]}</span>
-          <div className="flex min-h-40 items-center justify-center border-[3px] border-earth bg-bg p-2">
+          <div className="flex min-h-40 items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 p-3">
             {doc ? (
               <canvas
                 ref={canvasRef}

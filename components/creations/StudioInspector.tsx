@@ -35,16 +35,16 @@ function InspectorSection({
 }) {
   const bodyId = useId()
   return (
-    <section className="flex min-h-0 shrink flex-col border-b-[3px] border-earth">
-      <div className="flex shrink-0 items-center gap-2 px-3 py-1.5">
+    <section className="flex min-h-0 shrink flex-col border-b border-white/[0.08]">
+      <div className="flex shrink-0 items-center gap-2 px-3 py-2">
         <button
           type="button"
           aria-expanded={open}
           aria-controls={bodyId}
           onClick={onToggle}
-          className="flex min-h-[var(--studio-hit-sm,2.25rem)] min-w-0 flex-1 items-center gap-2 text-left text-[13px] font-medium text-fg hover:text-brick"
+          className="flex min-h-[var(--studio-hit-sm,2.25rem)] min-w-0 flex-1 items-center gap-2 text-left text-[12px] font-semibold uppercase tracking-[0.06em] text-[#e8e3f8]/80 transition-colors hover:text-[#a78bfa]"
         >
-          <PixelIcon name={open ? "minus" : "plus"} className="shrink-0 text-muted" />
+          <PixelIcon name={open ? "minus" : "plus"} className="shrink-0 text-[#e8e3f8]/45" />
           <span className="shrink-0">{title}</span>
           {summary}
         </button>
@@ -177,7 +177,7 @@ export function StudioInspector({
     : (brushLabel ?? copy.pixelBrushSize[lang])
 
   const iconHit =
-    "studio-hit border-earth bg-bg text-fg hover:bg-soft disabled:opacity-40"
+    "studio-hit s-btn border-transparent disabled:opacity-35"
   const brushFamily = tool === "pencil" || tool === "circle" || tool === "eraser"
   const toleranceTool = tool === "fill" || tool === "selectContiguous" || tool === "selectColor"
   // The Options panel only exists when the active tool (or a live selection) has something to show.
@@ -195,7 +195,7 @@ export function StudioInspector({
 
   return (
     <aside
-      className="studio-inspector hidden w-[var(--studio-inspector,17.5rem)] shrink-0 flex-col overflow-hidden border-l-[3px] border-earth bg-card md:flex"
+      className="studio-inspector hidden w-[var(--studio-inspector,17.5rem)] shrink-0 flex-col overflow-hidden border-l border-white/[0.08] bg-[#1a1829] text-[#e8e3f8] md:flex"
       aria-label={copy.pixelInspector[lang]}
     >
       <InspectorSection
@@ -207,11 +207,11 @@ export function StudioInspector({
             aria-label={`${copy.pixelColor[lang]} ${color}`}
           >
             <span
-              className="inline-block h-4 w-4 shrink-0 border-2 border-earth"
+              className="inline-block h-4 w-4 shrink-0 rounded border border-white/20 shadow-sm"
               style={{ backgroundColor: color }}
               aria-hidden="true"
             />
-            <span className="min-w-0 truncate font-mono text-[11px] font-normal uppercase tracking-wide text-muted">
+            <span className="min-w-0 truncate font-mono text-[11px] font-normal uppercase tracking-wide text-[#e8e3f8]/50">
               {color}
             </span>
           </span>
@@ -220,7 +220,7 @@ export function StudioInspector({
           <button
             type="button"
             onClick={onPaletteMore}
-            className="studio-hit-sm border-earth bg-bg text-fg hover:bg-soft"
+            className="studio-hit-sm s-btn border-transparent"
             aria-label={`${copy.pixelPaletteBrowse[lang]} · ${allColors}`}
             title={copy.pixelPaletteBrowse[lang]}
           >
@@ -244,8 +244,10 @@ export function StudioInspector({
                 title={swatch}
                 onClick={() => onColor(swatch)}
                 className={cn(
-                  "pixel-swatch studio-thumb !h-auto !min-h-0 !w-full !min-w-0 aspect-square",
-                  color === swatch ? "border-fg" : "border-earth",
+                  "pixel-swatch studio-thumb !h-auto !min-h-0 !w-full !min-w-0 aspect-square rounded-md border transition-transform hover:scale-105",
+                  color === swatch
+                    ? "border-white ring-2 ring-[#8b5cf6] ring-offset-1 ring-offset-[#1a1829]"
+                    : "border-white/15",
                 )}
                 style={{ backgroundColor: swatch }}
               />
@@ -269,7 +271,7 @@ export function StudioInspector({
           title={copy.pixelToolOptions[lang]}
           summary={
             toolLabel ? (
-              <span className="min-w-0 truncate text-[length:var(--studio-meta,0.75rem)] font-normal text-muted">
+              <span className="min-w-0 truncate text-[11px] font-normal normal-case tracking-normal text-[#e8e3f8]/50">
                 {toolLabel}
               </span>
             ) : null
@@ -301,7 +303,7 @@ export function StudioInspector({
                         type="button"
                         className={cn(
                           iconHit,
-                          shapeMode === "stroke" && "border-fg bg-brick text-white hover:bg-brick",
+                          shapeMode === "stroke" && "s-btn-pressed border-transparent",
                         )}
                         aria-label={copy.pixelShapeStroke[lang]}
                         title={copy.pixelShapeStroke[lang]}
@@ -314,7 +316,7 @@ export function StudioInspector({
                         type="button"
                         className={cn(
                           iconHit,
-                          shapeMode === "fill" && "border-fg bg-brick text-white hover:bg-brick",
+                          shapeMode === "fill" && "s-btn-pressed border-transparent",
                         )}
                         aria-label={copy.pixelShapeFill[lang]}
                         title={copy.pixelShapeFill[lang]}
@@ -330,7 +332,7 @@ export function StudioInspector({
                         type="button"
                         className={cn(
                           iconHit,
-                          !shapeFilled && "border-fg bg-brick text-white hover:bg-brick",
+                          !shapeFilled && "s-btn-pressed border-transparent",
                         )}
                         aria-label={copy.pixelShapeOutline[lang]}
                         title={copy.pixelShapeOutline[lang]}
@@ -343,7 +345,7 @@ export function StudioInspector({
                         type="button"
                         className={cn(
                           iconHit,
-                          shapeFilled && "border-fg bg-brick text-white hover:bg-brick",
+                          shapeFilled && "s-btn-pressed border-transparent",
                         )}
                         aria-label={copy.pixelShapeFilled[lang]}
                         title={copy.pixelShapeFilled[lang]}
@@ -367,7 +369,7 @@ export function StudioInspector({
                       onChange={(event) =>
                         onShapeWidth?.(Math.max(1, Math.round(Number(event.target.value) || 1)))
                       }
-                      className="studio-control w-full border-earth bg-bg px-2 text-center text-[13px] font-medium text-fg"
+                      className="studio-control w-full rounded-md border border-white/10 bg-[#231f35] px-2 text-center text-[13px] font-medium text-[#e8e3f8]"
                     />
                     <input
                       type="number"
@@ -379,7 +381,7 @@ export function StudioInspector({
                       onChange={(event) =>
                         onShapeHeight?.(Math.max(1, Math.round(Number(event.target.value) || 1)))
                       }
-                      className="studio-control w-full border-earth bg-bg px-2 text-center text-[13px] font-medium text-fg"
+                      className="studio-control w-full rounded-md border border-white/10 bg-[#231f35] px-2 text-center text-[13px] font-medium text-[#e8e3f8]"
                     />
                   </div>
                 ) : null}
@@ -387,7 +389,7 @@ export function StudioInspector({
                   <div className="flex flex-wrap gap-1.5">
                     <button
                       type="button"
-                      className={cn(iconHit, "border-fg bg-brick text-white hover:bg-brick")}
+                      className={cn(iconHit, "s-btn-pressed border-transparent")}
                       aria-label={copy.pixelShapeApply[lang]}
                       title={copy.pixelShapeApply[lang]}
                       onClick={onShapeApply}
@@ -411,9 +413,9 @@ export function StudioInspector({
             {symmetryControl && brushFamily ? (
               <div className="flex items-center gap-2">
                 {symmetryControl}
-                <span className="min-w-0 truncate text-[13px] font-medium text-fg">{copy.pixelSymmetry[lang]}</span>
+                <span className="min-w-0 truncate text-[13px] font-medium text-[#e8e3f8]">{copy.pixelSymmetry[lang]}</span>
                 {symmetryStatus ? (
-                  <span className="ml-auto shrink-0 text-[length:var(--studio-meta,0.75rem)] text-muted">
+                  <span className="ml-auto shrink-0 text-[length:var(--studio-meta,0.75rem)] text-[#e8e3f8]/50">
                     {symmetryStatus}
                   </span>
                 ) : null}
@@ -421,15 +423,15 @@ export function StudioInspector({
             ) : null}
 
             {brushOptionsPanel && brushFamily ? (
-              <div className="border-t-[3px] border-earth pt-2">
+              <div className="border-t border-white/[0.08] pt-2">
                 <button
                   type="button"
                   aria-expanded={dynamicsOpen}
                   aria-controls={dynamicsId}
                   onClick={() => setDynamicsOpen((value) => !value)}
-                  className="flex min-h-[var(--studio-hit-sm,2.25rem)] w-full items-center gap-2 text-left text-[13px] font-medium text-fg hover:text-brick"
+                  className="flex min-h-[var(--studio-hit-sm,2.25rem)] w-full items-center gap-2 text-left text-[13px] font-medium text-[#e8e3f8]/85 hover:text-[#a78bfa]"
                 >
-                  <PixelIcon name={dynamicsOpen ? "minus" : "plus"} className="shrink-0 text-muted" />
+                  <PixelIcon name={dynamicsOpen ? "minus" : "plus"} className="shrink-0 text-[#e8e3f8]/45" />
                   <span className="truncate">{copy.pixelBrushOptions[lang]}</span>
                 </button>
                 <div id={dynamicsId} hidden={!dynamicsOpen} className="pt-2">
@@ -441,10 +443,10 @@ export function StudioInspector({
             {tool === "fill" || tool === "selectContiguous" || tool === "selectColor" ? (
               <div className="space-y-2">
                 <div className="flex items-center gap-2">
-                  <label className="min-w-0 flex-1 text-[13px] font-medium text-fg" htmlFor={fillToleranceId}>
+                  <label className="min-w-0 flex-1 text-[13px] font-medium text-[#e8e3f8]" htmlFor={fillToleranceId}>
                     {toleranceLabel}
                   </label>
-                  <span className="w-8 text-right text-[13px] tabular-nums text-fg">{fillTolerance}</span>
+                  <span className="w-8 text-right text-[13px] tabular-nums text-[#e8e3f8]">{fillTolerance}</span>
                 </div>
                 <input
                   id={fillToleranceId}
@@ -455,11 +457,11 @@ export function StudioInspector({
                   value={fillTolerance}
                   aria-label={toleranceLabel}
                   onChange={(event) => onFillTolerance?.(Number(event.target.value))}
-                  className="w-full"
+                  className="w-full accent-[#8b5cf6]"
                 />
                 {tool === "fill" ? fillPatternPanel : null}
                 {tool === "fill" ? (
-                  <p className="text-[length:var(--studio-meta,0.75rem)] leading-relaxed text-muted">
+                  <p className="text-[length:var(--studio-meta,0.75rem)] leading-relaxed text-[#e8e3f8]/50">
                     {copy.pixelFillGlobalHint[lang]}
                   </p>
                 ) : null}
@@ -467,7 +469,7 @@ export function StudioInspector({
             ) : null}
 
             {tool === "selectPolygon" ? (
-              <p className="text-[length:var(--studio-meta,0.75rem)] leading-relaxed text-muted">
+              <p className="text-[length:var(--studio-meta,0.75rem)] leading-relaxed text-[#e8e3f8]/50">
                 {copy.pixelSelectPolygonHint[lang]}
               </p>
             ) : null}
@@ -477,8 +479,10 @@ export function StudioInspector({
                 <button
                   type="button"
                   className={cn(
-                    "studio-control inline-flex items-center border-earth bg-bg px-2 text-[12px] font-medium text-fg",
-                    selectShape === "rect" && "border-fg bg-brick text-white",
+                    "studio-control inline-flex items-center rounded-md border px-2.5 text-[12px] font-medium transition-colors",
+                    selectShape === "rect"
+                      ? "s-btn-pressed border-transparent"
+                      : "s-btn border-transparent",
                   )}
                   aria-pressed={selectShape === "rect"}
                   onClick={() => onSelectShape?.("rect")}
@@ -488,8 +492,10 @@ export function StudioInspector({
                 <button
                   type="button"
                   className={cn(
-                    "studio-control inline-flex items-center border-earth bg-bg px-2 text-[12px] font-medium text-fg",
-                    selectShape === "ellipse" && "border-fg bg-brick text-white",
+                    "studio-control inline-flex items-center rounded-md border px-2.5 text-[12px] font-medium transition-colors",
+                    selectShape === "ellipse"
+                      ? "s-btn-pressed border-transparent"
+                      : "s-btn border-transparent",
                   )}
                   aria-pressed={selectShape === "ellipse"}
                   onClick={() => onSelectShape?.("ellipse")}
@@ -551,14 +557,14 @@ export function StudioInspector({
               <div className="flex flex-wrap gap-1.5">
                 <button
                   type="button"
-                  className="studio-control inline-flex items-center border-earth bg-bg px-2 text-[12px] font-medium text-fg"
+                  className="studio-control s-btn inline-flex items-center border-transparent px-2.5 text-[12px] font-medium"
                   onClick={onInvertSelection}
                 >
                   {copy.pixelSelectInvert[lang]}
                 </button>
                 <button
                   type="button"
-                  className="studio-control inline-flex items-center border-earth bg-bg px-2 text-[12px] font-medium text-fg"
+                  className="studio-control s-btn inline-flex items-center border-transparent px-2.5 text-[12px] font-medium"
                   title="Shift+]"
                   onClick={onExpandSelection}
                 >
@@ -566,7 +572,7 @@ export function StudioInspector({
                 </button>
                 <button
                   type="button"
-                  className="studio-control inline-flex items-center border-earth bg-bg px-2 text-[12px] font-medium text-fg"
+                  className="studio-control s-btn inline-flex items-center border-transparent px-2.5 text-[12px] font-medium"
                   title="Shift+["
                   onClick={onContractSelection}
                 >
@@ -576,12 +582,12 @@ export function StudioInspector({
             ) : null}
 
             {hasSelection && onRotateSelection ? (
-              <div className="mt-3 space-y-2 border-t-[3px] border-earth pt-3">
+              <div className="mt-3 space-y-2 border-t border-white/[0.08] pt-3">
                 <label className="sr-only" htmlFor="studio-rotate-angle">
                   {copy.pixelRotateFree[lang]}
                 </label>
                 <div className="flex items-center gap-2">
-                  <PixelIcon name="rotate" className="shrink-0 text-muted" />
+                  <PixelIcon name="rotate" className="shrink-0 text-[#e8e3f8]/50" />
                   <input
                     id="studio-rotate-angle"
                     type="range"
@@ -592,7 +598,7 @@ export function StudioInspector({
                     aria-label={copy.pixelRotateAngle[lang]}
                     title={`${copy.pixelRotateAngle[lang]}: ${rotateAngle}°`}
                     onChange={(event) => setRotateAngle(Number(event.target.value))}
-                    className="min-w-0 flex-1"
+                    className="min-w-0 flex-1 accent-[#8b5cf6]"
                   />
                   <input
                     type="number"
@@ -604,7 +610,7 @@ export function StudioInspector({
                     onChange={(event) =>
                       setRotateAngle(Math.max(-180, Math.min(180, Number(event.target.value) || 0)))
                     }
-                    className="studio-control w-14 border-earth bg-bg px-1 text-center text-[13px] font-medium text-fg"
+                    className="studio-control w-14 rounded-md border border-white/10 bg-[#231f35] px-1 text-center text-[13px] font-medium text-[#e8e3f8]"
                   />
                   <button
                     type="button"
@@ -633,15 +639,15 @@ export function StudioInspector({
         <div className="flex-1" aria-hidden="true" />
       )}
 
-      <details className={cn("shrink-0 px-3 py-1", !layerPanel && "border-t-[3px] border-earth")}>
+      <details className={cn("shrink-0 px-3 py-1.5", !layerPanel && "border-t border-white/[0.08]")}>
         <summary
-          className="flex min-h-[var(--studio-hit-sm,2.25rem)] cursor-pointer items-center gap-2 text-[13px] font-medium text-fg"
+          className="flex min-h-[var(--studio-hit-sm,2.25rem)] cursor-pointer items-center gap-2 text-[12px] font-medium text-[#e8e3f8]/70 hover:text-[#e8e3f8]"
           title={copy.pixelShortcuts[lang]}
         >
           <PixelIcon name="keyboard" />
           <span>{copy.pixelShortcuts[lang]}</span>
         </summary>
-        <p className="pb-2 pt-1 text-[length:var(--studio-meta,0.75rem)] leading-relaxed text-muted">
+        <p className="pb-2 pt-1 text-[length:var(--studio-meta,0.75rem)] leading-relaxed text-[#e8e3f8]/50">
           {copy.pixelStatusShortcuts[lang]}
         </p>
       </details>

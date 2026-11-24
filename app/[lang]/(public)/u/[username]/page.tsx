@@ -91,7 +91,7 @@ export default async function PublicProfilePage({
           <div className="min-w-0 flex-1">
             <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-5">
               <div className="min-w-0">
-                <h1 className="break-words text-[22px] font-semibold leading-tight tracking-tight text-fg sm:text-[28px]">
+                <h1 className="break-words text-[22px] font-semibold leading-snug tracking-tight text-fg sm:text-[28px]">
                   {name}
                 </h1>
                 <p className="mt-1 truncate text-[14px] text-muted">@{profile.username}</p>

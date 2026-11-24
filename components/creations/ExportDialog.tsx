@@ -4,6 +4,7 @@ import { useEffect, useId, useMemo, useRef, useState } from "react"
 import { Button } from "@/components/ui/Button"
 import { Dialog } from "@/components/ui/Dialog"
 import { PixelIcon } from "@/components/ui/PixelIcon"
+import { PixelCat } from "@/components/brand/PixelCat"
 import { copy, exportFormatLabels } from "../../lib/copy"
 import type { Lang } from "@/lib/i18n"
 import { canvasRasterEncoder } from "@/lib/pixel-export-canvas"
@@ -163,6 +164,8 @@ export function ExportDialog({ lang, open, onClose, getDocument, title }: Props)
     [previewUrl],
   )
 
+  const [downloaded, setDownloaded] = useState(false)
+
   function download() {
     if (!result) return
     const url = URL.createObjectURL(new Blob([new Uint8Array(result.file.bytes)], { type: result.file.mime }))
@@ -171,11 +174,12 @@ export function ExportDialog({ lang, open, onClose, getDocument, title }: Props)
     anchor.download = result.file.name
     anchor.click()
     URL.revokeObjectURL(url)
+    setDownloaded(true)
   }
 
-  const field = "min-h-11 border-[3px] border-earth bg-card px-3 text-[14px] text-fg"
-  const label = "text-[14px] font-medium text-fg"
-  const note = "text-[13px] text-muted"
+  const field = "min-h-10 rounded-xl border border-slate-200 bg-slate-50/70 px-3 text-[14px] text-fg focus:border-[#6355d8] focus:bg-card focus:outline-none"
+  const label = "text-[13px] font-semibold text-fg"
+  const note = "text-[12px] text-muted"
   const frameFormats = format === "gif" ? gifSource === "layers" : format === "sheet"
   const presets = [1, 2, 4, 8, 16].filter((value) => value <= maxScale)
 
@@ -216,7 +220,7 @@ export function ExportDialog({ lang, open, onClose, getDocument, title }: Props)
                 key={value}
                 type="button"
                 aria-pressed={scale === value}
-                className={`studio-control inline-flex items-center border-[3px] border-earth px-2 text-[13px] font-medium ${scale === value ? "bg-soft text-fg" : "bg-bg text-fg hover:bg-soft"}`}
+                className={`studio-control inline-flex items-center rounded-xl border px-2.5 text-[13px] font-medium transition-colors ${scale === value ? "border-[#6355d8] bg-[#f0edff] text-[#6355d8]" : "border-slate-200 bg-slate-50 text-fg hover:bg-slate-100"}`}
                 onClick={() => setScale(value)}
               >
                 {value}×
@@ -242,7 +246,7 @@ export function ExportDialog({ lang, open, onClose, getDocument, title }: Props)
                 type="color"
                 value={bgColor}
                 aria-label={copy.exportBgColor[lang]}
-                className="h-11 w-14 border-[3px] border-earth bg-card p-0.5"
+                className="h-10 w-14 rounded-xl border border-slate-200 bg-card p-0.5"
                 onChange={(event) => setBgColor(event.target.value)}
               />
             ) : null}
@@ -313,7 +317,7 @@ export function ExportDialog({ lang, open, onClose, getDocument, title }: Props)
 
         <div className="grid gap-2" aria-live="polite">
           <span className={label}>{copy.exportPreview[lang]}</span>
-          <div className="flex min-h-40 items-center justify-center border-[3px] border-earth bg-bg p-2 [background-image:repeating-conic-gradient(var(--color-soft,#eee)_0%_25%,transparent_0%_50%)] [background-size:16px_16px]">
+          <div className="flex min-h-40 items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 p-3 [background-image:repeating-conic-gradient(var(--color-soft,#eee)_0%_25%,transparent_0%_50%)] [background-size:16px_16px]">
             {previewUrl ? (
               // eslint-disable-next-line @next/next/no-img-element -- local object URL, pixel art needs crisp scaling
               <img src={previewUrl} alt="" className="max-h-64 max-w-full [image-rendering:pixelated]" />
@@ -345,10 +349,16 @@ export function ExportDialog({ lang, open, onClose, getDocument, title }: Props)
           ) : null}
         </div>
 
-        <Button type="button" variant="outline" disabled={!result || busy} onClick={download}>
+        <Button type="button" variant="primary" disabled={!result || busy} onClick={download}>
           <PixelIcon name="download" />
           {copy.exportDownload[lang]}
         </Button>
+        {downloaded ? (
+          <div className="flex items-center gap-2.5 rounded-2xl border border-emerald-200 bg-emerald-50/70 px-3 py-2 text-[13px] text-emerald-900">
+            <PixelCat variant="happy" size="xs" />
+            <span>{result?.file.name}</span>
+          </div>
+        ) : null}
       </div>
     </Dialog>
   )

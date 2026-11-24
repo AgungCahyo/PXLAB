@@ -60,8 +60,9 @@ export function CreatorCard({
     <article
       data-creator-card
       className={cn(
-        "min-w-0 max-w-full overflow-hidden rounded-2xl border border-slate-200/80 bg-card p-3.5 shadow-sm transition-all duration-200 hover:border-slate-300 hover:shadow-md",
-        fluid ? "w-full" : "w-72 shrink-0",
+        fluid
+          ? "w-full max-w-full min-w-0 overflow-hidden bg-card p-2.5"
+          : "w-64 max-w-full shrink-0 min-w-0 overflow-hidden bg-card p-2.5",
         className,
       )}
     >
@@ -81,20 +82,18 @@ export function CreatorCard({
             className="border border-slate-200/80"
           />
         </Link>
-        <div className="min-w-0 flex-1">
-          <Link
-            {...restoreScrollProps}
-            href={profileHref}
-            className="block min-w-0 max-w-full overflow-hidden focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky"
-          >
-            <span className="block truncate text-[14px] font-semibold leading-tight text-fg transition-colors hover:text-[#6355d8]">
-              {name}
-            </span>
-            <span className="mt-0.5 block truncate text-[12px] leading-tight text-muted">
-              @{creator.username}
-            </span>
-          </Link>
-        </div>
+        <Link
+          {...restoreScrollProps}
+          href={profileHref}
+          className="min-w-0 max-w-full flex-1 overflow-hidden focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky"
+        >
+          <span className="block truncate text-[14px] font-semibold leading-tight text-fg transition-colors hover:text-[#6355d8]">
+            {name}
+          </span>
+          <span className="mt-0.5 block truncate text-[12px] leading-tight text-muted">
+            @{creator.username}
+          </span>
+        </Link>
         <FollowButton
           lang={lang}
           userId={creator.id}

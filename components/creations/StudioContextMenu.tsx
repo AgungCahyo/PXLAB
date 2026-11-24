@@ -77,7 +77,7 @@ export function StudioContextMenu({
       ref={ref}
       role="group"
       aria-label={copy.pixelCanvasMenu[lang]}
-      className="fixed z-[80] min-w-[12rem] border-[3px] border-earth bg-card py-1 shadow-[4px_4px_0_0_var(--fg)]"
+      className="fixed z-[80] min-w-[12.5rem] rounded-xl border border-white/10 bg-[#1a1829] py-1.5 shadow-2xl backdrop-blur-md"
       style={{ left: x, top: y }}
     >
       {items.map((item) =>
@@ -85,7 +85,7 @@ export function StudioContextMenu({
           <div
             key={item.id}
             role="separator"
-            className="my-1 h-[3px] bg-earth"
+            className="my-1 h-px bg-white/10"
             aria-hidden="true"
           />
         ) : "label" in item ? (
@@ -100,8 +100,8 @@ export function StudioContextMenu({
             }}
             className={
               item.danger
-                ? "flex w-full px-3 py-2.5 text-left text-[14px] text-brick hover:bg-soft focus-visible:bg-soft disabled:opacity-40"
-                : "flex w-full px-3 py-2.5 text-left text-[14px] text-fg hover:bg-soft focus-visible:bg-soft disabled:opacity-40"
+                ? "flex w-full px-3.5 py-2 text-left text-[13px] font-medium text-rose-400 transition-colors hover:bg-rose-500/15 focus-visible:bg-rose-500/15 disabled:opacity-35"
+                : "flex w-full px-3.5 py-2 text-left text-[13px] font-medium text-[#e8e3f8] transition-colors hover:bg-white/10 focus-visible:bg-white/10 disabled:opacity-35"
             }
           >
             {item.label}

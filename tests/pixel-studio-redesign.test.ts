@@ -200,7 +200,7 @@ describe("pixel studio redesign S0–S1", () => {
     // Right sidebar: collapsible panels, layers keep the flexible space, no whole-column scroll.
     expect(inspector).toMatch(/function InspectorSection/)
     expect(inspector).toMatch(/aria-expanded=\{open\}/)
-    expect(inspector).toMatch(/shrink-0 flex-col overflow-hidden border-l-\[3px\]/)
+    expect(inspector).toMatch(/shrink-0 flex-col overflow-hidden border-l/)
     expect(inspector).toMatch(/min-h-\[8rem\] flex-1 overflow-y-auto/)
     expect(inspector).toMatch(/hasToolOptions/)
     expect(inspector).toMatch(/symmetryControl/)
@@ -220,7 +220,7 @@ describe("pixel studio redesign S0–S1", () => {
       playground.indexOf('className="playground-tool-rail'),
       playground.indexOf("</aside>", playground.indexOf('className="playground-tool-rail')),
     )
-    expect(rail).toMatch(/toolButtons/)
+    expect(rail).toMatch(/renderToolButtons\("desktop"\)/)
     expect(rail).not.toMatch(/renderSymmetryButton/)
     expect(playground).toMatch(/symmetryControl=\{renderSymmetryButton\(\)\}/)
     // Tool groups: draw, shapes, fill & colour, then selection & navigation.

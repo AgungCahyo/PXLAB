@@ -319,7 +319,7 @@ export function PixelNewForm({
             </div>
           </fieldset>
 
-          <div className="flex flex-wrap items-center gap-3 border-t border-slate-200/80 pt-4">
+          <div className="flex flex-wrap items-center gap-3 border-t border-slate-200/80 pt-4 max-md:sticky max-md:bottom-[calc(4rem+env(safe-area-inset-bottom,0px))]">
             <p className="mr-auto text-[13px] text-muted">{sizeLabel}</p>
             <Link href={href(lang, "/dashboard")} className={socialButtonClass({ variant: "ghost", size: "md" })}>
               {copy.createCancel[lang]}

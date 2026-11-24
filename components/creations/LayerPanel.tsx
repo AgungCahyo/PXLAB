@@ -89,7 +89,7 @@ function NewIcon({ name }: { name: ComponentProps<typeof PixelIcon>["name"] }) {
   return (
     <span className="relative inline-flex">
       <PixelIcon name={name} />
-      <span className="absolute -bottom-1 -right-1.5 inline-flex bg-bg text-fg" aria-hidden="true">
+      <span className="absolute -bottom-1 -right-1.5 inline-flex rounded-sm bg-[#1a1829] text-[#e8e3f8]" aria-hidden="true">
         <PixelIcon name="plus" className="h-2.5 w-2.5" />
       </span>
     </span>
@@ -97,8 +97,8 @@ function NewIcon({ name }: { name: ComponentProps<typeof PixelIcon>["name"] }) {
 }
 
 const toolbarButton =
-  "relative inline-flex h-9 w-9 items-center justify-center border-[3px] border-earth bg-bg text-fg hover:bg-soft disabled:opacity-40"
-const rowIconButton = "inline-flex h-8 w-8 items-center justify-center text-muted hover:text-fg"
+  "relative inline-flex h-8 w-8 items-center justify-center rounded-md border border-white/10 bg-[#231f35] text-[#e8e3f8] transition-colors hover:bg-[#2d2847] disabled:opacity-35"
+const rowIconButton = "inline-flex h-7 w-7 items-center justify-center rounded text-[#e8e3f8]/50 transition-colors hover:bg-white/10 hover:text-[#e8e3f8]"
 
 export function LayerPanel({
   lang,
@@ -443,12 +443,12 @@ export function LayerPanel({
         : copy.pixelGroupCreateTip[lang]
 
   return (
-    <section className="border-b-[3px] border-earth px-3 py-3" aria-label={copy.pixelLayers[lang]}>
-      <div className="mb-2 flex items-center justify-between gap-2">
-        <h3 className="flex items-center gap-1.5 text-[13px] font-medium text-fg">
-          <PixelIcon name="layers" />
+    <section className="border-b border-white/[0.08] px-3 py-3" aria-label={copy.pixelLayers[lang]}>
+      <div className="mb-2.5 flex items-center justify-between gap-2">
+        <h3 className="flex items-center gap-1.5 text-[12px] font-semibold uppercase tracking-[0.06em] text-[#e8e3f8]/80">
+          <PixelIcon name="layers" className="text-[#e8e3f8]/55" />
           <span className="sr-only">{copy.pixelLayers[lang]}</span>
-          <span className="text-[11px] font-normal tabular-nums text-muted" aria-hidden="true">
+          <span className="text-[11px] font-normal normal-case tracking-normal tabular-nums text-[#e8e3f8]/50" aria-hidden="true">
             {rasterLayerCount(layers)}/{PIXEL_LAYER_MAX}
             {layers.length > rasterLayerCount(layers)
               ? ` + ${layers.length - rasterLayerCount(layers)}/${PIXEL_TEXT_LAYER_MAX} T`
@@ -477,7 +477,7 @@ export function LayerPanel({
             <NewIcon name="folder" />
             {selection.length > 0 ? (
               <span
-                className="absolute -right-1.5 -top-1.5 min-w-4 bg-brick px-1 text-center text-[10px] font-medium leading-4 text-white"
+                className="absolute -right-1.5 -top-1.5 min-w-4 rounded-full bg-[#8b5cf6] px-1 text-center text-[10px] font-medium leading-4 text-white"
                 aria-hidden="true"
               >
                 {selection.length}
@@ -502,7 +502,7 @@ export function LayerPanel({
         </div>
       </div>
 
-      <ul className="flex flex-col gap-1">
+      <ul className="flex flex-col gap-1.5">
         {displayLayers(layers).map((layer, displayIndex, list) => {
           const group = layer.group ? groupApi.groups.find((item) => item.id === layer.group) : undefined
           const startsGroup = Boolean(group) && list[displayIndex - 1]?.group !== layer.group
@@ -516,10 +516,10 @@ export function LayerPanel({
               {group && startsGroup ? (
                 <li
                   className={cn(
-                    "flex items-center gap-1 border-[3px] border-earth bg-soft px-1 py-1",
-                    focusedGroup?.id === group.id && "border-fg",
-                    !group.visible && "opacity-55",
-                    dragId !== null && dropId === `group:${group.id}` && "border-dashed border-fg bg-card",
+                    "flex items-center gap-1 rounded-lg border border-white/10 bg-[#231f35] px-1.5 py-1 transition-colors",
+                    focusedGroup?.id === group.id && "border-[#8b5cf6]/70 bg-[#2d2847]",
+                    !group.visible && "opacity-50",
+                    dragId !== null && dropId === `group:${group.id}` && "border-dashed border-[#a78bfa] bg-[#2d2847]",
                   )}
                   aria-label={`${copy.pixelGroup[lang]}: ${group.name}`}
                   onContextMenu={(event) => {
@@ -542,7 +542,7 @@ export function LayerPanel({
                 >
                   <button
                     type="button"
-                    className="inline-flex h-8 w-8 items-center justify-center text-fg hover:bg-bg"
+                    className="inline-flex h-7 w-7 items-center justify-center rounded text-[#e8e3f8]/70 hover:bg-white/10 hover:text-[#e8e3f8]"
                     aria-expanded={!group.collapsed}
                     aria-label={group.collapsed ? copy.pixelGroupExpand[lang] : copy.pixelGroupCollapse[lang]}
                     title={group.collapsed ? copy.pixelGroupExpand[lang] : copy.pixelGroupCollapse[lang]}
@@ -550,7 +550,7 @@ export function LayerPanel({
                   >
                     <PixelIcon name={group.collapsed ? "plus" : "minus"} />
                   </button>
-                  <PixelIcon name="folder" className="shrink-0" />
+                  <PixelIcon name="folder" className="shrink-0 text-[#a78bfa]" />
                   {editingGroupId === group.id ? (
                     <input
                       ref={groupRenameRef}
@@ -558,7 +558,7 @@ export function LayerPanel({
                       defaultValue={group.name}
                       maxLength={48}
                       aria-label={copy.pixelGroupName[lang]}
-                      className="h-8 min-w-0 flex-1 border-[2px] border-earth bg-bg px-1.5 text-[12px] text-fg"
+                      className="h-7 min-w-0 flex-1 rounded border border-[#8b5cf6] bg-[#1a1829] px-1.5 text-[12px] text-[#e8e3f8]"
                       onBlur={(event) => {
                         groupApi.onStyle(group.id, { name: event.target.value })
                         setEditingGroupId(null)
@@ -571,7 +571,7 @@ export function LayerPanel({
                   ) : (
                     <button
                       type="button"
-                      className="min-w-0 flex-1 truncate text-left text-[13px] font-medium text-fg"
+                      className="min-w-0 flex-1 truncate text-left text-[12px] font-medium text-[#e8e3f8]"
                       title={group.name}
                       aria-pressed={focusedGroup?.id === group.id}
                       onClick={() => focusGroup(group.id)}
@@ -580,7 +580,7 @@ export function LayerPanel({
                       {group.name}
                     </button>
                   )}
-                  <span className="shrink-0 text-[11px] tabular-nums text-muted" aria-hidden="true">
+                  <span className="shrink-0 text-[11px] tabular-nums text-[#e8e3f8]/45" aria-hidden="true">
                     {layers.filter((item) => item.group === group.id).length}
                   </span>
                   <button
@@ -621,17 +621,21 @@ export function LayerPanel({
                   openMenu({ kind: "layer", id: layer.id, x: event.clientX, y: event.clientY })
                 }}
                 className={cn(
-                  "flex items-center gap-1.5 border-[3px] border-earth px-1.5 py-1.5",
+                  "flex items-center gap-1.5 rounded-lg border px-1.5 py-1.5 transition-colors",
                   group && "ml-4",
-                  layer.active ? "border-fg bg-soft" : isPicked ? "border-sky bg-soft" : "bg-card",
-                  isPicked && "shadow-[inset_4px_0_0_0_var(--sky)]",
-                  hidden && "opacity-55",
-                  isDrop && "border-dashed border-fg",
-                  dragId === layer.id && "opacity-70",
+                  layer.active
+                    ? "border-[#8b5cf6]/70 bg-[#8b5cf6]/15"
+                    : isPicked
+                      ? "border-sky-400/70 bg-[#231f35]"
+                      : "border-white/[0.08] bg-[#231f35]/70 hover:bg-[#231f35]",
+                  isPicked && "shadow-[inset_3px_0_0_0_#38bdf8]",
+                  hidden && "opacity-45",
+                  isDrop && "border-dashed border-[#a78bfa]",
+                  dragId === layer.id && "opacity-65",
                 )}
               >
                 <span
-                  className="inline-flex h-8 w-5 cursor-grab items-center justify-center text-muted active:cursor-grabbing"
+                  className="inline-flex h-7 w-4 cursor-grab items-center justify-center text-[#e8e3f8]/35 active:cursor-grabbing"
                   aria-label={copy.pixelLayerReorder[lang]}
                   title={copy.pixelLayerReorder[lang]}
                 >
@@ -640,7 +644,7 @@ export function LayerPanel({
 
                 <button
                   type="button"
-                  className="relative h-10 w-10 shrink-0 border-[2px] border-earth bg-[length:8px_8px] bg-[linear-gradient(45deg,#e8e4d8_25%,transparent_25%,transparent_75%,#e8e4d8_75%),linear-gradient(45deg,#e8e4d8_25%,transparent_25%,transparent_75%,#e8e4d8_75%)] bg-[position:0_0,4px_4px]"
+                  className="relative h-9 w-9 shrink-0 overflow-hidden rounded border border-white/15 bg-[length:8px_8px] bg-[linear-gradient(45deg,#2a2640_25%,transparent_25%,transparent_75%,#2a2640_75%),linear-gradient(45deg,#2a2640_25%,transparent_25%,transparent_75%,#2a2640_75%)] bg-[position:0_0,4px_4px]"
                   aria-label={layer.active ? copy.pixelLayerActive[lang] : layer.name}
                   onClick={(event) => selectRow(event, layer)}
                 >
@@ -662,7 +666,7 @@ export function LayerPanel({
                       type="text"
                       defaultValue={layer.name}
                       aria-label={copy.pixelLayerRename[lang]}
-                      className="h-8 w-full border-[2px] border-earth bg-bg px-1.5 text-[12px] text-fg"
+                      className="h-7 w-full rounded border border-[#8b5cf6] bg-[#1a1829] px-1.5 text-[12px] text-[#e8e3f8]"
                       onBlur={(event) => commitRename(layer.id, event.target.value)}
                       onKeyDown={(event) => {
                         if (event.key === "Enter") event.currentTarget.blur()
@@ -673,8 +677,8 @@ export function LayerPanel({
                     <button
                       type="button"
                       className={cn(
-                        "block w-full truncate text-left text-[13px] font-medium",
-                        layer.active ? "text-fg" : "text-fg/90",
+                        "block w-full truncate text-left text-[12px] font-medium",
+                        layer.active ? "text-white" : "text-[#e8e3f8]/85",
                       )}
                       onClick={(event) => selectRow(event, layer)}
                       onDoubleClick={() => (layer.text && onEditText ? onEditText(layer.id) : setEditingId(layer.id))}
@@ -720,8 +724,8 @@ export function LayerPanel({
               {group && endsGroup && dragLayer?.group === group.id ? (
                 <li
                   className={cn(
-                    "ml-4 border-[3px] border-dashed border-earth px-2 py-1.5 text-center text-[length:var(--studio-meta,0.75rem)] text-muted",
-                    dropId === `out:${group.id}` && "border-fg bg-card text-fg",
+                    "ml-4 rounded-lg border border-dashed border-white/20 px-2 py-1.5 text-center text-[length:var(--studio-meta,0.75rem)] text-[#e8e3f8]/50",
+                    dropId === `out:${group.id}` && "border-[#a78bfa] bg-[#231f35] text-[#e8e3f8]",
                   )}
                   onDragOver={(event) => {
                     event.preventDefault()
@@ -758,7 +762,7 @@ export function LayerPanel({
       {menu && menuItems.length > 0 ? (
         <div
           role="menu"
-          className="fixed z-[80] max-h-[min(24rem,calc(100vh-1rem))] min-w-[12rem] overflow-y-auto border-[3px] border-earth bg-card py-1 shadow-[4px_4px_0_0_var(--earth)]"
+          className="fixed z-[80] max-h-[min(24rem,calc(100vh-1rem))] min-w-[12.5rem] overflow-y-auto rounded-xl border border-white/10 bg-[#1a1829] py-1.5 shadow-2xl backdrop-blur-md"
           style={{
             left: Math.max(8, Math.min(menu.x, window.innerWidth - 220)),
             top: Math.max(8, Math.min(menu.y, window.innerHeight - 260)),
@@ -767,14 +771,14 @@ export function LayerPanel({
         >
           {menuItems.map((item) =>
             item.separator ? (
-              <div key={item.key} role="separator" className="my-1 h-[3px] bg-earth/30" />
+              <div key={item.key} role="separator" className="my-1 h-px bg-white/10" />
             ) : (
               <button
                 key={item.key}
                 type="button"
                 role="menuitem"
                 disabled={item.disabled}
-                className="flex w-full items-center gap-2 px-3 py-2 text-left text-[13px] text-fg hover:bg-soft disabled:opacity-40"
+                className="flex w-full items-center gap-2 px-3 py-2 text-left text-[13px] text-[#e8e3f8] transition-colors hover:bg-white/10 disabled:opacity-35"
                 onClick={() => {
                   item.run()
                   setMenu(null)
@@ -855,7 +859,7 @@ export function LayerMobileStrip({
     <div className="studio-row w-full overflow-x-auto pb-0.5" aria-label={copy.pixelLayers[lang]}>
       <button
         type="button"
-        className="studio-thumb inline-flex items-center justify-center border-[3px] border-earth bg-bg text-fg"
+        className="studio-thumb s-btn inline-flex items-center justify-center border-transparent"
         aria-label={copy.pixelLayerAdd[lang]}
         onClick={() => {
           if (!canAddLayer(layers)) {
@@ -869,7 +873,7 @@ export function LayerMobileStrip({
       </button>
       <button
         type="button"
-        className="studio-thumb inline-flex items-center justify-center border-[3px] border-earth bg-bg text-fg"
+        className="studio-thumb s-btn inline-flex items-center justify-center border-transparent"
         aria-label={copy.pixelGroupCreate[lang]}
         title={copy.pixelGroupCreateTip[lang]}
         onClick={() => {
@@ -887,9 +891,9 @@ export function LayerMobileStrip({
           <button
             type="button"
             className={cn(
-              "studio-thumb relative inline-flex items-center justify-center border-[3px] border-earth",
-              layer.active ? "border-fg bg-soft" : "bg-card",
-              !layer.visible && "opacity-50",
+              "studio-thumb relative inline-flex items-center justify-center rounded-md border",
+              layer.active ? "border-[#8b5cf6] bg-[#8b5cf6]/20" : "border-white/10 bg-[#231f35]",
+              !layer.visible && "opacity-45",
             )}
             aria-label={layer.name}
             aria-current={layer.active ? "true" : undefined}
@@ -918,10 +922,10 @@ export function LayerMobileStrip({
                 draggable={false}
               />
             ) : (
-              <PixelIcon name="layers" />
+              <PixelIcon name="layers" className="text-[#e8e3f8]/60" />
             )}
             {layer.locked ? (
-              <span className="absolute bottom-0 right-0 bg-card/90 p-0.5 text-fg">
+              <span className="absolute bottom-0 right-0 rounded-tl bg-[#1a1829]/90 p-0.5 text-[#e8e3f8]">
                 <PixelIcon name="lock" className="h-3 w-3" />
               </span>
             ) : null}
@@ -929,7 +933,7 @@ export function LayerMobileStrip({
           {layer.active ? (
             <button
               type="button"
-              className="studio-thumb inline-flex items-center justify-center border-[3px] border-earth bg-card text-fg"
+              className="studio-thumb s-btn inline-flex items-center justify-center border-transparent"
               aria-label={`${layer.name} — ${copy.pixelLayerMore[lang]}`}
               onClick={() => onOpenSheet(layer.id)}
             >
@@ -1008,7 +1012,7 @@ export function LayerMobileSheet({
       className="mt-auto mb-0 w-full max-w-none rounded-none sm:m-auto sm:w-[min(calc(100%-2rem),28rem)]"
     >
       <div className="mb-3 flex items-center gap-3">
-        <div className="studio-thumb border-[3px] border-earth bg-soft sm:h-14 sm:w-14">
+        <div className="studio-thumb rounded-xl border border-slate-200 bg-slate-50 sm:h-14 sm:w-14">
           {thumb ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={thumb} alt="" className="h-full w-full object-contain [image-rendering:pixelated]" />
@@ -1018,7 +1022,7 @@ export function LayerMobileSheet({
           type="text"
           value={name}
           aria-label={copy.pixelLayerRename[lang]}
-          className="studio-control min-w-0 flex-1 border-[3px] border-earth bg-bg px-2 text-[13px] text-fg md:text-[14px]"
+          className="studio-control min-w-0 flex-1 rounded-xl border border-slate-200 bg-slate-50 px-3 text-[13px] text-fg md:text-[14px]"
           onChange={(event) =>
             setDraft({ id: layer?.id ?? null, source: sourceName, value: event.target.value })
           }
@@ -1060,7 +1064,7 @@ export function LayerMobileSheet({
       <div className="studio-row mt-2 flex-wrap">
         <button
           type="button"
-          className="studio-hit border-[3px] border-earth bg-bg text-fg disabled:opacity-40"
+          className="studio-hit rounded-xl border border-slate-200 bg-slate-50 text-fg hover:bg-slate-100 disabled:opacity-40"
           aria-label={copy.pixelLayerDuplicate[lang]}
           title={copy.pixelLayerDuplicate[lang]}
           disabled={!canAddLayer(layers, layer.text ? "text" : "raster")}
@@ -1075,7 +1079,7 @@ export function LayerMobileSheet({
         </button>
         <button
           type="button"
-          className="studio-hit border-[3px] border-earth bg-bg text-fg disabled:opacity-40"
+          className="studio-hit rounded-xl border border-slate-200 bg-slate-50 text-fg hover:bg-slate-100 disabled:opacity-40"
           aria-label={copy.pixelLayerMergeDown[lang]}
           title={copy.pixelLayerMergeDown[lang]}
           disabled={stack <= 0 || (layers[stack - 1]?.group ?? null) !== (layer.group ?? null)}
@@ -1090,7 +1094,7 @@ export function LayerMobileSheet({
         </button>
         <button
           type="button"
-          className="studio-hit border-[3px] border-earth bg-bg text-fg disabled:opacity-40"
+          className="studio-hit rounded-xl border border-slate-200 bg-slate-50 text-fg hover:bg-slate-100 disabled:opacity-40"
           aria-label={copy.pixelLayerMergeVisible[lang]}
           title={copy.pixelLayerMergeVisible[lang]}
           disabled={layers.filter((item) => item.visible).length < 2}
@@ -1105,7 +1109,7 @@ export function LayerMobileSheet({
         </button>
         <button
           type="button"
-          className="studio-hit border-[3px] border-earth bg-bg text-fg disabled:opacity-40"
+          className="studio-hit rounded-xl border border-slate-200 bg-slate-50 text-fg hover:bg-slate-100 disabled:opacity-40"
           aria-label={copy.pixelLayerDelete[lang]}
           title={copy.pixelLayerDelete[lang]}
           disabled={layers.length <= 1}
@@ -1152,7 +1156,7 @@ function IconAction({
       disabled={disabled}
       aria-label={label}
       title={label}
-      className="flex h-12 flex-col items-center justify-center border-[3px] border-earth bg-bg text-fg disabled:opacity-40 sm:h-14"
+      className="flex h-12 flex-col items-center justify-center rounded-xl border border-slate-200 bg-slate-50 text-fg hover:bg-slate-100 disabled:opacity-40 sm:h-14"
       onClick={onClick}
     >
       <PixelIcon name={icon} />

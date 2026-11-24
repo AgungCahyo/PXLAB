@@ -85,10 +85,10 @@ export const StudioMinimap = forwardRef<
   if (hidden) return null
 
   return (
-    <div className="studio-minimap pointer-events-auto absolute bottom-2 right-2 z-10 hidden md:block">
+    <div className="studio-minimap pointer-events-auto absolute bottom-3 right-3 z-10 hidden md:block">
       <button
         type="button"
-        className="studio-hit-sm mb-1 ml-auto flex border-earth bg-card text-fg"
+        className="studio-hit-sm s-btn mb-1.5 ml-auto flex border-transparent shadow-md"
         aria-expanded={!collapsed}
         aria-label={collapsed ? copy.pixelMinimapShow[lang] : copy.pixelMinimapHide[lang]}
         title={collapsed ? copy.pixelMinimapShow[lang] : copy.pixelMinimapHide[lang]}
@@ -102,7 +102,7 @@ export const StudioMinimap = forwardRef<
           width={MINI_W}
           height={MINI_H}
           aria-label={copy.pixelMinimap[lang]}
-          className="block cursor-pointer border-[3px] border-earth bg-soft"
+          className="block cursor-pointer rounded-lg border border-white/10 bg-[#1a1829] shadow-xl"
           style={{ width: MINI_W, height: MINI_H, imageRendering: "pixelated" }}
           onPointerDown={(event) => {
             event.currentTarget.setPointerCapture(event.pointerId)

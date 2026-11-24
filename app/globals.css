@@ -95,6 +95,8 @@ body {
 /*
  * Studio density tokens — comfortable on desktop, compact on small screens.
  * Prefer these over ad-hoc h-11 / px-3 so mobile canvas keeps priority.
+ *
+ * PXLB Studio 4.0 — Modern Creative Workspace Design System
  */
 [data-chrome="playground"] {
   --studio-hit: 2.75rem; /* 44px */
@@ -106,10 +108,35 @@ body {
   --studio-gap-section: 0.5rem;
   --studio-pad-x: 0.5rem;
   --studio-pad-y: 0.5rem;
-  --studio-border: 3px;
-  --studio-rail: 4rem;
+  --studio-border: 1px;
+  --studio-rail: 3.5rem;
   --studio-inspector: 17.5rem;
   --studio-meta: 0.75rem;
+
+  /* PXLB Studio 4.0 specific tokens */
+  --studio-bg: #0f0e1a;
+  --studio-surface: #1a1829;
+  --studio-surface-2: #231f35;
+  --studio-surface-3: #2d2847;
+  --studio-border-color: rgba(255,255,255,0.08);
+  --studio-border-active: rgba(139,92,246,0.6);
+  --studio-accent: #8b5cf6;
+  --studio-accent-light: #a78bfa;
+  --studio-accent-soft: rgba(139,92,246,0.15);
+  --studio-active: rgba(139,92,246,0.9);
+  --studio-active-fg: #ffffff;
+  --studio-fg: #e8e3f8;
+  --studio-fg-muted: rgba(232,227,248,0.5);
+  --studio-fg-dim: rgba(232,227,248,0.3);
+  --studio-canvas-bg: #12111f;
+  --studio-radius: 0.5rem;
+  --studio-radius-sm: 0.375rem;
+  --studio-shadow-sm: 0 1px 3px rgba(0,0,0,0.3), 0 1px 2px rgba(0,0,0,0.2);
+  --studio-shadow: 0 4px 16px rgba(0,0,0,0.4), 0 1px 3px rgba(0,0,0,0.3);
+  --studio-shadow-lg: 0 8px 32px rgba(0,0,0,0.5), 0 2px 8px rgba(0,0,0,0.3);
+
+  background: var(--studio-bg);
+  color: var(--studio-fg);
 }
 
 @media (min-width: 768px) and (max-width: 1023.98px) {
@@ -131,7 +158,7 @@ body {
     --studio-gap-section: 0.35rem;
     --studio-pad-x: 0.35rem;
     --studio-pad-y: 0.25rem;
-    --studio-border: 2px;
+    --studio-border: 1px;
     --studio-meta: 0.6875rem;
   }
 }
@@ -146,7 +173,9 @@ body {
   flex-shrink: 0;
   align-items: center;
   justify-content: center;
-  border-width: var(--studio-border, 3px);
+  border-width: var(--studio-border, 1px);
+  border-radius: var(--studio-radius-sm, 0.375rem);
+  transition: background-color 100ms ease, color 100ms ease, border-color 100ms ease;
 }
 
 .studio-hit-sm {
@@ -159,14 +188,17 @@ body {
   flex-shrink: 0;
   align-items: center;
   justify-content: center;
-  border-width: var(--studio-border, 3px);
+  border-width: var(--studio-border, 1px);
+  border-radius: var(--studio-radius-sm, 0.375rem);
+  transition: background-color 100ms ease, color 100ms ease, border-color 100ms ease;
 }
 
 .studio-control {
   box-sizing: border-box;
   height: var(--studio-control, 2.75rem);
   min-height: var(--studio-control, 2.75rem);
-  border-width: var(--studio-border, 3px);
+  border-width: var(--studio-border, 1px);
+  border-radius: var(--studio-radius-sm, 0.375rem);
 }
 
 .studio-thumb {
@@ -176,7 +208,8 @@ body {
   min-height: var(--studio-thumb, 2.5rem);
   min-width: var(--studio-thumb, 2.5rem);
   flex-shrink: 0;
-  border-width: var(--studio-border, 3px);
+  border-width: var(--studio-border, 1px);
+  border-radius: var(--studio-radius-sm, 0.375rem);
 }
 
 .studio-stack {
@@ -191,6 +224,235 @@ body {
   gap: var(--studio-gap, 0.375rem);
 }
 
+/* Studio 4.0 dark surface utilities */
+[data-chrome="playground"] .s-surface {
+  background: var(--studio-surface);
+  border: 1px solid var(--studio-border-color);
+}
+
+[data-chrome="playground"] .s-surface-2 {
+  background: var(--studio-surface-2);
+  border: 1px solid var(--studio-border-color);
+}
+
+[data-chrome="playground"] .s-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--studio-radius-sm);
+  border: 1px solid var(--studio-border-color);
+  background: var(--studio-surface-2);
+  color: var(--studio-fg);
+  transition: background-color 120ms ease, border-color 120ms ease, color 120ms ease;
+  cursor: pointer;
+}
+
+[data-chrome="playground"] .s-btn:hover {
+  background: var(--studio-surface-3);
+  border-color: rgba(255,255,255,0.14);
+}
+
+[data-chrome="playground"] .s-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+[data-chrome="playground"] .s-btn-active {
+  background: var(--studio-accent-soft);
+  border-color: var(--studio-border-active);
+  color: var(--studio-accent-light);
+}
+
+[data-chrome="playground"] .s-btn-active:hover {
+  background: rgba(139,92,246,0.22);
+}
+
+[data-chrome="playground"] .s-btn-pressed {
+  background: var(--studio-active);
+  border-color: var(--studio-accent-light);
+  color: var(--studio-active-fg);
+  box-shadow: 0 0 0 1px rgba(167,139,250,0.45), 0 2px 8px rgba(139,92,246,0.35);
+}
+
+[data-chrome="playground"] .s-btn-pressed:hover {
+  background: #9d6df7;
+  border-color: #c4b5fd;
+}
+
+[data-chrome="playground"] .s-divider {
+  background: var(--studio-border-color);
+}
+
+[data-chrome="playground"] .s-label {
+  color: var(--studio-fg-muted);
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+[data-chrome="playground"] .s-section-heading {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.5rem 0.75rem 0.25rem;
+  color: var(--studio-fg-muted);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  border-bottom: 1px solid var(--studio-border-color);
+  flex-shrink: 0;
+}
+
+[data-chrome="playground"] .s-inspector-section {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  border-bottom: 1px solid var(--studio-border-color);
+}
+
+[data-chrome="playground"] .s-inspector-body {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 0.5rem 0.75rem 0.625rem;
+  min-height: 0;
+}
+
+/* Chromeless scrollbar for studio panels */
+[data-chrome="playground"] *::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+
+[data-chrome="playground"] *::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+[data-chrome="playground"] *::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,0.12);
+  border-radius: 2px;
+}
+
+[data-chrome="playground"] *::-webkit-scrollbar-thumb:hover {
+  background: rgba(255,255,255,0.22);
+}
+
+/* Studio tool-rail: fixed 56px wide, dark */
+[data-chrome="playground"] .playground-tool-rail {
+  background: var(--studio-surface);
+  border-right: 1px solid var(--studio-border-color);
+}
+
+/* Studio header */
+[data-chrome="playground"] .playground-header {
+  background: var(--studio-surface);
+  border-bottom: 1px solid var(--studio-border-color);
+  box-shadow: 0 1px 8px rgba(0,0,0,0.2);
+}
+
+/* Canvas stage background */
+[data-chrome="playground"] .playground-stage {
+  background: var(--studio-canvas-bg) !important;
+}
+
+/* Studio inspector panel */
+[data-chrome="playground"] .studio-inspector {
+  background: var(--studio-surface) !important;
+  border-left: 1px solid var(--studio-border-color) !important;
+  border-left-width: 1px !important;
+}
+
+/* Status bar */
+[data-chrome="playground"] .editor-status {
+  background: var(--studio-surface) !important;
+  border-top: 1px solid var(--studio-border-color) !important;
+  color: var(--studio-fg-muted) !important;
+}
+
+/* Mobile toolbar */
+[data-chrome="playground"] .playground-toolbar {
+  background: var(--studio-surface) !important;
+  border-top: 1px solid var(--studio-border-color) !important;
+}
+
+/* Studio hit button overrides in dark mode */
+[data-chrome="playground"] .studio-hit:not(.s-btn-pressed):not(.s-btn-active) {
+  background: var(--studio-surface-2);
+  border-color: var(--studio-border-color);
+  color: var(--studio-fg);
+}
+
+[data-chrome="playground"] .studio-hit:not(.s-btn-pressed):not(.s-btn-active):hover {
+  background: var(--studio-surface-3);
+  border-color: rgba(255,255,255,0.14);
+}
+
+[data-chrome="playground"] .studio-hit-sm:not(.s-btn-pressed):not(.s-btn-active) {
+  background: var(--studio-surface-2);
+  border-color: var(--studio-border-color);
+  color: var(--studio-fg);
+}
+
+[data-chrome="playground"] .studio-hit-sm:not(.s-btn-pressed):not(.s-btn-active):hover {
+  background: var(--studio-surface-3);
+  border-color: rgba(255,255,255,0.14);
+}
+
+[data-chrome="playground"] dialog .studio-hit,
+[data-chrome="playground"] dialog .studio-hit-sm {
+  background: var(--soft);
+  border-color: var(--line);
+  color: var(--fg);
+}
+
+[data-chrome="playground"] dialog .studio-hit:hover,
+[data-chrome="playground"] dialog .studio-hit-sm:hover {
+  background: #e2e8f0;
+  border-color: #cbd5e1;
+}
+
+/* Tool divider in dark rail */
+[data-chrome="playground"] .playground-tool-rail .editor-tool-divider {
+  background: var(--studio-border-color);
+  width: 1.5rem;
+  height: 1px;
+  margin-block: 0.25rem;
+}
+
+/* Minimap dark styling */
+[data-chrome="playground"] .studio-minimap button {
+  background: var(--studio-surface-2);
+  border-color: var(--studio-border-color);
+  color: var(--studio-fg);
+  border-radius: var(--studio-radius-sm);
+}
+
+[data-chrome="playground"] .studio-minimap canvas {
+  border: 1px solid var(--studio-border-color) !important;
+  border-radius: var(--studio-radius-sm);
+  background: var(--studio-surface) !important;
+}
+
+/* Studio layer panel inside inspector */
+[data-chrome="playground"] .studio-inspector section {
+  border-color: var(--studio-border-color) !important;
+}
+
+/* Focus visible in studio */
+[data-chrome="playground"] *:focus-visible {
+  outline: 2px solid var(--studio-accent);
+  outline-offset: 2px;
+  border-radius: var(--studio-radius-sm);
+}
+
+/* Studio scrollbar for layer/palette panels */
+[data-chrome="playground"] .studio-inspector aside,
+[data-chrome="playground"] .studio-inspector div {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,0.12) transparent;
+}
+
 .playground-header {
   padding-top: max(0.5rem, env(safe-area-inset-top, 0px));
 }
@@ -203,11 +465,12 @@ body {
   overscroll-behavior: contain;
 }
 
-/* Vertical rail: short earth rules between tool groups. */
+/* Vertical rail: short dividers between tool groups. */
 .playground-tool-rail .editor-tool-divider {
   width: 1.75rem;
-  height: var(--studio-border, 3px);
+  height: 1px;
   margin-block: 0.15rem;
+  background: var(--studio-border-color, rgba(255,255,255,0.08));
 }
 
 .editor-mobile-view {
@@ -402,7 +665,24 @@ body {
 
 @keyframes pxlb-bob {
   0%, 100% { transform: translateY(0) rotate(0deg); }
-  50% { transform: translateY(-2px) rotate(-1deg); }
+  50% { transform: translateY(-2px) rotate(-1.5deg); }
+}
+
+@keyframes pxlb-breathe {
+  0%, 100% { scale: 1; }
+  50% { scale: 1.02 0.98; }
+}
+
+@keyframes pxlb-bounce {
+  0%, 100% { transform: translateY(0); }
+  40% { transform: translateY(-6px); }
+  60% { transform: translateY(-2px); }
+}
+
+@keyframes pxlb-wiggle {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(-3deg); }
+  75% { transform: rotate(3deg); }
 }
 
 .pixel-view-canvas {

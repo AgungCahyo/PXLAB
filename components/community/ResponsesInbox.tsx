@@ -77,20 +77,13 @@ export function ResponsesInbox({
     return (
       <SocialEmptyState
         className="mt-6 rounded-3xl border border-slate-200/80 bg-card py-12 shadow-sm"
-        icon={
-          <div className="relative">
-            <Bell width={28} height={28} />
-          </div>
-        }
+        illustration="sleeping"
         title={t.emptyTitle[lang]}
         description={t.emptyBody[lang]}
         action={
-          <div className="grid justify-items-center gap-4">
-            <PixelCatEmptyState variant="sleeping" size="lg" className="mb-0" />
-            <Link href={href(lang, "/explore")} className={socialButtonClass({ variant: "solid" })}>
-              {socialCopy.nav.explore[lang]}
-            </Link>
-          </div>
+          <Link href={href(lang, "/explore")} className={socialButtonClass({ variant: "solid" })}>
+            {socialCopy.nav.explore[lang]}
+          </Link>
         }
       />
     )

@@ -1,7 +1,6 @@
 import type { Metadata } from "next"
 import { notFound } from "next/navigation"
 import { Suspense } from "react"
-import { PixelCatDecoration } from "@/components/brand/PixelCatDecoration"
 import {
   ExploreFilters,
   ExploreFollowingGuest,
@@ -95,16 +94,7 @@ export default async function ExplorePage({
 
   return (
     <div className="mx-auto w-full min-w-0 max-w-6xl px-3 py-4 sm:px-6 sm:py-6 lg:px-10">
-      <header className="relative mb-4 overflow-hidden rounded-3xl border border-slate-200/80 bg-card p-5 shadow-sm sm:mb-6 sm:p-6">
-        <PixelCatDecoration variant="looking" size="lg" position="top-right" className="opacity-90" />
-        <div className="relative z-[1] max-w-2xl pr-16 sm:pr-24">
-          <p className="text-[12px] font-semibold uppercase tracking-[0.16em] text-[#6355d8]">PXLB</p>
-          <h1 className="mt-2 text-[24px] font-semibold tracking-tight text-fg sm:text-[30px]">
-            {copy.exploreTitle[lang]}
-          </h1>
-          <p className="mt-2 max-w-xl text-[14px] leading-relaxed text-muted">{copy.exploreIntro[lang]}</p>
-        </div>
-      </header>
+      <h1 className="sr-only">{copy.exploreTitle[lang]}</h1>
 
       <ExploreFilters lang={lang} category={category} q={q} feed={feed} scope={scope} />
 

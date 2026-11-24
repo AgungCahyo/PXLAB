@@ -25,11 +25,13 @@ type Props = {
 }
 
 const field =
-  "h-8 w-full min-w-0 border-[2px] border-earth bg-bg px-1.5 text-[12px] tabular-nums text-fg"
+  "h-8 w-full min-w-0 rounded-md border border-white/10 bg-[#231f35] px-1.5 text-[12px] tabular-nums text-[#e8e3f8]"
 const toggle = (on: boolean) =>
   cn(
-    "studio-hit-sm inline-flex flex-1 items-center justify-center border-[2px] border-earth text-[12px]",
-    on ? "bg-brick text-white" : "bg-bg text-fg hover:bg-soft",
+    "studio-hit-sm inline-flex flex-1 items-center justify-center rounded-md border text-[12px] transition-colors",
+    on
+      ? "s-btn-pressed border-transparent"
+      : "s-btn border-transparent",
   )
 
 /** Number input that commits on blur/Enter so typing "12" does not apply "1" first. */
@@ -63,7 +65,7 @@ function NumberField({
     setDraft(String(clamped))
   }
   return (
-    <label className="grid min-w-0 gap-0.5 text-[11px] text-muted">
+    <label className="grid min-w-0 gap-0.5 text-[11px] text-[#e8e3f8]/55">
       {label}
       <input
         type="number"
@@ -86,7 +88,7 @@ function NumberField({
 function Group({ title, children }: { title: string; children: ReactNode }) {
   return (
     <fieldset className="grid gap-2 border-0 p-0">
-      <legend className="mb-1 text-[11px] font-medium uppercase tracking-wide text-muted">{title}</legend>
+      <legend className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-[#e8e3f8]/55">{title}</legend>
       {children}
     </fieldset>
   )
@@ -186,8 +188,8 @@ export function TextInspector({ lang, text, palette, onChange }: Props) {
                 title={swatch}
                 onClick={() => onChange({ color: swatch })}
                 className={cn(
-                  "pixel-swatch !h-auto !min-h-0 !w-full !min-w-0 aspect-square border-2",
-                  text.color === swatch ? "border-fg" : "border-earth",
+                  "pixel-swatch !h-auto !min-h-0 !w-full !min-w-0 aspect-square rounded border",
+                  text.color === swatch ? "border-white ring-2 ring-[#8b5cf6]" : "border-white/15",
                 )}
                 style={{ backgroundColor: swatch }}
               />

@@ -224,7 +224,7 @@ export function CreationCommunity({
       className="mt-8 border-t border-slate-200/80 pt-6"
       aria-labelledby="conversation-heading"
     >
-      <h2 id="conversation-heading" className="text-[17px] font-semibold text-fg">
+      <h2 id="conversation-heading" className="text-[15px] font-medium text-fg">
         {copy.commentsTitle[lang]}
         {headingCount > 0 ? <span className="ml-1 text-muted">({headingCount})</span> : ""}
       </h2>
