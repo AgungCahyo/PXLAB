@@ -12,13 +12,13 @@
 
 > **Document purpose:** Product source of truth for PXLB's community MVP and the recorded defaults that bound implementation.
 > **Status:** Current / source of truth. Factual drift corrected 2026-11-23 from code and tests; product direction unchanged.
-> **Updated:** 2026-11-24.
+> **Updated:** 2026-11-25.
 > **Implementation evidence:** VERIFIED IN CODE — `lib/pixel.ts`, `lib/validations/creation.ts`, `components/creations/PlaygroundForm.tsx`, `features/profiles/actions.ts`, `features/auth/actions.ts`; VERIFIED BY TEST — `tests/pixel-canvas-size.test.ts`, `tests/palette-ux.test.ts`, `tests/profile-avatar.test.ts`.
 > **Completed:** Playground source/PNG persistence, fork lineage, Artwork Conversation, community metadata, avatars, Google OAuth, Studio tools/layers/import/export.
-> **Open:** data retention policy, optional product decisions for Challenge/Community Assets/realtime; operator migration and production QA.
+> **Open:** data retention policy, Challenge/Pixel Assets decisions recorded; detailed specs and implementation not started; realtime remains vision-only; operator migration and production QA.
 > **Dependencies:** `TECHNICAL-SPEC.md`, `IMPLEMENTATION-PLAN.md`, `PIXEL-ART-DESIGN-SYSTEM.md`.
-> **Next action:** Operator applies migrations and completes the signed-in launch walkthrough; owner decides any new collaboration feature before it enters this spec.
-> **Status labels:** VERIFIED IN CODE / VERIFIED BY TEST / VERIFIED IN BROWSER / VERIFIED IN PRODUCTION / OPERATOR ACTION REQUIRED / PROPOSED — AWAITING OWNER DECISION. Source-level proof is not browser or production proof.
+> **Next action:** Follow-up specs are signed off; the A2 server fork gate is done. Request separate go-ahead before A3–C6 or B6; operator still applies migrations and completes the signed-in launch walkthrough.
+> **Status labels:** VERIFIED IN CODE / VERIFIED BY TEST / VERIFIED IN BROWSER / VERIFIED IN PRODUCTION / OPERATOR ACTION REQUIRED / PROPOSED — AWAITING OWNER DECISION / APPROVED — SIGNED OFF / DECIDED — PRODUCT ONLY. Source-level proof is not browser or production proof. Neither `DECIDED — PRODUCT ONLY` nor a signed-off spec is implementation authorization by itself.
 
 This document is the product source of truth. [TECHNICAL-SPEC.md](TECHNICAL-SPEC.md) covers architecture. [IMPLEMENTATION-PLAN.md](IMPLEMENTATION-PLAN.md) covers how the existing app migrates. Visual identity lives in [PIXEL-ART-DESIGN-SYSTEM.md](PIXEL-ART-DESIGN-SYSTEM.md).
 
@@ -85,9 +85,14 @@ These decisions are the current source of truth:
 | Canonical domain | `https://pxlb.fun` (DNS/Vercel cutover required; legacy `commons.agungcahyo.my.id` redirects until retired) |
 | Community MVP collaboration | Asynchronous publish and gallery; not live multiplayer editing |
 | Common Space collaboration | Later phase; sparse giant canvas; realtime only after persistence works |
+| Remix policy (decided, not implemented) | Published works are remixable with mandatory source attribution; enforced in UI, server, database, and Storage |
+| Challenge model (decided, not implemented) | Separate `challenges` entity; open challenges first; submissions are forked creations with template + challenge-creator + remix-chain attribution |
+| Pixel Assets (decided, not implemented) | Copy assets into documents with stored provenance; mandatory credit; dedicated report target |
 | Languages | Indonesian (default, unprefixed URLs) and English (`/en`) |
 | Visual identity | Colorful pixel-art UI on a light/white Paper background; see PIXEL-ART-DESIGN-SYSTEM.md |
 | Tagline | Create. Explore. Share. / Buat. Jelajah. Bagikan. |
+
+Rows marked **decided, not implemented** are recorded product direction only. They are not shipped capabilities, launch gates, or permission to write code.
 
 ---
 
@@ -137,6 +142,8 @@ The previous principle “visible collective progress as the center” is retire
 - **Explore:** the public gallery of published creations.
 - **Appreciation:** one fixed reaction type per member per creation; not a ranking.
 - **Fork:** a new personal draft copied from a published creation, retaining `forked_from`.
+- **Challenge (decided, not implemented):** a separate post-MVP activity with an owner, an open topic, optional deadline, and submissions that fork a template creation.
+- **Pixel Asset (decided, not implemented):** a reusable pixel element that is copied into a member’s document with stored provenance and mandatory credit. Not an arbitrary file upload.
 - **Common Space:** one later shared giant pixel world. Not the product center.
 - **Legacy creation:** an existing `text`, `visual`, `idea`, or `story` work. Kept in the database and still viewable; not the primary Create path.
 - **Report:** a member-submitted safety/moderation report.
@@ -257,6 +264,7 @@ Already implemented for creations, comments, and legacy space elements; keep.
 Required:
 
 - Members can report creations and comments. Reporting Common Space content returns when that layer ships; the existing `space_element` report target stays in the schema.
+- Planned (decided K9, not implemented): a dedicated Pixel Asset report target joins the moderation chain. Until its additive migration ships, the live target list stays `creation`, `comment`, `space_element`.
 - Admin can review reports.
 - Admin can hide content.
 - Hidden content must not be publicly visible.
@@ -271,7 +279,19 @@ Moderation states:
 
 Appeals stay manual with the project owner; there is no in-app appeal form.
 
-### 6.6 Common Space (vision; not community MVP; not a launch requirement)
+### 6.6 Planned post-MVP community features (decided, not implemented)
+
+K1–K9 are recorded as product decisions in `docs/master-plan/PREPARATION-REMIX-CHALLENGE-ASSETS.md` §5. They are not shipped, not launch gates, and not implementation authorization.
+
+**A. Remix.** Every `published` creation may be remixed. Source attribution is mandatory and stays visible in both directions (detail source link and published remix list). The rule is enforced in UI, Server Action, database constraints/policies, and Storage access for editor source. There is no opt-in or approval flow.
+
+**B. Challenge.** A separate `challenges` entity. The first release is an Open Challenge: members fork a template into an ordinary creation. Admin/owner opens and closes the challenge; the deadline is optional; submissions remain editable until close. Provenance links the template, the challenge creator, and the remix chain. Guided/protected-region challenges are not in this release.
+
+**C. Pixel Assets.** Reusable pixel elements are copied into the member’s document; provenance is stored with the copy and credit is mandatory. Favorites, packs, recent, and featured remain discovery details for the follow-up spec. A dedicated asset report target with admin hide/restore is required. The product name is Pixel Assets, not Stamp.
+
+Detailed schema, RLS, Storage, copy, and test gates are in the follow-up specs (S0.4): `SPEC-REMIX.md`, `SPEC-CHALLENGE.md`, `SPEC-PIXEL-ASSETS.md` — signed off 2026-11-25. A2 is done; A3–C6 still need a separate go-ahead.
+
+### 6.7 Common Space (vision; not community MVP; not a launch requirement)
 
 Common Space is a **later** product layer: people make giant pixel art on one shared canvas that can grow without a small fixed world size.
 
@@ -426,6 +446,7 @@ Explicitly excluded from the community MVP:
 - Public follower counts, follow rankings, or algorithmic follow feeds (one-way follow + chronological Following filter on Explore are in scope).
 - Real-time multiplayer canvas editing.
 - The giant/unlimited Common Space world, tile persistence, world viewport, stroke conflict handling, and canvas realtime. These stay vision-only until a post-launch phase. Community launch must not wait on them.
+- Challenge and Pixel Assets. Their product decisions are recorded, but both are post-MVP work and are not community-MVP launch gates.
 - Multiple rooms/worlds.
 - Professional image editor, animation timeline, and a non-indexed per-pixel alpha rewrite. Indexed layers/groups, eyedropper and fill are already shipped and are not in this exclusion.
 - AI generation.
@@ -473,6 +494,9 @@ The following are implementation details that should be decided deliberately. **
 - Editor source validation (B2, not B1). **Default recorded:** format `version` is an integer; versions **1–4** are accepted (v2 layers, v3 opacity/blend/lockAlpha, v4 groups), and **v1 stays readable**. On load, reject unsupported versions with a clear error. Encoded source ≤ **512 KiB**. RLE must decode to exactly `width * height` pixels from the source document (no truncate, no overrun, no assumed 512). Every index must be in `[0, palette.length)`. Palette entries are `#RRGGBB`; `palette[0]` is Paper; max **256** colors. `width` / `height` must be integers in 8–1024 with area ≤ 512×512, and must match the creation header. Integrity on load: verify version, size ceiling, decoded length, and index bounds before painting the canvas. Do not open a work from PNG if source fails these checks. VERIFIED IN CODE (`lib/pixel.ts:194-212`, `lib/validations/creation.ts:171-188`).
 - Unpublish. **Default recorded:** owner-only action sets `status = draft`. Does not delete the row, source, PNG, comments, or appreciations. Public queries still require `status = published`, so the work leaves Explore, public profile, and public detail. `published_at` remains the last publish time. Re-publish sets `status = published` and updates `published_at`. Distinct from admin `hidden`. Members still cannot set `hidden`.
 - Fork of pixel work. **Default recorded:** copies **editor source** (then regenerates PNG) into a new owner draft with `forked_from` set. Do not fork from PNG alone. Source creation must be published.
+- Remix policy (K1/K2). **DECIDED — PRODUCT ONLY; NOT IMPLEMENTED:** published-only remix with mandatory attribution, enforced in UI, Server Action, database, and Storage. No per-work opt-in or approval field.
+- Challenge (K3–K6). **DECIDED — PRODUCT ONLY; NOT IMPLEMENTED:** separate `challenges` entity; Open Challenge first; minimal owner-admin lifecycle; provenance to template, challenge creator, and remix chain.
+- Pixel Assets (K7–K9). **DECIDED — PRODUCT ONLY; NOT IMPLEMENTED:** product name Pixel Assets; copy + provenance; mandatory credit; dedicated asset report target and full moderation chain.
 - Common Space world. **Default recorded (phase B6 only, after community launch is allowed to proceed without it):** sparse tiles; tiles exist only where drawn; camera/viewport loads nearby tiles; not a single 512 world. “Unlimited” is grow-on-demand with a practical anti-abuse extent of **±32,768 pixels** on each axis (subject to revision before that phase). Tile size 32 × 32 remains the storage chunk. Any authenticated member may draw anywhere. Last accepted server commit wins. Realtime after persistence. Rate limits, max pixels per stroke, and action retention are specified in that later phase — not now. **Not a community-MVP task.**
 - Common Space during the community MVP. **Default recorded:** do not add tile tables, stroke RPCs, or realtime. Do not treat `/space` as a launch gate. Keep the route as a secondary later-canvas page. Do not drop `space_elements` or `SpaceBoard`. Playground owns PixelBoard; `NEXT_PUBLIC_PIXEL_CANVAS_PROTOTYPE` no longer mounts a drawing product on `/space`.
 - Reactions. **Default recorded:** one type `appreciate`, unique per member and creation. Count is shown on the work (Artwork Conversation cluster); Explore is not sorted by it. Not a substitute for a comment. No per-comment likes in B4.

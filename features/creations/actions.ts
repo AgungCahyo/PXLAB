@@ -573,11 +573,13 @@ export async function forkCreationAction(
 
   const source = await getPublishedCreation(parsed.data.creation_id)
   if (!source) return { error: "not_found" }
-  if (source.user_id === profile.id) {
-    redirect(href(lang, `/create/${source.id}`))
-  }
+  // A2: canForkCreation is the single server-side fork permission decision.
+  // Self-fork is routing after the gate, not a separate permission branch.
   if (!canForkCreation({ sessionUserId: profile.id, creationStatus: source.status })) {
     return { error: "forbidden" }
+  }
+  if (source.user_id === profile.id) {
+    redirect(href(lang, `/create/${source.id}`))
   }
   if (!isCreationType(source.type)) return { error: "invalid_input" }
 

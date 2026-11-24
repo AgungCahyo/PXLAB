@@ -7,13 +7,13 @@
 
 > **Document purpose:** Architecture and data-model source of truth for the existing Next.js + Supabase application.
 > **Status:** Current / source of truth. Factual drift corrected 2026-11-24 from code, migrations and tests; architecture unchanged.
-> **Updated:** 2026-11-24.
+> **Updated:** 2026-11-25.
 > **Implementation evidence:** VERIFIED IN CODE — `lib/pixel.ts`, `lib/validations/creation.ts`, `features/auth/actions.ts`, `features/profiles/actions.ts`, `components/creations/PlaygroundForm.tsx`; VERIFIED BY TEST — `tests/pixel-canvas-size.test.ts`, `tests/palette-ux.test.ts`, `tests/profile-avatar.test.ts`; VERIFIED IN CODE (migrations) — `supabase/migrations/20261117006000_avatars_bucket.sql`, `20261118009000_oauth_profile_meta.sql`, `20261119011000_unified_onboarding.sql`.
 > **Completed:** RLE source + PNG covers in `pixel-creations`, RLS/server validation, Server Actions, Google OAuth, avatar bucket and generated/photo avatars, V1–V4 indexed source.
-> **Open:** operator migration application, production RLS/storage verification, data retention policy; no realtime or `canvas_tiles`.
+> **Open:** operator migration application, production RLS/storage verification, data retention policy, follow-up specs for K1–K9; no realtime or `canvas_tiles`.
 > **Dependencies:** `PRODUCT-SPEC.md`, `IMPLEMENTATION-PLAN.md`, `docs/studio/01_SYSTEM_AUDIT.md` for current studio inventory.
-> **Next action:** Operator applies migrations and verifies storage policies in production; owner decides any future collaboration feature before it enters this spec.
-> **Status labels:** VERIFIED IN CODE / VERIFIED BY TEST / VERIFIED IN BROWSER / VERIFIED IN PRODUCTION / OPERATOR ACTION REQUIRED / PROPOSED — AWAITING OWNER DECISION. Source-level proof is not browser or production proof.
+> **Next action:** Follow-up specs are signed off; the A2 server fork gate is done. Request separate go-ahead before A3–C6 or B6; operator still applies migrations and verifies production storage policies.
+> **Status labels:** VERIFIED IN CODE / VERIFIED BY TEST / VERIFIED IN BROWSER / VERIFIED IN PRODUCTION / OPERATOR ACTION REQUIRED / PROPOSED — AWAITING OWNER DECISION / APPROVED — SIGNED OFF / DECIDED — PRODUCT ONLY. Source-level proof is not browser or production proof. Neither `DECIDED — PRODUCT ONLY` nor a signed-off spec is implementation authorization by itself.
 
 ---
 
@@ -257,7 +257,17 @@ Client: collapsed composer; optimistic insert of the member’s comment/reply; s
 
 Share is client-only (clipboard / `navigator.share` of the public `/creation/[id]` URL). Not a database feature.
 
-Reports still allow `target_type` `creation` | `comment` | `space_element`. A later canvas-action target is added only with the giant-canvas phase.
+Reports still allow `target_type` `creation` | `comment` | `space_element`. A later canvas-action target is added only with the giant-canvas phase. K9 decides an additional `asset` target for Pixel Assets, but it does not exist until its additive migration and the full moderation chain are implemented.
+
+### 6.6 Planned post-MVP tables and storage (decided, not created)
+
+K1–K9 are recorded in `docs/master-plan/PREPARATION-REMIX-CHALLENGE-ASSETS.md` §5. Nothing in this section exists in migrations or Storage yet. Additive migrations only; do not rewrite old migrations.
+
+- **Remix enforcement (K1/K2):** keep `forked_from` and published-source validation. Because K1 is public remix, no per-work policy column or approval table is planned. Still align `canForkCreation`, `forkCreationAction`, `creations_validate_fork`, `creations_insert_own`, and published `source.json` Storage SELECT so the rule cannot be bypassed by direct INSERT or object access.
+- **`challenges` (K3–K6, planned):** separate entity with owner, topic/title, open-closed state, optional deadline, and timestamps. Admin/owner opens and closes; submissions are ordinary `creation` rows forked from a template. Provenance must retain the template, the challenge creator, and the remix chain. Guided protected regions are out of this release.
+- **Pixel Assets (K7–K9, planned):** metadata table for creator, provenance, mandatory credit text, moderation status, and Storage key, plus a dedicated asset path/bucket with MIME and size limits. Using an asset copies pixels into the member’s document and stores provenance with the copy. No product-facing `stamp` label.
+- **Reports:** add one `asset` target with admin hide/restore only as a complete chain: DB CHECK and visibility trigger, `REPORT_TARGET_TYPES`, Zod schema, action validation, moderation RPCs, and admin copy.
+- Exact columns, indexes, RLS grants, migration filenames, and copy keys are in `SPEC-REMIX.md`, `SPEC-CHALLENGE.md`, and `SPEC-PIXEL-ASSETS.md` (S0.4) — signed off 2026-11-25. A2 is done; do not start A3–C6 without a separate go-ahead.
 
 ---
 
@@ -293,6 +303,7 @@ Enable RLS on every application table. Existing policies stay. New pixel Storage
 - Owner insert: `user_id = auth.uid()`, `status = draft`.
 - Owner update/delete: only own rows. Members cannot set `hidden` or change `user_id` / `type`.
 - Admin moderation through security definer functions.
+- Planned K2 follow-up: published-only fork and `forked_from` integrity must also hold in triggers/policies and published `source.json` Storage SELECT, not only in the Server Action (§6.6).
 
 ### Space elements (legacy)
 
@@ -303,7 +314,7 @@ Enable RLS on every application table. Existing policies stay. New pixel Storage
 
 ### Comments / reactions / reports
 
-Unchanged from Phase 5.
+Unchanged from Phase 5. The planned K9 `asset` target is not live until its additive migration and admin RPC chain ship (§6.6).
 
 **Important:** test policies using at least two ordinary accounts and one admin account. Verify both allowed and denied operations.
 
@@ -412,6 +423,8 @@ Recorded default:
 Avatars remain deferred. Do not open the bucket to arbitrary JPEG/WebP uploads in this phase.
 
 Legacy note: Phase 3 deferred cover uploads for SVG visuals; pixel type is the first cover path. PNG is still not a substitute for editor source.
+
+Planned K7–K9 (not created): Pixel Assets use a dedicated asset path/bucket with validated MIME and size limits. A copy stores provenance in the member’s document and displays mandatory credit. Do not turn `pixel-creations` into a public asset library. Exact bucket, key shape, and policy belong to S0.4.
 
 ---
 
@@ -523,11 +536,21 @@ Before implementation, record:
 - Pixel source schema (`rle-index`), PNG generation, and Storage policies.
 - Playground canvas constants (already in `lib/pixel.ts`).
 - Common Space sparse-tile schema — only when that phase starts.
+- Challenge and Pixel Assets detailed schema, RLS, Storage, copy, and test gates — follow-up spec S0.4 for K1–K9.
 - Rate limits and content limits.
 - Admin provisioning procedure.
 - Data deletion and retention behavior.
 
 Do not make security-sensitive assumptions silently.
+
+### Recorded 2026-11-25 — K1–K9 product decisions
+
+Source: `docs/master-plan/PREPARATION-REMIX-CHALLENGE-ASSETS.md` §5. Status: `DECIDED — PRODUCT ONLY; NOT IMPLEMENTED`.
+
+- Remix: published + mandatory attribution; full enforcement in UI, Server Action, database, and Storage; no opt-in or approval flow.
+- Challenge: separate entity; Open Challenge first; minimal owner-admin lifecycle; provenance to template, challenge creator, and remix chain.
+- Pixel Assets: product name fixed; copy + provenance; mandatory credit; dedicated `asset` report target with the full moderation chain.
+- Follow-up spec work: exact schema, RLS, Storage, copy keys, and test gates (S0.4) before any code.
 
 ### Recorded at Phase 1 setup
 

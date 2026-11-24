@@ -51,5 +51,14 @@ describe("edit existing work instead of copying it", () => {
   it("opens the original when the owner tries to fork their own work", () => {
     expect(fork).toMatch(/source\.user_id === profile\.id/)
     expect(fork).toMatch(/\/create\/\$\{source\.id\}/)
+    const forkAction = fork.slice(
+      fork.indexOf("export async function forkCreationAction"),
+      fork.indexOf("async function downloadPixelObject"),
+    )
+    expect(forkAction.match(/canForkCreation\(/g)).toHaveLength(1)
+    expect(forkAction.indexOf("canForkCreation(")).toBeLessThan(
+      forkAction.indexOf("source.user_id === profile.id"),
+    )
+    expect(forkAction).not.toMatch(/canMutateCreation|canDownloadCreationPng|allowPngDownload/)
   })
 })

@@ -80,7 +80,7 @@ export function WorksSkeleton() {
           <div key={i} className="h-10 animate-pulse rounded-full bg-slate-100" style={{ width: w }} />
         ))}
       </div>
-      <ul className="mt-6 grid min-w-0 grid-cols-2 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 lg:gap-5">
+      <ul className="mt-6 grid min-w-0 grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 lg:gap-5">
         {Array.from({ length: 8 }, (_, index) => (
           <li key={index} className="min-w-0 overflow-hidden rounded-2xl border border-slate-200/80 bg-card p-3 shadow-sm">
             <div className="aspect-square animate-pulse rounded-xl bg-slate-100" />

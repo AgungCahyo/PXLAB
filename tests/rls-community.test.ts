@@ -23,6 +23,9 @@ describe("community authorization", () => {
     expect(canCommentOnCreation({ sessionUserId: memberA, creationStatus: "draft" })).toBe(false)
     expect(canReactToCreation({ sessionUserId: memberA, creationStatus: "hidden" })).toBe(false)
     expect(canForkCreation({ sessionUserId: memberA, creationStatus: "published" })).toBe(true)
+    expect(canForkCreation({ sessionUserId: memberA, creationStatus: "draft" })).toBe(false)
+    expect(canForkCreation({ sessionUserId: memberA, creationStatus: "hidden" })).toBe(false)
+    expect(canForkCreation({ sessionUserId: null, creationStatus: "published" })).toBe(false)
   })
 
   it("lets only the comment owner delete it", () => {

@@ -1,17 +1,18 @@
-# Persiapan Remix, Challenge, dan Community Assets — Brief Keputusan
+# Persiapan Remix, Challenge, dan Pixel Assets — Brief Keputusan
 
-**Document:** `docs/master-plan/PREPARATION-REMIX-CHALLENGE-ASSETS.md`  
-**Purpose:** Mengaudit status kode, merangkum keputusan owner yang mem-blok, dan mengusulkan urutan kerja bertahap untuk A–C.  
-**Status:** PREPARATION ONLY — NOT IMPLEMENTATION AUTHORIZATION  
-**Updated:** 2026-11-25  
-**Source of truth:** `docs/PRODUCT-SPEC.md`, `docs/TECHNICAL-SPEC.md`, `docs/IMPLEMENTATION-PLAN.md` (§14/§15)  
-**Backlog input:** `docs/master-plan/arah-pengembangan-pxlb.md` — backlog/vision, bukan source of truth  
-**Scope:** A. Remix, B. Challenge, C. Community Assets / Pixel Assets  
-**Out of scope:** D. Kolaborasi langsung — tetap `VISION ONLY — NOT APPROVED FOR IMPLEMENTATION`  
-**Dependencies:** fork/attribution yang ada, pipeline publish creation, moderation/report, keputusan owner K1–K9  
-**Next action:** Owner memilih K1–K9. Setelah itu, perbarui spec sumber sebelum ada kode, migrasi, dependency, atau perubahan test.
+**Document:** `docs/master-plan/PREPARATION-REMIX-CHALLENGE-ASSETS.md`<br />
+**Purpose:** Mengaudit status kode, merangkum keputusan owner yang mem-blok, dan mengusulkan urutan kerja bertahap untuk A–C.<br />
+**Status:** SPECS SIGNED OFF — A2 AUTHORIZED AND DONE — A3–C6 NOT AUTHORIZED<br />
+**Updated:** 2026-11-25<br />
+**Source of truth:** `docs/PRODUCT-SPEC.md`, `docs/TECHNICAL-SPEC.md`, `docs/IMPLEMENTATION-PLAN.md` (§14/§15)<br />
+**Backlog input:** `docs/master-plan/arah-pengembangan-pxlb.md` — backlog/vision, bukan source of truth<br />
+**Scope:** A. Remix, B. Challenge, C. Pixel Assets<br />
+**Out of scope:** D. Kolaborasi langsung — tetap `VISION ONLY — NOT APPROVED FOR IMPLEMENTATION`<br />
+**Dependencies:** fork/attribution yang ada, pipeline publish creation, moderation/report<br />
+**Decisions:** K1–K9 diputus owner pada 2026-11-25 — lihat §5<br />
+**Next action:** Spec S0.4 ditandatangani 2026-11-25; A1/B1/C1 dan A2 selesai. Minta go-ahead terpisah untuk A3–A5, B2–B6, atau C2–C6; jangan mulai migrasi, policy, dependency, atau UI hanya dari brief ini.
 
-> Dokumen ini bukan izin implementasi. Tidak ada kode aplikasi, migrasi, endpoint, dependency, atau test yang boleh dibuat dari brief ini.
+> Keputusan produk di §5 bukan izin implementasi. Tidak ada kode aplikasi, migrasi, endpoint, dependency, atau test yang boleh dibuat dari brief ini.
 >
 > `VERIFIED IN CODE` / `VERIFIED BY TEST` hanya berarti bukti source atau assertion ada. Bukan bukti browser, bukan bukti produksi, dan bukan klaim fitur selesai.
 >
@@ -23,12 +24,12 @@
 
 | Area | Status saat ini | Yang terverifikasi | Gap utama | Gate |
 |---|---|---|---|---|
-| A. Remix | **PARTIAL — VERIFIED IN CODE / VERIFIED BY TEST** | Fork action, salinan source + PNG, `forked_from`, atribusi dua arah, izin login + published | Tidak ada kebijakan per-karya; check server masih bisa dilewati via INSERT/storage RLS | K1, K2 |
-| B. Challenge | **NOT STARTED — VERIFIED ABSENCE** | Tidak ada tabel, endpoint, action, atau UI Challenge. Fondasi creation/fork/moderation tersedia | Semua aturan lifecycle/ownership/submission belum diputus | K3–K6 |
-| C. Community Assets | **NOT STARTED — VERIFIED ABSENCE** | Tidak ada tabel `assets`/`stamps`, endpoint, panel, atau bucket aset. `stampBrush` hanya helper internal | Nama, provenance, lisensi, copy vs reference, dan target moderasi belum diputus | K7–K9 |
+| A. Remix | **PARTIAL — VERIFIED IN CODE / VERIFIED BY TEST** | Fork action, salinan source + PNG, `forked_from`, atribusi dua arah, izin login + published | Kebijakan publik + atribusi dan full enforcement sudah diputus; spec/implementasi belum | K1, K2 — DECIDED |
+| B. Challenge | **NOT STARTED — VERIFIED ABSENCE** | Tidak ada tabel, endpoint, action, atau UI Challenge. Fondasi creation/fork/moderation tersedia | Model entitas, open challenge, lifecycle minimal, dan rantai atribusi sudah diputus; spec belum | K3–K6 — DECIDED |
+| C. Pixel Assets | **NOT STARTED — VERIFIED ABSENCE** | Tidak ada tabel `assets`/`stamps`, endpoint, panel, atau bucket aset. `stampBrush` hanya helper internal | Nama, copy + provenance, wajib kredit, dan target laporan aset sudah diputus; spec belum | K7–K9 — DECIDED |
 | D. Kolaborasi langsung | **OUT OF SCOPE — VISION ONLY** | Tidak ada realtime, `canvas_tiles`, stroke RPC, presence, atau broadcast | Tidak boleh dimulai tanpa persetujuan owner eksplisit | Tidak dibahas di brief ini |
 
-**Kesimpulan audit:** fondasi A sudah ada dan harus dipakai ulang, bukan dibangun ulang. B dan C benar-benar kosong dari sisi data/endpoint/UI, tetapi bisa memakai ulang creation pipeline, fork, atribusi, dan moderation yang sudah ada.
+**Kesimpulan audit:** fondasi A sudah ada dan harus dipakai ulang, bukan dibangun ulang. B dan C benar-benar kosong dari sisi data/endpoint/UI, tetapi bisa memakai ulang creation pipeline, fork, atribusi, dan moderation yang sudah ada. K1–K9 sudah diputus dan masuk spec sumber; Stage 0.4 ditandatangani, A2 selesai, dan stage lain masih menunggu go-ahead.
 
 ---
 
@@ -127,19 +128,17 @@ Jangan membangun ulang:
 
 `arah-pengembangan-pxlb.md:59` menyatakan region terlindungi/layer terkunci belum tersedia. Itu terlalu luas. Yang benar: **layer lock/alpha lock sudah tersedia**; yang belum ada hanyalah aturan Challenge seperti “region ini harus dipertahankan”. Guided Challenge tetap tidak diimplementasikan.
 
-### 3.4 Keputusan yang mem-blok
+### 3.4 Keputusan sudah diambil (K3–K6)
 
-- Challenge sebagai entitas terpisah atau mode pada `creations`.
-- Siapa pemilik dan siapa boleh mengubah/menutup.
-- Open Challenge atau Guided Challenge.
-- Ada/tidaknya deadline; perilaku setelah deadline; apakah kiriman masih bisa diedit.
-- Verifikasi kiriman, pelaporan, hide/restore admin.
-- Atribusi ke template dan ke kreator Challenge.
-- Hubungan dengan kebijakan remix A — submission kemungkinan besar memakai fork, sehingga K1 harus diputus lebih dulu.
+- Challenge memakai **entitas terpisah**; kiriman tetap creation ber-`forked_from`.
+- Jenis pertama: **Open Challenge**. Guided/protected-region ditunda.
+- Lifecycle minimal: **admin/owner membuka dan menutup**; deadline opsional; kiriman tetap bisa diedit sampai challenge ditutup.
+- Atribusi: **template + kreator Challenge + rantai remix**.
+- Submission memakai ulang fork, sehingga kebijakan remix K1 menjadi prasyarat dan sudah diputus.
 
 ---
 
-## 4. Audit C — Community Assets / Pixel Assets
+## 4. Audit C — Pixel Assets
 
 ### 4.1 VERIFIED ABSENCE
 
@@ -161,79 +160,78 @@ Jangan membangun ulang:
 - Alur report + admin hide/restore.
 - Pola UX `recent`/`favorites` pada color memory — `lib/pixel-color-memory.ts:73`, `components/creations/ColorPicker.tsx:67` — hanya sebagai pola tampilan, bukan sistem aset.
 
-### 4.3 Keputusan yang mem-blok
+### 4.3 Keputusan sudah diambil (K7–K9)
 
-- Nama final: **Community Assets** atau **Pixel Assets**. Hindari `Stamp` sebagai label produk.
-- Aset disalin ke dokumen pengguna atau direferensikan dinamis.
-- Favorites, packs, recent, featured: filter/tampilan atau relasi data baru.
-- Lisensi: bebas, wajib kredit, atau izin eksplisit.
-- Provenance tetap terbaca saat aset dipakai di karya lain.
-- Target moderasi/laporan aset dan perilaku hide/restore.
-- Skema additive, path storage, MIME, dan batas ukuran.
+- Nama final: **Pixel Assets**. Hindari `Stamp` sebagai label produk.
+- Pemakaian: **copy ke dokumen + provenance tersimpan**; referensi dinamis ditunda.
+- Lisensi: **wajib kredit**; provenance tetap terbaca saat aset dipakai di karya lain.
+- Moderasi: **target laporan aset baru** dengan hide/restore admin; rantai lengkap §6.4 wajib.
+- Favorites/packs/recent/featured tetap perlu diputus sebagai detail spec, bukan pengubah K7–K9.
+- Skema additive, path storage, MIME, dan batas ukuran tetap dirancang di spec teknis.
 
 ---
 
-## 5. Keputusan owner yang mem-blok implementasi
+## 5. Keputusan owner
 
-Semua rekomendasi di bawah adalah **PROPOSED — AWAITING OWNER DECISION**, bukan keputusan final.
+K1–K9 diputus owner pada **2026-11-25** dan spec S0.4 ditandatangani hari itu juga. Persetujuan mengizinkan A2 saja; A3–C6 masih memerlukan go-ahead terpisah.
 
-| ID | Keputusan | Opsi | Rekomendasi persiapan | Mem-blok |
+| ID | Keputusan | Pilihan owner | Dampak | Membuka stage |
 |---|---|---|---|---|
-| K1 | Kebijakan remix | Publik + aturan umum / opt-in / butuh persetujuan | Mulai dari “publik + atribusi jelas” jika prioritas adalah proses paling ringan; opsi lain butuh kolom baru dan alur persetujuan | A1–A4, B submission |
-| K2 | Enforcement remix | UI saja / UI + server / UI + server + DB + storage | UI + server + DB + storage bila K1 bukan “publik”; jangan hanya mengganti `canForkCreation` | A2, A3 |
-| K3 | Model Challenge | Entitas terpisah / mode pada `creations` | Entitas `challenges` + kiriman tetap creation ber-`forked_from`; hindari pencampuran deadline/owner ke feed creation biasa | B1–B5 |
-| K4 | Jenis Challenge pertama | Open / Guided | Open Challenge lebih dulu; Guided menunggu definisi region terlindungi | B1, B3 |
-| K5 | Lifecycle Challenge | Owner, edit/close, deadline, editability, verifikasi | Putuskan paket aturan sekaligus agar RLS dan UI tidak berubah berulang | B2, B4 |
-| K6 | Atribusi Challenge | Template saja / template + kreator Challenge / keduanya + remix chain | Simpan dua tautan provenance sejak awal | B3 |
-| K7 | Nama produk aset | Community Assets / Pixel Assets | Pilih salah satu; jangan pakai `Stamp` sebagai nama produk | C0–C4 |
-| K8 | Model pemakaian aset | Copy ke dokumen / referensi dinamis | Copy + provenance tersimpan untuk rilis awal; referensi dinamis ditunda | C1, C3 |
-| K9 | Lisensi, provenance, moderasi aset | Bebas / wajib kredit / izin eksplisit; target laporan baru atau reuse `creation` | Tentukan sebelum schema dan copy UI; perubahan target laporan harus menyeluruh | C1, C5 |
+| K1 | Kebijakan remix | **Publik + atribusi** | Semua karya `published` dapat di-remix; atribusi sumber wajib ditampilkan | A1–A4, B submission |
+| K2 | Enforcement remix | **Full enforcement: UI + server + DB + storage** | `canForkCreation`, trigger/RLS, dan storage policy harus konsisten; `forked_from` wajib dipertahankan | A2, A3 |
+| K3 | Model Challenge | **Entitas terpisah** | Tabel `challenges`; kiriman tetap creation ber-`forked_from` | B1–B5 |
+| K4 | Jenis Challenge pertama | **Open Challenge** | Topik bebas; guided/protected-region ditunda | B1, B3 |
+| K5 | Lifecycle Challenge | **Minimal owner-admin** | Admin/owner membuka dan menutup; deadline opsional; kiriman tetap bisa diedit sampai ditutup | B2, B4 |
+| K6 | Atribusi Challenge | **Template + kreator + rantai remix** | Simpan provenance template, kreator Challenge, dan rantai remix sejak awal | B3 |
+| K7 | Nama produk aset | **Pixel Assets** | Tidak memakai `Stamp` sebagai label produk | C1–C4 |
+| K8 | Model pemakaian aset | **Copy + provenance** | Aset disalin ke dokumen pengguna; jejak asal tetap tersimpan | C1, C3 |
+| K9 | Lisensi, provenance, moderasi aset | **Wajib kredit + target laporan aset baru** | Provenance tampil; target laporan aset masuk rantai lengkap §6.4 | C1, C5 |
 
 ---
 
 ## 6. Rencana implementasi bertahap — usulan, belum dieksekusi
 
-Semua stage di bawah berstatus **BLOCKED** sampai keputusan terkait dan spec sumber diperbarui. Tidak ada stage yang boleh dimulai hanya dari dokumen ini.
+K1–K9 sudah diputus dan tercatat di §5; spec sumber dan tiga spec S0.4 sudah ditandatangani. A1/B1/C1 dan A2 selesai; stage lain tetap **BLOCKED** sampai go-ahead terpisah. Tidak ada stage yang boleh dimulai hanya dari dokumen ini.
 
 ### 6.0 Stage 0 — Decision freeze dan spec (semua fitur)
 
 | Langkah | Tindakan | Exit criteria | Status |
 |---|---|---|---|
-| S0.1 | Owner memilih K1–K9 | Semua keputusan bertulis, bukan asumsi agent | BLOCKED |
-| S0.2 | Perbarui `PRODUCT-SPEC.md` / `TECHNICAL-SPEC.md` sesuai keputusan | Perubahan perilaku, data, dan keamanan tercatat sebelum kode | BLOCKED |
-| S0.3 | Perbarui catatan bukti di backlog A–C | Referensi usang dan koreksi layer lock dirapikan | BLOCKED |
-| S0.4 | Tulis spec teknis kecil per fitur yang disetujui | Schema, RLS, UI state, error state, copy, dan test gate jelas | BLOCKED |
+| S0.1 | Owner memilih K1–K9 | Semua keputusan bertulis, bukan asumsi agent | DONE — 2026-11-25, lihat §5 |
+| S0.2 | Perbarui `PRODUCT-SPEC.md` / `TECHNICAL-SPEC.md` sesuai keputusan | Perubahan perilaku, data, dan keamanan tercatat sebelum kode | DONE — 2026-11-25 |
+| S0.3 | Perbarui catatan bukti di backlog A–C | Referensi usang dan koreksi layer lock dirapikan | DONE — 2026-11-25 |
+| S0.4 | Tulis spec teknis kecil per fitur yang disetujui | Schema, RLS, UI state, error state, copy, dan test gate jelas | DONE — 2026-11-25 (signed off) |
 
 ### 6.1 A — Remix
 
 | Stage | Tindakan | Exit criteria | Verifikasi | Status |
 |---|---|---|---|---|
-| A1 | Speckan kebijakan remix dan copy UI | K1/K2 tertuang dalam spec; error state `ForkForm` diketahui | Review spec | BLOCKED |
-| A2 | Satukan check izin di server | `canForkCreation` menjadi sumber keputusan; action tidak punya cabang izin tersembunyi | Test permission unit/source | BLOCKED |
+| A1 | Speckan kebijakan remix dan copy UI | K1/K2 tertuang dalam `SPEC-REMIX.md`; error state `ForkForm` diketahui | Review spec | DONE — 2026-11-25 |
+| A2 | Satukan check izin di server | `canForkCreation` menjadi sumber keputusan; action tidak punya cabang izin tersembunyi | `rls-community` + `create-edit` source test | DONE — 2026-11-25 |
 | A3 | Perkuat enforcement data | Trigger `creations_validate_fork`, `creations_insert_own`, dan storage SELECT mengikuti K1/K2 | RLS policy review + test source | BLOCKED |
 | A4 | UI/error copy | `ForkForm`, `CreationMoreMenu`, dan RemixStrip memakai copy dari `lib/copy.ts` | `detail-hierarchy`, `download-permission`, source test | BLOCKED |
 | A5 | Operator handoff | Migrasi baru diapply berurutan; smoke fork/published/draft | §14 checklist + bukti operator | BLOCKED |
 
-Catatan: jika K1 = “publik + aturan umum”, A3 bisa menjadi penyesuaian kecil tanpa kolom baru. Jika K1 = opt-in/approval, A3 wajib menyentuh DB dan storage.
+Catatan: K1 = “publik + atribusi”, tetapi K2 = full enforcement. A3 tetap wajib menyentuh DB dan storage agar aturan published + `forked_from` tidak bisa dilewati lewat INSERT langsung atau akses `source.json`.
 
 ### 6.2 B — Challenge
 
 | Stage | Tindakan | Exit criteria | Verifikasi | Status |
 |---|---|---|---|---|
-| B1 | Tulis spec Model Challenge | K3–K6 tertuang; hubungan dengan fork dan remix jelas | Review spec | BLOCKED |
+| B1 | Tulis spec Model Challenge | K3–K6 tertuang di `SPEC-CHALLENGE.md`; hubungan dengan fork dan remix jelas | Review spec | DONE — 2026-11-25 |
 | B2 | Schema additive | Tabel/challenge metadata dan relasi submission dibuat tanpa mengubah migrasi lama | Migration review | BLOCKED |
 | B3 | Lifecycle & owner actions | Role owner/admin, buka/tutup, deadline, dan editability sesuai K5 | Permission test + admin UI test | BLOCKED |
 | B4 | UI detail & submission | Submit memakai ulang fork; atribusi template + kreator Challenge muncul | Source test `detail-hierarchy` + copy review | BLOCKED |
 | B5 | Moderasi & laporan | Jika target baru dipilih, seluruh rantai target diubah bersamaan | Moderation test + admin smoke | BLOCKED |
 | B6 | Runtime gate | Browser/operator checklist dijalankan; bukan hanya source test | Bukti browser/operator | BLOCKED |
 
-Batasan: fork saat ini menolak fork karya sendiri dan mensyaratkan sumber published — `features/creations/actions.ts:576-585`. Perilaku template-owner harus diputus di K5, bukan dipaksa lewat workaround UI.
+Batasan: fork saat ini menolak fork karya sendiri dan mensyaratkan sumber published — `features/creations/actions.ts:576-585`. K5 sudah memutus lifecycle Minimal owner-admin; perilaku template-owner harus mengikuti aturan itu, bukan dipaksa lewat workaround UI.
 
-### 6.3 C — Community Assets / Pixel Assets
+### 6.3 C — Pixel Assets
 
 | Stage | Tindakan | Exit criteria | Verifikasi | Status |
 |---|---|---|---|---|
-| C1 | Tulis spec aset | K7–K9 tertuang: nama, lisensi, provenance, copy/reference | Review spec | BLOCKED |
+| C1 | Tulis spec aset | K7–K9 tertuang di `SPEC-PIXEL-ASSETS.md`: nama, lisensi, provenance, copy/reference | Review spec | DONE — 2026-11-25 |
 | C2 | Schema & storage additive | Tabel aset, bucket/path, MIME, batas ukuran, RLS | Migration + policy review | BLOCKED |
 | C3 | Publish asset flow | Validasi, moderasi awal, dan provenance creator tersimpan | Action/validation test | BLOCKED |
 | C4 | Insert ke Studio | Aset disalin ke dokumen bila K8 = copy; tidak ada produk bernama `stamp` | Studio source test + copy review | BLOCKED |
@@ -242,7 +240,7 @@ Batasan: fork saat ini menolak fork karya sendiri dan mensyaratkan sumber publis
 
 ### 6.4 Rantai moderasi bersama
 
-Jika owner menyetujui target laporan baru untuk Challenge atau aset, perubahan harus **seluruhnya** mencakup:
+K9 menyetujui target laporan baru untuk Pixel Assets. Perubahan harus **seluruhnya** mencakup:
 
 1. DB CHECK dan trigger visibility — `20261116050000_community.sql:173-175,219-260`;
 2. `REPORT_TARGET_TYPES` / tipe — `lib/site.ts:160-161`;
@@ -258,17 +256,17 @@ Perubahan sebagian akan memecah typing, UI, atau RLS.
 ## 7. Urutan dan dependency
 
 ```text
-K1–K9
+K1–K9 — DECIDED 2026-11-25
   └─ Stage 0: decision freeze + spec source of truth
        ├─ A Remix  ──┬─> B Challenge submission
        │             └─> C license/provenance decisions
        ├─ B Challenge (setelah A)
-       └─ C Community Assets (bisa paralel dengan B setelah spec,
+       └─ C Pixel Assets (bisa paralel dengan B setelah spec,
                               tetapi gabung perubahan moderasi dalam satu gate)
 ```
 
-- A harus diputus dan dispesifikasi lebih dulu karena B memakai fork untuk submission dan C perlu kejelasan lisensi/provenance.
-- B dan C boleh disiapkan paralel setelah Stage 0, tetapi perubahan target moderasi sebaiknya digabung dalam satu koordinasi.
+- A sudah diputus dan harus dispesifikasi lebih dulu karena B memakai fork untuk submission dan C sudah memiliki keputusan lisensi/provenance.
+- B dan C boleh disiapkan paralel setelah Stage 0, tetapi perubahan target moderasi K9 sebaiknya digabung dalam satu koordinasi.
 - D tetap ditutup. Tidak ada kanal realtime, presence, broadcast, `postgres_changes`, `canvas_tiles`, atau stroke RPC.
 
 ---
@@ -276,7 +274,7 @@ K1–K9
 ## 8. Aturan verifikasi dan bukti
 
 - `VERIFIED IN CODE` / `VERIFIED BY TEST` tidak boleh diubah menjadi `VERIFIED IN BROWSER` atau `VERIFIED IN PRODUCTION` tanpa bukti runtime.
-- Gunakan status `NOT STARTED`, `BLOCKED`, `READY FOR OPERATOR`, atau `VERIFIED` seperti `IMPLEMENTATION-PLAN.md` §14.
+- Gunakan status `NOT STARTED`, `BLOCKED`, `NEXT`, `DONE`, `READY FOR OPERATOR`, atau `VERIFIED` seperti `IMPLEMENTATION-PLAN.md` §14 dan konvensi tracker Studio.
 - Perluas test yang sudah ada; jangan menghapus atau melemahkan assertion.
 - `tests/resource-cleanup.test.ts:28-32` harus tetap melarang pola realtime. Jangan disentuh untuk memudahkan fitur apa pun.
 - Gate operator `IMPLEMENTATION-PLAN.md` §14 tetap terbuka: migrasi, signed-in walkthrough, download permission, Community Experience, domain/redirect, Phase 8, WR, dan Layer/Group browser check.
@@ -288,8 +286,8 @@ K1–K9
 
 Sebelum agent atau implementator mana pun menyentuh kode, semua harus terpenuhi:
 
-- [ ] K1–K9 diputus owner dan dicatat.
-- [ ] Spec sumber diperbarui lebih dulu.
+- [x] K1–K9 diputus owner dan dicatat di §5 (2026-11-25).
+- [x] Spec sumber diperbarui lebih dulu (2026-11-25).
 - [ ] Scope per fitur dipecah menjadi task kecil dengan exit criteria.
 - [ ] Schema/RLS/storage dirancang additive; tidak ada rewrite migrasi lama.
 - [ ] Copy UI berasal dari `lib/copy.ts` untuk ID dan `/en`.

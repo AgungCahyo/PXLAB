@@ -94,7 +94,7 @@ export function WorksRow({
       : copy.createDraftBadge[lang]
 
   return (
-    <li className="min-w-2">
+    <li className="min-w-0">
       <article className="group flex h-full min-w-0 flex-col rounded-2xl border border-slate-200/80 bg-card p-3 shadow-sm transition-all hover:border-slate-300 hover:shadow-md">
         {/* Thumbnail with rounded corners and subtle overlay */}
         <Link

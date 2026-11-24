@@ -240,7 +240,7 @@ export default async function DashboardPage({
           </div>
         ) : (
           <>
-            <ul className="grid min-w-0 grid-cols-2 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 lg:gap-5">
+            <ul className="grid min-w-0 grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 lg:gap-5">
               {visibleItems.map((item) => (
                 <WorksRow
                   key={item.id}
