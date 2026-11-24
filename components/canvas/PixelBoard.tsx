@@ -136,7 +136,9 @@ import {
   POLYGON_SELECT_CLOSE_DIST,
   type SelectionCombineMode,
   snapCssScaleToDevicePixels,
-  snapOriginToDevicePixels,
+  cameraCellScale,
+  clampCameraOrigin,
+  clampZoomFocus,
   stepBrushSize,
   stepZoom,
   strokeBrushLine,
@@ -165,6 +167,8 @@ import { clampDirtyRect, dirtyRectForSegment, unionDirtyRect } from "@/lib/pixel
 import { cn } from "@/lib/utils"
 
 export type Tool = PixelDrawTool
+/** Where a tool change came from, so the studio can move focus only for shortcuts. */
+export type ToolChangeSource = "shortcut" | "programmatic"
 
 type Camera = { originX: number; originY: number; scale: number }
 
@@ -441,7 +445,7 @@ export type PixelBoardProps = {
   selectShape?: "rect" | "ellipse"
   /** Opacity, flow, hardness, spacing, pressure and custom tip for pencil/circle/eraser. */
   brushOptions?: BrushOptions
-  onToolChange?: (tool: Tool) => void
+  onToolChange?: (tool: Tool, source: ToolChangeSource) => void
   onColorChange?: (color: string) => void
   onPaletteChange?: (palette: string[]) => void
   onBrushSizeChange?: (size: PixelBrushSize) => void
@@ -971,7 +975,18 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
       dpr,
     )
     const origin = fitOrigin(viewW, viewH, scale, canvasWidthRef.current, canvasHeightRef.current)
-    cameraRef.current = { scale, ...snapOriginToDevicePixels(origin.originX, origin.originY, dpr) }
+    cameraRef.current = {
+      scale,
+      ...clampCameraOrigin({
+        ...origin,
+        scale,
+        viewWidth: viewW,
+        viewHeight: viewH,
+        canvasWidth: canvasWidthRef.current,
+        canvasHeight: canvasHeightRef.current,
+        dpr,
+      }),
+    }
   }
 
   const applyZoom = (next: PixelZoom, focusX?: number, focusY?: number) => {
@@ -994,17 +1009,41 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
     }
     const fx = focusX ?? viewW / 2
     const fy = focusY ?? viewH / 2
+    // Anchor on the cell size the view actually paints, not a fractional zoom
+    // value that the device-pixel transform will floor.
+    const prevCell = cameraCellScale(prev.scale, dpr)
+    const nextCell = cameraCellScale(nextScale, dpr)
+    // A wheel over the desk (or a button after panning) must not drag the image
+    // away by anchoring on empty space.
+    const focus = clampZoomFocus({
+      focusX: fx,
+      focusY: fy,
+      originX: prev.originX,
+      originY: prev.originY,
+      scale: prevCell,
+      dpr,
+      canvasWidth: canvasWidthRef.current,
+      canvasHeight: canvasHeightRef.current,
+    })
     const zoomed = zoomToward({
       originX: prev.originX,
       originY: prev.originY,
-      scale: prev.scale,
-      nextScale,
-      focusX: fx,
-      focusY: fy,
+      scale: prevCell,
+      nextScale: nextCell,
+      focusX: focus.focusX,
+      focusY: focus.focusY,
     })
     cameraRef.current = {
       scale: nextScale,
-      ...snapOriginToDevicePixels(zoomed.originX, zoomed.originY, dpr),
+      ...clampCameraOrigin({
+        ...zoomed,
+        scale: nextScale,
+        viewWidth: viewW,
+        viewHeight: viewH,
+        canvasWidth: canvasWidthRef.current,
+        canvasHeight: canvasHeightRef.current,
+        dpr,
+      }),
     }
     scheduleView()
   }
@@ -1090,7 +1129,9 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
     const { originX, originY, scale } = cameraRef.current
     const { deviceScale, translateX, translateY } = viewDeviceTransform(originX, originY, scale, dpr)
     viewCtx.setTransform(1, 0, 0, 1, 0, 0)
-    viewCtx.fillStyle = "#f4f1e8"
+    // Desk, never Paper: the only Paper-colored pixels come from the document
+    // image below, so empty space can't read as zoomed artwork.
+    viewCtx.fillStyle = variant === "studio" ? "#12111f" : "#f1f0f8"
     viewCtx.fillRect(0, 0, view.width, view.height)
     viewCtx.imageSmoothingEnabled = false
     viewCtx.setTransform(deviceScale, 0, 0, deviceScale, translateX, translateY)
@@ -2286,7 +2327,16 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
       const originY = viewH / 2 - (y + 0.5) * scale
       cameraRef.current = {
         scale,
-        ...snapOriginToDevicePixels(originX, originY, dpr),
+        ...clampCameraOrigin({
+          originX,
+          originY,
+          scale,
+          viewWidth: viewW,
+          viewHeight: viewH,
+          canvasWidth: canvasWidthRef.current,
+          canvasHeight: canvasHeightRef.current,
+          dpr,
+        }),
       }
       if (zoomRef.current === "fit") emitZoom(scale)
       scheduleView()
@@ -2941,6 +2991,18 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
         devicePixelSizeRef.current = null
         sizeRef.current = { width: entry.contentRect.width, height: entry.contentRect.height }
       }
+      // A resized viewport can move a previously valid camera out of bounds.
+      cameraRef.current = {
+        ...cameraRef.current,
+        ...clampCameraOrigin({
+          ...cameraRef.current,
+          viewWidth: sizeRef.current.width,
+          viewHeight: sizeRef.current.height,
+          canvasWidth: canvasWidthRef.current,
+          canvasHeight: canvasHeightRef.current,
+          dpr,
+        }),
+      }
       if (zoomRef.current === "fit") applyFit()
       scheduleRef.current()
     })
@@ -3017,7 +3079,7 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
     })
   }
 
-  const chooseTool = (next: Tool) => {
+  const chooseTool = (next: Tool, source: ToolChangeSource = "programmatic") => {
     if (next !== toolRef.current) {
       if (toolRef.current === "text") textToolRef.current?.cancelInteraction()
       if (shapeDraftRef.current) cancelShapeDraftRef.current()
@@ -3025,7 +3087,7 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
       polySelRef.current = null
     }
     toolRef.current = next
-    if (onToolChange) onToolChange(next)
+    if (onToolChange) onToolChange(next, source)
     else setInternalTool(next)
   }
 
@@ -3242,24 +3304,27 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
         }
       }
       if (event.altKey) return
-      if (key === "b") chooseToolRef.current("pencil")
-      else if (key === "c") chooseToolRef.current("circle")
-      else if (key === "e") chooseToolRef.current("eraser")
-      else if (key === "h") chooseToolRef.current("pan")
-      else if (key === "i") chooseToolRef.current("eyedropper")
-      else if (key === "g") chooseToolRef.current("fill")
-      else if (key === "p") chooseToolRef.current("polygon")
-      else if (key === "l") chooseToolRef.current("line")
-      else if (key === "u") chooseToolRef.current("rect")
-      else if (key === "o") chooseToolRef.current("ellipse")
-      else if (key === "q") chooseToolRef.current("bezier")
-      else if (key === "t") chooseToolRef.current("text")
-      else if (key === "n") chooseToolRef.current("gradient")
-      else if (key === "v") chooseToolRef.current("select")
-      else if (key === "w") chooseToolRef.current("selectContiguous")
-      else if (key === "k") chooseToolRef.current("selectColor")
-      else if (key === "s") chooseToolRef.current("lasso")
-      else if (key === "y") chooseToolRef.current("selectPolygon")
+      // Tag the source so the studio can move DOM focus to the new rail button
+      // without stealing focus for palette clicks, select-all or text editing.
+      const byShortcut = (next: Tool) => chooseToolRef.current(next, "shortcut")
+      if (key === "b") byShortcut("pencil")
+      else if (key === "c") byShortcut("circle")
+      else if (key === "e") byShortcut("eraser")
+      else if (key === "h") byShortcut("pan")
+      else if (key === "i") byShortcut("eyedropper")
+      else if (key === "g") byShortcut("fill")
+      else if (key === "p") byShortcut("polygon")
+      else if (key === "l") byShortcut("line")
+      else if (key === "u") byShortcut("rect")
+      else if (key === "o") byShortcut("ellipse")
+      else if (key === "q") byShortcut("bezier")
+      else if (key === "t") byShortcut("text")
+      else if (key === "n") byShortcut("gradient")
+      else if (key === "v") byShortcut("select")
+      else if (key === "w") byShortcut("selectContiguous")
+      else if (key === "k") byShortcut("selectColor")
+      else if (key === "s") byShortcut("lasso")
+      else if (key === "y") byShortcut("selectPolygon")
       else if (event.shiftKey && event.code === "BracketLeft") {
         event.preventDefault()
         contractSelectionRef.current()
@@ -4010,23 +4075,50 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
       const distance = Math.hypot(dx, dy)
       const pinch = pinchRef.current
       if (pinch) {
-        cameraRef.current.originX = pinch.originX + (midX - pinch.midX)
-        cameraRef.current.originY = pinch.originY + (midY - pinch.midY)
-        if (pinch.distance > 0) {
-          cameraRef.current.scale = Math.min(
-            PIXEL_ZOOM_PINCH_MAX,
-            Math.max(PIXEL_ZOOM_PINCH_MIN, pinch.scale * (distance / pinch.distance)),
-          )
+        const originX = pinch.originX + (midX - pinch.midX)
+        const originY = pinch.originY + (midY - pinch.midY)
+        const scale =
+          pinch.distance > 0
+            ? Math.min(
+                PIXEL_ZOOM_PINCH_MAX,
+                Math.max(PIXEL_ZOOM_PINCH_MIN, pinch.scale * (distance / pinch.distance)),
+              )
+            : cameraRef.current.scale
+        cameraRef.current = {
+          scale,
+          ...clampCameraOrigin({
+            originX,
+            originY,
+            scale,
+            viewWidth: sizeRef.current.width,
+            viewHeight: sizeRef.current.height,
+            canvasWidth: canvasWidthRef.current,
+            canvasHeight: canvasHeightRef.current,
+            dpr: currentDpr(),
+          }),
         }
-        emitZoom(cameraRef.current.scale)
+        emitZoom(scale)
         scheduleView()
       }
       return
     }
 
     if (panRef.current) {
-      cameraRef.current.originX = panRef.current.originX + (event.clientX - panRef.current.x)
-      cameraRef.current.originY = panRef.current.originY + (event.clientY - panRef.current.y)
+      const originX = panRef.current.originX + (event.clientX - panRef.current.x)
+      const originY = panRef.current.originY + (event.clientY - panRef.current.y)
+      cameraRef.current = {
+        ...cameraRef.current,
+        ...clampCameraOrigin({
+          originX,
+          originY,
+          scale: cameraRef.current.scale,
+          viewWidth: sizeRef.current.width,
+          viewHeight: sizeRef.current.height,
+          canvasWidth: canvasWidthRef.current,
+          canvasHeight: canvasHeightRef.current,
+          dpr: currentDpr(),
+        }),
+      }
       if (zoomRef.current === "fit") emitZoom(cameraRef.current.scale)
       scheduleView()
       return
@@ -4285,11 +4377,15 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
       if (endingPinch) {
         const dpr = currentDpr()
         const snappedScale = snapCssScaleToDevicePixels(cameraRef.current.scale, dpr)
-        const snappedOrigin = snapOriginToDevicePixels(
-          cameraRef.current.originX,
-          cameraRef.current.originY,
+        const snappedOrigin = clampCameraOrigin({
+          ...cameraRef.current,
+          scale: snappedScale,
+          viewWidth: sizeRef.current.width,
+          viewHeight: sizeRef.current.height,
+          canvasWidth: canvasWidthRef.current,
+          canvasHeight: canvasHeightRef.current,
           dpr,
-        )
+        })
         cameraRef.current = { scale: snappedScale, ...snappedOrigin }
         emitZoom(snappedScale)
         scheduleView()

@@ -9,6 +9,7 @@ import {
   type PixelBoardHandle,
   type ShapeDraftInfo,
   type Tool,
+  type ToolChangeSource,
 } from "@/components/canvas/PixelBoard"
 import { BrushOptionsPanel } from "@/components/creations/BrushOptionsPanel"
 import { ExportDialog } from "@/components/creations/ExportDialog"
@@ -137,6 +138,49 @@ export function PlaygroundForm({
     desktop: Partial<Record<Tool, HTMLButtonElement | null>>
     mobile: Partial<Record<Tool, HTMLButtonElement | null>>
   }>({ desktop: {}, mobile: {} })
+  // Shortcuts move focus from anywhere; other changes only follow focus that
+  // was already on a tool button. Cleared on consume so renders never repeat it.
+  const pendingToolFocusRef = useRef<{ tool: Tool; fromShortcut: boolean } | null>(null)
+  const focusPendingTool = useCallback(() => {
+    const pending = pendingToolFocusRef.current
+    if (!pending) return
+    pendingToolFocusRef.current = null
+
+    const active = document.activeElement
+    const activeSurface =
+      active instanceof HTMLElement && desktopRailRef.current?.contains(active)
+        ? "desktop"
+        : active instanceof HTMLElement && mobileToolRowRef.current?.contains(active)
+          ? "mobile"
+          : null
+    // Without a shortcut origin, never pull focus away from a swatch, layer or
+    // text input. With one, target the visible rail even from the canvas.
+    if (!activeSurface && !pending.fromShortcut) return
+    const surface =
+      activeSurface ??
+      (desktopRailRef.current?.getClientRects().length ? "desktop" : "mobile")
+    const button = toolButtonRefs.current[surface]?.[pending.tool]
+    if (!button || button.getClientRects().length === 0) return
+    if (button === document.activeElement) return
+    // Rail scrolling stays owned by the existing syncScroll effect.
+    button.focus({ preventScroll: true })
+  }, [])
+  const handleToolChange = (next: Tool, source: ToolChangeSource) => {
+    setTool(next)
+    const active = document.activeElement
+    const onRail =
+      active instanceof HTMLElement &&
+      Boolean(
+        desktopRailRef.current?.contains(active) || mobileToolRowRef.current?.contains(active),
+      )
+    if (source !== "shortcut" && !onRail) {
+      pendingToolFocusRef.current = null
+      return
+    }
+    pendingToolFocusRef.current = { tool: next, fromShortcut: source === "shortcut" }
+    // Selecting the already-active tool does not re-render; focus it directly.
+    if (next === tool) queueMicrotask(focusPendingTool)
+  }
   const [mobilePanel, setMobilePanel] = useState<"options" | "color" | "layers">("color")
   const flightRef = useRef<Promise<void>>(Promise.resolve())
   const editGen = useRef(0)
@@ -790,7 +834,7 @@ export function PlaygroundForm({
           aria-label={titled}
           title={titled}
           aria-pressed={isActive}
-          onClick={() => setTool(value)}
+          onClick={() => handleToolChange(value, "programmatic")}
           className={cn(
             "studio-hit",
             isActive
@@ -877,7 +921,8 @@ export function PlaygroundForm({
 
     syncScroll(desktopRailRef.current, toolButtonRefs.current.desktop[tool])
     syncScroll(mobileToolRowRef.current, toolButtonRefs.current.mobile[tool])
-  }, [tool])
+    focusPendingTool()
+  }, [tool, focusPendingTool])
 
   const sizeLabel = showShapeOptions
     ? copy.pixelStrokeWidth[lang]
@@ -1036,7 +1081,7 @@ export function PlaygroundForm({
               aria-label={`${copy.pixelColor[lang]} ${swatch}`}
               onClick={() => {
                 setColor(swatch)
-                if (tool === "eraser") setTool("pencil")
+                if (tool === "eraser") handleToolChange("pencil", "programmatic")
               }}
               className={cn(
                 "pixel-swatch studio-hit rounded-md border",
@@ -1626,7 +1671,7 @@ export function PlaygroundForm({
                 fillPattern={fillPattern}
                 brushOptions={brushOptions}
                 selectShape={selectShape}
-                onToolChange={setTool}
+                onToolChange={handleToolChange}
                 onColorChange={setColor}
                 onBrushSizeChange={setBrushSize}
                 onGridVisibleChange={setGridVisible}
@@ -1710,7 +1755,7 @@ export function PlaygroundForm({
             draftActive={shapeDraft.active}
             onColor={(hex) => {
               setColor(hex)
-              if (tool === "eraser") setTool("pencil")
+              if (tool === "eraser") handleToolChange("pencil", "programmatic")
             }}
             onBrushSize={setBrushSize}
             onPaletteMore={() => {
@@ -2311,7 +2356,7 @@ export function PlaygroundForm({
         onSelect={(hex) => {
           setPaletteFullAlert(false)
           setColor(hex)
-          if (tool === "eraser") setTool("pencil")
+          if (tool === "eraser") handleToolChange("pencil", "programmatic")
         }}
         onEnsureColors={(colors) => {
           const result = boardRef.current?.ensureColors(colors) ?? {
@@ -2359,7 +2404,7 @@ export function PlaygroundForm({
         onSelect={(hex) => {
           setPaletteFullAlert(false)
           setColor(hex)
-          if (tool === "eraser") setTool("pencil")
+          if (tool === "eraser") handleToolChange("pencil", "programmatic")
         }}
         onReplace={(fromHex, toHex) => {
           boardRef.current?.replaceColor(fromHex, toHex)

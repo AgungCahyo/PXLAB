@@ -2155,6 +2155,68 @@ export function zoomToward(args: {
   }
 }
 
+/** Cell size actually painted by the view canvas (integer device pixels). */
+export function cameraCellScale(scale: number, dpr = 1) {
+  const ratio = Math.max(1e-6, dpr)
+  return Math.max(1, Math.floor(scale * ratio + 1e-9)) / ratio
+}
+
+/**
+ * Zoom anchors must live on the artwork. A wheel/pinch over the surrounding
+ * desk is projected to the nearest edge of the current canvas rect, so the
+ * empty area can never become the point that the image grows around.
+ */
+export function clampZoomFocus(args: {
+  focusX: number
+  focusY: number
+  originX: number
+  originY: number
+  scale: number
+  dpr?: number
+  canvasWidth?: number
+  canvasHeight?: number
+}) {
+  const scale = cameraCellScale(args.scale, args.dpr)
+  const w = (args.canvasWidth ?? PIXEL_CANVAS_SIZE) * scale
+  const h = (args.canvasHeight ?? PIXEL_CANVAS_SIZE) * scale
+  return {
+    focusX: Math.min(args.originX + w, Math.max(args.originX, args.focusX)),
+    focusY: Math.min(args.originY + h, Math.max(args.originY, args.focusY)),
+  }
+}
+
+/**
+ * Keep the viewport inside the artwork once it covers the view; while the
+ * artwork is smaller, keep the whole artwork inside the view. This stops pan
+ * and zoom from presenting the desk as if it were enlarged canvas content.
+ */
+export function clampCameraOrigin(args: {
+  originX: number
+  originY: number
+  scale: number
+  viewWidth: number
+  viewHeight: number
+  canvasWidth?: number
+  canvasHeight?: number
+  dpr?: number
+}) {
+  const scale = cameraCellScale(args.scale, args.dpr)
+  const w = (args.canvasWidth ?? PIXEL_CANVAS_SIZE) * scale
+  const h = (args.canvasHeight ?? PIXEL_CANVAS_SIZE) * scale
+  const dpr = Math.max(1e-6, args.dpr ?? 1)
+  const axis = (origin: number, view: number, content: number) => {
+    const slack = view - content
+    const min = Math.min(0, slack)
+    const max = Math.max(0, slack)
+    const snapped = Math.round(origin * dpr) / dpr
+    return Math.min(max, Math.max(min, snapped))
+  }
+  return {
+    originX: axis(args.originX, args.viewWidth, w),
+    originY: axis(args.originY, args.viewHeight, h),
+  }
+}
+
 export function isPixelPaletteColor(value: string): value is PixelPaletteColor {
   return (PIXEL_PALETTE as readonly string[]).includes(value)
 }

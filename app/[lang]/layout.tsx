@@ -77,9 +77,6 @@ export default async function LangLayout({
       data-scroll-behavior="smooth"
     >
       <body>
-        <a href="#main" className="skip-link">
-          {copy.skip[lang]}
-        </a>
         <PublicShell lang={lang}>{children}</PublicShell>
       </body>
     </html>
