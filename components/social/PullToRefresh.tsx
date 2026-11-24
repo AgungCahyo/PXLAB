@@ -11,7 +11,7 @@ import {
 } from "react"
 import { useRouter } from "next/navigation"
 import { socialButtonClass } from "@/components/social/socialButton"
-import { copy } from "@/lib/copy"
+import { copy } from "../../lib/copy"
 import type { Lang } from "@/lib/i18n"
 import { cn } from "@/lib/utils"
 

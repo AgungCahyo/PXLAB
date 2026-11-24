@@ -3,7 +3,7 @@
 import { useEffect } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { copy } from "@/lib/copy"
+import { copy } from "../../lib/copy"
 import { href, stripLang, type Lang } from "@/lib/i18n"
 import { cn } from "@/lib/utils"
 

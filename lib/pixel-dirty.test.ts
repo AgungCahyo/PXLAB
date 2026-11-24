@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { createEmptyLayer, compositeLayersToRgba, PIXEL_PALETTE, writeRgbaRectToIndices } from "@/lib/pixel"
+import { createEmptyLayer, compositeLayersToRgba, PIXEL_PALETTE, writeRgbaRectToIndices } from "./pixel"
 import { brushDirtyPad, clampDirtyRect, dirtyRectForSegment, unionDirtyRect } from "@/lib/pixel-dirty"
 
 describe("dirty rects", () => {

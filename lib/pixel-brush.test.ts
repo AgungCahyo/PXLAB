@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { stampBrush, strokeBrushLine, type PixelSelection } from "@/lib/pixel"
+import { stampBrush, strokeBrushLine, type PixelSelection } from "./pixel"
 import {
   BrushStroke,
   brushCoverage,

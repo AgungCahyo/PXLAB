@@ -40,7 +40,12 @@ export function CreatorLine({
         <span className="truncate text-[14px] font-semibold text-fg">{name}</span>
         <span className="truncate text-[12px] text-muted">
           {creator.username ? `@${creator.username}` : null}
-          {at ? <>{creator.username ? " · " : null}<time dateTime={new Date(at).toISOString()}>{formatRelativeTime(at, lang)}</time></> : null}
+          {at ? (
+            <>
+              {creator.username ? " · " : null}
+              <time dateTime={new Date(at).toISOString()}>{formatRelativeTime(at, lang)}</time>
+            </>
+          ) : null}
         </span>
       </span>
     </>

@@ -1,5 +1,5 @@
 import { clampLayerOpacity, isPixelBlendMode, type PixelBlendMode } from "@/lib/pixel-blend"
-import type { PixelLayerRuntime } from "@/lib/pixel"
+import type { PixelLayerRuntime } from "./pixel"
 
 /**
  * Layer groups: one level deep (no nesting).

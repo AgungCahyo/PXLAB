@@ -5,7 +5,7 @@ import {
 } from "@/components/creations/RecommendationRack"
 import { WorkTile } from "@/components/social/WorkTile"
 import { SectionHeader } from "@/components/ui/PageHeader"
-import { copy } from "@/lib/copy"
+import { copy } from "../../lib/copy"
 import { href, type Lang } from "@/lib/i18n"
 import type { CreationCard as CreationCardData } from "@/features/creations/queries"
 
@@ -39,7 +39,7 @@ export function RemixStrip({
 
   return (
     <section
-      className="mt-8 border-t border-[color:var(--soc-hairline)] pt-6"
+      className="mt-8 border-t border-slate-200/80 pt-6"
       aria-labelledby="remix-strip-heading"
     >
       <SectionHeader

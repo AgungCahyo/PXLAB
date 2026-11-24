@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { createEmptyLayer, type PixelLayerRuntime } from "@/lib/pixel"
+import { createEmptyLayer, type PixelLayerRuntime } from "./pixel"
 import {
   assignLayerToGroup,
   createGroupFromLayer,

@@ -23,7 +23,7 @@ import {
 } from "@/features/creations/queries"
 import { getCurrentProfile } from "@/lib/auth/session"
 import { displayTitle } from "@/lib/creations"
-import { copy, creationCategoryLabels, creationTypeLabels } from "@/lib/copy"
+import { copy, creationCategoryLabels, creationTypeLabels } from "../../../../../lib/copy"
 import { formatDayMonthYear } from "@/lib/format"
 import { href, isLang, type Lang } from "@/lib/i18n"
 import { pageMeta } from "@/lib/meta"
@@ -153,7 +153,7 @@ export default async function CreationDetailPage({
       <CreationTags lang={lang} tags={creation.tags} />
       {isPixel ? <CreationColorPalette lang={lang} usage={creation.color_usage} /> : null}
 
-      <div className="mt-4 flex flex-wrap items-center gap-1 border-t border-[color:var(--soc-hairline)] pt-3">
+      <div className="mt-5 flex flex-wrap items-center gap-1 border-y border-slate-200/80 py-2">
         <CreationEngagement
           lang={lang}
           creationId={creation.id}

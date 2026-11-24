@@ -19,9 +19,9 @@ import {
 import { LayerStyleControls } from "@/components/creations/LayerStyleControls"
 import { Dialog } from "@/components/ui/Dialog"
 import { PixelIcon } from "@/components/ui/PixelIcon"
-import { copy } from "@/lib/copy"
+import { copy } from "../../lib/copy"
 import type { Lang } from "@/lib/i18n"
-import { PIXEL_LAYER_MAX } from "@/lib/pixel"
+import { canAddLayer, PIXEL_LAYER_MAX, PIXEL_TEXT_LAYER_MAX, rasterLayerCount } from "../../lib/pixel"
 import { cn } from "@/lib/utils"
 
 export type LayerPanelFeedback =
@@ -52,6 +52,10 @@ type LayerPanelProps = {
   onRename: (id: string, name: string) => boolean
   onMove: (id: string, toStackIndex: number) => boolean
   onStyle: (id: string, patch: PixelLayerStylePatch) => boolean
+  /** Open the text editor on a text layer. */
+  onEditText?: (id: string) => boolean
+  /** Turn a text layer into ordinary pixels. */
+  onRasterize?: (id: string) => boolean
   groupApi: LayerGroupApi
   onFeedback?: (kind: LayerPanelFeedback) => void
 }
@@ -112,6 +116,8 @@ export function LayerPanel({
   onRename,
   onMove,
   onStyle,
+  onEditText,
+  onRasterize,
   groupApi,
   onFeedback,
 }: LayerPanelProps) {
@@ -173,7 +179,7 @@ export function LayerPanel({
     : null
 
   const runAdd = () => {
-    if (layers.length >= PIXEL_LAYER_MAX) {
+    if (!canAddLayer(layers)) {
       onFeedback?.("max")
       return
     }
@@ -181,7 +187,7 @@ export function LayerPanel({
   }
 
   const runCreateGroup = (layerIds: string[]) => {
-    if (layerIds.length === 0 && layers.length >= PIXEL_LAYER_MAX) {
+    if (layerIds.length === 0 && !canAddLayer(layers)) {
       onFeedback?.("max")
       return
     }
@@ -279,7 +285,7 @@ export function LayerPanel({
         key: "duplicate",
         label: copy.pixelLayerDuplicate[lang],
         icon: "duplicate",
-        disabled: layers.length >= PIXEL_LAYER_MAX,
+        disabled: !canAddLayer(layers, menuLayer.text ? "text" : "raster"),
         run: () => {
           if (onDuplicate(menuLayer.id)) onFeedback?.("duplicated")
         },
@@ -290,6 +296,22 @@ export function LayerPanel({
         icon: "pencil",
         run: () => setEditingId(menuLayer.id),
       },
+      ...(menuLayer.text
+        ? [
+            {
+              key: "edit-text",
+              label: copy.pixelTextEdit[lang],
+              icon: "text" as const,
+              run: () => void onEditText?.(menuLayer.id),
+            },
+            {
+              key: "rasterize-text",
+              label: copy.pixelTextRasterize[lang],
+              icon: "square" as const,
+              run: () => void onRasterize?.(menuLayer.id),
+            },
+          ]
+        : []),
       {
         key: "merge-down",
         label: copy.pixelLayerMergeDown[lang],
@@ -416,7 +438,7 @@ export function LayerPanel({
   const createLabel =
     selection.length > 0
       ? copy.pixelGroupCreateFromN[lang].replace("{n}", String(selection.length))
-      : layers.length >= PIXEL_LAYER_MAX
+      : !canAddLayer(layers)
         ? copy.pixelLayerMax[lang]
         : copy.pixelGroupCreateTip[lang]
 
@@ -427,7 +449,10 @@ export function LayerPanel({
           <PixelIcon name="layers" />
           <span className="sr-only">{copy.pixelLayers[lang]}</span>
           <span className="text-[11px] font-normal tabular-nums text-muted" aria-hidden="true">
-            {layers.length}/{PIXEL_LAYER_MAX}
+            {rasterLayerCount(layers)}/{PIXEL_LAYER_MAX}
+            {layers.length > rasterLayerCount(layers)
+              ? ` + ${layers.length - rasterLayerCount(layers)}/${PIXEL_TEXT_LAYER_MAX} T`
+              : ""}
           </span>
         </h3>
         <div className="flex items-center gap-1" role="toolbar" aria-label={copy.pixelLayers[lang]}>
@@ -436,7 +461,7 @@ export function LayerPanel({
             className={toolbarButton}
             aria-label={copy.pixelLayerAdd[lang]}
             title={copy.pixelLayerAdd[lang]}
-            disabled={layers.length >= PIXEL_LAYER_MAX}
+            disabled={!canAddLayer(layers)}
             onClick={runAdd}
           >
             <PixelIcon name="plus" />
@@ -446,7 +471,7 @@ export function LayerPanel({
             className={toolbarButton}
             aria-label={createLabel}
             title={createLabel}
-            disabled={selection.length === 0 && layers.length >= PIXEL_LAYER_MAX}
+            disabled={selection.length === 0 && !canAddLayer(layers)}
             onClick={() => runCreateGroup(selection)}
           >
             <NewIcon name="folder" />
@@ -652,7 +677,7 @@ export function LayerPanel({
                         layer.active ? "text-fg" : "text-fg/90",
                       )}
                       onClick={(event) => selectRow(event, layer)}
-                      onDoubleClick={() => setEditingId(layer.id)}
+                      onDoubleClick={() => (layer.text && onEditText ? onEditText(layer.id) : setEditingId(layer.id))}
                     >
                       {layer.name}
                       {isPicked ? <span className="sr-only"> — {copy.pixelLayerSelected[lang]}</span> : null}
@@ -833,7 +858,7 @@ export function LayerMobileStrip({
         className="studio-thumb inline-flex items-center justify-center border-[3px] border-earth bg-bg text-fg"
         aria-label={copy.pixelLayerAdd[lang]}
         onClick={() => {
-          if (layers.length >= PIXEL_LAYER_MAX) {
+          if (!canAddLayer(layers)) {
             onFeedback?.("max")
             return
           }
@@ -848,7 +873,7 @@ export function LayerMobileStrip({
         aria-label={copy.pixelGroupCreate[lang]}
         title={copy.pixelGroupCreateTip[lang]}
         onClick={() => {
-          if (layers.length >= PIXEL_LAYER_MAX) {
+          if (!canAddLayer(layers)) {
             onFeedback?.("max")
             return
           }
@@ -1038,7 +1063,7 @@ export function LayerMobileSheet({
           className="studio-hit border-[3px] border-earth bg-bg text-fg disabled:opacity-40"
           aria-label={copy.pixelLayerDuplicate[lang]}
           title={copy.pixelLayerDuplicate[lang]}
-          disabled={layers.length >= PIXEL_LAYER_MAX}
+          disabled={!canAddLayer(layers, layer.text ? "text" : "raster")}
           onClick={() => {
             if (onDuplicate(layer.id)) {
               onFeedback?.("duplicated")

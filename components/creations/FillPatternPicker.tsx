@@ -1,7 +1,7 @@
 "use client"
 
 import { useId } from "react"
-import { copy, pixelFillPatternLabels } from "@/lib/copy"
+import { copy, pixelFillPatternLabels } from "../../lib/copy"
 import type { Lang } from "@/lib/i18n"
 import { PIXEL_FILL_PATTERNS, patternHit, type PixelFillPattern } from "@/lib/pixel-pattern"
 

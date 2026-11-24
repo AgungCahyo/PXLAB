@@ -4,7 +4,7 @@ import { PixelArt } from "@/components/creations/PixelArt"
 import { ProfileAvatar } from "@/components/profiles/ProfileAvatar"
 import type { CreatorWorkPreview } from "@/features/creations/queries"
 import type { AvatarConfig } from "@/lib/avatar-gen"
-import { copy } from "@/lib/copy"
+import { copy } from "../../lib/copy"
 import { href, type Lang } from "@/lib/i18n"
 import { cn } from "@/lib/utils"
 
@@ -60,18 +60,17 @@ export function CreatorCard({
     <article
       data-creator-card
       className={cn(
-        fluid
-          ? "w-full max-w-full min-w-0 overflow-hidden bg-card p-2.5"
-          : "w-64 max-w-full shrink-0 min-w-0 overflow-hidden bg-card p-2.5",
+        "min-w-0 max-w-full overflow-hidden rounded-2xl border border-slate-200/80 bg-card p-3.5 shadow-sm transition-all duration-200 hover:border-slate-300 hover:shadow-md",
+        fluid ? "w-full" : "w-72 shrink-0",
         className,
       )}
     >
-      <div className="flex min-w-0 max-w-full items-center gap-2">
+      <div className="flex min-w-0 max-w-full items-start gap-3">
         <Link
           {...restoreScrollProps}
           href={profileHref}
           aria-label={name}
-          className="shrink-0 rounded-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky"
+          className="shrink-0 rounded-full focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky"
         >
           <ProfileAvatar
             src={creator.avatarUrl}
@@ -79,18 +78,23 @@ export function CreatorCard({
             userId={creator.id}
             alt=""
             size="sm"
+            className="border border-slate-200/80"
           />
         </Link>
-        <Link
-          {...restoreScrollProps}
-          href={profileHref}
-          className="min-w-0 max-w-full flex-1 overflow-hidden focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky"
-        >
-          <span className="block truncate text-[13px] font-semibold leading-tight text-fg">{name}</span>
-          <span className="mt-0.5 block truncate text-[12px] leading-tight text-muted">
-            @{creator.username}
-          </span>
-        </Link>
+        <div className="min-w-0 flex-1">
+          <Link
+            {...restoreScrollProps}
+            href={profileHref}
+            className="block min-w-0 max-w-full overflow-hidden focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky"
+          >
+            <span className="block truncate text-[14px] font-semibold leading-tight text-fg transition-colors hover:text-[#6355d8]">
+              {name}
+            </span>
+            <span className="mt-0.5 block truncate text-[12px] leading-tight text-muted">
+              @{creator.username}
+            </span>
+          </Link>
+        </div>
         <FollowButton
           lang={lang}
           userId={creator.id}
@@ -105,7 +109,7 @@ export function CreatorCard({
       {previews.length > 0 ? (
         <ul
           aria-label={copy.discoveryPreviewAria[lang]}
-          className="mt-2 grid min-w-0 max-w-full grid-cols-[repeat(3,minmax(0,1fr))] gap-1.5"
+          className="mt-3 grid min-w-0 max-w-full grid-cols-[repeat(3,minmax(0,1fr))] gap-2"
         >
           {previews.slice(0, 3).map((preview, index) => (
             <li key={preview.id} className="min-w-0 max-w-full">
@@ -113,7 +117,7 @@ export function CreatorCard({
                 {...restoreScrollProps}
                 href={href(lang, `/creation/${preview.id}`)}
                 aria-label={preview.title}
-                className="block min-w-0 max-w-full overflow-hidden focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-sky"
+                className="block min-w-0 max-w-full overflow-hidden rounded-xl border border-slate-100 bg-slate-50 transition-all hover:border-slate-200 hover:shadow-sm focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-sky"
               >
                 {preview.coverUrl ? (
                   <PixelArt
@@ -124,14 +128,16 @@ export function CreatorCard({
                     priority={index === 0}
                   />
                 ) : (
-                  <span className="block aspect-square w-full bg-soft" aria-hidden="true" />
+                  <span className="block aspect-square w-full bg-slate-100" aria-hidden="true" />
                 )}
               </Link>
             </li>
           ))}
         </ul>
       ) : (
-        <p className="mt-2 text-[12px] text-muted">{copy.creatorCardNoWork[lang]}</p>
+        <p className="mt-3 rounded-xl border border-dashed border-slate-200/80 bg-slate-50/60 px-3 py-4 text-center text-[12px] text-muted">
+          {copy.creatorCardNoWork[lang]}
+        </p>
       )}
     </article>
   )

@@ -13,7 +13,7 @@ import {
   resendRegisterEmailAction,
   type AuthActionState,
 } from "@/features/auth/actions"
-import { copy } from "@/lib/copy"
+import { copy } from "../../lib/copy"
 import type { Lang } from "@/lib/i18n"
 import { forgotPasswordHref, registerHref, verifyEmailHref } from "@/lib/paths"
 

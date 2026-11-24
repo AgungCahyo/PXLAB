@@ -15,7 +15,7 @@ import {
   type RasterEncoder,
 } from "@/lib/pixel-export-engine"
 import { decodeGif } from "@/lib/pixel-gif-decode.testutil"
-import { compositeLayersToRgba, createEmptyLayer, PIXEL_EXPORT_EDGE_MAX, type PixelLayerRuntime } from "@/lib/pixel"
+import { compositeLayersToRgba, createEmptyLayer, PIXEL_EXPORT_EDGE_MAX, type PixelLayerRuntime } from "./pixel"
 import type { PixelGroupRuntime } from "@/lib/pixel-groups"
 
 const W = 10

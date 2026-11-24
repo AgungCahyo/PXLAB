@@ -16,7 +16,7 @@ export function Textarea({ className, label, hint, error, id, appearance = "defa
   return (
     <div className="grid gap-1.5">
       {label ? (
-        <label htmlFor={id} className="text-[14px] font-medium text-fg">
+        <label htmlFor={id} className="text-[14px] font-semibold text-fg">
           {label}
         </label>
       ) : null}
@@ -25,13 +25,9 @@ export function Textarea({ className, label, hint, error, id, appearance = "defa
         aria-invalid={error ? true : undefined}
         aria-describedby={describedBy}
         className={cn(
-          "min-h-28 w-full px-3 py-2 text-[15px] text-fg placeholder:text-muted",
-          appearance === "social"
-            ? cn(
-                "border bg-soft focus-visible:border-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky",
-                error ? "border-brick" : "border-[color:var(--soc-hairline)]",
-              )
-            : cn("border-[3px] bg-bg", error ? "border-brick" : "border-earth"),
+          "min-h-28 w-full rounded-2xl p-4 text-[15px] text-fg placeholder:text-muted/60 transition-all",
+          "border border-slate-200 bg-slate-50/70 focus-visible:border-[#6355d8] focus-visible:bg-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-500/20",
+          error ? "border-brick ring-2 ring-brick/20" : null,
           className,
         )}
         {...props}
@@ -42,7 +38,7 @@ export function Textarea({ className, label, hint, error, id, appearance = "defa
         </p>
       ) : null}
       {error ? (
-        <p id={id ? `${id}-error` : undefined} className="text-[13px] text-brick" role="alert">
+        <p id={id ? `${id}-error` : undefined} className="text-[13px] font-medium text-brick" role="alert">
           {error}
         </p>
       ) : null}

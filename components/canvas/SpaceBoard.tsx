@@ -16,7 +16,7 @@ import { Button, buttonClassName } from "@/components/ui/Button"
 import { Dialog } from "@/components/ui/Dialog"
 import { Input } from "@/components/ui/Input"
 import { EmptyState } from "@/components/ui/EmptyState"
-import { copy } from "@/lib/copy"
+import { copy } from "../../lib/copy"
 import { href, type Lang } from "@/lib/i18n"
 import { loginHref, registerHref } from "@/lib/paths"
 import {

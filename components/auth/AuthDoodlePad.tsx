@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from "react"
-import { copy } from "@/lib/copy"
+import { copy } from "../../lib/copy"
 import type { Lang } from "@/lib/i18n"
 import { cn } from "@/lib/utils"
 

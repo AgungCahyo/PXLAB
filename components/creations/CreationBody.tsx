@@ -1,6 +1,6 @@
 import { PixelArt } from "@/components/creations/PixelArt"
 import { VisualCanvas } from "@/components/creations/VisualCanvas"
-import { copy } from "@/lib/copy"
+import { copy } from "../../lib/copy"
 import type { Lang } from "@/lib/i18n"
 import type { CreationType } from "@/lib/site"
 import type { CreationContent } from "@/lib/validations/creation"

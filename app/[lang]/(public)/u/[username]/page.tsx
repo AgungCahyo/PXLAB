@@ -2,6 +2,7 @@ import type { Metadata } from "next"
 import Link from "next/link"
 import { notFound } from "next/navigation"
 import { cache, Suspense } from "react"
+import { PixelCatDecoration } from "@/components/brand/PixelCatDecoration"
 import { FollowButton } from "@/components/community/FollowButton"
 import { ProfileAvatar } from "@/components/profiles/ProfileAvatar"
 import { Grid2x22 } from "pixelarticons/react"
@@ -12,7 +13,7 @@ import { WorkTile } from "@/components/social/WorkTile"
 import { isFollowing } from "@/features/community/follows"
 import { countPublishedCreationsByUser, listPublishedCreationsByUser } from "@/features/creations/queries"
 import { getCurrentProfile, getProfileByUsername } from "@/lib/auth/session"
-import { copy } from "@/lib/copy"
+import { copy } from "../../../../../lib/copy"
 import { socialCopy } from "@/lib/copy-social"
 import { formatMonthYear } from "@/lib/format"
 import { href, isLang, type Lang } from "@/lib/i18n"
@@ -75,59 +76,66 @@ export default async function PublicProfilePage({
 
   return (
     <div className="mx-auto w-full min-w-0 max-w-5xl px-3 py-4 sm:px-6 sm:py-6 lg:px-10">
-      <header className="flex min-w-0 items-start gap-3 sm:gap-6">
-        <ProfileAvatar
-          src={profile.avatar_url}
-          avatarConfig={profile.avatar_config}
-          userId={profile.id}
-          alt={name}
-          size="lg"
-          className="shrink-0"
-        />
+      <header className="relative overflow-hidden rounded-3xl border border-slate-200/80 bg-card p-4 shadow-sm sm:p-6">
+        <PixelCatDecoration variant="sitting" size="md" position="top-right" className="hidden opacity-80 sm:block" />
+        <div className="relative z-[1] flex min-w-0 flex-col gap-4 sm:flex-row sm:items-start sm:gap-6">
+          <ProfileAvatar
+            src={profile.avatar_url}
+            avatarConfig={profile.avatar_config}
+            userId={profile.id}
+            alt={name}
+            size="lg"
+            className="shrink-0 border border-slate-200/80"
+          />
 
-        <div className="min-w-0 flex-1">
-          <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-center sm:gap-5">
-            <div className="min-w-0">
-              <h1 className="break-words text-[17px] font-semibold leading-snug text-fg sm:text-[19px]">{name}</h1>
-              <p className="mt-0.5 truncate text-[13px] text-muted">@{profile.username}</p>
+          <div className="min-w-0 flex-1">
+            <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-5">
+              <div className="min-w-0">
+                <h1 className="break-words text-[22px] font-semibold leading-tight tracking-tight text-fg sm:text-[28px]">
+                  {name}
+                </h1>
+                <p className="mt-1 truncate text-[14px] text-muted">@{profile.username}</p>
+              </div>
+              {!ownProfile ? (
+                <FollowButton
+                  lang={lang}
+                  userId={profile.id}
+                  username={profile.username}
+                  initialFollowing={following}
+                  member={Boolean(me)}
+                  returnPath={profilePath}
+                  compact
+                />
+              ) : null}
             </div>
-            {!ownProfile ? (
-              <FollowButton
-                lang={lang}
-                userId={profile.id}
-                username={profile.username}
-                initialFollowing={following}
-                member={Boolean(me)}
-                returnPath={profilePath}
-                compact
-              />
+
+            <ul className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 text-[14px] text-muted">
+              <li className="inline-flex items-center gap-1.5">
+                <span className="font-semibold text-fg">
+                  <Suspense fallback={<Skeleton className="inline-block h-4 w-6 align-middle" />}>
+                    <ProfileWorksCount profileId={profile.id} />
+                  </Suspense>
+                </span>
+                <span>{copy.profileWorksCount[lang].replace("{count}", "").replace(/\s+/g, " ").trim()}</span>
+              </li>
+              {joined ? (
+                <li>
+                  {copy.memberSince[lang]} {joined}
+                </li>
+              ) : null}
+            </ul>
+
+            {profile.bio ? (
+              <p className="mt-4 max-w-2xl whitespace-pre-wrap text-[14px] leading-relaxed text-fg/90 sm:text-[15px]">
+                {profile.bio}
+              </p>
             ) : null}
           </div>
-
-          <ul className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-[14px] text-muted">
-            <li>
-              <Suspense fallback={<Skeleton className="inline-block h-4 w-6 align-middle" />}>
-                <ProfileWorksCount profileId={profile.id} />
-              </Suspense>{" "}
-              {copy.profileWorksCount[lang].replace("{count}", "").replace(/\s+/g, " ").trim()}
-            </li>
-            {joined ? (
-              <li>
-                {copy.memberSince[lang]} {joined}
-              </li>
-            ) : null}
-          </ul>
-
-          {profile.bio ? (
-            <p className="mt-3 max-w-xl whitespace-pre-wrap text-[14px] leading-relaxed text-fg">
-              {profile.bio}
-            </p>
-          ) : null}
         </div>
       </header>
 
       {ownProfile ? (
-        <div className="mt-5 flex flex-wrap gap-2">
+        <div className="mt-4 flex flex-wrap gap-2">
           <Link href={href(lang, "/settings")} className={socialButtonClass({ variant: "soft", size: "sm" })}>
             {copy.nav.settings[lang]}
           </Link>
@@ -143,18 +151,18 @@ export default async function PublicProfilePage({
         </div>
       ) : null}
 
-      <section className="mt-8 min-w-0 border-t border-[color:var(--soc-hairline)]" aria-labelledby="profile-works-heading">
-        <div className="flex justify-center">
+      <section className="mt-8 min-w-0" aria-labelledby="profile-works-heading">
+        <div className="flex items-center justify-between gap-3 border-b border-slate-200/80 pb-3">
           <h2
             id="profile-works-heading"
-            className="inline-flex min-h-11 items-center gap-2 text-[13px] font-semibold text-fg"
+            className="inline-flex min-h-9 items-center gap-2 text-[15px] font-semibold text-fg"
           >
             <Grid2x22 width={16} height={16} aria-hidden="true" />
             {socialCopy.profile.tabWorks[lang]}
           </h2>
         </div>
 
-        <div className="mt-3">
+        <div className="mt-4">
           <Suspense fallback={<ProfileGridSkeleton />}>
             <ProfileWorks
               lang={lang}
@@ -171,7 +179,7 @@ export default async function PublicProfilePage({
 
 async function ProfileWorksCount({ profileId }: { profileId: string }) {
   const total = await countPublishedCreationsByUser(profileId)
-  return <strong className="font-semibold text-fg">{total}</strong>
+  return <>{total}</>
 }
 
 async function ProfileWorks({
@@ -191,6 +199,7 @@ async function ProfileWorks({
   if (works.failed || items === null) {
     return (
       <SocialEmptyState
+        illustration="confused"
         title={copy.exploreLoadError[lang]}
         description={copy.exploreLoadHint[lang]}
         action={
@@ -205,6 +214,7 @@ async function ProfileWorks({
   if (items.length === 0) {
     return (
       <SocialEmptyState
+        illustration={ownProfile ? "drawing" : "sleeping"}
         title={copy.profileEmptyCreations[lang]}
         description={ownProfile ? copy.profileEmptyOwnBody[lang] : copy.profileEmptyBody[lang]}
         action={

@@ -8,8 +8,8 @@ import {
   writeIndicesRectToRgba,
   flattenLayersToIndices,
   type PixelLayerRuntime,
-} from "@/lib/pixel"
-import { PixelHistory } from "@/lib/pixel-history"
+} from "./pixel"
+import { PixelHistory } from "./pixel-history"
 import { bakeMergeDown, bakeVisibleLayers, createPaletteResolver } from "@/lib/pixel-merge"
 
 const W = 10

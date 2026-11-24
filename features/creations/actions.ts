@@ -15,7 +15,7 @@ import {
   isPngBuffer,
   parsePixelSource,
   pixelSizeCategory,
-} from "@/lib/pixel"
+} from "../../lib/pixel"
 import {
   CREATION_PER_MEMBER_MAX,
   PIXEL_BUCKET,

@@ -15,7 +15,7 @@ import {
   rgb24Key,
   rgbToHex,
   type PixelSizePresetId,
-} from "@/lib/pixel"
+} from "./pixel"
 
 export const PIXEL_IMPORT_ACCEPT = "image/png,image/jpeg,image/webp,.png,.jpg,.jpeg,.webp"
 export const PIXEL_IMPORT_MAX_BYTES = 8 * 1024 * 1024

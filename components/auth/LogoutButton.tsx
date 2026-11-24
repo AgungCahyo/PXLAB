@@ -2,7 +2,7 @@
 
 import { socialButtonClass } from "@/components/social/socialButton"
 import { logoutAction } from "@/features/auth/actions"
-import { copy } from "@/lib/copy"
+import { copy } from "../../lib/copy"
 import type { Lang } from "@/lib/i18n"
 import { cn } from "@/lib/utils"
 

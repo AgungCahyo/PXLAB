@@ -1,7 +1,7 @@
 "use client"
 
 import { useCallback, useSyncExternalStore } from "react"
-import { PIXEL_FAVORITE_MAX, PIXEL_RECENT_MAX, normalizePixelHex } from "@/lib/pixel"
+import { PIXEL_FAVORITE_MAX, PIXEL_RECENT_MAX, normalizePixelHex } from "./pixel"
 
 const RECENT_KEY = "pxlb.pixel.recent-colors"
 const FAVORITE_KEY = "pxlb.pixel.favorite-colors"

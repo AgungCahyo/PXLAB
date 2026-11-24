@@ -21,7 +21,7 @@ import {
   type ExploreFeed,
   type ExploreScope,
 } from "@/lib/creations"
-import { copy } from "@/lib/copy"
+import { copy } from "../../lib/copy"
 import type { Lang } from "@/lib/i18n"
 
 /** Tags from the current result page that actually relate to the search text. */
@@ -59,7 +59,7 @@ function ResultSection({
 
 function SearchEmptyNote({ children }: { children: ReactNode }) {
   return (
-    <p className="border border-dashed border-[color:var(--soc-hairline)] px-3 py-2 text-[12px] text-muted">
+    <p className="rounded-xl border border-dashed border-slate-200/80 bg-slate-50/50 px-4 py-3 text-[13px] text-muted">
       {children}
     </p>
   )
@@ -121,10 +121,10 @@ export function SearchOverview({
       <h2 id="search-results-heading" className="sr-only">
         {copy.searchResultsTitle[lang]}
       </h2>
-      <div className="flex min-w-0 items-center justify-end border-b border-[color:var(--soc-hairline)] pb-1">
+      <div className="flex min-w-0 items-center justify-end border-b border-slate-200/80 pb-2">
         <Link
           href={clearHref}
-          className="inline-flex min-h-11 items-center px-1 text-[13px] text-muted hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky"
+          className="inline-flex min-h-9 items-center rounded-full px-3 text-[13px] font-medium text-muted transition-colors hover:bg-slate-100 hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky"
         >
           {copy.searchClear[lang]}
         </Link>
@@ -137,7 +137,8 @@ export function SearchOverview({
     const empty =
       scope === "creators" ? (
         <SocialEmptyState
-          className="px-4 py-8 sm:py-10"
+          className="px-4 py-8 sm:py-10 rounded-3xl border border-dashed border-slate-200/80 bg-slate-50/40"
+          illustration="peeking"
           title={copy.searchCreatorEmpty[lang]}
           description=""
           action={
@@ -148,7 +149,8 @@ export function SearchOverview({
         />
       ) : scope === "creations" ? (
         <SocialEmptyState
-          className="px-4 py-8 sm:py-10"
+          className="px-4 py-8 sm:py-10 rounded-3xl border border-dashed border-slate-200/80 bg-slate-50/40"
+          illustration="confused"
           title={copy.searchCreationEmpty[lang]}
           description=""
           action={
@@ -159,7 +161,8 @@ export function SearchOverview({
         />
       ) : (
         <SocialEmptyState
-          className="px-4 py-8 sm:py-10"
+          className="px-4 py-8 sm:py-10 rounded-3xl border border-dashed border-slate-200/80 bg-slate-50/40"
+          illustration="curious"
           title={copy.searchAllEmpty[lang]}
           description=""
           action={

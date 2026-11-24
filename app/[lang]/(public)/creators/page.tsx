@@ -9,7 +9,7 @@ import { socialButtonClass } from "@/components/social/socialButton"
 import { listFollowingIds } from "@/features/community/follows"
 import { listCreatorWorkPreviews, listNewCreators } from "@/features/creations/queries"
 import { getCurrentProfile } from "@/lib/auth/session"
-import { copy } from "@/lib/copy"
+import { copy } from "../../../../lib/copy"
 import { href, isLang } from "@/lib/i18n"
 import { pageMeta } from "@/lib/meta"
 
@@ -52,11 +52,19 @@ export default async function CreatorsPage({
       <BackLink href={href(lang, "/explore")} className="mb-5">
         {copy.exploreTitle[lang]}
       </BackLink>
-      <PageHeader title={copy.newCreatorsTitle[lang]} intro={copy.newCreatorsIntro[lang]} />
+      <div className="relative overflow-hidden rounded-3xl border border-slate-200/80 bg-card p-5 shadow-sm sm:p-6">
+        <div className="pointer-events-none absolute right-3 top-3 hidden opacity-90 sm:block" aria-hidden="true">
+          <img src="/pixel-cats/celebrating.svg" alt="" width={96} height={96} className="select-none [image-rendering:pixelated]" />
+        </div>
+        <div className="relative z-[1] max-w-2xl pr-0 sm:pr-24">
+          <PageHeader title={copy.newCreatorsTitle[lang]} intro={copy.newCreatorsIntro[lang]} />
+        </div>
+      </div>
 
       {result.failed ? (
         <SocialEmptyState
-          className="mt-6 px-4 py-8 sm:py-10"
+          className="mt-6 px-4 py-8 sm:py-10 rounded-3xl border border-dashed border-slate-200/80 bg-slate-50/40"
+          illustration="confused"
           title={copy.exploreLoadError[lang]}
           description={copy.exploreLoadHint[lang]}
           action={
@@ -67,7 +75,8 @@ export default async function CreatorsPage({
         />
       ) : result.items.length === 0 ? (
         <SocialEmptyState
-          className="mt-6 px-4 py-8 sm:py-10"
+          className="mt-6 px-4 py-8 sm:py-10 rounded-3xl border border-dashed border-slate-200/80 bg-slate-50/40"
+          illustration="peeking"
           title={copy.newCreatorsTitle[lang]}
           description={copy.newCreatorsEmpty[lang]}
         />

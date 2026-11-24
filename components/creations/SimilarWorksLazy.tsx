@@ -8,7 +8,7 @@ import { SocialEmptyState } from "@/components/social/SocialEmptyState"
 import { SectionHeader } from "@/components/ui/PageHeader"
 import { loadSimilarCreationsAction } from "@/features/creations/recommendation-actions"
 import type { CreationCard } from "@/features/creations/queries"
-import { copy } from "@/lib/copy"
+import { copy } from "../../lib/copy"
 import type { Lang } from "@/lib/i18n"
 import type { CreationCategory } from "@/lib/site"
 
@@ -108,9 +108,10 @@ export function SimilarWorksLazy({
     <div ref={rootRef}>
       {pending ? <RecommendationSkeleton label={copy.similarWorksTitle[lang]} /> : null}
       {failed ? (
-        <section className="mt-8 border-t border-[color:var(--soc-hairline)] pt-6" aria-labelledby="similar-works-heading">
+        <section className="mt-8 border-t border-slate-200/80 pt-6" aria-labelledby="similar-works-heading">
           <SectionHeader id="similar-works-heading" title={copy.similarWorksTitle[lang]} />
           <SocialEmptyState
+            illustration="confused"
             title={copy.exploreLoadError[lang]}
             description={copy.exploreLoadHint[lang]}
             action={

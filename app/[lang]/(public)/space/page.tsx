@@ -6,7 +6,7 @@ import { SpaceBoard } from "@/components/canvas/SpaceBoard"
 import { buttonClassName } from "@/components/ui/Button"
 import { listActiveSpaceElements } from "@/features/space/queries"
 import { getCurrentProfile } from "@/lib/auth/session"
-import { copy } from "@/lib/copy"
+import { copy } from "../../../../lib/copy"
 import { href, isLang } from "@/lib/i18n"
 import { pageMeta } from "@/lib/meta"
 

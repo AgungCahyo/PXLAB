@@ -3,7 +3,7 @@
 import { useDeferredValue, useEffect, useId, useMemo, useRef, useState } from "react"
 import { Button } from "@/components/ui/Button"
 import { Dialog } from "@/components/ui/Dialog"
-import { copy } from "@/lib/copy"
+import { copy } from "../../lib/copy"
 import type { Lang } from "@/lib/i18n"
 import { renderComposite, type ExportDocument } from "@/lib/pixel-export-engine"
 import {

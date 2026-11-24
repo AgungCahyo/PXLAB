@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 import { normalizeCreationTag } from "@/lib/creations"
-import { PIXEL_DOCUMENT_PALETTE_MAX } from "@/lib/pixel"
+import { PIXEL_DOCUMENT_PALETTE_MAX } from "../pixel"
 import { CREATION_CAPTION_MAX } from "@/lib/site"
 import {
   creationCaptionSchema,

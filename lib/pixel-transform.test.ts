@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { createEmptyLayer, rotateRect90Cw, type PixelLayerRuntime } from "@/lib/pixel"
+import { createEmptyLayer, rotateRect90Cw, type PixelLayerRuntime } from "./pixel"
 import { createPaletteResolver } from "@/lib/pixel-merge"
 import {
   affineSourceMap,

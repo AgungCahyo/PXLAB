@@ -7,7 +7,7 @@ import { socialButtonClass } from "@/components/social/socialButton"
 import { Button } from "@/components/ui/Button"
 import { Dialog } from "@/components/ui/Dialog"
 import { deleteCreationAction } from "@/features/creations/actions"
-import { copy } from "@/lib/copy"
+import { copy } from "../../lib/copy"
 import type { Lang } from "@/lib/i18n"
 
 function DeleteSubmit({ lang }: { lang: Lang }) {
@@ -25,6 +25,7 @@ export function WorksDeleteButton({
   title,
   published = false,
   onDeleted,
+  variant = "button",
 }: {
   lang: Lang
   creationId: string
@@ -32,6 +33,8 @@ export function WorksDeleteButton({
   published?: boolean
   /** Hide the row immediately after confirm (redirect refreshes list). */
   onDeleted?: () => void
+  /** "button" = standalone ghost button, "menuitem" = flat list row inside a dropdown */
+  variant?: "button" | "menuitem"
 }) {
   const [open, setOpen] = useState(false)
 
@@ -39,7 +42,11 @@ export function WorksDeleteButton({
     <>
       <button
         type="button"
-        className={socialButtonClass({ variant: "ghost", size: "sm" })}
+        className={
+          variant === "menuitem"
+            ? "flex w-full items-center gap-2 px-3 py-2 text-[13px] text-brick hover:bg-soft"
+            : socialButtonClass({ variant: "ghost", size: "sm" })
+        }
         onClick={() => setOpen(true)}
       >
         {copy.createDelete[lang]}

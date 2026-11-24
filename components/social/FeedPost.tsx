@@ -115,94 +115,98 @@ function FeedPostBase({
   const [shareOpen, setShareOpen] = useState(false)
 
   return (
-    <article className="py-4" aria-label={title}>
-      <CreatorLine lang={lang} creator={post.author} at={post.published_at} />
+    <article className="my-5 overflow-hidden rounded-3xl border border-slate-200/80 bg-card shadow-sm transition-all hover:border-slate-300 hover:shadow-md" aria-label={title}>
+      <div className="px-4 pt-4 sm:px-5 sm:pt-5">
+        <CreatorLine lang={lang} creator={post.author} at={post.published_at} />
+      </div>
 
-      <Link href={workHref} className="mt-3 block bg-soft" aria-label={title}>
+      <Link href={workHref} className="mt-3 block bg-slate-50" aria-label={title}>
         {post.cover_url ? (
           <PixelArt src={post.cover_url} alt={title} variant="thumb" framed={false} />
         ) : (
-          <div className="aspect-square w-full bg-soft" />
+          <div className="aspect-square w-full bg-slate-100" />
         )}
       </Link>
 
-      <div className="mt-2 flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-1 text-[14px] leading-snug">
-        <Link href={workHref} className="font-semibold text-fg hover:underline">
-          {title}
-        </Link>
-        {post.isNew ? (
-          <span className="bg-coin px-1.5 py-0.5 text-[10px] font-semibold text-fg">
-            {socialCopy.explore.newBadge[lang]}
-          </span>
-        ) : null}
-        {post.caption ? (
-          <p className="w-full line-clamp-3 whitespace-pre-wrap text-muted">{post.caption}</p>
-        ) : null}
-      </div>
-
-      <div className="-ml-2 mt-2 flex items-center gap-1">
-        <button
-          type="button"
-          onClick={onLike}
-          aria-pressed={liked}
-          aria-label={`${liked ? t.unlike[lang] : t.like[lang]}, ${likeCount}`}
-          className={cn(workActionBaseClass, liked ? "text-brick" : "text-fg")}
-        >
-          <span key={popKey} className={cn("inline-flex", liked && popKey > 0 && "soc-pop")}>
-            <PixelHeart filled={liked} />
-          </span>
-          <span>{likeCount}</span>
-        </button>
-        <button
-          type="button"
-          onClick={() => {
-            setMounted(true)
-            setOpen((value) => !value)
-          }}
-          aria-expanded={open}
-          aria-controls={`comments-${post.id}`}
-          aria-label={`${t.comment[lang]}, ${commentCount}`}
-          className={cn(workActionClass, open && "bg-soft")}
-        >
-          <Comment width={22} height={22} aria-hidden="true" />
-          <span>{commentCount}</span>
-        </button>
-        <button
-          type="button"
-          onClick={() => setShareOpen(true)}
-          aria-label={t.share[lang]}
-          className={workActionClass}
-        >
-          <Share width={22} height={22} aria-hidden="true" />
-        </button>
-      </div>
-      <CreationShareDialog
-        open={shareOpen}
-        onClose={() => setShareOpen(false)}
-        lang={lang}
-        creationId={post.id}
-        title={title}
-        creatorLabel={
-          post.author.displayName?.trim()
-            ? `${post.author.displayName} · @${post.author.username}`
-            : `@${post.author.username}`
-        }
-        coverUrl={post.cover_url}
-        allowArtworkDownload={false}
-        isPixel
-      />
-
-      <div inert={!open} id={`comments-${post.id}`} className="soc-expand mt-2" data-open={open}>
-        <div>
-          {mounted ? (
-            <CommentPanel
-              lang={lang}
-              creationId={post.id}
-              viewer={viewer}
-              onTotal={setCommentCount}
-              loginNext={loginNext}
-            />
+      <div className="px-4 pb-4 pt-3 sm:px-5 sm:pb-5">
+        <div className="flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-1 text-[14px] leading-snug">
+          <Link href={workHref} className="text-[15px] font-semibold text-fg transition-colors hover:text-[#6355d8]">
+            {title}
+          </Link>
+          {post.isNew ? (
+            <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-700">
+              {socialCopy.explore.newBadge[lang]}
+            </span>
           ) : null}
+          {post.caption ? (
+            <p className="mt-1 w-full line-clamp-3 whitespace-pre-wrap text-[14px] leading-relaxed text-muted">{post.caption}</p>
+          ) : null}
+        </div>
+
+        <div className="-ml-2 mt-3 flex items-center gap-1 border-t border-slate-100 pt-2">
+          <button
+            type="button"
+            onClick={onLike}
+            aria-pressed={liked}
+            aria-label={`${liked ? t.unlike[lang] : t.like[lang]}, ${likeCount}`}
+            className={cn(workActionBaseClass, liked ? "text-rose-500" : "text-fg")}
+          >
+            <span key={popKey} className={cn("inline-flex", liked && popKey > 0 && "soc-pop")}>
+              <PixelHeart filled={liked} />
+            </span>
+            <span>{likeCount}</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setMounted(true)
+              setOpen((value) => !value)
+            }}
+            aria-expanded={open}
+            aria-controls={`comments-${post.id}`}
+            aria-label={`${t.comment[lang]}, ${commentCount}`}
+            className={cn(workActionClass, open && "bg-slate-100 text-fg")}
+          >
+            <Comment width={22} height={22} aria-hidden="true" />
+            <span>{commentCount}</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setShareOpen(true)}
+            aria-label={t.share[lang]}
+            className={workActionClass}
+          >
+            <Share width={22} height={22} aria-hidden="true" />
+          </button>
+        </div>
+        <CreationShareDialog
+          open={shareOpen}
+          onClose={() => setShareOpen(false)}
+          lang={lang}
+          creationId={post.id}
+          title={title}
+          creatorLabel={
+            post.author.displayName?.trim()
+              ? `${post.author.displayName} · @${post.author.username}`
+              : `@${post.author.username}`
+          }
+          coverUrl={post.cover_url}
+          allowArtworkDownload={false}
+          isPixel
+        />
+
+        <div inert={!open} id={`comments-${post.id}`} className="soc-expand mt-1" data-open={open}>
+          <div>
+            {mounted ? (
+              <CommentPanel
+                lang={lang}
+                creationId={post.id}
+                viewer={viewer}
+                onTotal={setCommentCount}
+                loginNext={loginNext}
+              />
+            ) : null}
+          </div>
         </div>
       </div>
     </article>

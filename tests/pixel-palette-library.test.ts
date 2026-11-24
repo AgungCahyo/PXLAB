@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs"
 import path from "node:path"
 import { describe, expect, it } from "vitest"
-import { PIXEL_PAPER, PIXEL_SWATCHES } from "@/lib/pixel"
+import { PIXEL_PAPER, PIXEL_SWATCHES } from "../lib/pixel"
 import {
   BUILTIN_PALETTES,
   PALETTE_LIBRARY_CATEGORIES,

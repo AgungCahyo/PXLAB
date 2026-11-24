@@ -3,7 +3,7 @@
 import { Button } from "@/components/ui/Button"
 import { Input } from "@/components/ui/Input"
 import { VisualCanvas } from "@/components/creations/VisualCanvas"
-import { copy } from "@/lib/copy"
+import { copy } from "../../lib/copy"
 import type { Lang } from "@/lib/i18n"
 import {
   CREATION_VISUAL_MAX_ELEMENTS,

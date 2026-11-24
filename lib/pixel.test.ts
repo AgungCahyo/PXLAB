@@ -54,8 +54,6 @@ import {
   rotateRect90Cw,
   setPixel,
   stampBrush,
-  measurePixelTextBox,
-  stampText,
   strokeBrushLineSymmetric,
   strokeCubicBezier,
   strokeQuadraticBezier,
@@ -385,24 +383,6 @@ describe("pixel buffer", () => {
     expect([pixels[(15 * w + 15) * 4], pixels[(15 * w + 15) * 4 + 1], pixels[(15 * w + 15) * 4 + 2]]).toEqual([
       1, 2, 3,
     ])
-    fillPaper(pixels)
-    stampText(pixels, 1, 1, "A", [9, 8, 7], w, h)
-    expect(pixels[(1 * w + 3) * 4]).toBe(9)
-    fillPaper(pixels)
-    stampText(pixels, 0, 0, "A", [9, 8, 7], w, h)
-    stampText(pixels, 8, 0, "a", [9, 8, 7], w, h)
-    expect(pixels[2 * 4]).toBe(9)
-    expect(pixels[8 * 4]).toBe(255)
-    fillPaper(pixels)
-    stampText(pixels, 0, 0, "A", [4, 5, 6], w, h, { width: 10, height: 14, scale: 2 })
-    expect(pixels[4 * 4]).toBe(4)
-    expect(measurePixelTextBox("  Hi  ", 1).text).toBe("Hi")
-    expect(measurePixelTextBox("  Hi  ", 1, undefined, { trim: false }).text).toBe("  Hi  ")
-    expect(measurePixelTextBox("Hi", 1).width).toBe(11)
-    const wrapped = measurePixelTextBox("HelloWorld", 1, 18)
-    expect(wrapped.height).toBeGreaterThan(7)
-    const point = measurePixelTextBox("HelloWorld", 1)
-    expect(point.height).toBe(7)
     fillLinearGradient(pixels, 0, 0, 15, 0, [[0, 0, 0], [255, 255, 255]], w, h)
     expect(pixels[0]).toBe(0)
     expect(pixels[15 * 4]).toBe(255)

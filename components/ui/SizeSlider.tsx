@@ -1,6 +1,6 @@
 "use client"
 
-import { PIXEL_STROKE_MAX, PIXEL_STROKE_MIN, clampStrokeWidth } from "@/lib/pixel"
+import { PIXEL_STROKE_MAX, PIXEL_STROKE_MIN, clampStrokeWidth } from "../../lib/pixel"
 import { cn } from "@/lib/utils"
 
 export function SizeSlider({

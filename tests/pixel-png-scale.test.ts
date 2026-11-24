@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { PIXEL_EXPORT_EDGE_MAX, PIXEL_PAPER, hexToRgb } from "@/lib/pixel"
+import { PIXEL_EXPORT_EDGE_MAX, PIXEL_PAPER, hexToRgb } from "../lib/pixel"
 import {
   assertDownloadScaleAllowed,
   downloadExportOptions,

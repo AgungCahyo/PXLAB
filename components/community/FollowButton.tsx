@@ -10,7 +10,7 @@ import {
   unfollowCreatorAction,
   type CommunityActionState,
 } from "@/features/community/actions"
-import { copy } from "@/lib/copy"
+import { copy } from "../../lib/copy"
 import type { Lang } from "@/lib/i18n"
 import { loginHref } from "@/lib/paths"
 import { reconcileDesiredState } from "@/lib/social-like"

@@ -8,7 +8,7 @@ import {
   type PixelClipboard,
   type PixelSelection,
   type PixelSymmetry,
-} from "@/lib/pixel"
+} from "./pixel"
 
 /**
  * Brush engine for indexed-colour documents.

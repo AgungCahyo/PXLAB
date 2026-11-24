@@ -50,7 +50,7 @@ import {
   writeLocalCreationSource,
 } from "@/lib/creation-metadata-local"
 import { displayTitle, isUnnamedTitle, titleForStorage } from "@/lib/creations"
-import { copy } from "@/lib/copy"
+import { copy } from "../../lib/copy"
 import { CornerBusyMark } from "@/components/layout/CornerBusy"
 import { beginGlobalBusy, endGlobalBusy } from "@/lib/global-busy"
 import { href, type Lang } from "@/lib/i18n"
@@ -63,7 +63,7 @@ import {
   formatPixelSize,
   PIXEL_DOCUMENT_PALETTE_MAX,
   PIXEL_INK,
-  PIXEL_LAYER_MAX,
+  canAddLayer,
   PIXEL_PALETTE,
   PIXEL_PAPER,
   normalizePixelHex,
@@ -73,11 +73,13 @@ import {
   type PixelZoom,
 } from "@/lib/pixel"
 import type { PixelGroupInfo, PixelLayerInfo, PixelLayerStylePatch } from "@/components/canvas/PixelBoard"
+import type { TextToolState } from "@/components/canvas/text-tool"
+import { TextInspector } from "./TextInspector"
 import {
   LayerMobileSheet,
   LayerMobileStrip,
   type LayerPanelFeedback,
-} from "@/components/creations/LayerPanel"
+} from "./LayerPanel"
 
 function inkLayerSource(width: number, height: number): PixelSource {
   const layer = createEmptyLayer(width, height, "Layer 1")
@@ -197,6 +199,7 @@ export function PlaygroundForm({
   const [documentPalette, setDocumentPalette] = useState<string[]>(serverPalette)
   const [boardSource, setBoardSource] = useState<PixelSource | null>(initialSource)
   const [layers, setLayers] = useState<PixelLayerInfo[]>([])
+  const [textState, setTextState] = useState<TextToolState>({ selected: null, editing: false })
   const [groups, setGroups] = useState<PixelGroupInfo[]>([])
   const [layerSheetId, setLayerSheetId] = useState<string | null>(null)
   const [layerThumbEpoch, setLayerThumbEpoch] = useState(0)
@@ -718,7 +721,6 @@ export function PlaygroundForm({
     tool === "eraser" ||
     tool === "line" ||
     tool === "bezier" ||
-    tool === "text" ||
     showShapeOptions
   const showSymmetryControls = tool === "pencil" || tool === "circle" || tool === "eraser"
   const mobileBrushId = useId()
@@ -816,9 +818,7 @@ export function PlaygroundForm({
 
   const sizeLabel = showShapeOptions
     ? copy.pixelStrokeWidth[lang]
-    : tool === "text"
-      ? copy.pixelTextSize[lang]
-      : copy.pixelBrushSize[lang]
+    : copy.pixelBrushSize[lang]
   const brushSelect = (fieldId: string) =>
     showBrushControls ? (
       <SizeSlider
@@ -1234,7 +1234,7 @@ export function PlaygroundForm({
   const beginImportFile = useCallback(
     (file: File | null | undefined) => {
       if (!file) return
-      if (layers.length >= PIXEL_LAYER_MAX) {
+      if (!canAddLayer(layers)) {
         flashEdit(copy.pixelImportLayerLimit[lang])
         return
       }
@@ -1277,6 +1277,8 @@ export function PlaygroundForm({
     onRename: (id: string, name: string) => boardRef.current?.renameLayer(id, name) ?? false,
     onMove: (id: string, toStackIndex: number) => boardRef.current?.moveLayer(id, toStackIndex) ?? false,
     onStyle: (id: string, patch: PixelLayerStylePatch) => boardRef.current?.setLayerStyle(id, patch) ?? false,
+    onEditText: (id: string) => boardRef.current?.editText(id) ?? false,
+    onRasterize: (id: string) => boardRef.current?.rasterizeText(id) ?? false,
     groupApi: {
       groups,
       onCreate: (layerIds: string[], name?: string) =>
@@ -1289,6 +1291,15 @@ export function PlaygroundForm({
     } satisfies LayerGroupApi,
     onFeedback: flashLayer,
   }
+
+  const typographyPanel = textState.selected ? (
+    <TextInspector
+      lang={lang}
+      text={textState.selected}
+      palette={documentPalette}
+      onChange={(patch, key) => boardRef.current?.updateText(patch, key)}
+    />
+  ) : null
 
   const layerActions =
     layers.length > 0 ? (
@@ -1501,11 +1512,15 @@ export function PlaygroundForm({
                 onSelectionChange={setHasSelection}
                 onClipboardChange={setHasClipboard}
                 onLayersChange={setLayers}
+                onTextStateChange={setTextState}
                 onGroupsChange={setGroups}
                 onEditFeedback={(kind) => {
                   if (kind === "copied") flashEdit(copy.pixelCopied[lang])
                   else if (kind === "cut") flashEdit(copy.pixelCutDone[lang])
                   else if (kind === "pasted") flashEdit(copy.pixelPasted[lang])
+                  else if (kind === "text-layer") flashEdit(copy.pixelTextLayerBlocked[lang])
+                  else if (kind === "text-locked") flashEdit(copy.pixelLayerLockedFlash[lang])
+                  else if (kind === "text-max") flashEdit(copy.pixelTextMax[lang])
                   else flashEdit(copy.pixelClipboardEmpty[lang])
                 }}
                 onShapeDraftChange={(info) => {
@@ -1556,6 +1571,7 @@ export function PlaygroundForm({
                   }
                 : undefined
             }
+            typographyPanel={typographyPanel}
             showBrushControls={showBrushControls && !showShapeOptions}
             brushLabel={sizeLabel}
             showShapeOptions={showShapeOptions}
@@ -1731,6 +1747,9 @@ export function PlaygroundForm({
                 </div>
               ) : null}
               {shapeMobileOptions}
+              {typographyPanel ? (
+                <div className="max-h-64 w-full overflow-y-auto px-1 md:hidden">{typographyPanel}</div>
+              ) : null}
               {selectionActions}
             </>
           ) : null}
@@ -1959,7 +1978,7 @@ export function PlaygroundForm({
                 className="studio-hit border-earth bg-bg text-fg disabled:opacity-40"
                 aria-label={copy.pixelImport[lang]}
                 title={copy.pixelImport[lang]}
-                disabled={layers.length >= PIXEL_LAYER_MAX}
+                disabled={!canAddLayer(layers)}
                 onClick={() => importInputRef.current?.click()}
               >
                 <PixelIcon name="image" />

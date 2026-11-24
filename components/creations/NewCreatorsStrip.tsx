@@ -2,7 +2,7 @@ import Link from "next/link"
 import { CreatorCardList } from "@/components/creations/CreatorCardList"
 import { DiscoveryNote } from "@/components/creations/DiscoveryNote"
 import { SectionHeader } from "@/components/ui/PageHeader"
-import { copy } from "@/lib/copy"
+import { copy } from "../../lib/copy"
 import { href, type Lang } from "@/lib/i18n"
 import type { CreatorWorkPreview, NewCreatorCard } from "@/features/creations/queries"
 

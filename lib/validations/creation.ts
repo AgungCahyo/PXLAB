@@ -17,7 +17,7 @@ import {
   isPixelHexColor,
   normalizePixelHex,
   type PixelStageGround,
-} from "@/lib/pixel"
+} from "../pixel"
 import {
   CREATION_CAPTION_MAX,
   CREATION_TAGS_MAX,

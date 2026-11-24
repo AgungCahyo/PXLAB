@@ -10,7 +10,7 @@ import { socialButtonClass } from "@/components/social/socialButton"
 import { useInfiniteList } from "@/components/social/useInfiniteList"
 import { loadMoreHomeFeedAction } from "@/features/feed/actions"
 import type { FeedKind, FeedPostData } from "@/features/feed/queries"
-import { copy } from "@/lib/copy"
+import { copy } from "../../lib/copy"
 import { socialCopy } from "@/lib/copy-social"
 import type { Lang } from "@/lib/i18n"
 import { cn } from "@/lib/utils"
@@ -62,7 +62,7 @@ function HomeFeedList({
         </Link>
       ) : null}
 
-      <div className="divide-y divide-[color:var(--soc-hairline)]">
+      <div className="grid gap-1">
         {items.map((post) => (
           <FeedPost
             key={post.id}

@@ -1,6 +1,7 @@
 import Link from "next/link"
+import { PixelCatDecoration } from "@/components/brand/PixelCatDecoration"
 import { WorkTile } from "@/components/social/WorkTile"
-import { copy, creationCategoryLabels } from "@/lib/copy"
+import { copy, creationCategoryLabels } from "../../lib/copy"
 import { href, type Lang } from "@/lib/i18n"
 import type { CreationCard as CreationCardData } from "@/features/creations/queries"
 import type { CreationCategory } from "@/lib/site"
@@ -22,22 +23,24 @@ export function CreateInspiration({
 
   return (
     <section
-      className="mt-8 border-t border-[color:var(--soc-hairline)] pt-6"
+      className="relative mt-8 overflow-hidden rounded-3xl border border-slate-200/80 bg-card p-5 shadow-sm sm:p-6"
       aria-labelledby="create-inspiration-heading"
     >
-      <h2 id="create-inspiration-heading" className="text-[15px] font-medium text-fg">
-        {copy.createInspirationTitle[lang]}
-      </h2>
-      <p className="mt-2 text-[14px]">
+      <PixelCatDecoration variant="looking" size="md" position="top-right" className="opacity-80" />
+      <div className="relative z-[1] max-w-2xl pr-14 sm:pr-20">
+        <h2 id="create-inspiration-heading" className="text-[18px] font-semibold text-fg">
+          {copy.createInspirationTitle[lang]}
+        </h2>
+        <p className="mt-2 text-[14px] leading-relaxed text-muted">{copy.createRemixPrompt[lang]}</p>
         <Link
           href={href(lang, "/explore")}
-          className="text-muted underline-offset-4 hover:text-fg hover:underline"
+          className="mt-3 inline-flex min-h-9 items-center text-[13px] font-medium text-[#6355d8] hover:underline"
         >
-          {copy.createRemixPrompt[lang]}
+          {copy.nav.explore[lang]}
         </Link>
-      </p>
+      </div>
       {sections.length === 0 ? null : (
-        <div className="mt-6 grid gap-8">
+        <div className="relative z-[1] mt-6 grid gap-8">
           {sections.map((section) => (
             <div key={section.size}>
               <p className="text-[14px] font-medium text-fg">

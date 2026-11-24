@@ -4,7 +4,7 @@ import { useActionState } from "react"
 import { Alert } from "@/components/ui/Alert"
 import { Button } from "@/components/ui/Button"
 import { signInWithGoogleAction, type AuthActionState } from "@/features/auth/actions"
-import { copy } from "@/lib/copy"
+import { copy } from "../../lib/copy"
 import type { Lang } from "@/lib/i18n"
 
 function GoogleMark({ className }: { className?: string }) {

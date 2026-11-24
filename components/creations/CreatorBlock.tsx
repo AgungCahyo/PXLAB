@@ -6,7 +6,7 @@ import {
 import { CreatorLine } from "@/components/social/CreatorLine"
 import { WorkTile } from "@/components/social/WorkTile"
 import { SectionHeader } from "@/components/ui/PageHeader"
-import { copy } from "@/lib/copy"
+import { copy } from "../../lib/copy"
 import type { Lang } from "@/lib/i18n"
 import { cn } from "@/lib/utils"
 import type { CreationAuthor, CreationCard as CreationCardData } from "@/features/creations/queries"
@@ -43,7 +43,7 @@ export function CreatorBlock({
       className={cn(!flush && "mt-8 border-t border-[color:var(--soc-hairline)] pt-6")}
       aria-labelledby="creator-block-heading"
     >
-      <div className="flex min-w-0 items-center gap-3">
+      <div className="flex min-w-0 items-center gap-3 rounded-2xl border border-slate-200/80 bg-slate-50/50 p-3 sm:p-4">
         <div className="min-w-0 flex-1">
           <h2 id="creator-block-heading" className="sr-only">
             {author.displayName?.trim() || author.username}
@@ -59,7 +59,7 @@ export function CreatorBlock({
             }}
           />
           {publishedLabel ? (
-            <p className="mt-1 truncate text-[12px] text-muted">{publishedLabel}</p>
+            <p className="mt-1 truncate pl-[3.125rem] text-[12px] text-muted">{publishedLabel}</p>
           ) : null}
         </div>
         {canFollow ? (
@@ -96,7 +96,7 @@ export function CreatorOtherWorks({
 
   return (
     <section
-      className="mt-8 border-t border-[color:var(--soc-hairline)] pt-6"
+      className="mt-8 border-t border-slate-200/80 pt-6"
       aria-labelledby="creator-other-works-heading"
     >
       <SectionHeader

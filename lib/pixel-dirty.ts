@@ -1,4 +1,4 @@
-import { clampStrokeWidth, type PixelRect, type PixelSymmetry } from "@/lib/pixel"
+import { clampStrokeWidth, type PixelRect, type PixelSymmetry } from "./pixel"
 
 /** Inclusive brush reach around a cell center. Matches `stampBrush`. */
 export function brushDirtyPad(size: number) {

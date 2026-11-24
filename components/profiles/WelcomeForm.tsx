@@ -13,7 +13,7 @@ import {
   type AvatarConfig,
 } from "@/lib/avatar-gen"
 import type { MemberProfile } from "@/lib/auth/session"
-import { copy } from "@/lib/copy"
+import { copy } from "../../lib/copy"
 import { href, type Lang } from "@/lib/i18n"
 import { authDestination } from "@/lib/paths"
 import { cn } from "@/lib/utils"

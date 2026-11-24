@@ -14,7 +14,7 @@ import {
   rgb24Key,
   snapCssScaleToDevicePixels,
   snapOriginToDevicePixels,
-} from "@/lib/pixel"
+} from "../lib/pixel"
 import { scaleRgbaNearest } from "@/lib/pixel-png-scale"
 
 function paletteSet(palette: readonly string[]) {

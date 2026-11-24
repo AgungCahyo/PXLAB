@@ -3,7 +3,7 @@
 import { Download, Share, X } from "lucide-react"
 import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/Button"
-import { copy } from "@/lib/copy"
+import { copy } from "../../lib/copy"
 import type { Lang } from "@/lib/i18n"
 import {
   isIosSafari,

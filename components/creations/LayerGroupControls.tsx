@@ -3,7 +3,7 @@
 import { useId, useState } from "react"
 import type { PixelGroupInfo, PixelGroupStylePatch, PixelLayerInfo } from "@/components/canvas/PixelBoard"
 import { PixelIcon } from "@/components/ui/PixelIcon"
-import { copy, pixelBlendLabels } from "@/lib/copy"
+import { copy, pixelBlendLabels } from "../../lib/copy"
 import type { Lang } from "@/lib/i18n"
 import { PIXEL_BLEND_MODES, type PixelBlendMode } from "@/lib/pixel-blend"
 

@@ -1,4 +1,4 @@
-import { copy } from "@/lib/copy"
+import { copy } from "./copy"
 import { href, type Lang } from "@/lib/i18n"
 import {
   CREATION_TAG_MAX_LEN,

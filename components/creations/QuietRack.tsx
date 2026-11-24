@@ -1,7 +1,7 @@
 import { DiscoveryNote } from "@/components/creations/DiscoveryNote"
 import { WorkTile } from "@/components/social/WorkTile"
 import { SectionHeader } from "@/components/ui/PageHeader"
-import { copy } from "@/lib/copy"
+import { copy } from "../../lib/copy"
 import type { Lang } from "@/lib/i18n"
 import type { CreationCard as CreationCardData } from "@/features/creations/queries"
 

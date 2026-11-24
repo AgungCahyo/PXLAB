@@ -2,7 +2,7 @@
 
 import { useId } from "react"
 import type { PixelLayerInfo, PixelLayerStylePatch } from "@/components/canvas/PixelBoard"
-import { copy, pixelBlendLabels } from "@/lib/copy"
+import { copy, pixelBlendLabels } from "../../lib/copy"
 import type { Lang } from "@/lib/i18n"
 import { PIXEL_BLEND_MODES, type PixelBlendMode } from "@/lib/pixel-blend"
 

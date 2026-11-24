@@ -29,6 +29,6 @@
     ".next/types/**/*.ts",
     ".next/dev/types/**/*.ts",
     "**/*.mts"
-  ],
+, "lib/copy.ts", "lib/pixel.test.ts", "lib/pixel.ts", "tests/pixel-studio-redesign.test.ts", "tests/text-tool-controller.test.ts", "lib/pixel-history.ts"  ],
   "exclude": ["node_modules", "supabase/functions"]
 }

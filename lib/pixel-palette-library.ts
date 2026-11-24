@@ -11,7 +11,7 @@ import {
   PIXEL_SWATCHES,
   ensurePaletteColor,
   normalizePixelHex,
-} from "@/lib/pixel"
+} from "./pixel"
 
 export type PaletteLibraryCategory = "builtin" | "retro" | "nature" | "pastel" | "mono" | "custom"
 

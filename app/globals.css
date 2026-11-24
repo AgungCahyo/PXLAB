@@ -2,20 +2,23 @@
 
 /* Modern Pixel Playground — PIXEL-ART-DESIGN-SYSTEM.md */
 :root {
-  --bg: #fffdf7;
-  --fg: #282b35;
-  --muted: #5c5866;
-  --line: #936037;
+  --bg: #f8f9fc;
+  --fg: #1e1b4b;
+  --muted: #64748b;
+  --line: #cbd5e1;
   --card: #ffffff;
-  --accent: #59bceb;
-  --sky: #59bceb;
-  --grass: #45a849;
-  --brick: #e94b3c;
-  --coin: #ffd447;
-  --earth: #936037;
-  --soft: #f4f1e8;
-  --shadow: 4px 4px 0 #282b35;
-  --shadow-pressed: 1px 1px 0 #282b35;
+  --accent: #6355d8;
+  --sky: #38bdf8;
+  --grass: #10b981;
+  --brick: #f43f5e;
+  --coin: #f59e0b;
+  --earth: #78716c;
+  --soft: #f1f0f8;
+  --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px -1px rgba(0, 0, 0, 0.05);
+  --shadow-pressed: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --primary: #6355d8;
+  --primary-hover: #5245c7;
+  --primary-soft: #f0edff;
   color-scheme: light;
 
   /* DM Sans — informative UI */
@@ -312,10 +315,10 @@ body {
 }
 
 .pixel-frame {
-  border: 3px solid var(--earth);
+  border: 1px solid var(--soc-hairline);
   box-shadow: var(--shadow);
   background: var(--card);
-  border-radius: 0;
+  border-radius: 1rem;
 }
 
 /* Selected chrome lives here so .pixel-frame cannot swallow Tailwind border/shadow. */
@@ -390,6 +393,16 @@ body {
   image-rendering: pixelated;
   image-rendering: crisp-edges;
   shape-rendering: crispEdges;
+}
+
+@keyframes pxlb-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
+}
+
+@keyframes pxlb-bob {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-2px) rotate(-1deg); }
 }
 
 .pixel-view-canvas {
@@ -655,7 +668,7 @@ body:has([data-chrome="playground"]) .corner-busy-shell {
  */
 @media (min-width: 48rem) {
   body:has(.social-rail) .shell-content {
-    padding-left: 15rem;
+    padding-left: 16rem;
   }
   body:has(.social-rail) #main {
     padding-top: 0;
@@ -664,11 +677,10 @@ body:has([data-chrome="playground"]) .corner-busy-shell {
 
 /*
  * Social design tokens + primitives (Phase 2).
- * Flat surfaces, no heavy borders — pixel identity comes from square corners,
- * the PXLB palette and the crisp motion below. Studio never uses these classes.
+ * Flat surfaces, clean borders — modern pixel identity.
  */
 :root {
-  --soc-hairline: color-mix(in srgb, var(--earth) 18%, transparent);
+  --soc-hairline: rgba(226, 232, 240, 0.85);
   --soc-ease: cubic-bezier(0.2, 0.8, 0.2, 1);
   --soc-fast: 120ms;
   --soc-base: 200ms;
@@ -756,4 +768,21 @@ body:has([data-chrome="playground"]) .corner-busy-shell {
   .auth-flat .pixel-press:active {
     box-shadow: none !important;
   }
+}
+
+article[data-creator-card] {
+  border-radius: 1rem;
+  border: 1px solid rgba(226, 232, 240, 0.8);
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  transition: all 0.2s ease;
+}
+article[data-creator-card]:hover {
+  border-color: rgba(203, 213, 225, 0.9);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.08), 0 2px 4px -2px rgba(0, 0, 0, 0.04);
+}
+
+/* Text tool: the textarea draws no glyphs (the canvas does); only caret and selection show. */
+.pixel-text-input::selection {
+  background: rgba(89, 188, 235, 0.55);
+  color: transparent;
 }

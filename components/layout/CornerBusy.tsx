@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react"
 import { createPortal } from "react-dom"
 import { usePathname, useSearchParams } from "next/navigation"
 import { beginGlobalBusy, endGlobalBusy, subscribeGlobalBusy } from "@/lib/global-busy"
-import { copy } from "@/lib/copy"
+import { copy } from "../../lib/copy"
 import type { Lang } from "@/lib/i18n"
 import { cn } from "@/lib/utils"
 

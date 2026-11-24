@@ -10,7 +10,7 @@ import {
   type ExploreFeed,
   type ExploreScope,
 } from "@/lib/creations"
-import { copy } from "@/lib/copy"
+import { copy } from "../../lib/copy"
 import { socialButtonClass } from "@/components/social/socialButton"
 import type { Lang } from "@/lib/i18n"
 import { EXPLORE_SEARCH_MAX, SEARCH_MIN_LENGTH } from "@/lib/site"
@@ -76,7 +76,7 @@ export function ExploreSearch({
             placeholder={t.searchPlaceholder[lang]}
             aria-invalid={error ? true : undefined}
             aria-describedby={error ? "explore-search-error" : undefined}
-            className="min-h-12 w-full min-w-0 border border-transparent bg-soft py-2.5 pl-11 pr-3 text-[16px] text-fg placeholder:text-muted focus-visible:border-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky"
+            className="min-h-12 w-full min-w-0 rounded-2xl border border-slate-200/90 bg-white py-2.5 pl-11 pr-4 text-[15px] text-fg placeholder:text-muted/60 shadow-sm transition-all focus-visible:border-[#6355d8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-500/20"
           />
         </label>
         <button

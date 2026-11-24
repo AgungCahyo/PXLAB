@@ -4,7 +4,7 @@ import {
   pointInSelection,
   selectionFromPolygonVertices,
   type PixelSelection,
-} from "@/lib/pixel"
+} from "./pixel"
 
 const W = 20
 const H = 20

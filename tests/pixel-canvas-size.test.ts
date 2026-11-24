@@ -7,7 +7,7 @@ import {
   PIXEL_SQUARE_PRESETS,
   isPixelCanvasSize,
   pixelSizeCategory,
-} from "@/lib/pixel"
+} from "../lib/pixel"
 
 describe("pixel canvas size stage 5", () => {
   it("allows a long side up to 1024 while capping area at 512²", () => {

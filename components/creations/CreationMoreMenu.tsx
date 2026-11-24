@@ -10,7 +10,7 @@ import {
   type CreationActionState,
 } from "@/features/creations/actions"
 import { canDownloadCreationPng } from "@/lib/auth/permissions"
-import { copy } from "@/lib/copy"
+import { copy } from "../../lib/copy"
 import type { Lang } from "@/lib/i18n"
 import { exportPngForDownloadClient } from "@/lib/pixel-export-client"
 import {
@@ -200,7 +200,7 @@ export function CreationMoreMenu({
   const sizeLabel = `${out.width}×${out.height}`
   const social = variant === "detail"
   const fieldClass = social
-    ? "min-h-11 border border-[color:var(--soc-hairline)] bg-soft px-3 text-[14px] text-fg focus-visible:border-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky"
+    ? "min-h-11 rounded-xl border border-slate-200/80 bg-slate-50 px-3 text-[14px] text-fg focus-visible:border-[#6355d8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-500/20"
     : "min-h-11 border-[3px] border-earth bg-card px-3 text-[14px] text-fg"
 
   const body = (

@@ -1,7 +1,7 @@
 "use client"
 
 import { useId, useState } from "react"
-import { copy } from "@/lib/copy"
+import { copy } from "../../lib/copy"
 import type { Lang } from "@/lib/i18n"
 import { BRUSH_SPACING_MAX, clampBrushOptions, type BrushOptions } from "@/lib/pixel-brush"
 

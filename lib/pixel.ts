@@ -1,5 +1,5 @@
 /** Shared pixel math for the Playground and the local Space prototype. */
-import { glyphRows, PIXEL_FONT_H, PIXEL_FONT_LEADING, PIXEL_FONT_TRACK, PIXEL_FONT_W } from "@/lib/pixel-font"
+import { normalizeTextObject, type PixelTextObject } from "@/lib/pixel-text/model"
 import { patternHit, type PixelFillPattern } from "@/lib/pixel-pattern"
 import {
   blendChannel,
@@ -204,6 +204,12 @@ export const PIXEL_SOURCE_VERSION_V3 = 3
 export const PIXEL_SOURCE_VERSION_V4 = 4
 export const PIXEL_SOURCE_ENCODING = "rle-index" as const
 export const PIXEL_LAYER_MAX = 8
+/**
+ * Text layers have their own budget so a busy design can carry many text objects without
+ * eating the painted-layer limit. The two together bound the document.
+ */
+export const PIXEL_TEXT_LAYER_MAX = 16
+export const PIXEL_LAYER_TOTAL_MAX = PIXEL_LAYER_MAX + PIXEL_TEXT_LAYER_MAX
 /**
  * Max palette entries including Paper at index 0.
  * Indices are Uint8 (0–255); 256 is the hard architectural ceiling without a format change.
@@ -1082,123 +1088,6 @@ export function fillLinearGradient(
       const rgb = stops[Math.round(t * last)] ?? stops[0]
       setPixel(pixels, x, y, rgb, width, height)
     }
-  }
-}
-
-export function wrapPixelText(text: string, maxWidth: number): string[] {
-  const limit = Math.max(PIXEL_FONT_W, maxWidth)
-  const lines: string[] = []
-  for (const paragraph of text.replace(/\r/g, "").split("\n")) {
-    if (paragraph.length === 0) {
-      lines.push("")
-      continue
-    }
-    let line = ""
-    let width = 0
-    for (const char of paragraph) {
-      const advance = PIXEL_FONT_W + (line ? PIXEL_FONT_TRACK : 0)
-      if (line && width + advance > limit) {
-        lines.push(line)
-        line = char
-        width = PIXEL_FONT_W
-      } else {
-        line += char
-        width += advance
-      }
-    }
-    lines.push(line)
-  }
-  return lines.length > 0 ? lines : [""]
-}
-
-export function pixelTextNaturalSize(lines: readonly string[]) {
-  let width = 0
-  for (const line of lines) {
-    if (line.length === 0) continue
-    width = Math.max(width, line.length * PIXEL_FONT_W + (line.length - 1) * PIXEL_FONT_TRACK)
-  }
-  const height =
-    lines.length === 0 ? PIXEL_FONT_H : lines.length * PIXEL_FONT_H + (lines.length - 1) * PIXEL_FONT_LEADING
-  return { width: Math.max(1, width), height: Math.max(PIXEL_FONT_H, height) }
-}
-
-/**
- * Measure a text box that hugs the glyph grid.
- * - Point Text: omit `wrapWidthPx` — no automatic wrapping.
- * - Paragraph Text: pass width in pixels — wrap at that width; height follows content.
- * - `trim` only for commit/paste; keep mid-edit trailing spaces when false.
- */
-export function measurePixelTextBox(
-  text: string,
-  scale = 1,
-  wrapWidthPx?: number,
-  opts?: { trim?: boolean },
-) {
-  const raw = text.replace(/\r/g, "")
-  const cleaned = opts?.trim === false ? raw : raw.trim()
-  const step = Math.max(1, Math.round(scale))
-  const wrapAt =
-    wrapWidthPx === undefined
-      ? Number.POSITIVE_INFINITY
-      : Math.max(PIXEL_FONT_W, Math.floor(wrapWidthPx / step))
-  const lines = wrapPixelText(cleaned.length > 0 ? cleaned : " ", wrapAt)
-  const natural = pixelTextNaturalSize(lines)
-  return {
-    text: cleaned,
-    width: Math.max(PIXEL_FONT_W * step, natural.width * step),
-    height: Math.max(PIXEL_FONT_H * step, natural.height * step),
-  }
-}
-
-function paintGlyph(
-  plot: (x: number, y: number) => void,
-  originX: number,
-  originY: number,
-  char: string,
-) {
-  const rows = glyphRows(char)
-  for (let row = 0; row < PIXEL_FONT_H; row += 1) {
-    const bits = rows[row] ?? 0
-    for (let col = 0; col < PIXEL_FONT_W; col += 1) {
-      if (bits & (1 << (PIXEL_FONT_W - 1 - col))) plot(originX + col, originY + row)
-    }
-  }
-}
-
-export function stampText(
-  pixels: Uint8ClampedArray,
-  originX: number,
-  originY: number,
-  text: string,
-  rgb: readonly [number, number, number],
-  width: number,
-  height: number,
-  box?: { width: number; height?: number; scale?: number; wrap?: boolean },
-) {
-  const source = text.replace(/\r/g, "").trim()
-  if (!source) return
-  const scale = Math.max(1, Math.round(box?.scale ?? 1))
-  const shouldWrap = Boolean(box?.wrap)
-  const wrapAt = shouldWrap
-    ? Math.max(PIXEL_FONT_W, Math.floor((box?.width ?? width) / scale))
-    : Number.POSITIVE_INFINITY
-  const lines = wrapPixelText(source, wrapAt)
-  // Never clip by box height — Paragraph Text grows with content; Point hugs content.
-  const plot = (x: number, y: number) => {
-    for (let sy = 0; sy < scale; sy += 1) {
-      for (let sx = 0; sx < scale; sx += 1) {
-        setPixel(pixels, originX + x * scale + sx, originY + y * scale + sy, rgb, width, height)
-      }
-    }
-  }
-  let y = 0
-  for (const line of lines) {
-    let x = 0
-    for (const char of line) {
-      paintGlyph(plot, x, y, char)
-      x += PIXEL_FONT_W + PIXEL_FONT_TRACK
-    }
-    y += PIXEL_FONT_H + PIXEL_FONT_LEADING
   }
 }
 
@@ -2537,6 +2426,11 @@ export type PixelLayerV3 = PixelLayerV2 & {
   blend: PixelBlendMode
   /** Painting cannot change which cells are transparent. Default false. */
   lockAlpha: boolean
+  /**
+   * Present on text layers. `runs` still holds the rasterised pixels, so a client that does not
+   * know about text objects shows the same picture and an older artwork simply has no `text`.
+   */
+  text?: PixelTextObject
 }
 
 export type PixelSourceV3 = {
@@ -2585,6 +2479,43 @@ export type PixelLayerRuntime = {
   lockAlpha?: boolean
   /** Id of the group this layer belongs to; missing or null means ungrouped. */
   group?: string | null
+  /**
+   * Set on text layers: the editable object this layer's `indices` are rasterised from.
+   * Painting tools skip these layers; rasterise the layer to turn it back into pixels.
+   */
+  text?: PixelTextObject
+}
+
+export function isTextLayer(layer: Pick<PixelLayerRuntime, "text">): layer is { text: PixelTextObject } {
+  return Boolean(layer.text)
+}
+
+export function rasterLayerCount(layers: readonly { text?: unknown }[]) {
+  let n = 0
+  for (const layer of layers) if (!layer.text) n += 1
+  return n
+}
+
+/** Whether another layer of this kind fits. */
+export function canAddLayer(layers: readonly { text?: unknown }[], kind: "raster" | "text" = "raster") {
+  const raster = rasterLayerCount(layers)
+  return kind === "raster"
+    ? raster < PIXEL_LAYER_MAX
+    : layers.length - raster < PIXEL_TEXT_LAYER_MAX
+}
+
+/**
+ * Keep the text object's mirrored fields in step with the layer that owns them. Visibility, lock
+ * and opacity belong to the layer system; the object only mirrors them. Returns the same object
+ * when nothing changed so history can keep sharing it.
+ */
+export function syncTextMirror(layer: PixelLayerRuntime) {
+  const text = layer.text
+  if (!text) return
+  const opacity = layerOpacity(layer)
+  if (text.visible !== layer.visible || text.locked !== layer.locked || text.opacity !== opacity) {
+    layer.text = { ...text, visible: layer.visible, locked: layer.locked, opacity }
+  }
 }
 
 export function layerOpacity(layer: Pick<PixelLayerRuntime, "opacity">) {
@@ -2597,7 +2528,7 @@ export function layerBlend(layer: Pick<PixelLayerRuntime, "blend">): PixelBlendM
 
 /** True when the layer uses any V3 feature. */
 export function layerUsesV3(layer: PixelLayerRuntime) {
-  return !isPlainBlend(layerOpacity(layer), layerBlend(layer)) || Boolean(layer.lockAlpha)
+  return !isPlainBlend(layerOpacity(layer), layerBlend(layer)) || Boolean(layer.lockAlpha) || Boolean(layer.text)
 }
 
 export function layersNeedV3(layers: readonly PixelLayerRuntime[]) {
@@ -2969,6 +2900,17 @@ export function buildPixelSource(
   }
 }
 
+function textRow(layer: PixelLayerRuntime): { text?: PixelTextObject } {
+  if (!layer.text) return {}
+  const text = normalizeTextObject({
+    ...layer.text,
+    visible: layer.visible !== false,
+    locked: Boolean(layer.locked),
+    opacity: layerOpacity(layer),
+  })
+  return text ? { text } : {}
+}
+
 /**
  * Serialises a layered document. Writes V3 only when a layer uses opacity, a blend mode or the
  * transparency lock; otherwise V2, so documents that do not use the new features stay readable
@@ -2981,7 +2923,7 @@ export function buildPixelSourceV2(
   palette: readonly string[] = PIXEL_PALETTE,
   groups: readonly PixelGroupRuntime[] = [],
 ): PixelSourceV2 | PixelSourceV3 | PixelSourceV4 {
-  const safe = layers.slice(0, PIXEL_LAYER_MAX)
+  const safe = layers.slice(0, PIXEL_LAYER_TOTAL_MAX)
   const list =
     safe.length > 0
       ? safe
@@ -3012,6 +2954,7 @@ export function buildPixelSourceV2(
         blend: layerBlend(layer),
         lockAlpha: Boolean(layer.lockAlpha),
         group: layer.group && ids.has(layer.group) ? layer.group : null,
+        ...textRow(layer),
       })),
       groups: cleanGroups.map((group) => ({
         id: group.id,
@@ -3035,6 +2978,7 @@ export function buildPixelSourceV2(
         opacity: layerOpacity(layer),
         blend: layerBlend(layer),
         lockAlpha: Boolean(layer.lockAlpha),
+        ...textRow(layer),
       })),
     }
   }
@@ -3093,7 +3037,7 @@ export function parsePixelSource(
     return { ok: true, data, indices, layers, groups: [] }
   }
 
-  if (!Array.isArray(value.layers) || value.layers.length < 1 || value.layers.length > PIXEL_LAYER_MAX) {
+  if (!Array.isArray(value.layers) || value.layers.length < 1 || value.layers.length > PIXEL_LAYER_TOTAL_MAX) {
     return { ok: false, error: "invalid_source" }
   }
   const isV4 = version === PIXEL_SOURCE_VERSION_V4
@@ -3133,12 +3077,17 @@ export function parsePixelSource(
       const opacity = clampLayerOpacity(row.opacity)
       const blend = isPixelBlendMode(row.blend) ? row.blend : "normal"
       const lockAlpha = row.lockAlpha === true
+      // Lenient: a malformed text record degrades to a plain pixel layer (the raster is still there).
+      const text = normalizeTextObject(row.text)
+      if (text) {
+        runtime.text = { ...text, visible: layer.visible, locked: layer.locked, opacity }
+      }
       if (isV4) {
         const group = typeof row.group === "string" && row.group ? row.group : null
-        stored.push({ ...layer, opacity, blend, lockAlpha, group })
+        stored.push({ ...layer, opacity, blend, lockAlpha, group, ...(runtime.text ? { text: runtime.text } : {}) })
         runtime.group = group
       } else {
-        stored.push({ ...layer, opacity, blend, lockAlpha })
+        stored.push({ ...layer, opacity, blend, lockAlpha, ...(runtime.text ? { text: runtime.text } : {}) })
       }
       runtime.opacity = opacity
       runtime.blend = blend
@@ -3149,11 +3098,16 @@ export function parsePixelSource(
     layers.push(runtime)
   }
 
+  const rasterCount = rasterLayerCount(layers)
+  if (rasterCount > PIXEL_LAYER_MAX || layers.length - rasterCount > PIXEL_TEXT_LAYER_MAX) {
+    return { ok: false, error: "invalid_source" }
+  }
+
   let groups: PixelGroupRuntime[] = []
   if (isV4) {
     // Lenient: skip malformed group records, then repair the layout (unknown references,
     // split runs, empty groups) so the document always opens.
-    const rawGroups = Array.isArray(value.groups) ? value.groups.slice(0, PIXEL_LAYER_MAX) : []
+    const rawGroups = Array.isArray(value.groups) ? value.groups.slice(0, PIXEL_LAYER_TOTAL_MAX) : []
     const parsedGroups: PixelGroupRuntime[] = []
     for (const raw of rawGroups) {
       if (!raw || typeof raw !== "object") continue

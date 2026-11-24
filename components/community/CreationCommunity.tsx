@@ -33,7 +33,7 @@ import {
 import { forkCreationAction, type CreationActionState } from "@/features/creations/actions"
 import type { ConversationNote, ConversationRoot } from "@/lib/conversation"
 import { isCommentEdited, mergeConversation } from "@/lib/conversation"
-import { copy } from "@/lib/copy"
+import { copy } from "../../lib/copy"
 import { socialCopy } from "@/lib/copy-social"
 import { formatRelativeTime } from "@/lib/format"
 import { href, type Lang } from "@/lib/i18n"
@@ -221,12 +221,12 @@ export function CreationCommunity({
   return (
     <section
       id="creation-conversation"
-      className="mt-8 border-t border-[color:var(--soc-hairline)] pt-6"
+      className="mt-8 border-t border-slate-200/80 pt-6"
       aria-labelledby="conversation-heading"
     >
-      <h2 id="conversation-heading" className="text-[15px] font-medium text-fg">
+      <h2 id="conversation-heading" className="text-[17px] font-semibold text-fg">
         {copy.commentsTitle[lang]}
-        {headingCount > 0 ? ` (${headingCount})` : ""}
+        {headingCount > 0 ? <span className="ml-1 text-muted">({headingCount})</span> : ""}
       </h2>
       {source ? (
         <p className="mt-3 text-[14px] text-muted">
@@ -257,7 +257,7 @@ export function CreationCommunity({
       ) : (
         <ul className="mt-8">
           {thread.map((root) => (
-            <li key={root.id} id={`comment-${root.id}`} className="border-b border-[color:var(--soc-hairline)] py-4">
+            <li key={root.id} id={`comment-${root.id}`} className="border-b border-slate-100 py-5 last:border-b-0">
               <ConversationNoteRow
                 lang={lang}
                 note={root}
@@ -373,10 +373,8 @@ function GuestConversationComposer({
 }) {
   const login = loginHref(lang, href(lang, `/creation/${creationId}`))
   return (
-    <div className="grid gap-3">
-      <p className="w-full bg-soft px-3 py-3 text-left text-[14px] text-muted">
-        {prompt}
-      </p>
+    <div className="grid gap-3 rounded-2xl border border-slate-200/80 bg-slate-50/60 p-4">
+      <p className="text-[14px] leading-relaxed text-muted">{prompt}</p>
       <Link href={login} className={cn(socialButtonClass({ variant: "solid", size: "sm" }), "w-fit")}>
         {copy.conversationGuestPrompt[lang]}
       </Link>
@@ -528,7 +526,7 @@ function ConversationComposer({
     return (
       <button
         type="button"
-        className="w-full bg-soft px-3 py-3 text-left text-[14px] text-muted hover:text-fg"
+        className="w-full rounded-2xl border border-slate-200/80 bg-slate-50/70 px-4 py-3 text-left text-[14px] text-muted transition-colors hover:border-slate-300 hover:bg-white hover:text-fg"
         onClick={() => setOpen(true)}
       >
         {rootPrompt}
@@ -785,7 +783,7 @@ export function CreationEngagement({
       {allowFork ? (
         <ForkForm lang={lang} creationId={creationId} member={Boolean(member)} remixCount={remixCount} />
       ) : remixCount > 0 ? (
-        <span className="inline-flex min-h-11 items-center px-2 text-[13px] text-muted">
+        <span className="inline-flex min-h-11 items-center px-2 text-[13px] font-medium text-muted">
           {copy.remixCount[lang].replace("{count}", String(remixCount))}
         </span>
       ) : null}

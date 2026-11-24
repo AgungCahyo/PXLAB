@@ -5,7 +5,7 @@ import { PasswordField } from "@/components/auth/PasswordField"
 import { Alert } from "@/components/ui/Alert"
 import { Button } from "@/components/ui/Button"
 import { updatePasswordAction, type AuthActionState } from "@/features/auth/actions"
-import { copy } from "@/lib/copy"
+import { copy } from "../../lib/copy"
 import type { Lang } from "@/lib/i18n"
 
 export function ResetPasswordForm({ lang, next }: { lang: Lang; next: string }) {

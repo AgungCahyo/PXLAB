@@ -8,6 +8,7 @@ import {
   useState,
   type ReactNode,
 } from "react"
+import { cn } from "@/lib/utils"
 import { useRouter } from "next/navigation"
 import { LogoutButton } from "@/components/auth/LogoutButton"
 import { LanguageSwitch } from "@/components/layout/LanguageSwitch"
@@ -26,7 +27,7 @@ import {
 } from "@/features/profiles/actions"
 import { prepareAvatarFile } from "@/lib/avatar-image"
 import type { MemberProfile } from "@/lib/auth/session"
-import { copy } from "@/lib/copy"
+import { copy } from "../../lib/copy"
 import { href, type Lang } from "@/lib/i18n"
 
 function SettingsSection({
@@ -39,9 +40,9 @@ function SettingsSection({
   children: ReactNode
 }) {
   return (
-    <section className="border border-[color:var(--soc-hairline)] bg-card p-4 sm:p-5">
-      <h2 className="text-[15px] font-medium text-fg">{title}</h2>
-      {hint ? <p className="mt-1 text-[13px] leading-snug text-muted">{hint}</p> : null}
+    <section className="rounded-2xl border border-slate-200/80 bg-card p-4 shadow-sm sm:p-5">
+      <h2 className="text-[16px] font-semibold text-fg">{title}</h2>
+      {hint ? <p className="mt-1 text-[13px] leading-relaxed text-muted">{hint}</p> : null}
       <div className="mt-4">{children}</div>
     </section>
   )
@@ -152,13 +153,13 @@ export function SettingsForm({ lang, profile }: { lang: Lang; profile: MemberPro
   }
 
   return (
-    <div className="mt-8 grid max-w-xl gap-6">
+    <div className="mt-6 grid gap-5">
       <button
         type="button"
         onClick={() => void leave()}
         disabled={leaving || pending}
         aria-busy={leaving || undefined}
-        className={socialButtonClass({ variant: "ghost", size: "sm" })}
+        className={cn(socialButtonClass({ variant: "ghost", size: "sm" }), "w-fit")}
       >
         <PixelIcon name="back" />
         {leaving ? copy.settingsSaving[lang] : copy.settingsBack[lang]}

@@ -10,7 +10,7 @@ import {
   parsePixelSource,
   type ColorUsageEntry,
   type PixelSource,
-} from "@/lib/pixel"
+} from "../../lib/pixel"
 import {
   EXPLORE_PAGE_SIZE,
   PIXEL_BUCKET,

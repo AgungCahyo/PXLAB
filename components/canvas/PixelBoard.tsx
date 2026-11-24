@@ -20,7 +20,7 @@ import {
 } from "@/lib/pixel-transform"
 import { clampLayerOpacity, isPixelBlendMode, type PixelBlendMode } from "@/lib/pixel-blend"
 import { type PixelFillPattern } from "@/lib/pixel-pattern"
-import { PixelHistory, type HistoryFrame } from "@/lib/pixel-history"
+import { PixelHistory, type HistoryFrame } from "../../lib/pixel-history"
 import {
   assignLayerToGroup as assignLayerToGroupModel,
   cloneGroups,
@@ -47,10 +47,9 @@ import {
   useLayoutEffect,
   useRef,
   useState,
-  type CSSProperties,
 } from "react"
 import { Button } from "@/components/ui/Button"
-import { copy } from "@/lib/copy"
+import { copy } from "../../lib/copy"
 import type { Lang } from "@/lib/i18n"
 import {
   PIXEL_CANVAS_SIZE,
@@ -111,9 +110,9 @@ import {
   applyAlphaLock,
   snapshotIndicesRect,
   writeIndicesRectToRgba,
-  measurePixelTextBox,
-  PIXEL_LAYER_MAX,
-  pointInPixelRect,
+  canAddLayer,
+  PIXEL_LAYER_TOTAL_MAX,
+  syncTextMirror,
   pointInSelection,
   rasterizeCubicPath,
   rasterizePolygon,
@@ -138,7 +137,6 @@ import {
   type SelectionCombineMode,
   snapCssScaleToDevicePixels,
   snapOriginToDevicePixels,
-  stampText as stampTextBitmap,
   stepBrushSize,
   stepZoom,
   strokeBrushLine,
@@ -158,8 +156,10 @@ import {
   type PixelSource,
   type PixelSymmetry,
   type PixelZoom,
-} from "@/lib/pixel"
-import { PIXEL_FONT_H, PIXEL_FONT_LEADING, PIXEL_FONT_W } from "@/lib/pixel-font"
+} from "../../lib/pixel"
+import { TextToolController, type TextToolEnv, type TextToolState } from "@/components/canvas/text-tool"
+import { TextEditOverlay, type TextEditOverlayHandle } from "@/components/canvas/TextEditOverlay"
+import { createTextId, textObjectsEqual, type PixelTextObject } from "../../lib/pixel-text/model"
 import { mergeImportIntoDocumentPalette } from "@/lib/pixel-import"
 import { clampDirtyRect, dirtyRectForSegment, unionDirtyRect } from "@/lib/pixel-dirty"
 import { cn } from "@/lib/utils"
@@ -210,24 +210,9 @@ export type ShapeDraftInfo = {
   width: number
   height: number
 }
-/** Paragraph Text: only left/right change wrap width. Height always follows content. */
-const PARAGRAPH_HANDLES = [
-  { id: "e", cursor: "ew-resize", style: { right: -5, top: "50%", marginTop: -6 } },
-  { id: "w", cursor: "ew-resize", style: { left: -5, top: "50%", marginTop: -6 } },
-] as const
-type TextHandle = (typeof PARAGRAPH_HANDLES)[number]["id"]
-/** Point Text = click; Paragraph Text = click-drag (Photoshop model). */
-type TextMode = "point" | "paragraph"
-type TextFrame = {
-  id: string
-  x: number
-  y: number
-  width: number
-  height: number
-  text: string
-  mode: TextMode
-}
-type PlacedText = TextFrame & { color: string; scale: number }
+const DRAW_TOOLS = new Set<Tool>([
+  "pencil", "circle", "eraser", "fill", "polygon", "line", "rect", "ellipse", "bezier", "gradient",
+])
 
 /** Session clipboard shared across Playground remounts in the same tab. */
 let sessionClipboard: PixelClipboard | null = null
@@ -245,6 +230,8 @@ export type PixelLayerInfo = {
   lockAlpha: boolean
   /** Id of the group this layer is in, or null. */
   group: string | null
+  /** The editable text object when this is a text layer. */
+  text: PixelTextObject | null
 }
 
 export type PixelGroupInfo = {
@@ -274,6 +261,7 @@ function cloneLayers(layers: PixelLayerRuntime[]): PixelLayerRuntime[] {
     blend: layer.blend,
     lockAlpha: layer.lockAlpha,
     group: layer.group ?? null,
+    text: layer.text ? { ...layer.text } : undefined,
     indices: new Uint8Array(layer.indices),
   }))
 }
@@ -360,12 +348,15 @@ export type PixelBoardHandle = {
   pasteClipboard: () => boolean
   deleteSelection: () => boolean
   hasClipboard: () => boolean
-  stampText: (
-    x: number,
-    y: number,
-    text: string,
-    box?: { width: number; height?: number; scale?: number; wrap?: boolean },
-  ) => void
+  /** Selected text object and whether its editing overlay is open. */
+  getTextState: () => TextToolState
+  /** Typography or box change on the selected text object. One undo step, or one per `coalesceKey` burst. */
+  updateText: (patch: Partial<PixelTextObject>, coalesceKey?: string) => boolean
+  /** Turn a text layer into ordinary pixels. */
+  rasterizeText: (layerId: string) => boolean
+  /** Select a text layer's object and open the editor. */
+  editText: (layerId: string) => boolean
+  deleteSelectedText: () => boolean
   replaceColor: (fromHex: string, toHex: string) => number
   removeColor: (hex: string) => { ok: true; replaced: number } | { ok: false; error: "paper" | "missing" }
   /**
@@ -463,7 +454,10 @@ export type PixelBoardProps = {
   onClipboardChange?: (hasClipboard: boolean) => void
   onLayersChange?: (layers: PixelLayerInfo[]) => void
   onGroupsChange?: (groups: PixelGroupInfo[]) => void
-  onEditFeedback?: (kind: "copied" | "cut" | "pasted" | "clipboard-empty") => void
+  onEditFeedback?: (
+    kind: "copied" | "cut" | "pasted" | "clipboard-empty" | "text-layer" | "text-locked" | "text-max",
+  ) => void
+  onTextStateChange?: (state: TextToolState) => void
   onShapeDraftChange?: (info: ShapeDraftInfo) => void
   onPaletteFull?: () => void
   /** Right-click or touch long-press on the view canvas. */
@@ -505,6 +499,7 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
     onLayersChange,
     onGroupsChange,
     onEditFeedback,
+    onTextStateChange,
     onShapeDraftChange,
     onPaletteFull,
     onCanvasMenu,
@@ -609,17 +604,18 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
   } | null>(null)
   const onShapeDraftChangeRef = useRef(onShapeDraftChange)
   onShapeDraftChangeRef.current = onShapeDraftChange
-  const [textFrame, setTextFrame] = useState<TextFrame | null>(null)
-  const textFrameRef = useRef<TextFrame | null>(null)
-  const textOverlayRef = useRef<HTMLDivElement | null>(null)
-  const textAreaRef = useRef<HTMLTextAreaElement | null>(null)
-  const textResizeRef = useRef<{ handle: TextHandle; x: number; y: number; width: number; height: number } | null>(
-    null,
-  )
-  const textMoveRef = useRef<{ grabX: number; grabY: number } | null>(null)
-  const textCreateRef = useRef<{ start: PixelPoint; end: PixelPoint } | null>(null)
-  const placedTextsRef = useRef<PlacedText[]>([])
-  const textIdRef = useRef(0)
+  const textToolRef = useRef<TextToolController | null>(null)
+  const textEnvRef = useRef<TextToolEnv | null>(null)
+  const textOverlayRef = useRef<TextEditOverlayHandle | null>(null)
+  const [textUi, setTextUi] = useState<TextToolState>({ selected: null, editing: false })
+  const textUiRef = useRef<TextToolState>({ selected: null, editing: false })
+  const textUiRafRef = useRef(0)
+  const textAutosaveRef = useRef(0)
+  const lastActiveIdRef = useRef<string | null>(null)
+  /** Id of the layer the editable pixel buffer was loaded from (guards stale writes). */
+  const imageLayerIdRef = useRef<string | null>(null)
+  const onTextStateChangeRef = useRef(onTextStateChange)
+  onTextStateChangeRef.current = onTextStateChange
   const moveRef = useRef<{
     origin: PixelSelection
     grabX: number
@@ -730,7 +726,6 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
   const gridVisible = gridVisibleProp ?? internalGrid
   const symmetry = symmetryProp ?? internalSymmetry
   toolRef.current = tool
-  textFrameRef.current = textFrame
   colorRef.current = color
   brushRef.current = brushSize
   gridRef.current = gridVisible
@@ -742,6 +737,12 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
 
   const emitLayers = () => {
     const active = activeLayerIndexRef.current
+    for (const layer of layersRef.current) syncTextMirror(layer)
+    const activeId = layersRef.current[active]?.id ?? null
+    if (activeId !== lastActiveIdRef.current) {
+      lastActiveIdRef.current = activeId
+      if (toolRef.current === "text") getTextTool().syncSelectionToActive()
+    }
     onLayersChangeRef.current?.(
       layersRef.current.map((layer, index) => ({
         id: layer.id,
@@ -753,6 +754,7 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
         blend: layerBlend(layer),
         lockAlpha: Boolean(layer.lockAlpha),
         group: layer.group ?? null,
+        text: layer.text ?? null,
       })),
     )
     onGroupsChangeRef.current?.(groupInfoList(groupsRef.current))
@@ -762,6 +764,10 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
     const layers = layersRef.current
     const active = layers[activeLayerIndexRef.current]
     if (!active || !imageRef.current) return
+    // Text layers are never painted, and a buffer loaded from another layer must not be written back.
+    if (active.text) return
+    const owner = imageLayerIdRef.current
+    if (owner && owner !== active.id) return
     const w = canvasWidthRef.current
     const h = canvasHeightRef.current
     // Transparency lock only means something on layers above the base (the base has no empty cells).
@@ -800,6 +806,7 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
     if (!imageRef.current || imageRef.current.width !== w || imageRef.current.height !== h) {
       imageRef.current = new ImageData(w, h)
     }
+    imageLayerIdRef.current = active ? (active.text ? "__text__" : active.id) : null
     if (active) {
       indicesToRgba(active.indices, imageRef.current.data, paletteRef.current)
     } else {
@@ -816,7 +823,7 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
 
   const activeLayerEditable = () => {
     const layer = layersRef.current[activeLayerIndexRef.current]
-    return Boolean(layer && !layer.locked)
+    return Boolean(layer && !layer.locked && !layer.text)
   }
 
   const currentHistoryState = () => {
@@ -1263,19 +1270,7 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
       viewCtx.restore()
     }
 
-    const creating = textCreateRef.current
-    if (creating) {
-      const rect = normalizePixelRect(creating.start.x, creating.start.y, creating.end.x, creating.end.y)
-      viewCtx.save()
-      viewCtx.strokeStyle = "rgba(40, 43, 53, 0.95)"
-      viewCtx.lineWidth = 1 / scale
-      viewCtx.setLineDash([2 / scale, 2 / scale])
-      viewCtx.strokeRect(rect.x, rect.y, rect.width, rect.height)
-      viewCtx.strokeStyle = "rgba(255, 253, 247, 0.95)"
-      viewCtx.lineDashOffset = 2 / scale
-      viewCtx.strokeRect(rect.x, rect.y, rect.width, rect.height)
-      viewCtx.restore()
-    }
+    if (toolRef.current === "text") textToolRef.current?.drawOverlay(viewCtx)
 
     const draft = shapeDraftRef.current
     if (draft) {
@@ -1384,13 +1379,8 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
       viewCtx.restore()
     }
 
-    const overlay = textOverlayRef.current
-    const frame = textFrameRef.current
-    if (overlay && frame) {
-      overlay.style.transform = `translate(${originX + frame.x * scale}px, ${originY + frame.y * scale}px)`
-      overlay.style.width = `${Math.max(1, frame.width * scale)}px`
-      overlay.style.height = `${Math.max(1, frame.height * scale)}px`
-    }
+    const editMetrics = textToolRef.current?.overlayMetrics()
+    if (editMetrics) textOverlayRef.current?.sync({ originX, originY, scale }, editMetrics)
     onViewChangeRef.current?.()
   }
 
@@ -1787,157 +1777,132 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
   const updateShapeDraftRef = useRef(updateShapeDraft)
   updateShapeDraftRef.current = updateShapeDraft
 
-  const cancelTextFrame = () => {
-    textFrameRef.current = null
-    textResizeRef.current = null
-    textMoveRef.current = null
-    textCreateRef.current = null
-    setTextFrame(null)
+  /**
+   * Text tool. The controller owns text selection, creation, move, resize and editing; the board
+   * supplies the document (layers, palette, history, recompositing) through this environment.
+   */
+  textEnvRef.current = {
+    layers: () => layersRef.current,
+    activeIndex: () => activeLayerIndexRef.current,
+    setActive: (index) => {
+      ensureSelectionCommitted()
+      syncActiveFromImage()
+      activeLayerIndexRef.current = index
+      selectionFloatRef.current = null
+      selectionFloatingRef.current = false
+      loadActiveIntoImage()
+      emitLayers()
+    },
+    size: () => ({ width: canvasWidthRef.current, height: canvasHeightRef.current }),
+    viewScale: () => cameraRef.current.scale,
+    drawingColor: () => colorRef.current,
+    colorIndex: (hex) => {
+      if (!adoptColor(hex)) return null
+      const index = paletteIndexOf(paletteRef.current, hex)
+      return index >= 0 ? index : null
+    },
+    layerHidden: (layer) => layerEffectivelyHidden(layer, groupsRef.current),
+    pushUndo: () => pushUndo(),
+    pushUndoCoalesced: (key) => {
+      const now = Date.now()
+      const last = styleUndoRef.current
+      const fresh = !last || last.key !== key || now - last.at > 900
+      if (fresh) pushUndo()
+      styleUndoRef.current = { key, at: now }
+      return fresh
+    },
+    discardUndo: () => {
+      historyRef.current.discardLast()
+      setHistoryTick((value) => value + 1)
+      emitHistory()
+    },
+    changed: (rect, opts) => {
+      if (opts?.structure) {
+        loadActiveIntoImage()
+        emitLayers()
+        schedule()
+      } else if (rect) {
+        scheduleRect(rect)
+      } else {
+        scheduleView()
+      }
+      window.clearTimeout(textAutosaveRef.current)
+      if (opts?.typing) {
+        // Keystrokes only mark the draft dirty after a short pause; the model is already current.
+        textAutosaveRef.current = window.setTimeout(() => onStrokeEnd?.(), 600)
+      } else {
+        onStrokeEnd?.()
+      }
+    },
+    requestView: () => scheduleView(),
+    flash: (kind) => onEditFeedbackRef.current?.(kind === "max" ? "text-max" : "text-locked"),
+    paletteFull: () => onPaletteFullRef.current?.(),
   }
 
-  const commitTextFrame = () => {
-    const frame = textFrameRef.current
-    if (!frame) return
-    const scale = brushRef.current
-    const wrap = frame.mode === "paragraph"
-    const measured = measurePixelTextBox(frame.text, scale, wrap ? frame.width : undefined, {
-      trim: true,
-    })
-    cancelTextFrame()
-    if (!measured.text) return
-    const adoption = ensurePaletteColor(paletteRef.current, colorRef.current)
-    if ("error" in adoption) {
-      if (adoption.error === "palette_full") onPaletteFullRef.current?.()
-      return
+  function getTextTool(): TextToolController {
+    if (textToolRef.current) return textToolRef.current
+    const env = () => textEnvRef.current!
+    const proxy: TextToolEnv = {
+      layers: () => env().layers(),
+      activeIndex: () => env().activeIndex(),
+      setActive: (i) => env().setActive(i),
+      size: () => env().size(),
+      viewScale: () => env().viewScale(),
+      drawingColor: () => env().drawingColor(),
+      colorIndex: (hex) => env().colorIndex(hex),
+      layerHidden: (layer) => env().layerHidden(layer),
+      pushUndo: () => env().pushUndo(),
+      pushUndoCoalesced: (key) => env().pushUndoCoalesced(key),
+      discardUndo: () => env().discardUndo(),
+      changed: (rect, opts) => env().changed(rect, opts),
+      requestView: () => env().requestView(),
+      flash: (kind) => env().flash(kind),
+      paletteFull: () => env().paletteFull(),
     }
-    const canvasW = canvasWidthRef.current
-    const canvasH = canvasHeightRef.current
-    const width = wrap
-      ? Math.min(frame.width, canvasW - frame.x)
-      : Math.min(measured.width, canvasW - frame.x)
-    const height = Math.min(measured.height, canvasH - frame.y)
-    const color = colorRef.current
-    const placed: PlacedText = {
-      ...frame,
-      text: measured.text,
-      width,
-      height,
-      color,
-      scale,
-    }
-    placedTextsRef.current = [
-      ...placedTextsRef.current.filter((item) => item.id !== placed.id),
-      placed,
-    ]
-    runBufferOp(() => {
-      adoptColor(colorRef.current)
-      stampTextBitmap(image().data, placed.x, placed.y, placed.text, hexToRgb(color), canvasW, canvasH, {
-        width: placed.width,
-        scale,
-        wrap,
+    textToolRef.current = new TextToolController(proxy, () => {
+      if (textUiRafRef.current) return
+      // Coalesce to one React update per frame: dragging a box or typing must not re-render per event.
+      textUiRafRef.current = window.requestAnimationFrame(() => {
+        textUiRafRef.current = 0
+        const next = textToolRef.current!.state()
+        const prev = textUiRef.current
+        const same =
+          prev.editing === next.editing &&
+          (prev.selected === next.selected ||
+            (prev.selected !== null &&
+              next.selected !== null &&
+              textObjectsEqual({ ...prev.selected, text: "" }, { ...next.selected, text: "" })))
+        if (same) return
+        textUiRef.current = next
+        setTextUi(next)
+        onTextStateChangeRef.current?.(next)
       })
     })
+    return textToolRef.current
   }
-  const commitTextFrameRef = useRef(commitTextFrame)
-  commitTextFrameRef.current = commitTextFrame
-
-  const finishTextCreate = (end: PixelPoint) => {
-    const draft = textCreateRef.current
-    textCreateRef.current = null
-    if (!draft) return
-    const scale = brushRef.current
-    const canvasW = canvasWidthRef.current
-    const canvasH = canvasHeightRef.current
-    const minW = PIXEL_FONT_W * scale
-    const minH = PIXEL_FONT_H * scale
-    const dragged = Math.hypot(end.x - draft.start.x, end.y - draft.start.y)
-    textIdRef.current += 1
-    const id = `text-${textIdRef.current}`
-    let next: TextFrame
-    if (dragged < 2) {
-      // Point Text — click once; box hugs glyphs as the user types.
-      next = {
-        id,
-        x: Math.max(0, Math.min(draft.start.x, canvasW - minW)),
-        y: Math.max(0, Math.min(draft.start.y, canvasH - minH)),
-        width: minW,
-        height: minH,
-        text: "",
-        mode: "point",
-      }
-    } else {
-      // Paragraph Text — drag sets wrap width; height is only a starting estimate.
-      const rect = normalizePixelRect(draft.start.x, draft.start.y, end.x, end.y)
-      const width = Math.max(minW, rect.width)
-      const fitted = measurePixelTextBox("", scale, width, { trim: false })
-      next = {
-        id,
-        x: Math.min(rect.x, canvasW - minW),
-        y: Math.min(rect.y, canvasH - minH),
-        width: Math.min(width, canvasW - Math.min(rect.x, canvasW - minW)),
-        height: Math.min(fitted.height, canvasH - Math.min(rect.y, canvasH - minH)),
-        text: "",
-        mode: "paragraph",
-      }
-    }
-    textFrameRef.current = next
-    setTextFrame(next)
-    scheduleView()
-  }
-
-  const beginEditPlacedText = (placed: PlacedText) => {
-    commitTextFrameRef.current()
-    placedTextsRef.current = placedTextsRef.current.filter((item) => item.id !== placed.id)
-    runBufferOp(() => {
-      clearRectToPaper(
-        image().data,
-        { x: placed.x, y: placed.y, width: placed.width, height: placed.height },
-        canvasWidthRef.current,
-        canvasHeightRef.current,
-      )
-    })
-    colorRef.current = placed.color
-    brushRef.current = placed.scale as PixelBrushSize
-    onColorChange?.(placed.color)
-    onBrushSizeChange?.(placed.scale as PixelBrushSize)
-    const next: TextFrame = {
-      id: placed.id,
-      x: placed.x,
-      y: placed.y,
-      width: placed.width,
-      height: placed.height,
-      text: placed.text,
-      mode: placed.mode,
-    }
-    textFrameRef.current = next
-    setTextFrame(next)
-  }
-  const beginEditPlacedTextRef = useRef(beginEditPlacedText)
-  beginEditPlacedTextRef.current = beginEditPlacedText
-
-  const placedTextAt = (cell: PixelPoint) => {
-    const list = placedTextsRef.current
-    for (let i = list.length - 1; i >= 0; i -= 1) {
-      if (pointInPixelRect(cell.x, cell.y, list[i])) return list[i]
-    }
-    return null
-  }
-  const finishTextCreateRef = useRef(finishTextCreate)
-  finishTextCreateRef.current = finishTextCreate
 
   useEffect(() => {
-    if (tool !== "text") {
-      textCreateRef.current = null
-      commitTextFrameRef.current()
-    }
+    const textTool = getTextTool()
+    if (tool === "text") textTool.syncSelectionToActive()
+    else textTool.deselect()
+    if (viewRef.current) viewRef.current.style.cursor = ""
     cancelShapeDraftRef.current()
     clearPathDraft(true)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tool])
 
-  const textOpen = textFrame !== null
+  // The overlay mounts after the controller starts editing; redraw once so it is positioned at once.
   useLayoutEffect(() => {
-    if (textOpen) textAreaRef.current?.focus()
-  }, [textOpen])
+    if (textUi.editing) scheduleView()
+  }, [textUi.editing])
+
+  useEffect(
+    () => () => {
+      window.clearTimeout(textAutosaveRef.current)
+      window.cancelAnimationFrame(textUiRafRef.current)
+    },
+    [],
+  )
 
   const emitHistory = () => {
     onHistoryChange?.({
@@ -2031,20 +1996,27 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
       undoPolygonSelectVertexRef.current()
       return
     }
+    const textTool = textToolRef.current
+    if (textTool) {
+      // Undo while a brand-new box is still blank simply cancels that box.
+      if (textTool.abortBlankNew()) return
+      textTool.cancelInteraction()
+    }
     const previous = historyRef.current.undo(currentHistoryState())
     if (!previous) return
-    placedTextsRef.current = []
     applyHistoryFrame(previous)
+    textToolRef.current?.layersReplaced()
     setHistoryTick((value) => value + 1)
     emitHistory()
     onStrokeEnd?.()
   }
 
   const redo = () => {
+    textToolRef.current?.cancelInteraction()
     const next = historyRef.current.redo(currentHistoryState())
     if (!next) return
-    placedTextsRef.current = []
     applyHistoryFrame(next)
+    textToolRef.current?.layersReplaced()
     setHistoryTick((value) => value + 1)
     emitHistory()
     onStrokeEnd?.()
@@ -2056,6 +2028,11 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
   redoFnRef.current = redo
 
   const runBufferOp = (op: () => void) => {
+    if (layersRef.current[activeLayerIndexRef.current]?.text) {
+      // Pixel operations do not apply to a text layer; rasterise it first.
+      onEditFeedbackRef.current?.("text-layer")
+      return
+    }
     pushUndo()
     op()
     schedule()
@@ -2177,6 +2154,7 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
       blend: layerBlend(layer),
       lockAlpha: Boolean(layer.lockAlpha),
       group: layer.group ?? null,
+      text: layer.text ?? null,
     }))
   }
 
@@ -2314,8 +2292,7 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
       scheduleView()
     },
     clearCanvas: () => {
-      placedTextsRef.current = []
-      cancelTextFrame()
+      textToolRef.current?.cancelInteraction()
       cancelShapeDraftRef.current()
       runBufferOp(() => {
         clearCanvasToPaper(image().data)
@@ -2391,7 +2368,11 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
       if (!result.changed) return summary
       pushUndo()
       result.layerIndices.forEach((indices, index) => {
-        if (indices) layers[index]!.indices = indices
+        if (indices) {
+          layers[index]!.indices = indices
+          // A transformed raster no longer matches its text object, so it becomes plain pixels.
+          layers[index]!.text = undefined
+        }
       })
       growPaletteFromMerge({
         palette: result.palette,
@@ -2414,38 +2395,33 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
     pasteClipboard,
     deleteSelection,
     hasClipboard: () => sessionClipboard !== null,
-    stampText: (x, y, text, box) => {
-      const next = text.replace(/\r/g, "")
-      if (!next.trim()) return
-      const adoption = ensurePaletteColor(paletteRef.current, colorRef.current)
-      if ("error" in adoption) {
-        if (adoption.error === "palette_full") onPaletteFullRef.current?.()
-        return
-      }
-      runBufferOp(() => {
-        adoptColor(colorRef.current)
-        stampTextBitmap(
-          image().data,
-          x,
-          y,
-          next,
-          hexToRgb(colorRef.current),
-          canvasWidthRef.current,
-          canvasHeightRef.current,
-          box,
-        )
-      })
+    getTextState: () => getTextTool().state(),
+    updateText: (patch, coalesceKey) => getTextTool().update(patch, coalesceKey),
+    rasterizeText: (layerId) => {
+      const layer = layersRef.current.find((item) => item.id === layerId)
+      if (!layer?.text) return false
+      return getTextTool().rasterize(layer.text.id)
     },
+    editText: (layerId) => {
+      const layer = layersRef.current.find((item) => item.id === layerId)
+      if (!layer?.text) return false
+      const index = layersRef.current.indexOf(layer)
+      if (toolRef.current !== "text") chooseToolRef.current("text")
+      textEnvRef.current!.setActive(index)
+      getTextTool().select(layer.text.id)
+      getTextTool().startEdit(layer.text.id)
+      return true
+    },
+    deleteSelectedText: () => getTextTool().deleteSelected(),
     clearHistory: () => {
       historyRef.current.clear()
-      placedTextsRef.current = []
       setHistoryTick((value) => value + 1)
       emitHistory()
     },
     getPalette: () => [...paletteRef.current],
     getLayers: () => layerInfoList(),
     addLayer: () => {
-      if (layersRef.current.length >= PIXEL_LAYER_MAX) return false
+      if (!canAddLayer(layersRef.current)) return false
       pushUndo()
       syncActiveFromImage()
       const nextIndex = layersRef.current.length + 1
@@ -2460,7 +2436,7 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
       return true
     },
     importPixelArtLayer: (input) => {
-      if (layersRef.current.length >= PIXEL_LAYER_MAX) return { ok: false, error: "layer_limit" }
+      if (!canAddLayer(layersRef.current)) return { ok: false, error: "layer_limit" }
       const srcW = Math.floor(input.width)
       const srcH = Math.floor(input.height)
       if (srcW < 1 || srcH < 1 || input.indices.length < srcW * srcH) {
@@ -2551,6 +2527,7 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
       loadActiveIntoImage()
       emitLayers()
       schedule()
+      if (layersRef.current[index]?.text && toolRef.current !== "text") chooseToolRef.current("text")
       return true
     },
     setLayerVisible: (id, visible) => {
@@ -2596,7 +2573,7 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
       const ids = [...new Set<string>(layerIds)]
       const stack = layersRef.current
       if (ids.length === 0) {
-        if (stack.length >= PIXEL_LAYER_MAX) return null
+        if (!canAddLayer(stack)) return null
       } else if (!ids.every((id) => stack.some((layer) => layer.id === id && !layer.group))) {
         return null
       }
@@ -2730,7 +2707,8 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
       return true
     },
     duplicateLayer: (id) => {
-      if (layersRef.current.length >= PIXEL_LAYER_MAX) return false
+      const dupSource = layersRef.current.find((layer) => layer.id === id)
+      if (!dupSource || !canAddLayer(layersRef.current, dupSource.text ? "text" : "raster")) return false
       const index = layersRef.current.findIndex((layer) => layer.id === id)
       if (index < 0) return false
       pushUndo()
@@ -2745,6 +2723,7 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
         blend: source.blend,
         lockAlpha: source.lockAlpha,
         group: source.group ?? null,
+        text: source.text ? { ...source.text, id: createTextId() } : undefined,
         indices: new Uint8Array(source.indices),
       }
       layersRef.current.splice(index + 1, 0, clone)
@@ -2767,6 +2746,8 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
       syncActiveFromImage()
       const resolver = createPaletteResolver(paletteRef.current)
       lower.indices = bakeMergeDown(lower, upper, index - 1 === 0, paletteRef.current, resolver)
+      // The baked result is plain pixels, even when the lower layer was a text layer.
+      lower.text = undefined
       growPaletteFromMerge(resolver)
       layersRef.current.splice(index, 1)
       pruneEmptyGroups(layersRef.current, groupsRef.current)
@@ -2814,7 +2795,7 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
       }
       const next = [...hidden]
       next.splice(insertAt, 0, merged)
-      layersRef.current = next.slice(0, PIXEL_LAYER_MAX)
+      layersRef.current = next.slice(0, PIXEL_LAYER_TOTAL_MAX)
       groupsRef.current = normalizeGroups(layersRef.current, groupsRef.current)
       activeLayerIndexRef.current = Math.min(
         insertAt,
@@ -2925,9 +2906,11 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
           else if (value > removedIndex) layer.indices[i] = value - 1
         }
       }
+      for (const layer of layersRef.current) if (layer.text?.color === normalized) layer.text = undefined
       paletteRef.current = result.palette
       syncPaletteIndexMap()
       loadActiveIntoImage()
+      emitLayers()
       onPaletteChangeRef.current?.(result.palette)
       schedule()
       onStrokeEnd?.()
@@ -3036,7 +3019,7 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
 
   const chooseTool = (next: Tool) => {
     if (next !== toolRef.current) {
-      if (toolRef.current === "text") commitTextFrameRef.current()
+      if (toolRef.current === "text") textToolRef.current?.cancelInteraction()
       if (shapeDraftRef.current) cancelShapeDraftRef.current()
       clearPathDraft(true)
       polySelRef.current = null
@@ -3096,6 +3079,35 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
         altSampleRef.current = true
         return
       }
+      const textTool = textToolRef.current
+      if (textTool && toolRef.current === "text" && !event.metaKey && !event.ctrlKey) {
+        const selected = textTool.state().selected
+        if (selected) {
+          if (event.key === "Escape") {
+            event.preventDefault()
+            textTool.deselect()
+            return
+          }
+          if (event.key === "Delete" || event.key === "Backspace") {
+            event.preventDefault()
+            textTool.deleteSelected()
+            return
+          }
+          if (event.key === "Enter") {
+            event.preventDefault()
+            textTool.startEdit(selected.id)
+            return
+          }
+          const step = event.shiftKey ? 8 : 1
+          const dx = event.key === "ArrowLeft" ? -step : event.key === "ArrowRight" ? step : 0
+          const dy = event.key === "ArrowUp" ? -step : event.key === "ArrowDown" ? step : 0
+          if (dx !== 0 || dy !== 0) {
+            event.preventDefault()
+            textTool.nudge(dx, dy)
+            return
+          }
+        }
+      }
       const mod = event.metaKey || event.ctrlKey
       if (mod) {
         const key = event.key.toLowerCase()
@@ -3133,11 +3145,6 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
         return
       }
       if (event.key === "Escape") {
-        if (textFrameRef.current || textCreateRef.current) {
-          event.preventDefault()
-          cancelTextFrame()
-          return
-        }
         if (polySelRef.current) {
           event.preventDefault()
           cancelPolygonSelectRef.current()
@@ -3754,19 +3761,13 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
     }
 
     if (toolRef.current === "text") {
-      const frame = textFrameRef.current
-      if (frame && pointInPixelRect(cell.x, cell.y, frame)) {
-        textAreaRef.current?.focus()
-        return
-      }
-      // Finish current edit on outside click; double-click re-opens a placed text.
-      commitTextFrameRef.current()
-      if (placedTextAt(cell)) {
-        scheduleView()
-        return
-      }
-      textCreateRef.current = { start: cell, end: cell }
-      scheduleView()
+      getTextTool().pointerDown(cell)
+      return
+    }
+
+    if (DRAW_TOOLS.has(toolRef.current) && layersRef.current[activeLayerIndexRef.current]?.text) {
+      // Text layers hold an editable object, not pixels: say why nothing was drawn.
+      onEditFeedbackRef.current?.("text-layer")
       return
     }
 
@@ -4112,9 +4113,11 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
       return
     }
 
-    if (textCreateRef.current) {
-      textCreateRef.current = { ...textCreateRef.current, end: cellFromEvent(event) }
-      scheduleView()
+    if (toolRef.current === "text") {
+      const textTool = getTextTool()
+      const at = cellFromEvent(event)
+      if (textTool.hasInteraction()) textTool.pointerMove(at)
+      event.currentTarget.style.cursor = textTool.cursorAt(at)
       return
     }
 
@@ -4270,7 +4273,7 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
       const end = selectMarqueeEndRef.current ?? cell
       commitSelection(selectionFromMarquee(start.x, start.y, end.x, end.y))
     }
-    if (textCreateRef.current) finishTextCreateRef.current(cell)
+    if (textToolRef.current?.hasInteraction()) textToolRef.current.pointerUp(cell)
     const wasStroke = Boolean(drawRef.current) || Boolean(shapeStartRef.current)
     const wasMove =
       Boolean(moveRef.current) || Boolean(selectResizeRef.current) || Boolean(selectRotateRef.current)
@@ -4341,52 +4344,6 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
   const zoomLabel = zoom === "fit" ? copy.pixelFit[lang] : `${Math.round(Number(zoom) * 10) / 10}×`
   void historyTick
 
-  const applyTextResize = (cell: { x: number; y: number }) => {
-    const start = textResizeRef.current
-    const frame = textFrameRef.current
-    if (!start || !frame || frame.mode !== "paragraph") return
-    const canvasW = canvasWidthRef.current
-    const canvasH = canvasHeightRef.current
-    const right = start.x + start.width
-    const minW = PIXEL_FONT_W * brushRef.current
-    let { x, width } = start
-    if (start.handle === "e") {
-      width = Math.max(minW, Math.min(canvasW - start.x, cell.x - start.x + 1))
-    }
-    if (start.handle === "w") {
-      x = Math.max(0, Math.min(cell.x, right - minW))
-      width = right - x
-    }
-    const fitted = measurePixelTextBox(frame.text, brushRef.current, width, { trim: false })
-    setTextFrame((prev) =>
-      prev
-        ? {
-            ...prev,
-            x,
-            width,
-            height: Math.min(fitted.height, canvasH - prev.y),
-            mode: "paragraph",
-          }
-        : null,
-    )
-  }
-
-  const applyTextMove = (cell: { x: number; y: number }) => {
-    const move = textMoveRef.current
-    const frame = textFrameRef.current
-    if (!move || !frame) return
-    const width = frame.width
-    const height = frame.height
-    const x = Math.max(0, Math.min(cell.x - move.grabX, canvasWidthRef.current - width))
-    const y = Math.max(0, Math.min(cell.y - move.grabY, canvasHeightRef.current - height))
-    setTextFrame((prev) => (prev ? { ...prev, x, y } : null))
-  }
-
-  const endTextBoxPointer = () => {
-    textResizeRef.current = null
-    textMoveRef.current = null
-  }
-
   const viewport = (
     <div
       ref={wrapRef}
@@ -4431,9 +4388,7 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
             applyShapeDraftRef.current()
             return
           }
-          if (toolRef.current !== "text") return
-          const hit = placedTextAt(cellFromEvent(event))
-          if (hit) beginEditPlacedTextRef.current(hit)
+          if (toolRef.current === "text") getTextTool().doubleClick(cellFromEvent(event))
         }}
         onPointerLeave={() => onHoverCellRef.current?.(null)}
         onContextMenu={(event) => {
@@ -4441,152 +4396,15 @@ export const PixelBoard = forwardRef<PixelBoardHandle, PixelBoardProps>(function
           onCanvasMenuRef.current?.({ clientX: event.clientX, clientY: event.clientY })
         }}
       />
-      {textFrame ? (
-        <div
+      {textUi.editing && textUi.selected ? (
+        <TextEditOverlay
+          key={textUi.selected.id}
           ref={textOverlayRef}
-          className="pixel-text-box absolute left-0 top-0 z-10 box-border"
-          style={{
-            transformOrigin: "0 0",
-            transform: `translate(${cameraRef.current.originX + textFrame.x * cameraRef.current.scale}px, ${cameraRef.current.originY + textFrame.y * cameraRef.current.scale}px)`,
-            width: Math.max(1, textFrame.width * cameraRef.current.scale),
-            height: Math.max(1, textFrame.height * cameraRef.current.scale),
-            boxShadow: "0 0 0 1px #FFFDF7, 0 0 0 2px #20202A",
-            backgroundColor: "transparent",
-          }}
-          onPointerMove={(event) => {
-            if (textResizeRef.current) applyTextResize(cellFromEvent(event))
-            else if (textMoveRef.current) applyTextMove(cellFromEvent(event))
-          }}
-          onPointerUp={endTextBoxPointer}
-          onPointerCancel={endTextBoxPointer}
-        >
-          <div
-            className="absolute -inset-1 z-0 cursor-move"
-            onPointerDown={(event) => {
-              event.preventDefault()
-              event.stopPropagation()
-              const frame = textFrameRef.current
-              if (!frame) return
-              const cell = cellFromEvent(event)
-              textMoveRef.current = { grabX: cell.x - frame.x, grabY: cell.y - frame.y }
-              try {
-                event.currentTarget.setPointerCapture(event.pointerId)
-              } catch {
-                /* ignore */
-              }
-            }}
-            onPointerMove={(event) => {
-              if (textMoveRef.current) applyTextMove(cellFromEvent(event))
-            }}
-            onPointerUp={endTextBoxPointer}
-            onPointerCancel={endTextBoxPointer}
-          />
-          <label className="sr-only" htmlFor={`${titleId}-text`}>
-            {copy.pixelTextTool[lang]}
-          </label>
-          <textarea
-            id={`${titleId}-text`}
-            ref={textAreaRef}
-            value={textFrame.text}
-            placeholder={copy.pixelTextPlaceholder[lang]}
-            spellCheck={false}
-            onChange={(event) => {
-              const text = event.target.value
-              const current = textFrameRef.current
-              if (!current) return
-              const scale = brushRef.current
-              const canvasW = canvasWidthRef.current
-              const canvasH = canvasHeightRef.current
-              const wrap = current.mode === "paragraph"
-              const measured = measurePixelTextBox(text, scale, wrap ? current.width : undefined, {
-                trim: false,
-              })
-              const width = wrap
-                ? current.width
-                : Math.min(measured.width, canvasW - current.x)
-              const height = Math.min(measured.height, canvasH - current.y)
-              const next = { ...current, text, width, height }
-              textFrameRef.current = next
-              setTextFrame(next)
-            }}
-            onPaste={(event) => {
-              event.preventDefault()
-              const pasted = event.clipboardData.getData("text").replace(/\r/g, "").trim()
-              const area = event.currentTarget
-              const start = area.selectionStart
-              const end = area.selectionEnd
-              const merged = `${area.value.slice(0, start)}${pasted}${area.value.slice(end)}`
-              const current = textFrameRef.current
-              if (!current) return
-              const scale = brushRef.current
-              const canvasW = canvasWidthRef.current
-              const canvasH = canvasHeightRef.current
-              const wrap = current.mode === "paragraph"
-              const measured = measurePixelTextBox(merged, scale, wrap ? current.width : undefined, {
-                trim: false,
-              })
-              const next = {
-                ...current,
-                text: merged,
-                width: wrap ? current.width : Math.min(measured.width, canvasW - current.x),
-                height: Math.min(measured.height, canvasH - current.y),
-              }
-              textFrameRef.current = next
-              setTextFrame(next)
-            }}
-            onKeyDown={(event) => {
-              if (event.key === "Escape") {
-                event.preventDefault()
-                cancelTextFrame()
-              }
-            }}
-            className="absolute inset-0 z-10 resize-none overflow-hidden bg-transparent px-0.5 py-0 outline-none"
-            style={{
-              fontFamily: "var(--font-pixel), ui-monospace, monospace",
-              fontSize: Math.max(8, PIXEL_FONT_H * brushSize * cameraRef.current.scale),
-              lineHeight: `${(PIXEL_FONT_H + PIXEL_FONT_LEADING) * brushSize * cameraRef.current.scale}px`,
-              whiteSpace: textFrame.mode === "point" ? "pre" : "pre-wrap",
-              wordBreak: textFrame.mode === "point" ? "normal" : "break-word",
-              overflowWrap: textFrame.mode === "point" ? "normal" : "anywhere",
-              color,
-              caretColor: color,
-            }}
-          />
-          {textFrame.mode === "paragraph"
-            ? PARAGRAPH_HANDLES.map((handle) => (
-                <button
-                  key={handle.id}
-                  type="button"
-                  aria-label={`${copy.pixelTextResize[lang]} ${handle.id}`}
-                  className="absolute z-20 h-3 w-3 border-[3px] border-earth bg-brick"
-                  style={{ cursor: handle.cursor, ...(handle.style as CSSProperties) }}
-                  onPointerDown={(event) => {
-                    event.preventDefault()
-                    event.stopPropagation()
-                    const frame = textFrameRef.current
-                    if (!frame) return
-                    textResizeRef.current = {
-                      handle: handle.id,
-                      x: frame.x,
-                      y: frame.y,
-                      width: frame.width,
-                      height: frame.height,
-                    }
-                    try {
-                      event.currentTarget.setPointerCapture(event.pointerId)
-                    } catch {
-                      /* ignore */
-                    }
-                  }}
-                  onPointerMove={(event) => {
-                    if (textResizeRef.current) applyTextResize(cellFromEvent(event))
-                  }}
-                  onPointerUp={endTextBoxPointer}
-                  onPointerCancel={endTextBoxPointer}
-                />
-              ))
-            : null}
-        </div>
+          initialText={textToolRef.current?.editingObject()?.text ?? textUi.selected.text}
+          label={copy.pixelTextTool[lang]}
+          onInput={(value) => getTextTool().setContent(value)}
+          onExit={() => getTextTool().finishEdit()}
+        />
       ) : null}
       <span id={titleId} className="sr-only">
         {copy.spaceCanvasTitle[lang]}

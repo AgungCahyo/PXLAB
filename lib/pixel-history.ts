@@ -1,5 +1,6 @@
 import type { PixelClipboard, PixelLayerRuntime, PixelSelection } from "@/lib/pixel"
 import type { PixelGroupRuntime } from "@/lib/pixel-groups"
+import { textObjectsEqual, type PixelTextObject } from "@/lib/pixel-text/model"
 
 /**
  * Layer-stack history with structural sharing.
@@ -20,6 +21,8 @@ export type HistoryLayer = {
   blend?: PixelLayerRuntime["blend"]
   lockAlpha?: boolean
   group?: string | null
+  /** Text object of a text layer. Immutable; shared between frames while it is unchanged. */
+  text?: PixelTextObject
   indices: Uint8Array
 }
 
@@ -127,6 +130,12 @@ export function captureFrame(doc: HistoryDocument, reference?: HistoryFrame | nu
         blend: layer.blend,
         lockAlpha: layer.lockAlpha,
         group: layer.group ?? null,
+        // Frames are immutable, so an unchanged object is shared and a changed one is copied once.
+        text: layer.text
+          ? prior?.text && textObjectsEqual(prior.text, layer.text)
+            ? prior.text
+            : { ...layer.text }
+          : undefined,
         indices,
       }
     }),
@@ -192,6 +201,16 @@ export class PixelHistory {
     this.undoStack.push(frame)
     this.redoStack = []
     this.trim()
+  }
+
+  /**
+   * Drop the newest undo step without applying it. Used when a transaction is abandoned before
+   * it changed anything (an empty text box that was created and then left blank).
+   */
+  discardLast(): boolean {
+    if (this.undoStack.length === 0) return false
+    this.undoStack.pop()
+    return true
   }
 
   /** Returns the frame to restore, or null. `current` is stored for redo. */

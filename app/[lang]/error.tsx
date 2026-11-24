@@ -4,7 +4,7 @@ import { useEffect } from "react"
 import Link from "next/link"
 import { useParams } from "next/navigation"
 import { buttonClassName } from "@/components/ui/Button"
-import { copy } from "@/lib/copy"
+import { copy } from "../../lib/copy"
 import { href, isLang, type Lang } from "@/lib/i18n"
 import { SITE_NAME } from "@/lib/site"
 

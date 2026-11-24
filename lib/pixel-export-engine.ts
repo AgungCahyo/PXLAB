@@ -10,7 +10,7 @@ import {
   PIXEL_EXPORT_EDGE_MAX,
   PIXEL_PAPER,
   type PixelLayerRuntime,
-} from "@/lib/pixel"
+} from "./pixel"
 
 /**
  * Export engine: renders a document to files. Pure (no DOM); the one browser-only step, raster

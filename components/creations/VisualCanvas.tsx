@@ -1,5 +1,5 @@
 import { SPACE_VIEWBOX } from "@/lib/site"
-import { copy } from "@/lib/copy"
+import { copy } from "../../lib/copy"
 import type { Lang } from "@/lib/i18n"
 import type { VisualContent } from "@/lib/validations/creation"
 

@@ -5,7 +5,7 @@ import {
   parseExploreCategory,
   parseExploreSearch,
 } from "@/lib/creations"
-import { pixelSizeCategory } from "@/lib/pixel"
+import { pixelSizeCategory } from "./pixel"
 
 describe("explore query", () => {
   it("defaults to an unfiltered explore path", () => {

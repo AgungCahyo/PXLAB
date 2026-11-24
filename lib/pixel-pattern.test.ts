@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { floodFill, replaceMatchingColor } from "@/lib/pixel"
+import { floodFill, replaceMatchingColor } from "./pixel"
 import { PIXEL_FILL_PATTERNS, isPixelFillPattern, patternHit, type PixelFillPattern } from "@/lib/pixel-pattern"
 
 const W = 24

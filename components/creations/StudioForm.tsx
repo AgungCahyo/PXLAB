@@ -20,7 +20,7 @@ import {
 } from "@/features/creations/actions"
 import type { CreationRow } from "@/features/creations/queries"
 import { displayTitle } from "@/lib/creations"
-import { copy } from "@/lib/copy"
+import { copy } from "../../lib/copy"
 import { href, type Lang } from "@/lib/i18n"
 import {
   CREATION_CAPTION_MAX,

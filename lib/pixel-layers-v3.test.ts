@@ -17,7 +17,7 @@ import {
   PIXEL_SOURCE_VERSION_V2,
   PIXEL_SOURCE_VERSION_V3,
   type PixelLayerRuntime,
-} from "@/lib/pixel"
+} from "./pixel"
 import { pixelContentSchema } from "@/lib/validations/creation"
 
 const W = 12

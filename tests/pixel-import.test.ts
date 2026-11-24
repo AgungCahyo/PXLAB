@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs"
 import path from "node:path"
 import { describe, expect, it } from "vitest"
-import { PIXEL_PAPER, PIXEL_PALETTE, hexToRgb, rgbToHex } from "@/lib/pixel"
+import { PIXEL_PAPER, PIXEL_PALETTE, hexToRgb, rgbToHex } from "../lib/pixel"
 import {
   convertRgbaToPixelArt,
   fitInside,

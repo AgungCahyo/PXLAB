@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/Button"
 import { Dialog } from "@/components/ui/Dialog"
 import { Input } from "@/components/ui/Input"
 import { PixelIcon } from "@/components/ui/PixelIcon"
-import { copy } from "@/lib/copy"
+import { copy } from "../../lib/copy"
 import type { Lang } from "@/lib/i18n"
 import { usePixelColorMemory } from "@/lib/pixel-color-memory"
 import {
@@ -29,7 +29,7 @@ import {
   PIXEL_SWATCHES,
   normalizePixelHex,
   paletteIndexOf,
-} from "@/lib/pixel"
+} from "../../lib/pixel"
 import { cn } from "@/lib/utils"
 
 type CategoryFilter = PaletteLibraryCategory | "all"

@@ -1,5 +1,6 @@
 import type { ReactNode } from "react"
 import Link from "next/link"
+import { PixelCatEmptyState } from "@/components/brand/PixelCatDecoration"
 import { ExploreSearch } from "@/components/creations/ExploreSearch"
 import { ExploreInfinite } from "@/components/social/ExploreInfinite"
 import { Pill, TabLink } from "@/components/social/Pill"
@@ -12,7 +13,7 @@ import {
   type ExploreFeed,
   type ExploreScope,
 } from "@/lib/creations"
-import { copy, creationCategoryLabels } from "@/lib/copy"
+import { copy, creationCategoryLabels } from "../../lib/copy"
 import { type Lang } from "@/lib/i18n"
 import { loginHref } from "@/lib/paths"
 import { CREATION_CATEGORIES, SEARCH_MIN_LENGTH } from "@/lib/site"
@@ -59,15 +60,15 @@ export function ExploreFilters({
   )
 
   return (
-    <div className="grid min-w-0 gap-2 sm:gap-3">
+    <div className="grid min-w-0 gap-3 rounded-3xl border border-slate-200/80 bg-card/80 p-3 shadow-sm backdrop-blur-sm sm:gap-4 sm:p-4">
       {/* Search stays the single primary control in both contexts. */}
       <ExploreSearch key={q} lang={lang} category={category} q={q} feed={feed} scope={scope} />
 
       {activeQ ? (
         <>
           {/* Search replaces the feed switch; never show both navigation systems. */}
-          <nav aria-label={copy.searchScopeAria[lang]} className="-mx-3 min-w-0 px-3 sm:mx-0 sm:px-0">
-            <ul className="flex min-w-0">
+          <nav aria-label={copy.searchScopeAria[lang]} className="-mx-1 min-w-0 px-1 sm:mx-0 sm:px-0">
+            <ul className="flex min-w-0 rounded-2xl bg-slate-100/80 p-1">
               {scopeTabs.map((tab) => (
                 <li key={tab.id} className="min-w-0 flex-1">
                   <TabLink
@@ -108,7 +109,7 @@ export function ExploreFilters({
               </li>
             </ul>
           </nav>
-          <span className="h-5 w-px shrink-0 bg-[color:var(--soc-hairline)]" aria-hidden="true" />
+          <span className="h-5 w-px shrink-0 bg-slate-200" aria-hidden="true" />
           {categoryNav}
         </div>
       )}
@@ -169,7 +170,8 @@ export function ExploreGallery({
       ) : items.length === 0 ? (
         showEmpty ? (
           <SocialEmptyState
-            className="px-4 py-10"
+            className="px-4 py-10 rounded-3xl border border-dashed border-slate-200/80 bg-slate-50/40"
+            illustration={feed === "following" ? "looking" : q ? "confused" : "curious"}
             title={copy.exploreEmptyTitle[lang]}
             description={emptyDescription}
           />

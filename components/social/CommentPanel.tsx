@@ -3,12 +3,13 @@
 import Link from "next/link"
 import { useCallback, useEffect, useRef, useState } from "react"
 import { ProfileAvatar } from "@/components/profiles/ProfileAvatar"
+import { PixelCat } from "@/components/brand/PixelCat"
 import { SocialEmptyState } from "@/components/social/SocialEmptyState"
 import { socialButtonClass } from "@/components/social/socialButton"
 import { addCommentAction } from "@/features/community/actions"
 import { loadPostCommentsAction } from "@/features/feed/actions"
 import type { AvatarConfig } from "@/lib/avatar-gen"
-import { copy } from "@/lib/copy"
+import { copy } from "../../lib/copy"
 import { socialCopy } from "@/lib/copy-social"
 import type { ConversationNote, ConversationRoot } from "@/lib/conversation"
 import { href, type Lang } from "@/lib/i18n"
@@ -165,11 +166,16 @@ export function CommentPanel({
       ) : null}
 
       {state === "ready" && roots.length === 0 ? (
-        <SocialEmptyState
-          className="!py-6"
-          title={t.noComments[lang]}
-          description={t.noCommentsHint[lang]}
-        />
+        <div className="py-4">
+          <div className="flex justify-center" aria-hidden="true">
+            <PixelCat variant="peeking" size="sm" animated />
+          </div>
+          <SocialEmptyState
+            className="!py-3"
+            title={t.noComments[lang]}
+            description={t.noCommentsHint[lang]}
+          />
+        </div>
       ) : null}
 
       {state === "ready" && roots.length > 0 ? (

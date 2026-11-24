@@ -69,6 +69,7 @@ export function StudioInspector({
   hasSelection,
   hasClipboard,
   layerPanel,
+  typographyPanel,
   showBrushControls,
   brushLabel,
   showShapeOptions,
@@ -114,6 +115,8 @@ export function StudioInspector({
   hasSelection: boolean
   hasClipboard?: boolean
   layerPanel?: Omit<LayerPanelProps, "lang">
+  /** Typography controls; only passed while a text object is selected. */
+  typographyPanel?: ReactNode
   showBrushControls: boolean
   brushLabel?: string
   showShapeOptions?: boolean
@@ -161,6 +164,7 @@ export function StudioInspector({
   // Panels are independent disclosures: palette + options collapse, layers always keep the flexible space.
   const [paletteOpen, setPaletteOpen] = useState(true)
   const [optionsOpen, setOptionsOpen] = useState(true)
+  const [typographyOpen, setTypographyOpen] = useState(true)
   const [dynamicsOpen, setDynamicsOpen] = useState(false)
   const dynamicsId = useId()
   const fillToleranceId = useId()
@@ -248,6 +252,17 @@ export function StudioInspector({
             ))}
         </div>
       </InspectorSection>
+
+      {typographyPanel ? (
+        <InspectorSection
+          title={copy.pixelTypography[lang]}
+          open={typographyOpen}
+          onToggle={() => setTypographyOpen((value) => !value)}
+          bodyClassName="max-h-[22rem]"
+        >
+          {typographyPanel}
+        </InspectorSection>
+      ) : null}
 
       {hasToolOptions ? (
         <InspectorSection

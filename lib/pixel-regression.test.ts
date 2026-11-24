@@ -4,7 +4,7 @@ import {
   createEmptyLayer,
   floodFill,
   PIXEL_PALETTE,
-} from "@/lib/pixel"
+} from "./pixel"
 
 function reference(pixels: Uint8ClampedArray, sx: number, sy: number, rgb: number[], w: number, h: number) {
   const key = (x: number, y: number) => (y * w + x) * 4
@@ -76,7 +76,7 @@ describe("compositeLayersToRgba regression", () => {
   })
 })
 
-import { selectionFromColor, selectionFromFlood } from "@/lib/pixel"
+import { selectionFromColor, selectionFromFlood } from "./pixel"
 
 describe("wand and colour selection tolerance", () => {
   const w = 6

@@ -1,8 +1,8 @@
 "use client"
 
 import { useState } from "react"
-import { colorUsagePercents, type ColorUsageEntry } from "@/lib/pixel"
-import { copy } from "@/lib/copy"
+import { colorUsagePercents, type ColorUsageEntry } from "../../lib/pixel"
+import { copy } from "../../lib/copy"
 import { type Lang } from "@/lib/i18n"
 import { COLOR_USAGE_PREVIEW_MAX } from "@/lib/site"
 
@@ -60,7 +60,7 @@ export function CreationColorPalette({
       </div>
 
       <div
-        className="mt-2 flex h-3 w-full overflow-hidden border border-[color:var(--soc-hairline)] sm:h-3.5"
+        className="mt-2 flex h-3 w-full overflow-hidden rounded-full border border-slate-200/80 sm:h-3.5"
         role="img"
         aria-label={copy.colorPaletteTitle[lang]}
       >
@@ -91,7 +91,7 @@ export function CreationColorPalette({
                 className="grid h-9 w-9 place-items-center border-0 hover:outline hover:outline-2 hover:outline-offset-1 hover:outline-sky"
               >
                 <span
-                  className="h-7 w-7 border border-[color:var(--soc-hairline)]"
+                  className="h-7 w-7 rounded-md border border-slate-200/80 shadow-sm"
                   style={{ backgroundColor: entry.hex }}
                   aria-hidden="true"
                 />
@@ -108,7 +108,7 @@ export function CreationColorPalette({
             return (
               <li key={`${entry.hex}-row-${index}`} className="flex items-center gap-2.5 text-[12px]">
                 <span
-                  className="h-3.5 w-3.5 shrink-0 border border-[color:var(--soc-hairline)]"
+                  className="h-3.5 w-3.5 shrink-0 rounded-sm border border-slate-200/80"
                   style={{ backgroundColor: entry.hex }}
                   aria-hidden
                 />

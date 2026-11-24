@@ -46,11 +46,13 @@ export function Dialog({
       ref={dialogRef}
       aria-labelledby={titleId}
       className={cn(
-        "m-auto bg-card p-0 text-fg backdrop:bg-fg/40",
-        size === "lg" ? "w-[min(calc(100%-1rem),52rem)]" : "w-[min(calc(100%-2rem),28rem)]",
+        /* `flex` on a closed <dialog> overrides the UA `display: none`, so every
+           modal renders at once. Only apply layout once the browser marks it open. */
+        "m-auto max-h-[calc(100dvh-2rem)] overflow-hidden rounded-3xl bg-card p-0 text-fg shadow-2xl backdrop:bg-slate-900/40 backdrop:backdrop-blur-sm open:flex open:flex-col",
+        size === "lg" ? "w-[min(calc(100%-1rem),50rem)]" : "w-[min(calc(100%-2rem),28rem)]",
         tone === "social"
-          ? "border border-[color:var(--soc-hairline)]"
-          : "pixel-frame",
+          ? "border border-slate-200"
+          : "pixel-frame border border-slate-200",
         className,
       )}
       onClose={onClose}
@@ -60,7 +62,7 @@ export function Dialog({
     >
       <div
         className={cn(
-          "flex items-start justify-between gap-4 px-5 py-4",
+          "flex shrink-0 items-start justify-between gap-4 px-5 py-4",
           tone === "social" ? "border-b border-[color:var(--soc-hairline)]" : "border-b border-line",
         )}
       >
@@ -72,15 +74,15 @@ export function Dialog({
           onClick={onClose}
           className={
             tone === "social"
-              ? "inline-flex h-11 w-11 items-center justify-center text-muted hover:bg-soft hover:text-fg"
-              : "inline-flex h-11 w-11 items-center justify-center border-[3px] border-transparent text-muted hover:border-earth hover:text-fg"
+              ? "inline-flex h-11 w-11 shrink-0 items-center justify-center text-muted hover:bg-soft hover:text-fg"
+              : "inline-flex h-11 w-11 shrink-0 items-center justify-center border-[3px] border-transparent text-muted hover:border-earth hover:text-fg"
           }
           aria-label={closeLabel}
         >
           <PixelIcon name="close" />
         </button>
       </div>
-      <div className="px-5 py-4">{children}</div>
+      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-4">{children}</div>
     </dialog>
   );
 }

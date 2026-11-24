@@ -1,5 +1,5 @@
 import { createPaletteResolver, type PaletteResolver } from "@/lib/pixel-merge"
-import { hexToRgb, PIXEL_PAPER, type PixelLayerRuntime } from "@/lib/pixel"
+import { hexToRgb, PIXEL_PAPER, type PixelLayerRuntime } from "./pixel"
 
 /**
  * Transform engine for indexed layers (pure, no DOM).

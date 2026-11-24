@@ -8,7 +8,7 @@ import {
   hexToRgb,
   PIXEL_PAPER,
   type PixelSelection,
-} from "@/lib/pixel"
+} from "./pixel"
 
 const W = 12
 const H = 8

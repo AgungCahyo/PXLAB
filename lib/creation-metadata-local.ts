@@ -1,6 +1,6 @@
 /** Browser-local Studio draft — not the source of truth after a successful save. */
 
-import { parsePixelSource, type PixelSource } from "@/lib/pixel"
+import { parsePixelSource, type PixelSource } from "./pixel"
 
 export type LocalCreationMetadata = {
   title: string

@@ -2,7 +2,7 @@ import type { ReactNode } from "react"
 import Link from "next/link"
 import { AuthDoodlePad } from "@/components/auth/AuthDoodlePad"
 import { PxlbMark } from "@/components/layout/PxlbMark"
-import { copy } from "@/lib/copy"
+import { copy } from "../../lib/copy"
 import { href, type Lang } from "@/lib/i18n"
 import { SITE_NAME } from "@/lib/site"
 

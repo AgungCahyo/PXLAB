@@ -4,7 +4,7 @@ import { useEffect, useId, useMemo, useRef, useState } from "react"
 import { Button } from "@/components/ui/Button"
 import { Dialog } from "@/components/ui/Dialog"
 import { PixelIcon } from "@/components/ui/PixelIcon"
-import { copy, exportFormatLabels } from "@/lib/copy"
+import { copy, exportFormatLabels } from "../../lib/copy"
 import type { Lang } from "@/lib/i18n"
 import { canvasRasterEncoder } from "@/lib/pixel-export-canvas"
 import {
@@ -16,7 +16,7 @@ import {
   type ExportOptions,
   type ExportResult,
 } from "@/lib/pixel-export-engine"
-import { PIXEL_EXPORT_EDGE_MAX } from "@/lib/pixel"
+import { PIXEL_EXPORT_EDGE_MAX } from "../../lib/pixel"
 import { formatDownloadEstimateBytes } from "@/lib/pixel-png-scale"
 
 type Format = "png" | "jpeg" | "webp" | "gif" | "sheet" | "layers"

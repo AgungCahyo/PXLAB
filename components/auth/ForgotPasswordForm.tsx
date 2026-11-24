@@ -6,7 +6,7 @@ import { Alert } from "@/components/ui/Alert"
 import { Button } from "@/components/ui/Button"
 import { Input } from "@/components/ui/Input"
 import { requestPasswordResetAction, type AuthActionState } from "@/features/auth/actions"
-import { copy } from "@/lib/copy"
+import { copy } from "../../lib/copy"
 import type { Lang } from "@/lib/i18n"
 import { loginHref } from "@/lib/paths"
 

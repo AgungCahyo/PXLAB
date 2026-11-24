@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
-import { createEmptyLayer, type PixelClipboard, type PixelSelection } from "@/lib/pixel"
-import { captureFrame, PixelHistory, type HistoryDocument } from "@/lib/pixel-history"
+import { createEmptyLayer, type PixelClipboard, type PixelSelection } from "./pixel"
+import { captureFrame, PixelHistory, type HistoryDocument } from "./pixel-history"
 
 const W = 16
 const H = 16

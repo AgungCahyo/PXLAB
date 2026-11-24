@@ -12,7 +12,7 @@ import {
   signOutEverywhereAction,
   signOutOtherDevicesAction,
 } from "@/features/auth/actions"
-import { copy } from "@/lib/copy"
+import { copy } from "../../lib/copy"
 import type { Lang } from "@/lib/i18n"
 
 function Section({
@@ -25,9 +25,9 @@ function Section({
   children: ReactNode
 }) {
   return (
-    <section className="border border-[color:var(--soc-hairline)] bg-card p-4 sm:p-5">
-      <h2 className="text-[15px] font-medium text-fg">{title}</h2>
-      {hint ? <p className="mt-1 text-[13px] leading-snug text-muted">{hint}</p> : null}
+    <section className="rounded-2xl border border-slate-200/80 bg-card p-4 shadow-sm sm:p-5">
+      <h2 className="text-[16px] font-semibold text-fg">{title}</h2>
+      {hint ? <p className="mt-1 text-[13px] leading-relaxed text-muted">{hint}</p> : null}
       <div className="mt-4">{children}</div>
     </section>
   )
@@ -153,8 +153,8 @@ export function AccountSecurity({
             ) : null}
           </form>
 
-          <form action={emailAction} className="grid gap-4 border-t border-[color:var(--soc-hairline)] pt-6">
-            <h3 className="text-[14px] font-medium text-fg">{copy.emailChangeTitle[lang]}</h3>
+          <form action={emailAction} className="grid gap-4 border-t border-slate-200/80 pt-6">
+            <h3 className="text-[14px] font-semibold text-fg">{copy.emailChangeTitle[lang]}</h3>
             <p className="text-[13px] leading-relaxed text-muted">{copy.emailChangeHint[lang]}</p>
             {reauthFields("email")}
             <Input

@@ -86,11 +86,13 @@ describe("pixel studio redesign S0–S1", () => {
     expect(icons).toMatch(/lasso:/)
     expect(icons).toMatch(/bezier:/)
     const board = read("components/canvas/PixelBoard.tsx")
-    expect(board).toMatch(/pixel-text-box/)
-    expect(board).toMatch(/pixelTextResize/)
-    expect(board).toMatch(/type TextMode = \"point\" \| \"paragraph\"/)
-    expect(board).toMatch(/PARAGRAPH_HANDLES/)
-    expect(board).toMatch(/beginEditPlacedText/)
+    // Text is a unified native object now: no stamping, no point/paragraph split.
+    expect(board).toMatch(/TextToolController/)
+    expect(board).toMatch(/TextEditOverlay/)
+    expect(board).not.toMatch(/PARAGRAPH_HANDLES/)
+    expect(board).not.toMatch(/type TextMode/)
+    expect(board).not.toMatch(/placedTextsRef/)
+    expect(board).not.toMatch(/stampText/)
   })
 
   it("exposes paste and selection shortcuts in the studio chrome", () => {

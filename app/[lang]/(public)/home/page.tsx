@@ -2,6 +2,7 @@ import type { Metadata } from "next"
 import Link from "next/link"
 import { notFound } from "next/navigation"
 import { Suspense } from "react"
+import { PixelCatDecoration } from "@/components/brand/PixelCatDecoration"
 import type { FeedViewer } from "@/components/social/CommentPanel"
 import { HomeFeed } from "@/components/social/HomeFeed"
 import { TabLink } from "@/components/social/Pill"
@@ -51,8 +52,14 @@ export default async function HomePage({
 
   return (
     <div className="mx-auto w-full min-w-0 max-w-xl px-4 pb-10 pt-2 sm:px-0 sm:pt-6">
-      <h1 className="sr-only">{t.title[lang]}</h1>
-      <nav aria-label={t.tabsAria[lang]} className="flex border-b border-[color:var(--soc-hairline)]">
+      <header className="relative mb-4 overflow-hidden rounded-3xl border border-slate-200/80 bg-card p-5 shadow-sm sm:p-6">
+        <PixelCatDecoration variant="waving" size="md" position="top-right" className="opacity-90" />
+        <div className="relative z-[1] pr-14 sm:pr-20">
+          <p className="text-[12px] font-semibold uppercase tracking-[0.16em] text-[#6355d8]">PXLB</p>
+          <h1 className="mt-2 text-[24px] font-semibold tracking-tight text-fg sm:text-[28px]">{t.title[lang]}</h1>
+        </div>
+      </header>
+      <nav aria-label={t.tabsAria[lang]} className="mb-2 flex border-b border-slate-200/80">
         <TabLink href={href(lang, "/home")} selected={feed === "all"}>
           {t.forYou[lang]}
         </TabLink>
@@ -75,6 +82,7 @@ async function HomeResults({ lang, feed, page }: { lang: Lang; feed: FeedKind; p
   if (feed === "following" && !profile) {
     return (
       <SocialEmptyState
+        illustration="peeking"
         title={t.followingGuestTitle[lang]}
         description={t.followingGuestBody[lang]}
         action={
@@ -101,6 +109,7 @@ async function HomeResults({ lang, feed, page }: { lang: Lang; feed: FeedKind; p
   if (result.failed) {
     return (
       <SocialEmptyState
+        illustration="confused"
         title={t.loadError[lang]}
         description=""
         action={
@@ -119,6 +128,7 @@ async function HomeResults({ lang, feed, page }: { lang: Lang; feed: FeedKind; p
     const following = feed === "following"
     return (
       <SocialEmptyState
+        illustration={following ? "looking" : "sleeping"}
         title={following ? t.followingEmptyTitle[lang] : t.emptyTitle[lang]}
         description={following ? t.followingEmptyBody[lang] : t.emptyBody[lang]}
         action={

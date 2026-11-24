@@ -3,7 +3,7 @@ import { DM_Sans, Press_Start_2P } from "next/font/google";
 import { notFound } from "next/navigation";
 import type { ReactNode } from "react";
 import { PublicShell } from "@/components/layout/PublicShell";
-import { copy } from "@/lib/copy";
+import { copy } from "../../lib/copy";
 import { LANGS, isLang } from "@/lib/i18n";
 import { defaultTitle } from "@/lib/meta";
 import { SITE_NAME, SITE_URL } from "@/lib/site";

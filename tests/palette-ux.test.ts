@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs"
 import path from "node:path"
 import { describe, expect, it } from "vitest"
-import { PIXEL_DOCUMENT_PALETTE_MAX, PIXEL_PAPER, ensurePaletteColor } from "@/lib/pixel"
+import { PIXEL_DOCUMENT_PALETTE_MAX, PIXEL_PAPER, ensurePaletteColor } from "../lib/pixel"
 import { mergeLibraryColorsIntoDocument } from "@/lib/pixel-palette-library"
 
 const read = (file: string) => readFileSync(path.resolve(__dirname, "..", file), "utf8")

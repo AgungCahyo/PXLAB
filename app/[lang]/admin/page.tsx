@@ -4,7 +4,7 @@ import { connection } from "next/server"
 import { AdminReports } from "@/components/moderation/AdminReports"
 import { PageHeader } from "@/components/ui/PageHeader"
 import { listAdminReports, parseReportFilter } from "@/features/moderation/queries"
-import { copy } from "@/lib/copy"
+import { copy } from "../../../lib/copy"
 import { isLang } from "@/lib/i18n"
 import { pageMeta } from "@/lib/meta"
 

@@ -3,9 +3,9 @@
 import { useEffect, useId, useRef, useState, useTransition } from "react"
 import { Button } from "@/components/ui/Button"
 import { Dialog } from "@/components/ui/Dialog"
-import { copy } from "@/lib/copy"
+import { copy } from "../../lib/copy"
 import type { Lang } from "@/lib/i18n"
-import { PIXEL_SIZE_PRESETS, formatPixelSize } from "@/lib/pixel"
+import { PIXEL_SIZE_PRESETS, formatPixelSize } from "../../lib/pixel"
 import {
   PIXEL_IMPORT_COLOR_MAX,
   PIXEL_IMPORT_COLOR_MIN,

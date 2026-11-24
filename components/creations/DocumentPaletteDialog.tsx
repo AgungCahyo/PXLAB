@@ -4,9 +4,9 @@ import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/Button"
 import { Dialog } from "@/components/ui/Dialog"
 import { Input } from "@/components/ui/Input"
-import { copy } from "@/lib/copy"
+import { copy } from "../../lib/copy"
 import type { Lang } from "@/lib/i18n"
-import { PIXEL_INK, PIXEL_PAPER, normalizePixelHex } from "@/lib/pixel"
+import { PIXEL_INK, PIXEL_PAPER, normalizePixelHex } from "../../lib/pixel"
 import { cn } from "@/lib/utils"
 
 export function DocumentPaletteDialog({

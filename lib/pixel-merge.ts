@@ -11,7 +11,7 @@ import {
   PIXEL_PAPER,
   rgbToHex,
   type PixelLayerRuntime,
-} from "@/lib/pixel"
+} from "./pixel"
 
 /**
  * Baking layers together in an indexed document.

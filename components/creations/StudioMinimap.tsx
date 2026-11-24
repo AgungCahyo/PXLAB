@@ -11,7 +11,7 @@ import {
 } from "react"
 import type { PixelBoardHandle } from "@/components/canvas/PixelBoard"
 import { PixelIcon } from "@/components/ui/PixelIcon"
-import { copy } from "@/lib/copy"
+import { copy } from "../../lib/copy"
 import type { Lang } from "@/lib/i18n"
 
 const MINI_W = 128

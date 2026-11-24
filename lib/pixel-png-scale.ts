@@ -2,7 +2,7 @@ import {
   PIXEL_EXPORT_EDGE_MAX,
   PIXEL_PAPER,
   hexToRgb,
-} from "@/lib/pixel"
+} from "./pixel"
 
 export { PIXEL_EXPORT_EDGE_MAX }
 

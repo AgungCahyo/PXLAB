@@ -10,7 +10,7 @@ import { href, type Lang } from "@/lib/i18n"
 import { cn } from "@/lib/utils"
 
 /**
- * Visual-first work tile. The art is the tile.
+ * Visual-first work tile matching PXLB's modern design direction.
  *  - default: creator chip (avatar + @username) always visible, title on hover/focus
  *  - large:   2×2 mosaic tile with a richer caption — title, creator name + @username,
  *             comment count (or a "no comments yet" cue)
@@ -47,10 +47,7 @@ export const WorkTile = memo(function WorkTile({
   return (
     <article
       className={cn(
-        "group relative min-w-0 overflow-hidden bg-soft",
-        // Default tiles must size themselves: landing/profile grids have no
-        // explicit row height, so `h-full` collapses them to zero. Large mosaic
-        // tiles live in MosaicGrid, whose auto-rows already define their height.
+        "group relative min-w-0 overflow-hidden rounded-2xl border border-slate-200/80 bg-card shadow-sm transition-all duration-200 hover:border-slate-300 hover:shadow-md",
         large ? "h-full" : "aspect-square",
         className,
       )}
@@ -67,30 +64,31 @@ export const WorkTile = memo(function WorkTile({
         {cover ? (
           <PixelArt src={cover} alt="" variant="thumb" framed={false} />
         ) : (
-          <div className="h-full w-full bg-soft" />
+          <div className="h-full w-full bg-slate-100" />
         )}
+        <div className="absolute inset-0 bg-gradient-to-t from-slate-950/10 via-transparent to-transparent opacity-0 transition-opacity duration-200 group-hover:opacity-100" />
       </div>
 
       {!large ? (
-        <div className="pointer-events-none absolute inset-x-0 top-0 z-[1] bg-fg/75 px-2 py-1.5 text-[12px] font-medium text-white opacity-100 transition-opacity duration-[var(--soc-fast)] sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100">
+        <div className="pointer-events-none absolute inset-x-0 top-0 z-[1] bg-gradient-to-b from-slate-950/60 to-transparent px-3 py-2.5 text-[12px] font-medium text-white opacity-100 transition-opacity duration-200 sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100">
           <span className="block truncate">{title}</span>
         </div>
       ) : null}
 
       {creation.isNew ? (
-        <span className="pointer-events-none absolute right-1.5 top-1.5 z-[2] bg-coin px-1.5 py-0.5 text-[10px] font-semibold text-fg">
+        <span className="pointer-events-none absolute right-2 top-2 z-[2] rounded-full bg-[#f43f5e] px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white shadow-sm">
           {t.newBadge[lang]}
         </span>
       ) : null}
 
       {showAuthor && large ? (
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 z-[2] flex items-end justify-between gap-3 bg-fg/80 px-3 py-2.5 text-white">
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 z-[2] flex items-end justify-between gap-3 rounded-b-2xl bg-slate-950/80 backdrop-blur-md px-4 py-3 text-white">
           <div className="min-w-0">
-            <p className="truncate text-[14px] font-semibold leading-tight">{title}</p>
+            <p className="truncate text-[15px] font-semibold leading-tight">{title}</p>
             <Link
               {...restoreScrollProps}
               href={profileHref}
-              className="pointer-events-auto mt-1.5 inline-flex max-w-full items-center gap-2"
+              className="pointer-events-auto mt-2 inline-flex max-w-full items-center gap-2 transition-opacity hover:opacity-85"
             >
               <ProfileAvatar
                 src={creation.author.avatarUrl}
@@ -98,20 +96,20 @@ export const WorkTile = memo(function WorkTile({
                 userId={creation.author.id}
                 alt=""
                 size="xs"
-                className="!h-7 !w-7 shrink-0"
+                className="!h-7 !w-7 shrink-0 border border-white/20"
               />
               <span className="flex min-w-0 flex-col leading-tight">
                 <span className="truncate text-[12px] font-semibold">{authorName}</span>
-                <span className="truncate text-[11px] text-white">@{creation.author.username}</span>
+                <span className="truncate text-[11px] text-slate-300">@{creation.author.username}</span>
               </span>
             </Link>
           </div>
-          <span className="flex shrink-0 items-center gap-1 pb-0.5 text-[12px] text-white/90">
+          <span className="flex shrink-0 items-center gap-1.5 pb-0.5 text-[12px] text-white/90">
             <Comment width={16} height={16} aria-hidden="true" />
             {comments > 0 ? (
               <span aria-label={`${comments} ${t.commentsAria[lang]}`}>{comments}</span>
             ) : (
-              <span className="hidden sm:inline">{t.noComments[lang]}</span>
+              <span className="hidden sm:inline text-slate-300">{t.noComments[lang]}</span>
             )}
           </span>
         </div>
@@ -121,7 +119,7 @@ export const WorkTile = memo(function WorkTile({
         <Link
           {...restoreScrollProps}
           href={profileHref}
-          className="absolute bottom-1.5 left-1.5 z-[2] flex max-w-[calc(100%-0.75rem)] items-center gap-1.5 bg-fg/75 py-1 pl-1 pr-2.5 text-white"
+          className="absolute bottom-2 left-2 z-[2] flex max-w-[calc(100%-1rem)] items-center gap-1.5 rounded-full border border-white/20 bg-slate-950/70 backdrop-blur-sm py-1 pl-1 pr-3 text-white transition-opacity hover:bg-slate-950/90"
         >
           <ProfileAvatar
             src={creation.author.avatarUrl}
@@ -129,7 +127,7 @@ export const WorkTile = memo(function WorkTile({
             userId={creation.author.id}
             alt=""
             size="xs"
-            className="!h-6 !w-6 shrink-0"
+            className="!h-6 !w-6 shrink-0 border border-white/20"
           />
           <span className="truncate text-[12px] font-semibold">@{creation.author.username}</span>
         </Link>

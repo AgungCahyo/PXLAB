@@ -1,6 +1,6 @@
 import { DM_Sans, Press_Start_2P } from "next/font/google"
 import Link from "next/link"
-import { copy } from "@/lib/copy"
+import { copy } from "../lib/copy"
 import { SITE_NAME } from "@/lib/site"
 import "./globals.css"
 
