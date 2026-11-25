@@ -1,0 +1,108 @@
+import { readFileSync } from "node:fs"
+import path from "node:path"
+import { describe, expect, it } from "vitest"
+
+const read = (file: string) => readFileSync(path.resolve(__dirname, "..", file), "utf8")
+
+describe("profile edit and compact settings", () => {
+  const migration = read("supabase/migrations/20261125010000_profile_location_website.sql")
+  const session = read("lib/auth/session.ts")
+  const validation = read("lib/validations/profile.ts")
+  const actions = read("features/profiles/actions.ts")
+  const form = read("components/profiles/ProfileEditForm.tsx")
+  const page = read("app/[lang]/(member)/profile/edit/page.tsx")
+  const publicProfile = read("app/[lang]/(public)/u/[username]/page.tsx")
+  const settingsForm = read("components/profiles/SettingsForm.tsx")
+  const settingsPage = read("app/[lang]/(member)/settings/page.tsx")
+  const nav = read("components/layout/SocialNav.tsx")
+  const menu = read("components/layout/MobileMenuSheet.tsx")
+  const copy = read("lib/copy.ts")
+  const socialCopy = read("lib/copy-social.ts")
+  const nextConfig = read("next.config.ts")
+  const robots = read("app/robots.ts")
+
+  it("adds location and website additively", () => {
+    expect(migration).toMatch(/add column if not exists location text/)
+    expect(migration).toMatch(/add column if not exists website text/)
+    expect(migration).toMatch(/grant update \(location, website\)/)
+    expect(session).toMatch(/location: string \| null/)
+    expect(session).toMatch(/website: string \| null/)
+    expect(session).toMatch(/bio, location, website, avatar_url/)
+    expect(validation).toMatch(/export const locationSchema/)
+    expect(validation).toMatch(/export const websiteSchema/)
+    expect(validation).toMatch(/website: websiteSchema/)
+    expect(actions).toMatch(/location: parsed\.data\.location \|\| null/)
+    expect(actions).toMatch(/website: parsed\.data\.website \|\| null/)
+    expect(actions).toMatch(/\/profile\/edit/)
+  })
+
+  it("keeps login working before the additive migration is applied", () => {
+    expect(session).toMatch(/BASE_PUBLIC_PROFILE_COLUMNS/)
+    expect(session).toMatch(/BASE_MEMBER_PROFILE_COLUMNS/)
+    expect(session).toMatch(/withNewProfileFields/)
+    expect(actions).toMatch(/const identityFields/)
+    expect(actions).toMatch(/error\.code === "42703"/)
+  })
+
+  it("uses a dedicated edit page with explicit save confirmation", () => {
+    expect(page).toMatch(/ProfileEditForm/)
+    expect(page).toMatch(/\/profile\/edit/)
+    expect(form).toMatch(/name="location"/)
+    expect(form).toMatch(/name="website"/)
+    expect(form).toMatch(/profileEditConfirmTitle/)
+    expect(form).toMatch(/profileEditConfirmAction/)
+    expect(form).toMatch(/setConfirming\(true\)/)
+    expect(form).toMatch(/form\.requestSubmit\(\)/)
+    expect(form).not.toMatch(/href=\{href/)
+  })
+
+  it("shows the new fields and owner-only edit button on public profiles", () => {
+    expect(publicProfile).toMatch(/profile\.location/)
+    expect(publicProfile).toMatch(/profile\.website/)
+    expect(publicProfile).toMatch(/profileEditWebsiteLink/)
+    expect(publicProfile).toMatch(/ownProfile \? \(/)
+    expect(publicProfile).toMatch(/href\(lang, "\/profile\/edit"\)/)
+  })
+
+  it("keeps settings compact as rows and modals", () => {
+    expect(settingsForm).toMatch(/type ModalKey/)
+    expect(settingsForm).toMatch(/setModal\("avatar"\)/)
+    expect(settingsForm).toMatch(/setModal\("language"\)/)
+    expect(settingsForm).toMatch(/setModal\("pwa"\)/)
+    expect(settingsForm).toMatch(/setModal\("signout"\)/)
+    expect(settingsForm).toMatch(/<Dialog/)
+    expect(settingsForm).toMatch(/settingsEditProfile/)
+    expect(settingsForm).not.toMatch(/name="displayName"/)
+    expect(settingsForm).not.toMatch(/name="username"/)
+    expect(settingsPage).toMatch(/id="account-security"/)
+  })
+
+  it("puts Challenge and Settings in every navigation surface", () => {
+    expect(nav).toMatch(/key: "challenge"/)
+    expect(nav).toMatch(/soon: true/)
+    expect(nav).toMatch(/t\.challengeSoon\[lang\]/)
+    expect(nav).toMatch(/t\.dashboardHint\[lang\]/)
+    expect(nav).toMatch(/href\(lang, "\/settings"\)/)
+    expect(nav).toMatch(/href\(lang, "\/profile\/edit"\)/)
+    expect(nav).toMatch(/filter\(\(item\) => item\.key !== "profile"\)/)
+    expect(nav).toMatch(/grid-cols-5/)
+    expect(menu).toMatch(/Trophy/)
+    expect(menu).toMatch(/href\(lang, profilePath\)/)
+    expect(menu).toMatch(/href\(lang, "\/profile\/edit"\)/)
+    expect(menu).toMatch(/href\(lang, "\/settings"\)/)
+    expect(menu).toMatch(/LanguageSwitch/)
+    expect(menu).toMatch(/PwaInstall/)
+    expect(menu).toMatch(/LogoutButton/)
+    expect(socialCopy).toMatch(/challengeSoon:/)
+    expect(socialCopy).toMatch(/dashboardHint:/)
+    expect(copy).toMatch(/profileEditConfirmTitle:/)
+    expect(copy).toMatch(/settingsRowSecurity:/)
+  })
+
+  it("keeps the new edit route private", () => {
+    expect(nextConfig).toMatch(/"\/profile\/edit"/)
+    expect(robots).toMatch(/"\/profile\/edit"/)
+    expect(robots).toMatch(/"\/en\/profile\/edit"/)
+    expect(robots).toMatch(/"\/id\/profile\/edit"/)
+  })
+})

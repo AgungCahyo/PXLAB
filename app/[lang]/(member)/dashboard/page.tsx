@@ -3,6 +3,7 @@ import Link from "next/link"
 import { notFound } from "next/navigation"
 import { connection } from "next/server"
 import { PeekingPixelCat, PixelCat, PixelCatDecoration } from "@/components/brand"
+import { NewArtworkTrigger } from "@/components/creations/NewArtworkDialog"
 import { WorksRow } from "@/components/creations/WorksRow"
 import { PixelIcon } from "@/components/ui/PixelIcon"
 import { SectionHeader } from "@/components/ui/PageHeader"
@@ -129,13 +130,13 @@ export default async function DashboardPage({
                 <PixelIcon name="rotate" className="h-4 w-4 text-muted" />
                 {copy.nav.responses[lang]}
               </Link>
-              <Link
-                href={href(lang, "/create")}
+              <NewArtworkTrigger
+                lang={lang}
                 className="inline-flex min-h-10 items-center justify-center gap-2 rounded-full bg-[#1e1435] px-5 py-2 text-[13px] font-medium text-white shadow-sm transition-all hover:bg-[#2e2348] hover:shadow-md"
               >
                 <PixelIcon name="plus" className="h-4 w-4" />
                 {copy.worksNew[lang]}
-              </Link>
+              </NewArtworkTrigger>
             </div>
           </div>
         </div>
@@ -193,12 +194,12 @@ export default async function DashboardPage({
               title={copy.createEmptyTitle[lang]}
               description={copy.createEmptyBody[lang]}
               action={
-                <Link
-                  href={href(lang, "/create")}
+                <NewArtworkTrigger
+                  lang={lang}
                   className={socialButtonClass({ variant: "solid" })}
                 >
                   {copy.worksNew[lang]}
-                </Link>
+                </NewArtworkTrigger>
               }
             />
           </div>
@@ -230,13 +231,13 @@ export default async function DashboardPage({
                   ? "Terbitkan karya drafmu agar tampil di galeri publik."
                   : "Publish your drafts to show them in the gallery."}
             </p>
-            <Link
-              href={href(lang, "/create")}
+            <NewArtworkTrigger
+              lang={lang}
               className="mt-5 inline-flex items-center gap-2 rounded-full bg-[#6355d8] px-4 py-2 text-[13px] font-medium text-white shadow-sm hover:bg-[#5245c7]"
             >
               <PixelIcon name="plus" className="h-3.5 w-3.5" />
               {copy.worksNew[lang]}
-            </Link>
+            </NewArtworkTrigger>
           </div>
         ) : (
           <>

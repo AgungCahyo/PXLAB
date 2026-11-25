@@ -356,7 +356,7 @@ export function CreationCommunity({
 
       <div className="mt-8 flex flex-wrap items-center gap-3">
         {allowFork ? <ForkForm lang={lang} creationId={creationId} member={Boolean(member)} /> : null}
-        <ReportButton lang={lang} targetType="creation" targetId={creationId} member={Boolean(member)} />
+        <ReportButton lang={lang} targetType="creation" targetId={creationId} isMember={Boolean(member)} />
       </div>
     </section>
   )
@@ -479,7 +479,7 @@ function ConversationNoteRow({
           ) : null}
           {own ? <DeleteComment lang={lang} id={note.id} onDeleted={onDeleted} /> : null}
           {member && !pendingLocal ? (
-            <ReportButton lang={lang} targetType="comment" targetId={note.id} member />
+            <ReportButton lang={lang} targetType="comment" targetId={note.id} isMember />
           ) : null}
         </div>
       </div>
@@ -593,7 +593,6 @@ function ConversationComposer({
               setContent(event.target.value)
               onContentChange?.(event.target.value)
             }}
-            appearance="social"
             label={
               parentId
                 ? `${copy.conversationReplyTo[lang]} @${replyTo ?? ""}`
@@ -674,7 +673,6 @@ function EditComment({
         value={content}
         onChange={(event) => setContent(event.target.value)}
         label={copy.conversationEdit[lang]}
-        appearance="social"
         className="min-h-24"
       />
       <div className="flex flex-wrap gap-2">

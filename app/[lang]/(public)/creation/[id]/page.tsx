@@ -1,5 +1,4 @@
 import type { Metadata } from "next"
-import Link from "next/link"
 import { notFound } from "next/navigation"
 import { connection } from "next/server"
 import { Suspense } from "react"
@@ -13,7 +12,11 @@ import { RecommendationSkeleton } from "@/components/creations/RecommendationRac
 import { RemixStrip } from "@/components/creations/RemixStrip"
 import { SimilarWorksLazy } from "@/components/creations/SimilarWorksLazy"
 import { CreationCommunity, CreationEngagement } from "@/components/community/CreationCommunity"
+import { ArchiveCreationButton } from "@/components/feeds/ArchiveCreationButton"
+import { SaveCreationButton } from "@/components/feeds/SaveCreationButton"
+import { BackButton } from "@/components/ui/BackButton"
 import { isFollowing } from "@/features/community/follows"
+import { isCreationArchived, isCreationSaved } from "@/features/feeds/queries"
 import { countCommentsOnCreation, getReactionSummary, listConversation } from "@/features/community/queries"
 import {
   countPublishedRemixes,
@@ -24,6 +27,7 @@ import {
 import { getCurrentProfile } from "@/lib/auth/session"
 import { displayTitle } from "@/lib/creations"
 import { copy, creationCategoryLabels, creationTypeLabels } from "../../../../../lib/copy"
+import { socialCopy } from "@/lib/copy-social"
 import { formatDayMonthYear } from "@/lib/format"
 import { href, isLang, type Lang } from "@/lib/i18n"
 import { pageMeta } from "@/lib/meta"
@@ -95,13 +99,15 @@ export default async function CreationDetailPage({
         avatarUrl: profile.avatar_url,
       }
     : null
-  const [reaction, remixCount, following, commentCount] = await Promise.all([
+  const [reaction, remixCount, following, commentCount, saved, archived] = await Promise.all([
     getReactionSummary(creation.id, member?.id ?? null),
     creation.type === "pixel" ? countPublishedRemixes(creation.id) : Promise.resolve(0),
     profile && profile.id !== creation.user_id
       ? isFollowing(profile.id, creation.user_id)
       : Promise.resolve(false),
     countCommentsOnCreation(creation.id),
+    isCreationSaved(creation.id),
+    isCreationArchived(creation.id),
   ])
   const isOwner = profile?.id === creation.user_id
   const title = displayTitle(creation.title, lang)
@@ -192,17 +198,32 @@ export default async function CreationDetailPage({
           />
         ) : null}
       </div>
+
+      {profile ? (
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <SaveCreationButton lang={lang} creationId={creation.id} initialSaved={saved} />
+          {isOwner ? (
+            <>
+              <ArchiveCreationButton
+                lang={lang}
+                creationId={creation.id}
+                initialArchived={archived}
+              />
+              <p className="w-full text-[12px] text-muted">{socialCopy.feeds.archivedNote[lang]}</p>
+            </>
+          ) : null}
+        </div>
+      ) : null}
     </>
   )
 
   return (
     <article className="mx-auto w-full min-w-0 max-w-5xl px-3 py-4 sm:px-6 sm:py-6 lg:px-10">
-      <Link
-        href={href(lang, "/explore")}
-        className="mb-4 inline-flex min-h-11 items-center text-[13px] text-muted hover:text-fg"
-      >
-        {copy.creationBack[lang]}
-      </Link>
+      <BackButton
+        fallbackHref={href(lang, "/explore")}
+        label={copy.creationBack[lang]}
+        className="mb-4"
+      />
 
       {isPixel ? (
         <>

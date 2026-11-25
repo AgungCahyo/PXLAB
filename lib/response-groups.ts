@@ -22,7 +22,7 @@ export function groupByRecency<T extends { at: string }>(
     .map((group) => ({ group, items: buckets[group] }))
 }
 
-/** Splits "{user} liked {title}" into text and placeholder parts so the caller can style them. */
+/** Splits "{user} appreciated {title}" into text and placeholder parts so the caller can style them. */
 export function splitTemplate(template: string): { type: "text" | "user" | "title"; value: string }[] {
   return template
     .split(/(\{user\}|\{title\})/)

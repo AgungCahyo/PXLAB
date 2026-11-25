@@ -1,7 +1,7 @@
 "use client"
 
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react"
-import { mergeUnique } from "@/lib/social-feed"
+import { mergeUnique } from "@/lib/merge-unique"
 
 export type InfiniteStatus = "idle" | "loading" | "error"
 export type PageResult<T> = { ok: true; items: T[]; page: number; pageCount: number } | { ok: false }

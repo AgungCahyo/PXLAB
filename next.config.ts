@@ -17,7 +17,13 @@ const indonesianRoutes = [
   "/verify-email",
   "/dashboard",
   "/responses",
+  "/activity",
+  "/insights",
+  "/saved",
+  "/liked",
+  "/archive",
   "/settings",
+  "/profile/edit",
   "/welcome",
   "/admin",
 ];

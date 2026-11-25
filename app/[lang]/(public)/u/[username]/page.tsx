@@ -5,7 +5,7 @@ import { cache, Suspense } from "react"
 import { PixelCatDecoration } from "@/components/brand/PixelCatDecoration"
 import { FollowButton } from "@/components/community/FollowButton"
 import { ProfileAvatar } from "@/components/profiles/ProfileAvatar"
-import { Grid2x22 } from "pixelarticons/react"
+import { ExternalLink, Grid2x22, MapPin } from "pixelarticons/react"
 import { ProfileGridSkeleton, Skeleton } from "@/components/social/Skeleton"
 import { SocialEmptyState } from "@/components/social/SocialEmptyState"
 import { socialButtonClass } from "@/components/social/socialButton"
@@ -102,7 +102,7 @@ export default async function PublicProfilePage({
                   userId={profile.id}
                   username={profile.username}
                   initialFollowing={following}
-                  member={Boolean(me)}
+                  isMember={Boolean(me)}
                   returnPath={profilePath}
                   compact
                 />
@@ -130,12 +130,37 @@ export default async function PublicProfilePage({
                 {profile.bio}
               </p>
             ) : null}
+
+            {profile.location || profile.website ? (
+              <div className="mt-2 flex max-w-2xl flex-wrap items-center gap-x-4 gap-y-1 text-[13px] text-muted">
+                {profile.location ? (
+                  <span className="inline-flex min-w-0 items-center gap-1.5">
+                    <MapPin width={14} height={14} aria-hidden="true" className="shrink-0" />
+                    <span className="truncate">{profile.location}</span>
+                  </span>
+                ) : null}
+                {profile.website ? (
+                  <a
+                    href={profile.website}
+                    target="_blank"
+                    rel="noreferrer noopener"
+                    className="inline-flex min-w-0 items-center gap-1.5 text-[#6355d8] hover:underline"
+                  >
+                    <ExternalLink width={14} height={14} aria-hidden="true" className="shrink-0" />
+                    <span className="truncate">{copy.profileEditWebsiteLink[lang]}</span>
+                  </a>
+                ) : null}
+              </div>
+            ) : null}
           </div>
         </div>
       </header>
 
       {ownProfile ? (
         <div className="mt-4 flex flex-wrap gap-2">
+          <Link href={href(lang, "/profile/edit")} className={socialButtonClass({ variant: "soft", size: "sm" })}>
+            {copy.profileEditTitle[lang]}
+          </Link>
           <Link href={href(lang, "/settings")} className={socialButtonClass({ variant: "soft", size: "sm" })}>
             {copy.nav.settings[lang]}
           </Link>

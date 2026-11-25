@@ -1,9 +1,10 @@
 "use client"
 
-import { useRef, useState } from "react"
+import { useEffect, useId, useRef, useState } from "react"
 import Link from "next/link"
 import { PixelArt } from "@/components/creations/PixelArt"
 import { WorksDeleteButton } from "@/components/creations/WorksDeleteButton"
+import { focusMenuItem, handleMenuKeyDown } from "@/components/ui/menuKeyboard"
 import { PixelIcon } from "@/components/ui/PixelIcon"
 import { socialButtonClass } from "@/components/social/socialButton"
 import { displayTitle } from "@/lib/creations"
@@ -30,18 +31,45 @@ function WorksCardMenu({
 }) {
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
+  const triggerRef = useRef<HTMLButtonElement>(null)
+  const triggerId = useId()
+  const menuId = useId()
+  const pendingFocusRef = useRef<"first" | "last">("first")
 
   const handleBlur = (e: React.FocusEvent<HTMLDivElement>) => {
     if (!ref.current?.contains(e.relatedTarget as Node)) setOpen(false)
   }
 
+  const closeAndFocus = () => {
+    setOpen(false)
+    triggerRef.current?.focus()
+  }
+
+  // Move focus into the menu when it opens (first item, or last for ArrowUp).
+  useEffect(() => {
+    if (!open) return
+    focusMenuItem(ref.current, pendingFocusRef.current)
+    pendingFocusRef.current = "first"
+  }, [open])
+
   return (
     <div className="relative" ref={ref} onBlur={handleBlur}>
       <button
         type="button"
-        aria-label="Tindakan lainnya"
+        id={triggerId}
+        ref={triggerRef}
+        aria-haspopup="menu"
+        aria-controls={menuId}
+        aria-label={copy.moreActions[lang]}
         aria-expanded={open}
         onClick={() => setOpen((v) => !v)}
+        onKeyDown={(event) => {
+          if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+            event.preventDefault()
+            pendingFocusRef.current = event.key === "ArrowUp" ? "last" : "first"
+            setOpen(true)
+          }
+        }}
         className={cn(
           "inline-flex h-8 w-8 items-center justify-center rounded-xl border border-slate-200/90 bg-slate-50/80 text-muted transition-colors hover:bg-slate-100 hover:text-fg",
           open && "bg-slate-100 text-fg ring-2 ring-purple-400/30",
@@ -50,7 +78,13 @@ function WorksCardMenu({
         <PixelIcon name="more" className="h-4 w-4" />
       </button>
       {open ? (
-        <div className="absolute right-0 bottom-full z-50 mb-1 min-w-36 rounded-xl border border-slate-200/90 bg-card p-1 shadow-lg ring-1 ring-black/5">
+        <div
+          id={menuId}
+          role="menu"
+          aria-labelledby={triggerId}
+          onKeyDown={(event) => handleMenuKeyDown(event, { onClose: closeAndFocus })}
+          className="absolute right-0 bottom-full z-50 mb-1 min-w-36 rounded-xl border border-slate-200/90 bg-card p-1 shadow-lg ring-1 ring-black/5"
+        >
           <WorksDeleteButton
             lang={lang}
             creationId={creationId}

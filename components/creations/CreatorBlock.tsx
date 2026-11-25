@@ -68,7 +68,7 @@ export function CreatorBlock({
             userId={authorId}
             username={author.username}
             initialFollowing={following}
-            member={member}
+            isMember={member}
             returnPath={returnPath}
             compact
           />

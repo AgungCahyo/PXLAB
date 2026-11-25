@@ -34,7 +34,7 @@ export function LanguageSwitch({
       scroll={false}
       aria-label={other === "en" ? copy.switchToEn[lang] : copy.switchToId[lang]}
       className={cn(
-        "inline-flex h-11 min-w-[4.25rem] items-center justify-center gap-1.5 border-[3px] border-earth bg-card px-3 text-[12px] font-medium tracking-wide hover:bg-soft",
+        "inline-flex h-9 min-w-[4.25rem] items-center justify-center gap-1.5 rounded-xl border border-slate-200/80 bg-card px-3 text-[12px] font-medium tracking-wide transition-colors hover:bg-slate-100",
         className,
       )}
     >

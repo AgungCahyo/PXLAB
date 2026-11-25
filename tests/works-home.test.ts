@@ -8,11 +8,11 @@ describe("Create and My Works stay separate", () => {
   const createPage = read("app/[lang]/(member)/create/page.tsx")
   const dashboard = read("app/[lang]/(member)/dashboard/page.tsx")
   const profile = read("app/[lang]/(public)/u/[username]/page.tsx")
-  const nav = read("components/layout/SiteNav.tsx")
+  const nav = read("components/layout/SocialNav.tsx")
   const actions = read("features/creations/actions.ts")
 
   it("keeps Create as the new-canvas door only", () => {
-    expect(createPage).toMatch(/PixelNewForm/)
+    expect(createPage).toMatch(/NewArtworkRouteDialog/)
     expect(createPage).not.toMatch(/listOwnCreations/)
     expect(createPage).toMatch(/\/dashboard/)
   })
@@ -60,10 +60,11 @@ describe("Create and My Works stay separate", () => {
   it("links the owner profile and account menu to My Works", () => {
     expect(profile).toMatch(/\/dashboard/)
     expect(profile).toMatch(/nav\.dashboard/)
-    expect(nav).toMatch(/\/dashboard/)
-    expect(nav).toMatch(/nav\.dashboard/)
-    expect(nav).toMatch(/key: "works"/)
-    expect(nav).toMatch(/grid-cols-4/)
+    expect(nav).toMatch(/href\(lang, "\/dashboard"\)/)
+    expect(nav).toMatch(/t\.works\[lang\]/)
+    expect(nav).toMatch(/t\.dashboardHint\[lang\]/)
+    expect(nav).toMatch(/MobileMenuSheet/)
+    expect(nav).toMatch(/grid-cols-5/)
   })
 
   it("keeps a minimal public profile header with avatar and works grid", () => {

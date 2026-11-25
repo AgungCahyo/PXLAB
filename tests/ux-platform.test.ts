@@ -5,15 +5,16 @@ import { describe, expect, it } from "vitest"
 const read = (file: string) => readFileSync(path.resolve(__dirname, "..", file), "utf8")
 
 describe("platform navigation", () => {
-  const nav = read("components/layout/SiteNav.tsx")
+  const socialNav = read("components/layout/SocialNav.tsx")
   const auth = read("features/auth/actions.ts")
 
   it("keeps Explore, Create, and Profile in a mobile tab bar", () => {
-    expect(nav).toMatch(/app-tabbar/)
-    expect(nav).toMatch(/\/explore/)
-    expect(nav).toMatch(/\/create/)
-    expect(nav).toMatch(/nav\.profile/)
-    expect(nav).not.toMatch(/openMenu/)
+    expect(socialNav).toMatch(/SocialTabBar/)
+    expect(socialNav).toMatch(/app-tabbar/)
+    expect(socialNav).toMatch(/\/explore/)
+    expect(socialNav).toMatch(/\/create/)
+    expect(socialNav).toMatch(/t\.profile/)
+    expect(socialNav).not.toMatch(/openMenu/)
   })
 
   it("sends a signed-in member to Explore by default, or to a safe next", () => {

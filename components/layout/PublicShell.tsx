@@ -18,7 +18,7 @@ export function PublicShell({
   lang: Lang
 }) {
   return (
-    <ToastProvider>
+    <ToastProvider lang={lang}>
     <div className="relative flex min-h-dvh flex-col pb-[calc(4rem+env(safe-area-inset-bottom,0px))] md:pb-0">
       <PixelWorldBackdrop />
       <div className="shell-content relative z-10 flex min-h-dvh flex-col">

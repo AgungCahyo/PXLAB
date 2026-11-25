@@ -9,6 +9,8 @@ export type PublicProfile = {
   username: string
   display_name: string | null
   bio: string | null
+  location: string | null
+  website: string | null
   avatar_url: string | null
   avatar_config: AvatarConfig | null
   created_at: string
@@ -23,8 +25,21 @@ export type MemberProfile = Omit<PublicProfile, "username"> & {
 }
 
 const PUBLIC_PROFILE_COLUMNS =
+  "id, username, display_name, bio, location, website, avatar_url, avatar_config, created_at"
+const BASE_PUBLIC_PROFILE_COLUMNS =
   "id, username, display_name, bio, avatar_url, avatar_config, created_at"
 const MEMBER_PROFILE_COLUMNS = `${PUBLIC_PROFILE_COLUMNS}, role, activity_seen_at, onboarding_completed_at`
+const BASE_MEMBER_PROFILE_COLUMNS = `${BASE_PUBLIC_PROFILE_COLUMNS}, role, activity_seen_at, onboarding_completed_at`
+
+/**
+ * The location/website migration is additive. Until it is applied, asking for
+ * every column makes PostgREST return 42703 and the whole profile reads as
+ * null — which sends an otherwise valid session back to /login. Fall back to
+ * the baseline columns so auth keeps working before the migration is deployed.
+ */
+function withNewProfileFields<T extends Record<string, unknown>>(row: T): T {
+  return { ...row, location: row.location ?? null, website: row.website ?? null }
+}
 
 function mapProfile<T extends { avatar_config?: unknown }>(
   row: T,
@@ -68,23 +83,44 @@ export const getCurrentProfile = cache(async (): Promise<MemberProfile | null> =
   const supabase = await createServerSupabase()
   if (!supabase) return null
 
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from("profiles")
     .select(MEMBER_PROFILE_COLUMNS)
     .eq("id", user.id)
     .maybeSingle()
 
-  return data ? (mapProfile(data) as MemberProfile) : null
+  let row: Record<string, unknown> | null = data
+  if (error) {
+    const baseline = await supabase
+      .from("profiles")
+      .select(BASE_MEMBER_PROFILE_COLUMNS)
+      .eq("id", user.id)
+      .maybeSingle()
+    row = baseline.data
+  }
+
+  return row ? (mapProfile(withNewProfileFields(row)) as MemberProfile) : null
 })
 
 export async function getProfileByUsername(username: string): Promise<PublicProfile | null> {
   const supabase = createPublicSupabase()
   if (!supabase) return null
-  const { data } = await supabase
+  const key = username.toLowerCase()
+  const { data, error } = await supabase
     .from("profiles")
     .select(PUBLIC_PROFILE_COLUMNS)
-    .eq("username", username.toLowerCase())
+    .eq("username", key)
     .maybeSingle()
-  if (!data?.username) return null
-  return mapProfile(data) as PublicProfile
+
+  let row: Record<string, unknown> | null = data
+  if (error) {
+    const baseline = await supabase
+      .from("profiles")
+      .select(BASE_PUBLIC_PROFILE_COLUMNS)
+      .eq("username", key)
+      .maybeSingle()
+    row = baseline.data
+  }
+  if (!row?.username) return null
+  return mapProfile(withNewProfileFields(row)) as PublicProfile
 }

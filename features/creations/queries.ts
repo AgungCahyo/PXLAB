@@ -50,6 +50,8 @@ export type CreationCard = {
   updated_at: string
   status: CreationRow["status"]
   cover_url: string | null
+  /** Present only when the additive archive migration has been applied. */
+  archived_at?: string | null
   commentCount?: number
   isNew?: boolean
   author: {
@@ -72,10 +74,14 @@ export type CreationAuthor = {
 
 const CREATION_COLUMNS =
   "id, user_id, title, caption, tags, color_usage, type, category, content, cover_url, status, allow_png_download, forked_from, created_at, updated_at, published_at"
-const CARD_COLUMNS =
+export const CARD_COLUMNS =
   "id, title, caption, tags, type, category, status, published_at, updated_at, user_id, cover_url"
-const PROFILE_CARD_EMBED = "profiles (username, display_name, avatar_url, avatar_config)"
-const PROFILE_DETAIL_EMBED = "profiles (username, display_name, avatar_url, avatar_config, bio)"
+// `saved_creations` also links creations to profiles, so PostgREST needs the
+// explicit FK hint or every creation→profile embed becomes ambiguous.
+const PROFILE_CARD_EMBED =
+  "profiles!creations_user_id_fkey (username, display_name, avatar_url, avatar_config)"
+const PROFILE_DETAIL_EMBED =
+  "profiles!creations_user_id_fkey (username, display_name, avatar_url, avatar_config, bio)"
 
 type ProfileEmbed = {
   username: string | null
@@ -119,7 +125,7 @@ function tagsOf(row: Record<string, unknown>) {
   return Array.isArray(value) ? value.map(String) : []
 }
 
-function cardFromRow(row: Record<string, unknown>): CreationCard {
+export function cardFromRow(row: Record<string, unknown>): CreationCard {
   return {
     id: row.id as string,
     title: row.title as string,
@@ -131,6 +137,7 @@ function cardFromRow(row: Record<string, unknown>): CreationCard {
     updated_at: row.updated_at as string,
     status: row.status as CreationRow["status"],
     cover_url: (row.cover_url as string | null) ?? null,
+    archived_at: (row.archived_at as string | null | undefined) ?? null,
     author: authorOf(row),
   }
 }
@@ -644,7 +651,7 @@ export const getPublishedCreation = cache(async function getPublishedCreation(
   if (row.forked_from) {
     const { data: parent } = await supabase
       .from("creations")
-      .select("id, title, profiles (username)")
+      .select("id, title, profiles!creations_user_id_fkey (username)")
       .eq("id", row.forked_from)
       .eq("status", "published")
       .maybeSingle()

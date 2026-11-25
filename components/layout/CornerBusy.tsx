@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useRef, useState, startTransition } from "react"
 import { createPortal } from "react-dom"
 import { usePathname, useSearchParams } from "next/navigation"
 import { beginGlobalBusy, endGlobalBusy, subscribeGlobalBusy } from "@/lib/global-busy"
@@ -55,7 +55,7 @@ export function CornerBusyMark({
   return (
     <div
       className={cn(
-        "corner-busy pointer-events-none fixed z-[9999] flex h-11 w-11 items-center justify-center border-[3px] border-earth bg-card shadow-[4px_4px_0_0_var(--fg)]",
+        "corner-busy pointer-events-none fixed z-[9999] flex h-10 w-10 items-center justify-center rounded-2xl border border-slate-200/80 bg-card shadow-xl shadow-slate-900/10 transition-opacity duration-200",
         "right-3 bottom-[calc(4.75rem+env(safe-area-inset-bottom,0px))] md:bottom-5 md:right-5",
         visible ? "opacity-100" : "opacity-0",
         className,
@@ -66,10 +66,10 @@ export function CornerBusyMark({
       aria-label={copy.globalBusy[lang]}
     >
       <span
-        className="corner-busy-spin h-5 w-5 rounded-full border-[3px]"
+        className="corner-busy-spin h-[18px] w-[18px] rounded-full border-2"
         style={{
-          borderColor: "color-mix(in srgb, var(--earth) 35%, var(--card))",
-          borderTopColor: "var(--brick)",
+          borderColor: "rgb(99 85 216 / 0.2)",
+          borderTopColor: "#6355d8",
         }}
       />
       <span className="sr-only">{copy.globalBusy[lang]}</span>
@@ -96,7 +96,7 @@ export function CornerBusy({ lang }: { lang: Lang }) {
   const wantVisible = busyDepth > 0 || routePulse > 0
 
   useEffect(() => {
-    setMounted(true)
+    startTransition(() => setMounted(true))
   }, [])
 
   useEffect(() => subscribeGlobalBusy(setBusyDepth), [])
@@ -108,7 +108,7 @@ export function CornerBusy({ lang }: { lang: Lang }) {
         hideTimerRef.current = null
       }
       shownAtRef.current = Date.now()
-      setVisible(true)
+      startTransition(() => setVisible(true))
       return
     }
     const elapsed = Date.now() - shownAtRef.current
@@ -122,7 +122,7 @@ export function CornerBusy({ lang }: { lang: Lang }) {
 
   useEffect(() => {
     routePulseRef.current = 0
-    setRoutePulse(0)
+    startTransition(() => setRoutePulse(0))
     if (safetyTimerRef.current) {
       clearTimeout(safetyTimerRef.current)
       safetyTimerRef.current = null

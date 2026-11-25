@@ -50,10 +50,14 @@ async function requireOwnProfile(): Promise<OwnProfileGate> {
   }
 }
 
-function revalidateProfilePaths(lang: Lang, username: string) {
+function revalidateProfilePaths(lang: Lang, username: string, previousUsername?: string) {
   revalidatePath(href(lang, "/settings"))
+  revalidatePath(href(lang, "/profile/edit"))
   revalidatePath(href(lang, "/welcome"))
   if (username) revalidatePath(href(lang, `/u/${username}`))
+  if (previousUsername && previousUsername !== username) {
+    revalidatePath(href(lang, `/u/${previousUsername}`))
+  }
   revalidatePath(href(lang, "/dashboard"))
 }
 
@@ -122,6 +126,8 @@ export async function updateProfileAction(
     username: formData.get("username"),
     displayName: formData.get("displayName"),
     bio: formData.get("bio") ?? "",
+    location: formData.get("location") ?? "",
+    website: formData.get("website") ?? "",
   })
   if (!parsed.success) {
     const issue =
@@ -138,14 +144,33 @@ export async function updateProfileAction(
   if (!gate.ok) return { error: gate.error }
   const { userId, supabase } = gate
 
-  const { error } = await supabase
+  const identityFields = {
+    username: parsed.data.username,
+    display_name: parsed.data.displayName,
+    bio: parsed.data.bio ? parsed.data.bio : null,
+  }
+  const { error: fullError } = await supabase
     .from("profiles")
     .update({
-      username: parsed.data.username,
-      display_name: parsed.data.displayName,
-      bio: parsed.data.bio ? parsed.data.bio : null,
+      ...identityFields,
+      location: parsed.data.location || null,
+      website: parsed.data.website || null,
     })
     .eq("id", userId)
+
+  let error = fullError
+  // Same deployment window as the read fallback in lib/auth/session.ts: the
+  // identity edit must still succeed before the additive migration is applied.
+  if (
+    error &&
+    (error.code === "42703" || /location|website/.test(error.message ?? ""))
+  ) {
+    const baseline = await supabase
+      .from("profiles")
+      .update(identityFields)
+      .eq("id", userId)
+    error = baseline.error
+  }
 
   if (error) {
     if (error.code === "23505") return { error: "username_taken" }
@@ -154,7 +179,7 @@ export async function updateProfileAction(
     return { error: "invalid_input" }
   }
 
-  revalidateProfilePaths(lang, parsed.data.username)
+  revalidateProfilePaths(lang, parsed.data.username, gate.username)
   return { ok: true }
 }
 

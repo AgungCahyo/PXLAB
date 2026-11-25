@@ -20,7 +20,7 @@ export function FollowButton({
   userId,
   username,
   initialFollowing,
-  member,
+  isMember,
   returnPath,
   compact = false,
 }: {
@@ -28,7 +28,7 @@ export function FollowButton({
   userId: string
   username: string
   initialFollowing: boolean
-  member: boolean
+  isMember: boolean
   /** Path used as login next (profile or creation). */
   returnPath: string
   /** Smaller presentation for compact creator cards; actions are unchanged. */
@@ -99,7 +99,7 @@ export function FollowButton({
     void sync()
   }
 
-  if (!member) {
+  if (!isMember) {
     return (
       <Link
         href={loginHref(lang, returnPath)}

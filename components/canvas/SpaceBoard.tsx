@@ -214,7 +214,7 @@ export function SpaceBoard({
             </Button>
           ) : null}
           {selected ? (
-            <ReportButton lang={lang} targetType="space_element" targetId={selected.id} member />
+            <ReportButton lang={lang} targetType="space_element" targetId={selected.id} isMember />
           ) : null}
         </div>
       ) : (
@@ -226,7 +226,7 @@ export function SpaceBoard({
             </Link>
           </p>
           {selected ? (
-            <ReportButton lang={lang} targetType="space_element" targetId={selected.id} member={false} />
+            <ReportButton lang={lang} targetType="space_element" targetId={selected.id} isMember={false} />
           ) : null}
         </div>
       )}

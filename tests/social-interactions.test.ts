@@ -61,7 +61,7 @@ describe("studio & engine boundary", () => {
     ...walk("app/[lang]/(public)/home"),
     "components/layout/SocialNav.tsx",
     "lib/copy-social.ts",
-    "lib/social-feed.ts",
+    "lib/merge-unique.ts",
     "lib/social-like.ts",
     "lib/social-time.ts",
   ]

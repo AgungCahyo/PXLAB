@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { groupByRecency, splitTemplate } from "@/lib/social-notifications"
+import { groupByRecency, splitTemplate } from "@/lib/response-groups"
 
 const NOW = Date.parse("2026-11-20T12:00:00Z")
 const at = (hoursAgo: number) => ({ at: new Date(NOW - hoursAgo * 3_600_000).toISOString() })

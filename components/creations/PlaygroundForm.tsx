@@ -1691,9 +1691,9 @@ export function PlaygroundForm({
                   else if (kind === "text-max") flashEdit(copy.pixelTextMax[lang])
                   else flashEdit(copy.pixelClipboardEmpty[lang])
                 }}
-                onShapeDraftChange={(info) => {
-                  setShapeDraft(info)
-                  if (info.active) setBrushSize(info.strokeWidth)
+                onShapeDraftChange={(shapeDraft) => {
+                  setShapeDraft(shapeDraft)
+                  if (shapeDraft.active) setBrushSize(shapeDraft.strokeWidth)
                 }}
                 onPaletteChange={setDocumentPalette}
                 onPaletteFull={() => setPaletteFullAlert(true)}

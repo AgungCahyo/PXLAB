@@ -947,12 +947,28 @@ body:has([data-chrome="playground"]) .corner-busy-shell {
  * React may retain during a view transition).
  */
 @media (min-width: 48rem) {
+  /* Layout adapts smoothly when the sidebar expands: 72px (4.5rem) to 248px (15.5rem).
+   * Content shifts naturally without overlapping. */
   body:has(.social-rail) .shell-content {
-    padding-left: 16rem;
+    padding-left: 4.5rem;
+    transition: padding-left 200ms ease-out;
+  }
+  body:has(.social-rail:hover) .shell-content,
+  body:has(.social-rail:focus-within) .shell-content {
+    padding-left: 15.5rem;
   }
   body:has(.social-rail) #main {
     padding-top: 0;
   }
+}
+
+/* Hide scrollbar visually while retaining full wheel, trackpad, touch, and keyboard scrolling */
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
 }
 
 /*

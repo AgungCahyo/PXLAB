@@ -6,7 +6,8 @@ import { useEffect, useId, useRef, useState } from "react"
 import { LanguageSwitch } from "@/components/layout/LanguageSwitch"
 import { ProfileAvatar } from "@/components/profiles/ProfileAvatar"
 import { buttonClassName } from "@/components/ui/Button"
-import { PixelIcon, type PixelIconName } from "@/components/ui/PixelIcon"
+import { focusMenuItem, handleMenuKeyDown } from "@/components/ui/menuKeyboard"
+import { PixelIcon } from "@/components/ui/PixelIcon"
 import { copy } from "../../lib/copy"
 import { href, stripLang, type Lang } from "@/lib/i18n"
 import { loginHref, registerHref } from "@/lib/paths"
@@ -33,7 +34,11 @@ function useHere() {
 export function SiteNav({ lang, member }: { lang: Lang; member: NavMember }) {
   const { pathname, here, isActive } = useHere()
   const menuId = useId()
+  const triggerId = useId()
   const menuRef = useRef<HTMLDivElement>(null)
+  const triggerRef = useRef<HTMLButtonElement>(null)
+  /** Which item to focus the next time the menu opens (APG menu button). */
+  const pendingFocusRef = useRef<"first" | "last">("first")
   const [accountOpen, setAccountOpen] = useState(false)
   const authNext =
     here === "/" || here === "/login" || here === "/register" ? undefined : pathname
@@ -41,7 +46,11 @@ export function SiteNav({ lang, member }: { lang: Lang; member: NavMember }) {
   useEffect(() => {
     if (!accountOpen) return
     const onKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setAccountOpen(false)
+      if (event.key === "Escape") {
+        setAccountOpen(false)
+        // Escape closes the menu and returns focus to its trigger.
+        triggerRef.current?.focus()
+      }
     }
     const onPointer = (event: PointerEvent) => {
       if (!menuRef.current?.contains(event.target as Node)) setAccountOpen(false)
@@ -52,6 +61,13 @@ export function SiteNav({ lang, member }: { lang: Lang; member: NavMember }) {
       window.removeEventListener("keydown", onKey)
       window.removeEventListener("pointerdown", onPointer)
     }
+  }, [accountOpen])
+
+  // Move focus into the menu when it opens (first item, or last for ArrowUp).
+  useEffect(() => {
+    if (!accountOpen) return
+    focusMenuItem(menuRef.current, pendingFocusRef.current)
+    pendingFocusRef.current = "first"
   }, [accountOpen])
 
   const itemClass = (active: boolean) =>
@@ -112,13 +128,23 @@ export function SiteNav({ lang, member }: { lang: Lang; member: NavMember }) {
         </Link>
       ) : null}
       {member ? (
-        <div className="relative ml-1" ref={menuRef}>
+        <div className="relative ml-1 hidden md:block" ref={menuRef}>
           <button
             type="button"
+            id={triggerId}
+            ref={triggerRef}
+            aria-haspopup="menu"
             aria-expanded={accountOpen}
             aria-controls={menuId}
             aria-label={copy.nav.account[lang]}
             onClick={() => setAccountOpen((open) => !open)}
+            onKeyDown={(event) => {
+              if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+                event.preventDefault()
+                pendingFocusRef.current = event.key === "ArrowUp" ? "last" : "first"
+                setAccountOpen(true)
+              }
+            }}
             className={cn(
               "relative inline-flex min-h-11 items-center gap-2 px-2 text-[14px] hover:text-fg",
               accountActive ? "text-fg" : "text-muted",
@@ -145,12 +171,24 @@ export function SiteNav({ lang, member }: { lang: Lang; member: NavMember }) {
           {accountOpen ? (
             <div
               id={menuId}
-              className="absolute right-0 top-full z-50 mt-1 min-w-48 border-[3px] border-earth bg-card p-2 shadow-[4px_4px_0_0_var(--fg)]"
+              role="menu"
+              aria-labelledby={triggerId}
+              onKeyDown={(event) =>
+                handleMenuKeyDown(event, {
+                  onClose: () => {
+                    setAccountOpen(false)
+                    triggerRef.current?.focus()
+                  },
+                })
+              }
+              className="absolute right-0 top-full z-50 mt-1 min-w-48 rounded-2xl border border-slate-200/90 bg-card p-1.5 shadow-xl"
             >
               <Link
                 href={href(lang, member.username ? `/u/${member.username}` : "/welcome")}
                 onClick={() => setAccountOpen(false)}
-                className="flex min-h-11 items-center gap-2 px-3 text-[14px] text-muted hover:bg-soft hover:text-fg"
+                role="menuitem"
+                tabIndex={-1}
+                className="flex min-h-10 items-center gap-2 rounded-xl px-3 text-[14px] text-slate-700 transition-colors hover:bg-slate-100 hover:text-fg"
               >
                 <PixelIcon name="user" />
                 {copy.nav.profile[lang]}
@@ -158,7 +196,9 @@ export function SiteNav({ lang, member }: { lang: Lang; member: NavMember }) {
               <Link
                 href={href(lang, "/dashboard")}
                 onClick={() => setAccountOpen(false)}
-                className="flex min-h-11 items-center gap-2 px-3 text-[14px] text-muted hover:bg-soft hover:text-fg"
+                role="menuitem"
+                tabIndex={-1}
+                className="flex min-h-10 items-center gap-2 rounded-xl px-3 text-[14px] text-slate-700 transition-colors hover:bg-slate-100 hover:text-fg"
               >
                 <PixelIcon name="folder" />
                 {copy.nav.dashboard[lang]}
@@ -166,18 +206,22 @@ export function SiteNav({ lang, member }: { lang: Lang; member: NavMember }) {
               <Link
                 href={href(lang, "/responses")}
                 onClick={() => setAccountOpen(false)}
-                className="relative flex min-h-11 items-center gap-2 px-3 text-[14px] text-muted hover:bg-soft hover:text-fg"
+                role="menuitem"
+                tabIndex={-1}
+                className="relative flex min-h-10 items-center gap-2 rounded-xl px-3 text-[14px] text-slate-700 transition-colors hover:bg-slate-100 hover:text-fg"
               >
                 <PixelIcon name="heart" />
                 {copy.nav.responses[lang]}
                 {member.hasResponses ? (
-                  <span className="ml-auto h-2 w-2 bg-brick" aria-hidden />
+                  <span className="ml-auto h-2 w-2 rounded-full bg-brick" aria-hidden />
                 ) : null}
               </Link>
               <Link
                 href={href(lang, "/settings")}
                 onClick={() => setAccountOpen(false)}
-                className="flex min-h-11 items-center gap-2 px-3 text-[14px] text-muted hover:bg-soft hover:text-fg"
+                role="menuitem"
+                tabIndex={-1}
+                className="flex min-h-10 items-center gap-2 rounded-xl px-3 text-[14px] text-slate-700 transition-colors hover:bg-slate-100 hover:text-fg"
               >
                 <PixelIcon name="pencil" />
                 {copy.nav.settings[lang]}
@@ -186,7 +230,9 @@ export function SiteNav({ lang, member }: { lang: Lang; member: NavMember }) {
                 <Link
                   href={href(lang, "/admin")}
                   onClick={() => setAccountOpen(false)}
-                  className="flex min-h-11 items-center gap-2 px-3 text-[14px] text-muted hover:bg-soft hover:text-fg"
+                  role="menuitem"
+                  tabIndex={-1}
+                  className="flex min-h-10 items-center gap-2 rounded-xl px-3 text-[14px] text-slate-700 transition-colors hover:bg-slate-100 hover:text-fg"
                 >
                   <PixelIcon name="flag" />
                   {copy.nav.admin[lang]}
@@ -206,107 +252,4 @@ export function SiteNav({ lang, member }: { lang: Lang; member: NavMember }) {
   )
 }
 
-export function AppTabBar({ lang, member }: { lang: Lang; member: NavMember }) {
-  const { pathname, isActive } = useHere()
-  const items: {
-    key: string
-    href: string
-    label: string
-    icon: PixelIconName
-    active: boolean
-    avatar?: boolean
-    badge?: boolean
-  }[] = [
-    {
-      key: "explore",
-      href: href(lang, "/explore"),
-      label: copy.nav.explore[lang],
-      icon: "grid",
-      active: isActive("/explore"),
-    },
-    {
-      key: "create",
-      href: member ? href(lang, "/create") : loginHref(lang, href(lang, "/create")),
-      label: copy.nav.create[lang],
-      icon: "pencil",
-      active: isActive("/create"),
-    },
-  ]
 
-  if (member) {
-    items.push({
-      key: "works",
-      href: href(lang, "/dashboard"),
-      label: copy.nav.dashboard[lang],
-      icon: "folder",
-      active: isActive("/dashboard") || isActive("/responses"),
-      badge: Boolean(member.hasResponses),
-    })
-    items.push({
-      key: "profile",
-      href: href(lang, member.username ? `/u/${member.username}` : "/welcome"),
-      label: copy.nav.profile[lang],
-      icon: "user",
-      active: member.username
-        ? isActive(`/u/${member.username}`)
-        : isActive("/welcome"),
-      avatar: true,
-    })
-  } else {
-    items.push({
-      key: "profile",
-      href: loginHref(lang, pathname),
-      label: copy.nav.profile[lang],
-      icon: "user",
-      active: false,
-    })
-  }
-
-  return (
-    <nav
-      aria-label={copy.navAria[lang]}
-      className="app-tabbar fixed inset-x-0 bottom-0 z-40 border-t-[3px] border-earth bg-bg md:hidden"
-    >
-      <ul className={cn("grid", member ? "grid-cols-4" : "grid-cols-3")}>
-        {items.map((item) => (
-          <li key={item.key}>
-            <Link
-              href={item.href}
-              aria-current={item.active ? "page" : undefined}
-              className={cn(
-                "relative flex min-h-14 flex-col items-center justify-center gap-0.5 px-1.5 text-[11px] sm:px-2 sm:text-[12px]",
-                item.active ? "text-fg" : "text-muted",
-              )}
-            >
-              {item.avatar && member ? (
-                <ProfileAvatar
-                  src={member.avatarUrl}
-                  avatarConfig={member.avatarConfig}
-                  userId={member.id}
-                  alt={member.displayName ?? member.username ?? "PXLB"}
-                  size="xs"
-                />
-              ) : (
-                <PixelIcon name={item.icon} className="h-4 w-4" />
-              )}
-              <span
-                className={cn(
-                  "truncate",
-                  item.active && "underline decoration-sky decoration-4 underline-offset-4",
-                )}
-              >
-                {item.label}
-              </span>
-              {item.badge ? (
-                <span
-                  className="absolute right-[calc(50%-1.25rem)] top-2 h-2 w-2 bg-brick"
-                  aria-label={copy.responsesNavDot[lang]}
-                />
-              ) : null}
-            </Link>
-          </li>
-        ))}
-      </ul>
-    </nav>
-  )
-}

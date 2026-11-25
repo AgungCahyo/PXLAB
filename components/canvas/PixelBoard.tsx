@@ -462,10 +462,10 @@ export type PixelBoardProps = {
     kind: "copied" | "cut" | "pasted" | "clipboard-empty" | "text-layer" | "text-locked" | "text-max",
   ) => void
   onTextStateChange?: (state: TextToolState) => void
-  onShapeDraftChange?: (info: ShapeDraftInfo) => void
+  onShapeDraftChange?: (shapeDraft: ShapeDraftInfo) => void
   onPaletteFull?: () => void
   /** Right-click or touch long-press on the view canvas. */
-  onCanvasMenu?: (info: { clientX: number; clientY: number }) => void
+  onCanvasMenu?: (position: { clientX: number; clientY: number }) => void
   onHoverCell?: (cell: { x: number; y: number } | null) => void
   /** After a view redraw (pan, zoom, paint). Keep this cheap — it runs on rAF. */
   onViewChange?: () => void

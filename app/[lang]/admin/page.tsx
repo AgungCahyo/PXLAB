@@ -2,10 +2,11 @@ import type { Metadata } from "next"
 import { notFound } from "next/navigation"
 import { connection } from "next/server"
 import { AdminReports } from "@/components/moderation/AdminReports"
+import { BackButton } from "@/components/ui/BackButton"
 import { PageHeader } from "@/components/ui/PageHeader"
 import { listAdminReports, parseReportFilter } from "@/features/moderation/queries"
 import { copy } from "../../../lib/copy"
-import { isLang } from "@/lib/i18n"
+import { href, isLang } from "@/lib/i18n"
 import { pageMeta } from "@/lib/meta"
 
 export const instant = false
@@ -43,6 +44,11 @@ export default async function AdminPage({
 
   return (
     <div className="mx-auto max-w-3xl px-5 py-16 sm:px-8 lg:px-16">
+      <BackButton
+        fallbackHref={href(lang, "/home")}
+        label={lang === "id" ? "Kembali" : "Back"}
+        className="mb-4"
+      />
       <PageHeader
         kicker={copy.nav.admin[lang]}
         title={copy.adminTitle[lang]}

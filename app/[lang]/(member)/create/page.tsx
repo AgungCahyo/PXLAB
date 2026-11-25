@@ -4,7 +4,7 @@ import { notFound } from "next/navigation"
 import { connection } from "next/server"
 import { PixelCatDecoration } from "@/components/brand/PixelCatDecoration"
 import { CreateInspiration } from "@/components/creations/CreateInspiration"
-import { PixelNewForm } from "@/components/creations/PixelNewForm"
+import { NewArtworkRouteDialog } from "@/components/creations/NewArtworkDialog"
 import { listPublishedCreations } from "@/features/creations/queries"
 import { copy } from "../../../../lib/copy"
 import { href, isLang } from "@/lib/i18n"
@@ -72,7 +72,7 @@ export default async function CreatePage({
       </header>
 
       <div className="mt-6 min-w-0">
-        <PixelNewForm lang={lang} variant="dialog" />
+        <NewArtworkRouteDialog lang={lang} />
       </div>
 
       <CreateInspiration lang={lang} bySize={bySize} />

@@ -99,7 +99,7 @@ export function CreatorCard({
           userId={creator.id}
           username={creator.username}
           initialFollowing={following}
-          member={member}
+          isMember={member}
           returnPath={returnPath}
           compact
         />

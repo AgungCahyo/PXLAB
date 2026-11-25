@@ -88,7 +88,9 @@ export async function listCreationResponses(options: {
         .limit(limit),
       supabase
         .from("creations")
-        .select("id, title, created_at, published_at, forked_from, profiles (username)")
+        .select(
+          "id, title, created_at, published_at, forked_from, profiles!creations_user_id_fkey (username)",
+        )
         .eq("status", "published")
         .eq("type", "pixel")
         .in("forked_from", ownIds)

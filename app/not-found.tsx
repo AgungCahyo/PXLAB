@@ -1,8 +1,18 @@
 import { DM_Sans, Press_Start_2P } from "next/font/google"
 import Link from "next/link"
+import { headers } from "next/headers"
 import { copy } from "../lib/copy"
+import { langFromAcceptLanguage } from "@/lib/i18n"
 import { SITE_NAME } from "@/lib/site"
 import "./globals.css"
+
+/**
+ * U9 reads `Accept-Language` via `headers()` at request time. With Cache
+ * Components, runtime data outside `<Suspense>` blocks prerendering; a 404 is
+ * fine to render on demand, so opt the route out (`blocking-prerender-dynamic`
+ * → "allow blocking route" in the bundled Next.js docs).
+ */
+export const instant = false
 
 const sans = DM_Sans({
   subsets: ["latin"],
@@ -18,9 +28,13 @@ const pixel = Press_Start_2P({
   display: "swap",
 })
 
-/** Root fallback when no lang segment is available. */
-export default function RootNotFound() {
-  const lang = "id" as const
+/**
+ * Root fallback when no lang segment is available.
+ * U9: locale comes from `Accept-Language` (server component per next.js docs —
+ * root not-found ships with every route, so no client hooks here).
+ */
+export default async function RootNotFound() {
+  const lang = langFromAcceptLanguage((await headers()).get("accept-language"))
 
   return (
     <html lang={lang} className={`${sans.variable} ${pixel.variable}`}>
@@ -34,13 +48,13 @@ export default function RootNotFound() {
           <div className="mt-8 flex flex-wrap gap-3">
             <Link
               href="/"
-              className="inline-flex min-h-11 items-center border-[3px] border-earth bg-brick px-4 text-[14px] text-white shadow-[4px_4px_0_0_var(--fg)]"
+              className="inline-flex min-h-11 items-center rounded-2xl border border-purple-600/50 bg-[#6355d8] px-5 text-[14px] font-medium text-white shadow-sm shadow-purple-500/15 transition-colors hover:bg-[#5245c7]"
             >
               {copy.notFoundHome[lang]}
             </Link>
             <Link
               href="/explore"
-              className="inline-flex min-h-11 items-center border-[3px] border-earth bg-card px-4 text-[14px] text-fg hover:bg-soft"
+              className="inline-flex min-h-11 items-center rounded-2xl border border-slate-200 bg-card px-5 text-[14px] font-medium text-fg shadow-sm transition-colors hover:bg-slate-50"
             >
               {copy.nav.explore[lang]}
             </Link>

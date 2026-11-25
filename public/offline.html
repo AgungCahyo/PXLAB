@@ -1,13 +1,24 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="id">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <!-- Matches app/manifest.ts theme_color (PWA install surface); not a page token. -->
     <meta name="theme-color" content="#fffdf7" />
     <title>PXLB — Offline</title>
     <style>
       :root {
         color-scheme: light;
+        /* Mirrors the shipped tokens in app/globals.css — live tokens win (U3). */
+        --bg: #f8f9fc;
+        --fg: #1e1b4b;
+        --muted: #64748b;
+        --card: #ffffff;
+        --sky: #38bdf8;
+        --grass: #10b981;
+        --coin: #f59e0b;
+        --brick: #f43f5e;
+        --earth: #78716c;
       }
       body {
         margin: 0;
@@ -18,8 +29,8 @@
         padding: max(1.5rem, env(safe-area-inset-top)) max(1.5rem, env(safe-area-inset-right))
           max(1.5rem, env(safe-area-inset-bottom)) max(1.5rem, env(safe-area-inset-left));
         font-family: system-ui, sans-serif;
-        background: #fffdf7;
-        color: #282b35;
+        background: var(--bg);
+        color: var(--fg);
       }
       main {
         max-width: 22rem;
@@ -42,19 +53,19 @@
       }
       p {
         margin: 0 0 1.25rem;
-        color: #5c5866;
+        color: var(--muted);
         font-size: 0.9375rem;
         line-height: 1.5;
       }
       button {
         min-height: 2.75rem;
         padding: 0 1.25rem;
-        border: 3px solid #936037;
-        background: #fff;
-        color: #282b35;
+        border: 3px solid var(--earth);
+        background: var(--card);
+        color: var(--fg);
         font: inherit;
         font-weight: 600;
-        box-shadow: 4px 4px 0 #282b35;
+        box-shadow: 4px 4px 0 var(--fg);
         cursor: pointer;
       }
     </style>
@@ -62,18 +73,28 @@
   <body>
     <main>
       <div class="mark" aria-hidden="true">
-        <span style="background:#59bceb"></span>
-        <span style="background:#45a849"></span>
-        <span style="background:#ffd447"></span>
-        <span style="background:#e94b3c"></span>
+        <span style="background: var(--sky)"></span>
+        <span style="background: var(--grass)"></span>
+        <span style="background: var(--coin)"></span>
+        <span style="background: var(--brick)"></span>
       </div>
-      <h1>PXLB is offline</h1>
-      <p>
-        You&apos;re offline right now. Reconnect to explore, create, and sync your work.
-        <br />
-        <span lang="id">Kamu sedang offline. Hubungkan ulang untuk lanjut.</span>
+      <!-- Static fallback is Indonesian (DEFAULT_LANG); the script below upgrades to English. -->
+      <h1 id="offline-title">PXLB sedang offline</h1>
+      <p id="offline-body">
+        Kamu sedang offline. Hubungkan ulang untuk menjelajah, membuat, dan menyinkronkan karyamu.
       </p>
-      <button type="button" onclick="location.reload()">Try again</button>
+      <button type="button" id="offline-retry" onclick="location.reload()">Coba lagi</button>
     </main>
+    <script>
+      ;(function () {
+        var english = /^en\b/.test((navigator.language || "").toLowerCase())
+        if (!english) return
+        document.documentElement.lang = "en"
+        document.getElementById("offline-title").textContent = "PXLB is offline"
+        document.getElementById("offline-body").textContent =
+          "You're offline right now. Reconnect to explore, create, and sync your work."
+        document.getElementById("offline-retry").textContent = "Try again"
+      })()
+    </script>
   </body>
 </html>

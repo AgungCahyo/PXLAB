@@ -44,16 +44,23 @@ export function Button({
   variant = "primary",
   size = "md",
   type = "button",
+  loading = false,
+  disabled,
+  "aria-busy": ariaBusy,
   ...props
 }: ButtonHTMLAttributes<HTMLButtonElement> & {
   variant?: ButtonVariant;
   size?: ButtonSize;
+  loading?: boolean;
 }) {
   return (
     <button
       type={type}
-      className={buttonClassName({ variant, size, className })}
       {...props}
+      disabled={loading || disabled}
+      aria-busy={loading || ariaBusy}
+      data-loading={loading || undefined}
+      className={buttonClassName({ variant, size, className })}
     />
   );
 }

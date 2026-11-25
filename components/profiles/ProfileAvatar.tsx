@@ -51,7 +51,7 @@ export function ProfileAvatar({
         : size === "lg"
           ? "h-20 w-20 sm:h-24 sm:w-24"
           : "h-16 w-16 sm:h-20 sm:w-20"
-  const border = size === "xs" ? "border-2" : "border-[3px]"
+  const border = size === "xs" ? "border" : "border-2"
   const config = parseAvatarConfig(avatarConfig)
   const fallbackConfig = !src && !config && userId ? defaultAvatarConfig(userId) : null
   const generated = config ?? fallbackConfig
@@ -59,7 +59,7 @@ export function ProfileAvatar({
   return (
     <div
       className={cn(
-        "relative shrink-0 overflow-hidden border-earth bg-soft",
+        "relative shrink-0 overflow-hidden rounded-xl border-slate-200 bg-soft",
         border,
         box,
         className,

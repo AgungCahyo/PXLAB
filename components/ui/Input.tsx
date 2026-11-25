@@ -5,7 +5,6 @@ type InputProps = InputHTMLAttributes<HTMLInputElement> & {
   label?: ReactNode;
   hint?: ReactNode;
   error?: ReactNode;
-  appearance?: "default" | "social";
 };
 
 export function Input({
@@ -14,7 +13,6 @@ export function Input({
   hint,
   error,
   id,
-  appearance = "default",
   ...props
 }: InputProps) {
   const describedBy = [

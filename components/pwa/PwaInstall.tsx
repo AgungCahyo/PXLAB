@@ -26,17 +26,21 @@ type Props = {
 }
 
 export function PwaInstall({ lang, variant = "banner", className }: Props) {
-  const [standalone, setStandalone] = useState(false)
+  // Lazy initialisers read browser APIs only on the client (they run once).
+  const [standalone, setStandalone] = useState(() =>
+    typeof window !== "undefined" ? isStandaloneDisplay() : false,
+  )
   const [deferred, setDeferred] = useState<BeforeInstallPromptEvent | null>(null)
-  const [iosHint, setIosHint] = useState(false)
-  const [dismissed, setDismissed] = useState(true)
+  const [iosHint] = useState(() =>
+    typeof window !== "undefined" ? isIosSafari() && !isStandaloneDisplay() : false,
+  )
+  const [dismissed, setDismissed] = useState(() =>
+    typeof window !== "undefined" ? readInstallDismissed() : true,
+  )
   const [busy, setBusy] = useState(false)
   const [status, setStatus] = useState<"idle" | "accepted" | "dismissed">("idle")
 
   useEffect(() => {
-    setStandalone(isStandaloneDisplay())
-    setDismissed(readInstallDismissed())
-    setIosHint(isIosSafari() && !isStandaloneDisplay())
 
     const onBip = (event: Event) => {
       event.preventDefault()
@@ -147,7 +151,7 @@ export function PwaInstall({ lang, variant = "banner", className }: Props) {
       role="region"
       aria-label={copy.pwaInstallTitle[lang]}
     >
-      <div className="mx-auto flex max-w-lg items-start gap-3 border-[3px] border-earth bg-card p-3 shadow-[4px_4px_0_0_var(--fg)]">
+      <div className="mx-auto flex max-w-lg items-start gap-3 rounded-2xl border border-slate-200/90 bg-card p-3.5 shadow-xl shadow-slate-900/8">
         <div className="min-w-0 flex-1">
           <p className="text-[13px] font-medium text-fg">{copy.pwaInstallTitle[lang]}</p>
           {iosHint && !canNativeInstall ? (
@@ -171,7 +175,7 @@ export function PwaInstall({ lang, variant = "banner", className }: Props) {
         </div>
         <button
           type="button"
-          className="inline-flex size-9 shrink-0 items-center justify-center border-[3px] border-transparent text-muted hover:border-earth hover:text-fg"
+          className="inline-flex size-9 shrink-0 items-center justify-center rounded-xl text-muted transition-colors hover:bg-slate-100 hover:text-fg"
           aria-label={copy.pwaDismiss[lang]}
           onClick={() => dismiss(false)}
         >

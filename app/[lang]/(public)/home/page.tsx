@@ -52,13 +52,13 @@ export default async function HomePage({
 
   return (
     <div className="mx-auto w-full min-w-0 max-w-xl px-4 pb-10 pt-2 sm:px-0 sm:pt-6">
-      <header className="relative mb-4 overflow-hidden rounded-3xl border border-slate-200/80 bg-card p-5 shadow-sm sm:p-6">
+      {/* <header className="relative mb-4 overflow-hidden rounded-3xl border border-slate-200/80 bg-card p-5 shadow-sm sm:p-6">
         <PixelCatDecoration variant="waving" size="md" position="top-right" className="opacity-90" />
         <div className="relative z-[1] pr-14 sm:pr-20">
           <p className="text-[12px] font-semibold uppercase tracking-[0.16em] text-[#6355d8]">PXLB</p>
           <h1 className="mt-2 text-[24px] font-semibold tracking-tight text-fg sm:text-[28px]">{t.title[lang]}</h1>
         </div>
-      </header>
+      </header> */}
       <nav aria-label={t.tabsAria[lang]} className="mb-2 flex border-b border-slate-200/80">
         <TabLink href={href(lang, "/home")} selected={feed === "all"}>
           {t.forYou[lang]}

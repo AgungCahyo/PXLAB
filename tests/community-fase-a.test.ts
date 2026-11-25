@@ -44,7 +44,7 @@ describe("community experience fase A", () => {
   })
 
   it("renames the new-canvas form to PixelNewForm", () => {
-    expect(createPage).toMatch(/PixelNewForm/)
+    expect(createPage).toMatch(/NewArtworkRouteDialog/)
     expect(read("components/creations/PixelNewForm.tsx")).toMatch(/export function PixelNewForm/)
   })
 })

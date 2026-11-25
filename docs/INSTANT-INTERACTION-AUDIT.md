@@ -1,5 +1,7 @@
 # THE COMMONS — Instant Interaction Audit
 
+> **Status:** **OUTDATED — HISTORICAL SNAPSHOT (17 Nov 2026).** Several claims in this document are contradicted by current source. In particular, `app/` now contains route-level `loading.tsx` files across major routes. Use `docs/audit/REPOSITORY_DISCOVERY.md` and `docs/audit/UX_CONSISTENCY_AUDIT.md` for current-state evidence.
+
 **Dokumen:** `docs/INSTANT-INTERACTION-AUDIT.md`  
 **Tanggal:** 17 Nov 2026  
 **Sifat:** Evaluasi (bukan implementasi).  

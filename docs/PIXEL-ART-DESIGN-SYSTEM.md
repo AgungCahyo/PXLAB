@@ -30,14 +30,23 @@ Avoid: generic SaaS dashboards, glassmorphism, pill-everything UI, dark hacker s
 
 | Token | Hex | Use |
 |---|---|---|
-| Sky | `#59BCEB` | Identity, links, focus, highlights |
-| Grass | `#45A849` | Positive / secondary buttons |
-| Brick | `#E94B3C` | Primary CTA, important actions |
-| Coin | `#FFD447` | Badges, appreciation, small highlights |
-| Earth | `#936037` | Borders, frames, decorative detail |
-| Paper | `#FFFDF7` | Main background |
-| Ink | `#282B35` | Text, hard shadows, contrast |
-| Soft | `#F4F1E8` | Secondary surface inside frames |
+| Sky | `#38BDF8` | Identity, links, focus, highlights |
+| Grass | `#10B981` | Positive / secondary buttons |
+| Brick | `#F43F5E` | Primary CTA, important actions |
+| Coin | `#F59E0B` | Badges, appreciation, small highlights |
+| Earth | `#78716C` | Borders, frames, decorative detail |
+| Paper | `#F8F9FC` | Main background |
+| Ink | `#1E1B4B` | Text, hard shadows, contrast |
+| Soft | `#F1F0F8` | Secondary surface inside frames |
+
+> **Reconciliation (U3, 2026-11-25):** the hexes above now match the shipped
+> tokens in `app/globals.css` (`:root`), which are the source of truth — live
+> tokens win. The previous table (`#59BCEB`, `#45A849`, `#E94B3C`, `#FFD447`,
+> `#936037`, `#FFFDF7`, `#282B35`, `#F4F1E8`) described the pre-standardisation
+> palette and no longer matches any shipped UI token. Brand paper `#FFFDF7`
+> survives only as chrome (favicon/manifest background, QR light color, avatar
+> canvas), not as a page background. No pixel changed for this reconciliation —
+> docs only.
 
 ### Color rules
 

@@ -33,6 +33,13 @@ export const usernameSchema = z
 
 export const displayNameSchema = z.string().trim().min(1).max(50)
 export const bioSchema = z.string().trim().max(280)
+export const locationSchema = z.string().trim().max(60)
+export const websiteSchema = z
+  .string()
+  .trim()
+  .max(200)
+  .url("website_invalid")
+  .refine((value) => /^https?:\/\//i.test(value), "website_invalid")
 export const passwordSchema = z
   .string()
   .min(8)
@@ -56,6 +63,8 @@ export const profileUpdateSchema = z
     username: usernameSchema,
     displayName: displayNameSchema,
     bio: bioSchema.optional().or(z.literal("")),
+    location: locationSchema.optional().or(z.literal("")),
+    website: websiteSchema.optional().or(z.literal("")),
   })
   .strict()
 

@@ -29,12 +29,13 @@ describe("pixel studio redesign S0–S1", () => {
 
   it("uses Commons presets and a title field on the new-artwork form", () => {
     const form = read("components/creations/PixelNewForm.tsx")
+    const dialog = read("components/creations/NewArtworkDialog.tsx")
     expect(form).toMatch(/PIXEL_SIZE_PRESETS/)
     expect(form).toMatch(/createTitlePlaceholder/)
     expect(form).toMatch(/canvasBackground/)
     expect(form).toMatch(/createOpenEditor/)
-    expect(form).toMatch(/variant !== "dialog"/)
-    expect(form).toMatch(/createNewHeading/)
+    expect(dialog).toMatch(/size="md"/)
+    expect(dialog).toMatch(/createNewHeading/)
     expect(form).toMatch(/sizePixelCount/)
     expect(form).toMatch(/formatGroupedCount/)
     expect(form).not.toMatch(/toLocaleString/)

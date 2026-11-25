@@ -55,13 +55,15 @@ describe("landing redirects authenticated members", () => {
 
 describe("navigation icons", () => {
   it("keeps tab labels and adds pixel icons", () => {
-    const nav = read("components/layout/SiteNav.tsx")
+    const nav = read("components/layout/SocialNav.tsx")
     const icons = read("components/ui/PixelIcon.tsx")
-    expect(nav).toMatch(/PixelIcon/)
-    expect(nav).toMatch(/icon: "grid"/)
-    expect(nav).toMatch(/icon: "pencil"/)
-    expect(nav).toMatch(/icon: "user"/)
-    expect(nav).toMatch(/nav\.explore/)
+    expect(nav).toMatch(/SocialTabBar/)
+    expect(nav).toMatch(/app-tabbar/)
+    expect(nav).toMatch(/notificationsUnread/)
+    expect(nav).toMatch(/pixelarticons\/react/)
+    expect(nav).toMatch(/t\.explore/)
+    expect(nav).toMatch(/t\.create/)
+    expect(nav).toMatch(/t\.profile/)
     expect(icons).toMatch(/user:/)
     expect(icons).toMatch(/folder:/)
   })

@@ -17,17 +17,17 @@ export function ReportButton({
   lang,
   targetType,
   targetId,
-  member,
+  isMember,
 }: {
   lang: Lang
   targetType: ReportTargetType
   targetId: string
-  member: boolean
+  isMember: boolean
 }) {
   const [open, setOpen] = useState(false)
   const pathname = usePathname()
 
-  if (!member) {
+  if (!isMember) {
     return (
       <Link href={loginHref(lang, pathname)} className="text-[13px] text-muted underline hover:text-fg">
         {copy.report[lang]}
@@ -120,7 +120,6 @@ function ReportDialog({
             name="details"
             maxLength={REPORT_DETAILS_MAX}
             label={copy.reportDetails[lang]}
-            appearance="social"
           />
           <div className="flex flex-wrap gap-3">
             <button

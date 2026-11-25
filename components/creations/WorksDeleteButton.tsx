@@ -42,6 +42,8 @@ export function WorksDeleteButton({
     <>
       <button
         type="button"
+        role={variant === "menuitem" ? "menuitem" : undefined}
+        tabIndex={variant === "menuitem" ? -1 : undefined}
         className={
           variant === "menuitem"
             ? "flex w-full items-center gap-2 px-3 py-2 text-[13px] text-brick hover:bg-soft"

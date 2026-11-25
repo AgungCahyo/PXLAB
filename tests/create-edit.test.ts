@@ -24,7 +24,7 @@ describe("edit existing work instead of copying it", () => {
   const fork = read("features/creations/actions.ts")
 
   it("keeps Create as new-work only and lists own works on My Works", () => {
-    expect(createPage).toMatch(/PixelNewForm/)
+    expect(createPage).toMatch(/NewArtworkRouteDialog/)
     expect(createPage).toMatch(/createManageLink/)
     expect(createPage).toMatch(/\/dashboard/)
     expect(createPage).not.toMatch(/listOwnCreations/)

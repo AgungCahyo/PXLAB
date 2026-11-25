@@ -5,10 +5,9 @@ type TextareaProps = TextareaHTMLAttributes<HTMLTextAreaElement> & {
   label?: ReactNode
   hint?: ReactNode
   error?: ReactNode
-  appearance?: "default" | "social"
 }
 
-export function Textarea({ className, label, hint, error, id, appearance = "default", ...props }: TextareaProps) {
+export function Textarea({ className, label, hint, error, id, ...props }: TextareaProps) {
   const describedBy = [hint ? `${id}-hint` : null, error ? `${id}-error` : null]
     .filter(Boolean)
     .join(" ") || undefined

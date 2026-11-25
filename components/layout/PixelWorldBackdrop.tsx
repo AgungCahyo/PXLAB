@@ -30,6 +30,15 @@ export function pixelWorldSceneFromPath(pathname: string): PixelWorldScene {
   if (path === "/dashboard" || path.startsWith("/dashboard/")) return "works"
   if (path === "/responses" || path.startsWith("/responses/")) return "works"
   if (
+    path === "/activity" ||
+    path === "/insights" ||
+    path === "/saved" ||
+    path === "/liked" ||
+    path === "/archive"
+  ) {
+    return "works"
+  }
+  if (
     path === "/login" ||
     path === "/register" ||
     path === "/forgot-password" ||
@@ -39,6 +48,7 @@ export function pixelWorldSceneFromPath(pathname: string): PixelWorldScene {
   }
   if (path === "/space" || path.startsWith("/space/")) return "space"
   if (path === "/settings" || path.startsWith("/settings/")) return "settings"
+  if (path === "/profile/edit" || path.startsWith("/profile/edit/")) return "settings"
   if (path === "/admin" || path.startsWith("/admin/")) return "admin"
   return "default"
 }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { mergeUnique } from "@/lib/social-feed"
+import { mergeUnique } from "@/lib/merge-unique"
 
 const a = (id: string) => ({ id })
 

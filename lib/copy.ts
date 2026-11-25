@@ -9,6 +9,8 @@ export const copy = {
   navAria: { id: "Utama", en: "Main" } satisfies Bi,
   openMenu: { id: "Buka menu", en: "Open menu" } satisfies Bi,
   closeMenu: { id: "Tutup menu", en: "Close menu" } satisfies Bi,
+  moreActions: { id: "Tindakan lainnya", en: "More actions" } satisfies Bi,
+  toastDismiss: { id: "Tutup notifikasi", en: "Dismiss notification" } satisfies Bi,
   switchToEn: { id: "English", en: "English" } satisfies Bi,
   switchToId: { id: "Bahasa Indonesia", en: "Bahasa Indonesia" } satisfies Bi,
 
@@ -50,7 +52,11 @@ export const copy = {
     account: { id: "Akun", en: "Account" } satisfies Bi,
     settings: { id: "Pengaturan", en: "Settings" } satisfies Bi,
     dashboard: { id: "Karya", en: "Works" } satisfies Bi,
+    dashboardHint: { id: "Dashboard dan karya", en: "Dashboard & works" } satisfies Bi,
     responses: { id: "Respon", en: "Responses" } satisfies Bi,
+    challenge: { id: "Tantangan", en: "Challenges" } satisfies Bi,
+    challengeSoon: { id: "Segera hadir", en: "Coming soon" } satisfies Bi,
+    menu: { id: "Menu", en: "Menu" } satisfies Bi,
     admin: { id: "Moderasi", en: "Moderation" } satisfies Bi,
     signOut: { id: "Keluar", en: "Sign out" } satisfies Bi,
   },
@@ -915,7 +921,7 @@ export const copy = {
     en: "Page {page} of {pages}",
   } satisfies Bi,
   byAuthor: { id: "oleh", en: "by" } satisfies Bi,
-  creationBack: { id: "Ke jelajah", en: "To explore" } satisfies Bi,
+  creationBack: { id: "Kembali", en: "Back" } satisfies Bi,
   creationNotFound: { id: "Tidak ditemukan.", en: "Not found." } satisfies Bi,
   creationMeta: {
     id: "Karya pixel art terbit di PXLB — lihat, apresiasi, remix, dan tulis catatan.",
@@ -1343,6 +1349,12 @@ export const copy = {
   usernameLabel: { id: "Nama pengguna", en: "Username" } satisfies Bi,
   displayNameLabel: { id: "Nama tampilan", en: "Display name" } satisfies Bi,
   bioLabel: { id: "Bio", en: "Bio" } satisfies Bi,
+  locationLabel: { id: "Lokasi", en: "Location" } satisfies Bi,
+  websiteLabel: { id: "Website", en: "Website" } satisfies Bi,
+  websiteHint: {
+    id: "Gunakan https:// atau http://.",
+    en: "Use https:// or http://.",
+  } satisfies Bi,
   avatarPhotoLabel: { id: "Foto profil", en: "Profile photo" } satisfies Bi,
   avatarPhotoHint: {
     id: "JPEG, PNG, WebP · max 512 KB.",
@@ -1377,7 +1389,7 @@ export const copy = {
     id: "Kelola karya milikmu.",
     en: "Manage your works.",
   } satisfies Bi,
-  worksBack: { id: "Ke profil", en: "To profile" } satisfies Bi,
+  worksBack: { id: "Kembali", en: "Back" } satisfies Bi,
   responsesTitle: { id: "Respon", en: "Responses" } satisfies Bi,
   responsesMeta: {
     id: "Catatan, apresiasi, dan remix untuk karyamu.",
@@ -1518,14 +1530,26 @@ export const copy = {
 
   settingsTitle: { id: "Pengaturan", en: "Settings" } satisfies Bi,
   settingsIntro: {
-    id: "Profil, bahasa, dan keluar akun.",
-    en: "Profile, language, and sign out.",
+    id: "Profil, preferensi, dan keamanan akun.",
+    en: "Profile, preferences, and account security.",
   } satisfies Bi,
+  settingsEditProfile: { id: "Sunting profil", en: "Edit profile" } satisfies Bi,
+  settingsEditProfileHint: {
+    id: "Nama, username, bio, lokasi, dan website.",
+    en: "Name, username, bio, location, and website.",
+  } satisfies Bi,
+  settingsRowAvatar: { id: "Foto profil", en: "Profile photo" } satisfies Bi,
+  settingsRowLanguage: { id: "Bahasa", en: "Language" } satisfies Bi,
+  settingsRowPwa: { id: "Instal aplikasi", en: "Install app" } satisfies Bi,
+  settingsRowSecurity: { id: "Keamanan akun", en: "Account security" } satisfies Bi,
+  settingsRowSignOut: { id: "Keluar", en: "Sign out" } satisfies Bi,
+  settingsRowHint: { id: "Ketuk untuk membuka", en: "Tap to open" } satisfies Bi,
+  settingsDone: { id: "Selesai", en: "Done" } satisfies Bi,
   settingsMeta: {
     id: "Sunting profil.",
     en: "Edit profile.",
   } satisfies Bi,
-  settingsBack: { id: "Ke profil", en: "To profile" } satisfies Bi,
+  settingsBack: { id: "Kembali", en: "Back" } satisfies Bi,
   settingsSave: { id: "Simpan", en: "Save" } satisfies Bi,
   settingsSaving: { id: "Menyimpan…", en: "Saving…" } satisfies Bi,
   settingsSaved: { id: "Tersimpan.", en: "Saved." } satisfies Bi,
@@ -1683,6 +1707,25 @@ export const copy = {
     en: "@{username} on PXLB — browse their published pixel art.",
   } satisfies Bi,
   memberSince: { id: "Anggota sejak", en: "Member since" } satisfies Bi,
+
+  profileEditTitle: { id: "Sunting profil", en: "Edit profile" } satisfies Bi,
+  profileEditIntro: {
+    id: "Perbarui identitas dan detail publikmu.",
+    en: "Update your public identity and details.",
+  } satisfies Bi,
+  profileEditBack: { id: "Kembali ke profil", en: "Back to profile" } satisfies Bi,
+  profileEditSave: { id: "Simpan perubahan", en: "Save changes" } satisfies Bi,
+  profileEditSaved: { id: "Profil tersimpan.", en: "Profile saved." } satisfies Bi,
+  profileEditConfirmTitle: {
+    id: "Simpan perubahan profil?",
+    en: "Save profile changes?",
+  } satisfies Bi,
+  profileEditConfirmBody: {
+    id: "Nama pengguna, bio, lokasi, dan website akan diperbarui secara publik.",
+    en: "Your username, bio, location, and website will be updated publicly.",
+  } satisfies Bi,
+  profileEditConfirmAction: { id: "Ya, simpan", en: "Yes, save" } satisfies Bi,
+  profileEditWebsiteLink: { id: "Kunjungi website", en: "Visit website" } satisfies Bi,
 
   errors: {
     generic_auth: {

@@ -83,7 +83,7 @@ export async function moderateReportAction(
   if (targetType === "creation") {
     const { data: creation } = await auth.supabase
       .from("creations")
-      .select("profiles (username)")
+      .select("profiles!creations_user_id_fkey (username)")
       .eq("id", targetId)
       .maybeSingle()
     const profile = Array.isArray(creation?.profiles) ? creation?.profiles[0] : creation?.profiles

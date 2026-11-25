@@ -22,12 +22,12 @@ export function EmptyState({
   return (
     <div
       className={cn(
-        "pixel-frame flex flex-col items-start gap-3 bg-soft px-6 py-10",
+        "flex flex-col items-start gap-3 rounded-2xl border border-slate-200/80 bg-slate-50/60 px-6 py-10",
         className,
       )}
     >
       {icon ? (
-        <div className="text-earth" aria-hidden="true">
+        <div className="text-muted" aria-hidden="true">
           {icon}
         </div>
       ) : null}

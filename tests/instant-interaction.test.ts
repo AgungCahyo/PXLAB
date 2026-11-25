@@ -39,6 +39,7 @@ describe("instant interaction — route loading shells", () => {
     expect(read("app/[lang]/(member)/dashboard/loading.tsx")).toMatch(/WorksSkeleton/)
     expect(read("app/[lang]/(member)/create/loading.tsx")).toMatch(/CreateSkeleton/)
     expect(read("app/[lang]/(member)/create/[id]/loading.tsx")).toMatch(/StudioSkeleton/)
+    expect(read("app/[lang]/(member)/profile/edit/loading.tsx")).toMatch(/RouteSkeleton/)
   })
 
   it("gives every page route a fallback in its own or an ancestor segment", () => {

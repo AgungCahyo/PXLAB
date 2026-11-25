@@ -53,10 +53,15 @@ describe("back and cancel keep unsaved work", () => {
     expect(studio).toMatch(/\/dashboard/)
   })
 
-  it("saves profile edits before returning to the profile", () => {
-    expect(settings).toMatch(/settingsBack/)
-    expect(settings).toMatch(/updateProfileAction/)
-    expect(settings).toMatch(/beforeunload/)
+  it("confirms profile edits before saving and returning to the profile", () => {
+    const profileEdit = read("components/profiles/ProfileEditForm.tsx")
+    expect(profileEdit).toMatch(/updateProfileAction/)
+    expect(profileEdit).toMatch(/<Dialog/)
+    expect(profileEdit).toMatch(/profileEditConfirmTitle/)
+    expect(profileEdit).toMatch(/reportValidity/)
+    expect(profileEdit).toMatch(/requestSubmit/)
+    expect(profileEdit).toMatch(/router\.push/)
+    expect(profileEdit).not.toMatch(/beforeunload/)
   })
 
   it("keeps language switch and sign out on Settings, not profile chrome", () => {
@@ -68,7 +73,9 @@ describe("back and cancel keep unsaved work", () => {
     expect(settings).toMatch(/ProfileAvatar/)
     expect(settings).toMatch(/uploadAvatarAction/)
     expect(settings).toMatch(/avatarChooseFile/)
-    expect(settings).not.toMatch(/settingsLanguageHint/)
+    expect(settings).toMatch(/setModal\("language"\)/)
+    expect(settings).toMatch(/setModal\("signout"\)/)
+    expect(settings).not.toMatch(/updateProfileAction/)
     expect(settings).not.toMatch(/roleLabel/)
     expect(profile).not.toMatch(/LogoutButton/)
     expect(nav).not.toMatch(/LogoutButton/)

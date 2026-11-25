@@ -3,11 +3,12 @@ import { notFound } from "next/navigation"
 import { connection } from "next/server"
 import { PixelCatDecoration } from "@/components/brand/PixelCatDecoration"
 import { ResponsesInbox } from "@/components/community/ResponsesInbox"
+import { BackButton } from "@/components/ui/BackButton"
 import { listCreationResponses } from "@/features/community/activity"
 import { getCurrentProfile } from "@/lib/auth/session"
 import { copy } from "../../../../lib/copy"
 import { socialCopy } from "@/lib/copy-social"
-import { isLang } from "@/lib/i18n"
+import { href, isLang } from "@/lib/i18n"
 import { pageMeta } from "@/lib/meta"
 
 export const instant = false
@@ -44,6 +45,11 @@ export default async function ResponsesPage({
 
   return (
     <div className="mx-auto w-full max-w-2xl px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
+      <BackButton
+        fallbackHref={href(lang, "/activity")}
+        label={lang === "id" ? "Kembali" : "Back"}
+        className="mb-4"
+      />
       <header className="relative overflow-hidden rounded-3xl border border-slate-200/80 bg-card p-5 shadow-sm sm:p-6">
         <PixelCatDecoration variant="waving" size="lg" position="top-right" className="opacity-90" />
         <div className="relative z-[1] max-w-xl pr-16 sm:pr-24">

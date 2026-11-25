@@ -10,7 +10,7 @@ import { copy } from "../../lib/copy"
 import { socialCopy } from "@/lib/copy-social"
 import { formatRelativeTime } from "@/lib/format"
 import { href, type Lang } from "@/lib/i18n"
-import { groupByRecency, splitTemplate, type RecencyGroup } from "@/lib/social-notifications"
+import { groupByRecency, splitTemplate, type RecencyGroup } from "@/lib/response-groups"
 import { cn } from "@/lib/utils"
 
 function templateFor(item: CreationResponseItem, lang: Lang) {

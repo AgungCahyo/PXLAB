@@ -1,6 +1,9 @@
 "use client"
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react"
+import { PixelIcon } from "@/components/ui/PixelIcon"
+import { copy } from "../../lib/copy"
+import { DEFAULT_LANG, type Lang } from "@/lib/i18n"
 import { cn } from "@/lib/utils"
 
 type ToastTone = "success" | "error" | "info"
@@ -11,14 +14,14 @@ const ToastContext = createContext<ShowToast | null>(null)
 
 const TOAST_MS = 2600
 
-export function ToastProvider({ children }: { children: ReactNode }) {
+export function ToastProvider({ children, lang = DEFAULT_LANG }: { children: ReactNode; lang?: Lang }) {
   const [items, setItems] = useState<ToastItem[]>([])
   const nextId = useRef(0)
-  const timersRef = useRef<number[]>([])
+  const timersRef = useRef<{ id: number; timer: number }[]>([])
 
   useEffect(
     () => () => {
-      for (const timer of timersRef.current) window.clearTimeout(timer)
+      for (const entry of timersRef.current) window.clearTimeout(entry.timer)
     },
     [],
   )
@@ -28,10 +31,20 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     // Keep at most 2 visible; newest wins.
     setItems((prev) => [...prev.slice(-1), { id, message, tone }])
     const timer = window.setTimeout(() => {
-      timersRef.current = timersRef.current.filter((pending) => pending !== timer)
+      timersRef.current = timersRef.current.filter((pending) => pending.timer !== timer)
       setItems((prev) => prev.filter((t) => t.id !== id))
     }, TOAST_MS)
-    timersRef.current.push(timer)
+    timersRef.current.push({ id, timer })
+  }, [])
+
+  /** Manual dismiss (U6): clears the pending timer so nothing leaks. */
+  const dismiss = useCallback((id: number) => {
+    const timer = timersRef.current.find((pending) => pending.id === id)?.timer
+    if (timer !== undefined) {
+      window.clearTimeout(timer)
+      timersRef.current = timersRef.current.filter((pending) => pending.timer !== timer)
+    }
+    setItems((prev) => prev.filter((t) => t.id !== id))
   }, [])
 
   const value = useMemo(() => show, [show])
@@ -48,7 +61,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
           <div
             key={item.id}
             className={cn(
-              "soc-toast pointer-events-auto max-w-sm px-4 py-2.5 text-[13px] font-medium shadow-[0_2px_0_0_rgb(0_0_0/0.25)]",
+              "soc-toast pointer-events-auto flex max-w-sm items-center gap-3 px-4 py-2.5 text-[13px] font-medium shadow-[0_2px_0_0_rgb(0_0_0/0.25)]",
               item.tone === "error"
                 ? "bg-brick text-fg"
                 : item.tone === "info"
@@ -56,7 +69,15 @@ export function ToastProvider({ children }: { children: ReactNode }) {
                   : "bg-grass text-fg",
             )}
           >
-            {item.message}
+            <span className="min-w-0 flex-1">{item.message}</span>
+            <button
+              type="button"
+              onClick={() => dismiss(item.id)}
+              aria-label={copy.toastDismiss[lang]}
+              className="inline-flex h-6 w-6 shrink-0 items-center justify-center opacity-80 hover:opacity-100"
+            >
+              <PixelIcon name="close" className="h-3.5 w-3.5" aria-hidden />
+            </button>
           </div>
         ))}
       </div>
