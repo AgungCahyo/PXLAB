@@ -1,10 +1,12 @@
 import { listPublishedCreations, type CreationCard } from "@/features/creations/queries"
 import { REACTION_TYPE } from "@/lib/site"
 import { createPublicSupabase } from "@/lib/supabase/public"
+import { createServerSupabase } from "@/lib/supabase/server"
 
 export type FeedPostData = CreationCard & {
   likeCount: number
   liked: boolean
+  saved?: boolean
 }
 
 export type FeedKind = "all" | "following"
@@ -18,10 +20,11 @@ export type FeedKind = "all" | "following"
 export async function getEngagement(creationIds: string[], viewerId: string | null) {
   const counts = new Map<string, number>()
   const liked = new Set<string>()
+  const saved = new Set<string>()
   const supabase = createPublicSupabase()
-  if (!supabase || creationIds.length === 0) return { counts, liked }
+  if (!supabase || creationIds.length === 0) return { counts, liked, saved }
 
-  const [countResults, own] = await Promise.all([
+  const [countResults, own, savedIds] = await Promise.all([
     Promise.all(
       creationIds.map(async (id) => {
         const { count } = await supabase
@@ -40,21 +43,39 @@ export async function getEngagement(creationIds: string[], viewerId: string | nu
           .eq("user_id", viewerId)
           .eq("reaction_type", REACTION_TYPE)
       : Promise.resolve({ data: [] as { creation_id: string }[] }),
+    viewerId
+      ? (async () => {
+          try {
+            const authed = await createServerSupabase()
+            if (!authed) return [] as string[]
+            const { data } = await authed
+              .from("saved_creations")
+              .select("creation_id")
+              .in("creation_id", creationIds)
+              .eq("user_id", viewerId)
+            return (data ?? []).map((row) => row.creation_id as string)
+          } catch {
+            return [] as string[]
+          }
+        })()
+      : Promise.resolve([] as string[]),
   ])
 
   for (const [id, count] of countResults) counts.set(id, count)
   for (const row of own.data ?? []) liked.add(row.creation_id as string)
-  return { counts, liked }
+  for (const id of savedIds) saved.add(id)
+  return { counts, liked, saved }
 }
 
 export function toFeedPosts(
   items: CreationCard[],
-  engagement: { counts: Map<string, number>; liked: Set<string> },
+  engagement: { counts: Map<string, number>; liked: Set<string>; saved?: Set<string> },
 ): FeedPostData[] {
   return items.map((item) => ({
     ...item,
     likeCount: engagement.counts.get(item.id) ?? 0,
     liked: engagement.liked.has(item.id),
+    saved: engagement.saved?.has(item.id) ?? false,
   }))
 }
 

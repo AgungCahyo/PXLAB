@@ -38,10 +38,11 @@ describe("social interactions reuse the existing backend", () => {
     expect(panel).toMatch(/COMMENT_BODY_MAX/)
   })
 
-  it("no fake backend: no bookmark/save UI was invented", () => {
-    for (const file of walk("components/social")) {
-      expect(read(file).toLowerCase()).not.toMatch(/bookmark/)
-    }
+  it("save goes through setSavedStateAction, optimistic, with explicit desired state", () => {
+    expect(post).toMatch(/setSavedStateAction/)
+    expect(post).toMatch(/reconcileDesiredState/)
+    expect(post).toMatch(/Bookmark/)
+    expect(post).toMatch(/socialCopy\.feeds\.save/)
   })
 
   it("home route is public and the nav links to it", () => {

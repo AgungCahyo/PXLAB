@@ -1,11 +1,13 @@
 "use client"
 
-import { useActionState } from "react"
-import { Bookmark } from "pixelarticons/react"
+import { useCallback, useEffect, useRef, useState } from "react"
 
-import { setSavedStateAction, type FeedActionState } from "@/features/feeds/actions"
+import { PixelBookmark } from "@/components/social/PixelBookmark"
+import { useToast } from "@/components/social/Toast"
+import { setSavedStateAction } from "@/features/feeds/actions"
 import { socialCopy } from "@/lib/copy-social"
 import type { Lang } from "@/lib/i18n"
+import { reconcileDesiredState } from "@/lib/social-like"
 import { cn } from "@/lib/utils"
 
 export function SaveCreationButton({
@@ -17,40 +19,100 @@ export function SaveCreationButton({
   creationId: string
   initialSaved: boolean
 }) {
-  const [state, action, pending] = useActionState<FeedActionState, FormData>(
-    setSavedStateAction,
-    null,
-  )
   const t = socialCopy.feeds
-  const saved = state && "ok" in state && typeof state.saved === "boolean" ? state.saved : initialSaved
-  const error = state && "error" in state ? state.error : null
+  const toast = useToast()
+  const [saved, setSaved] = useState(initialSaved)
+  const [errorCode, setErrorCode] = useState<"migration_required" | "unavailable" | null>(null)
+  const desiredRef = useRef(initialSaved)
+  const confirmedRef = useRef(initialSaved)
+  const syncingRef = useRef(false)
+  const lastErrorRef = useRef<"migration_required" | "unavailable" | null>(null)
+
+  useEffect(() => {
+    if (syncingRef.current) return
+    desiredRef.current = initialSaved
+    confirmedRef.current = initialSaved
+    setSaved(initialSaved)
+  }, [initialSaved])
+
+  const sync = useCallback(async () => {
+    if (syncingRef.current) return
+    syncingRef.current = true
+    try {
+      const outcome = await reconcileDesiredState({
+        getDesired: () => desiredRef.current,
+        getConfirmed: () => confirmedRef.current,
+        setState: async (desired) => {
+          const formData = new FormData()
+          formData.set("creation_id", creationId)
+          formData.set("desired", String(desired))
+          const result = await setSavedStateAction(null, formData)
+          if (!result || !("ok" in result)) {
+            lastErrorRef.current =
+              result && "error" in result && result.error === "migration_required"
+                ? "migration_required"
+                : "unavailable"
+            return { ok: false }
+          }
+          lastErrorRef.current = null
+          return { ok: true, state: result.saved ?? desired }
+        },
+        onConfirmed: (state) => {
+          confirmedRef.current = state
+          setSaved(state)
+          setErrorCode(null)
+        },
+        onDesired: (state) => {
+          desiredRef.current = state
+        },
+        onRollback: (confirmed) => {
+          desiredRef.current = confirmed
+          setSaved(confirmed)
+        },
+      })
+      if (outcome === "rolled_back") {
+        const code = lastErrorRef.current ?? "unavailable"
+        setErrorCode(code)
+        toast(code === "migration_required" ? t.migrationError[lang] : t.actionError[lang], "error")
+      }
+    } finally {
+      syncingRef.current = false
+    }
+  }, [creationId, lang, t.actionError, t.migrationError, toast])
+
+  function onToggle() {
+    const next = !desiredRef.current
+    desiredRef.current = next
+    setSaved(next)
+    setErrorCode(null)
+    void sync()
+  }
+
   const label = saved ? t.saved[lang] : t.save[lang]
 
   return (
-    <form action={action} className="inline-flex flex-col">
-      <input type="hidden" name="creation_id" value={creationId} />
-      <input type="hidden" name="desired" value={String(!saved)} />
+    <div className="inline-flex flex-col">
       <button
-        type="submit"
-        disabled={pending}
+        type="button"
+        onClick={onToggle}
         aria-pressed={saved}
         aria-label={label}
         title={label}
         className={cn(
-          "inline-flex min-h-11 items-center gap-1.5 rounded-xl border px-2.5 text-[13px] font-medium transition-colors disabled:opacity-60",
+          "inline-flex min-h-11 items-center gap-1.5 rounded-xl border px-2.5 text-[13px] font-medium transition-colors",
           saved
             ? "border-purple-200 bg-purple-50 text-[#6355d8]"
             : "border-slate-200 bg-card text-slate-600 hover:bg-slate-50 hover:text-fg",
         )}
       >
-        <Bookmark width={20} height={20} aria-hidden="true" />
+        <PixelBookmark filled={saved} size={20} />
         <span>{label}</span>
       </button>
-      {error ? (
+      {errorCode ? (
         <span role="status" className="mt-1 text-[12px] text-rose-600">
-          {error === "migration_required" ? t.migrationError[lang] : t.actionError[lang]}
+          {errorCode === "migration_required" ? t.migrationError[lang] : t.actionError[lang]}
         </span>
       ) : null}
-    </form>
+    </div>
   )
 }

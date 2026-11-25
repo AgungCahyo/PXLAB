@@ -7,11 +7,13 @@ import { Comment, Share } from "pixelarticons/react"
 import { PixelArt } from "@/components/creations/PixelArt"
 import { CommentPanel, type FeedViewer } from "@/components/social/CommentPanel"
 import { CreatorLine } from "@/components/social/CreatorLine"
+import { PixelBookmark } from "@/components/social/PixelBookmark"
 import { PixelHeart } from "@/components/social/PixelHeart"
 import { workActionBaseClass, workActionClass } from "@/components/social/socialAction"
 import { useToast } from "@/components/social/Toast"
 import { CreationShareDialog } from "@/components/share/CreationShareDialog"
 import { toggleAppreciationAction } from "@/features/community/actions"
+import { setSavedStateAction } from "@/features/feeds/actions"
 import type { FeedPostData } from "@/features/feed/queries"
 import { displayTitle } from "@/lib/creations"
 import { socialCopy } from "@/lib/copy-social"
@@ -108,6 +110,81 @@ function FeedPostBase({
     void sync()
   }
 
+  // --- Save: optimistic, one request at a time (same reconcileDesiredState pattern) ---
+  const initialSaved = Boolean(post.saved)
+  const [saved, setSaved] = useState(initialSaved)
+  const [savePopKey, setSavePopKey] = useState(0)
+  const savedDesiredRef = useRef(initialSaved)
+  const savedConfirmedRef = useRef(initialSaved)
+  const savedSyncingRef = useRef(false)
+  const saveErrorRef = useRef<"migration_required" | "unavailable" | null>(null)
+
+  useEffect(() => {
+    if (savedSyncingRef.current) return
+    savedDesiredRef.current = initialSaved
+    savedConfirmedRef.current = initialSaved
+    setSaved(initialSaved)
+  }, [initialSaved])
+
+  const syncSaved = useCallback(async () => {
+    if (savedSyncingRef.current) return
+    savedSyncingRef.current = true
+    try {
+      const outcome = await reconcileDesiredState({
+        getDesired: () => savedDesiredRef.current,
+        getConfirmed: () => savedConfirmedRef.current,
+        setState: async (desired) => {
+          const formData = new FormData()
+          formData.set("creation_id", post.id)
+          formData.set("desired", String(desired))
+          const result = await setSavedStateAction(null, formData)
+          if (!result || !("ok" in result)) {
+            saveErrorRef.current =
+              result && "error" in result && result.error === "migration_required"
+                ? "migration_required"
+                : "unavailable"
+            return { ok: false }
+          }
+          saveErrorRef.current = null
+          return { ok: true, state: result.saved ?? desired }
+        },
+        onConfirmed: (state) => {
+          savedConfirmedRef.current = state
+          setSaved(state)
+        },
+        onDesired: (state) => {
+          savedDesiredRef.current = state
+        },
+        onRollback: (confirmed) => {
+          savedDesiredRef.current = confirmed
+          setSaved(confirmed)
+        },
+      })
+      if (outcome === "rolled_back") {
+        toast(
+          saveErrorRef.current === "migration_required"
+            ? socialCopy.feeds.migrationError[lang]
+            : socialCopy.feeds.actionError[lang],
+          "error",
+        )
+      }
+    } finally {
+      savedSyncingRef.current = false
+    }
+  }, [post.id, toast, lang])
+
+  function onSave() {
+    if (!viewer) {
+      router.push(loginHref(lang, loginNext ?? href(lang, "/home")))
+      return
+    }
+    const next = !savedDesiredRef.current
+    savedDesiredRef.current = next
+    setSaved(next)
+    if (next) setSavePopKey((key) => key + 1)
+    void syncSaved()
+  }
+
   // --- Comments ---
   const [open, setOpen] = useState(false)
   const [mounted, setMounted] = useState(false)
@@ -177,6 +254,22 @@ function FeedPostBase({
             className={workActionClass}
           >
             <Share width={22} height={22} aria-hidden="true" />
+          </button>
+          <button
+            type="button"
+            onClick={onSave}
+            aria-pressed={saved}
+            aria-label={saved ? socialCopy.feeds.saved[lang] : socialCopy.feeds.save[lang]}
+            title={saved ? socialCopy.feeds.saved[lang] : socialCopy.feeds.save[lang]}
+            className={cn(
+              workActionBaseClass,
+              "ml-auto",
+              saved ? "bg-purple-50/80 text-[#6355d8]" : "text-fg hover:text-[#6355d8]",
+            )}
+          >
+            <span key={savePopKey} className={cn("inline-flex", saved && savePopKey > 0 && "soc-pop")}>
+              <PixelBookmark filled={saved} />
+            </span>
           </button>
         </div>
         <CreationShareDialog

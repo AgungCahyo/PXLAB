@@ -22,6 +22,7 @@ function migrationMissing(code: string | undefined, message: string): boolean {
 
 function revalidateFeeds(creationId?: string) {
   const paths = [
+    "/home",
     "/saved",
     "/liked",
     "/archive",
