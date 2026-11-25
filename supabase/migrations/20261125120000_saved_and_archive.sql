@@ -18,12 +18,14 @@ alter table public.saved_creations enable row level security;
 
 revoke all on table public.saved_creations from anon, authenticated;
 
+drop policy if exists saved_creations_select_own on public.saved_creations;
 create policy saved_creations_select_own
   on public.saved_creations
   for select
   to authenticated
   using (user_id = auth.uid());
 
+drop policy if exists saved_creations_insert_own on public.saved_creations;
 create policy saved_creations_insert_own
   on public.saved_creations
   for insert
@@ -31,6 +33,7 @@ create policy saved_creations_insert_own
   with check (user_id = auth.uid());
 
 -- Upsert from the Save button needs an update path on conflict.
+drop policy if exists saved_creations_update_own on public.saved_creations;
 create policy saved_creations_update_own
   on public.saved_creations
   for update
@@ -38,6 +41,7 @@ create policy saved_creations_update_own
   using (user_id = auth.uid())
   with check (user_id = auth.uid());
 
+drop policy if exists saved_creations_delete_own on public.saved_creations;
 create policy saved_creations_delete_own
   on public.saved_creations
   for delete
