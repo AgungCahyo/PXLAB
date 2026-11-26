@@ -192,35 +192,39 @@ function FeedPostBase({
   const [shareOpen, setShareOpen] = useState(false)
 
   return (
-    <article className="my-5 overflow-hidden rounded-3xl border border-slate-200/80 bg-card shadow-sm transition-all hover:border-slate-300 hover:shadow-md" aria-label={title}>
-      <div className="px-4 pt-4 sm:px-5 sm:pt-5">
+    <article className="border-b border-line py-6 first:pt-4" aria-label={title}>
+      <div className="mb-3">
         <CreatorLine lang={lang} creator={post.author} at={post.published_at} />
       </div>
 
-      <Link href={workHref} className="mt-3 block bg-slate-50" aria-label={title}>
+      <Link
+        href={workHref}
+        className="block border border-line bg-soft transition-colors hover:border-fg/40"
+        aria-label={title}
+      >
         {post.cover_url ? (
           <PixelArt src={post.cover_url} alt={title} variant="thumb" framed={false} />
         ) : (
-          <div className="aspect-square w-full bg-slate-100" />
+          <div className="aspect-square w-full bg-soft" />
         )}
       </Link>
 
-      <div className="px-4 pb-4 pt-3 sm:px-5 sm:pb-5">
-        <div className="flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-1 text-[14px] leading-snug">
-          <Link href={workHref} className="text-[15px] font-semibold text-fg transition-colors hover:text-[#6355d8]">
+      <div className="pt-3.5">
+        <div className="flex min-w-0 flex-wrap items-baseline gap-x-2.5 gap-y-1 text-[14px] leading-snug">
+          <Link href={workHref} className="text-[16px] font-semibold tracking-[-0.01em] text-fg transition-colors hover:text-[#ff4f00]">
             {title}
           </Link>
           {post.isNew ? (
-            <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-700">
+            <span className="rounded-[2px] bg-[#ff4f00] px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.06em] text-white">
               {socialCopy.explore.newBadge[lang]}
             </span>
           ) : null}
           {post.caption ? (
-            <p className="mt-1 w-full line-clamp-3 whitespace-pre-wrap text-[14px] leading-relaxed text-muted">{post.caption}</p>
+            <p className="mt-1.5 w-full line-clamp-3 whitespace-pre-wrap text-[14px] leading-relaxed text-muted">{post.caption}</p>
           ) : null}
         </div>
 
-        <div className="-ml-2 mt-3 flex items-center gap-1 border-t border-slate-100 pt-2">
+        <div className="-ml-2 mt-3 flex items-center gap-1">
           <button
             type="button"
             onClick={onLike}
@@ -242,7 +246,7 @@ function FeedPostBase({
             aria-expanded={open}
             aria-controls={`comments-${post.id}`}
             aria-label={`${t.comment[lang]}, ${commentCount}`}
-            className={cn(workActionClass, open && "bg-slate-100 text-fg")}
+            className={cn(workActionClass, open && "bg-soft text-fg")}
           >
             <Comment width={22} height={22} aria-hidden="true" />
             <span>{commentCount}</span>
@@ -264,7 +268,7 @@ function FeedPostBase({
             className={cn(
               workActionBaseClass,
               "ml-auto",
-              saved ? "bg-purple-50/80 text-[#6355d8]" : "text-fg hover:text-[#6355d8]",
+              saved ? "text-[#ff4f00]" : "text-fg hover:text-[#ff4f00]",
             )}
           >
             <span key={savePopKey} className={cn("inline-flex", saved && savePopKey > 0 && "soc-pop")}>

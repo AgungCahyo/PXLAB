@@ -101,13 +101,13 @@ export function Dialog({
       className={cn(
         /* `flex` on a closed <dialog> overrides the UA `display: none`, so every
            modal renders at once. Only apply layout once the browser marks it open. */
-        "m-auto max-h-[calc(100dvh-2rem)] overflow-hidden rounded-3xl bg-card p-0 text-fg shadow-2xl backdrop:bg-slate-900/40 backdrop:backdrop-blur-sm open:flex open:flex-col",
+        "m-auto max-h-[calc(100dvh-2rem)] overflow-hidden rounded-[2px] bg-card p-0 text-fg shadow-lg backdrop:bg-black/45 backdrop:backdrop-blur-xs open:flex open:flex-col",
         size === "lg"
           ? "w-[min(calc(100%-1rem),50rem)]"
           : size === "md"
             ? "w-[min(calc(100%-1.5rem),36rem)]"
             : "w-[min(calc(100%-2rem),28rem)]",
-        "border border-slate-200",
+        "border border-line",
         className,
       )}
       onClose={onClose}
@@ -130,7 +130,7 @@ export function Dialog({
           className={
             tone === "social"
               ? "inline-flex h-11 w-11 shrink-0 items-center justify-center text-muted hover:bg-soft hover:text-fg"
-              : "inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-muted transition-colors hover:bg-slate-100 hover:text-fg"
+              : "inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-[2px] text-muted transition-colors hover:bg-soft hover:text-fg"
           }
           aria-label={closeLabel}
         >

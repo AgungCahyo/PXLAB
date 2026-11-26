@@ -1390,7 +1390,7 @@ export const copy = {
     en: "Manage your works.",
   } satisfies Bi,
   worksBack: { id: "Kembali", en: "Back" } satisfies Bi,
-  responsesTitle: { id: "Respon", en: "Responses" } satisfies Bi,
+  responsesTitle: { id: "Aktivitas", en: "Activity" } satisfies Bi,
   responsesMeta: {
     id: "Catatan, apresiasi, dan remix untuk karyamu.",
     en: "Notes, appreciations, and remixes on your works.",
@@ -1400,8 +1400,8 @@ export const copy = {
     en: "Notes, appreciations, and remixes on your published works.",
   } satisfies Bi,
   responsesEmpty: {
-    id: "Belum ada respon pada karya terbitmu.",
-    en: "No responses on your published works yet.",
+    id: "Belum ada aktivitas pada karya terbitmu.",
+    en: "No activity on your published works yet.",
   } satisfies Bi,
   responsesNew: { id: "Baru", en: "New" } satisfies Bi,
   responsesComment: {
@@ -1420,7 +1420,7 @@ export const copy = {
     id: "{user} me-remix {title}",
     en: "{user} remixed {title}",
   } satisfies Bi,
-  responsesNavDot: { id: "Ada respon baru", en: "New responses" } satisfies Bi,
+  responsesNavDot: { id: "Ada aktivitas baru", en: "New activity" } satisfies Bi,
   quietRackTitle: {
     id: "Belum ada percakapan",
     en: "Waiting for a note",

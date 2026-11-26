@@ -4,7 +4,6 @@ import { ProfileAvatar } from "@/components/profiles/ProfileAvatar"
 import { displayTitle } from "@/lib/creations"
 import { copy, creationCategoryLabels } from "../../lib/copy"
 import { href, type Lang } from "@/lib/i18n"
-import { cn } from "@/lib/utils"
 import type { CreationCard as CreationCardData } from "@/features/creations/queries"
 
 export function CreationCard({
@@ -12,12 +11,15 @@ export function CreationCard({
   lang,
   hrefPath,
   showAuthor = true,
+  footer,
 }: {
   creation: CreationCardData
   lang: Lang
   hrefPath?: string
   /** Hide @username on profile grids where the author is already known. */
   showAuthor?: boolean
+  /** Optional card-bottom action area (e.g. Restore button on Archive). */
+  footer?: React.ReactNode
 }) {
   const path = hrefPath ?? `/creation/${creation.id}`
   const cover = creation.type === "pixel" ? creation.cover_url : null
@@ -37,38 +39,37 @@ export function CreationCard({
   )
 
   return (
-    <article className="pixel-frame group relative flex h-full min-w-0 flex-col overflow-hidden rounded-2xl border border-slate-200/80 bg-card shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md">
+    <article className="pixel-frame group relative flex h-full min-w-0 flex-col overflow-hidden rounded-none border border-line bg-card transition-colors duration-150 hover:border-fg/40">
       <Link
         href={href(lang, path)}
-        className="absolute inset-0 z-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-purple-400/60"
+        className="absolute inset-0 z-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#ff4f00]"
         aria-label={title}
       />
       <div className="pointer-events-none relative z-[1] flex h-full flex-col">
-        <div className="relative aspect-square w-full overflow-hidden bg-slate-50">
+        <div className="relative aspect-square w-full overflow-hidden border-b border-line bg-soft">
           {thumb}
           {creation.isNew ? (
-            <span className="absolute left-2.5 top-2.5 rounded-full bg-[#f43f5e] px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white shadow-sm">
+            <span className="absolute left-2 top-2 rounded-[2px] bg-[#ff4f00] px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.06em] text-white">
               {copy.feedNewBadge[lang]}
             </span>
           ) : null}
-          <div className="absolute inset-0 bg-gradient-to-t from-slate-950/5 via-transparent to-transparent opacity-0 transition-opacity duration-200 group-hover:opacity-100" />
         </div>
 
         <div className="flex flex-1 flex-col justify-between p-3">
           <div className="min-w-0">
-            <p className="truncate text-[14px] font-semibold leading-snug text-fg transition-colors group-hover:text-[#6355d8] sm:text-[15px]">
+            <p className="truncate text-[14px] font-semibold leading-snug text-fg transition-colors group-hover:text-[#ff4f00] sm:text-[15px]">
               {title}
             </p>
             {showAuthor ? (
               <div className="pointer-events-auto relative z-[2] mt-2 flex min-w-0 items-center gap-2">
-                <Link href={profileHref} className="flex min-w-0 items-center gap-2 transition-colors hover:text-[#6355d8]">
+                <Link href={profileHref} className="flex min-w-0 items-center gap-2 transition-colors hover:text-[#ff4f00]">
                   <ProfileAvatar
                     src={creation.author.avatarUrl}
                     avatarConfig={creation.author.avatarConfig}
                     userId={creation.author.id}
                     alt={creation.author.username}
                     size="xs"
-                    className="border border-slate-200/80"
+                    className="border border-line"
                   />
                   <span className="truncate text-[12px] font-medium text-muted">@{creation.author.username}</span>
                 </Link>
@@ -77,13 +78,18 @@ export function CreationCard({
           </div>
 
           {sizeLabel || notes ? (
-            <div className="mt-2 flex items-center gap-2 text-[11px] font-medium text-muted">
+            <div className="mt-2.5 flex items-center justify-between gap-2 border-t border-line pt-2 text-[11px] font-medium tabular-nums text-muted">
               {sizeLabel ? (
-                <span className="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-slate-600">
+                <span className="uppercase tracking-[0.05em]">
                   {sizeLabel}
                 </span>
               ) : null}
               {notes ? <span className="truncate">{notes}</span> : null}
+            </div>
+          ) : null}
+          {footer ? (
+            <div className="pointer-events-auto relative z-[2] mt-2.5 border-t border-line pt-2.5">
+              {footer}
             </div>
           ) : null}
         </div>

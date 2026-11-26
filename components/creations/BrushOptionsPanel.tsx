@@ -35,10 +35,10 @@ function Slider({
   return (
     <div className="space-y-1">
       <div className="flex items-center gap-2">
-        <label className="min-w-0 flex-1 text-[12px] font-medium text-[#e8e3f8]/80" htmlFor={id}>
+        <label className="min-w-0 flex-1 text-[12px] font-medium text-[var(--studio-fg)]/80" htmlFor={id}>
           {label}
         </label>
-        <span className="w-12 text-right text-[12px] tabular-nums text-[#e8e3f8]">
+        <span className="w-12 text-right text-[12px] tabular-nums text-[var(--studio-fg)]">
           {value}
           {suffix}
         </span>
@@ -53,7 +53,7 @@ function Slider({
         disabled={disabled}
         aria-label={label}
         onChange={(event) => onChange(Number(event.target.value))}
-        className="w-full accent-[#8b5cf6] disabled:opacity-35"
+        className="w-full accent-[var(--studio-accent)] disabled:opacity-35"
       />
     </div>
   )
@@ -68,7 +68,7 @@ export function BrushOptionsPanel({ lang, options, onChange, onTipFromSelection,
   }
   const button =
     "studio-control s-btn inline-flex items-center border-transparent px-2.5 text-[12px] font-medium disabled:opacity-35"
-  const check = "flex items-center gap-2 text-[12px] text-[#e8e3f8]/85"
+  const check = "flex items-center gap-2 text-[12px] text-[var(--studio-fg)]/85"
   return (
     <div className="grid gap-2.5" role="group" aria-label={copy.pixelBrushOptions[lang]}>
       <Slider label={copy.pixelBrushOpacity[lang]} value={options.opacity} min={1} max={100} suffix="%" onChange={(opacity) => set({ opacity })} />

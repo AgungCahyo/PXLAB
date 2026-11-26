@@ -71,7 +71,7 @@ export function CreatorCard({
           {...restoreScrollProps}
           href={profileHref}
           aria-label={name}
-          className="shrink-0 rounded-full focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky"
+          className="shrink-0 rounded-full focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
         >
           <ProfileAvatar
             src={creator.avatarUrl}
@@ -79,15 +79,15 @@ export function CreatorCard({
             userId={creator.id}
             alt=""
             size="sm"
-            className="border border-slate-200/80"
+            className="border border-line"
           />
         </Link>
         <Link
           {...restoreScrollProps}
           href={profileHref}
-          className="min-w-0 max-w-full flex-1 overflow-hidden focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky"
+          className="min-w-0 max-w-full flex-1 overflow-hidden focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
         >
-          <span className="block truncate text-[14px] font-semibold leading-tight text-fg transition-colors hover:text-[#6355d8]">
+          <span className="block truncate text-[14px] font-semibold leading-tight text-fg transition-colors hover:text-[#ff4f00]">
             {name}
           </span>
           <span className="mt-0.5 block truncate text-[12px] leading-tight text-muted">
@@ -116,7 +116,7 @@ export function CreatorCard({
                 {...restoreScrollProps}
                 href={href(lang, `/creation/${preview.id}`)}
                 aria-label={preview.title}
-                className="block min-w-0 max-w-full overflow-hidden rounded-xl border border-slate-100 bg-slate-50 transition-all hover:border-slate-200 hover:shadow-sm focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-sky"
+                className="block min-w-0 max-w-full overflow-hidden rounded-none border border-line bg-soft transition-colors hover:border-fg/40 focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-accent"
               >
                 {preview.coverUrl ? (
                   <PixelArt
@@ -127,14 +127,14 @@ export function CreatorCard({
                     priority={index === 0}
                   />
                 ) : (
-                  <span className="block aspect-square w-full bg-slate-100" aria-hidden="true" />
+                  <span className="block aspect-square w-full bg-soft" aria-hidden="true" />
                 )}
               </Link>
             </li>
           ))}
         </ul>
       ) : (
-        <p className="mt-3 rounded-xl border border-dashed border-slate-200/80 bg-slate-50/60 px-3 py-4 text-center text-[12px] text-muted">
+        <p className="mt-3 rounded-none border border-dashed border-line bg-soft px-3 py-4 text-center text-[12px] text-muted">
           {copy.creatorCardNoWork[lang]}
         </p>
       )}

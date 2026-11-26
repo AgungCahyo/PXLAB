@@ -48,13 +48,13 @@ export default async function RootNotFound() {
           <div className="mt-8 flex flex-wrap gap-3">
             <Link
               href="/"
-              className="inline-flex min-h-11 items-center rounded-2xl border border-purple-600/50 bg-[#6355d8] px-5 text-[14px] font-medium text-white shadow-sm shadow-purple-500/15 transition-colors hover:bg-[#5245c7]"
+              className="inline-flex min-h-11 items-center rounded-[2px] border border-[#ff4f00] bg-[#ff4f00] px-5 text-[14px] font-medium text-white transition-colors hover:border-[#e04400] hover:bg-[#e04400]"
             >
               {copy.notFoundHome[lang]}
             </Link>
             <Link
               href="/explore"
-              className="inline-flex min-h-11 items-center rounded-2xl border border-slate-200 bg-card px-5 text-[14px] font-medium text-fg shadow-sm transition-colors hover:bg-slate-50"
+              className="inline-flex min-h-11 items-center rounded-[2px] border border-line bg-card px-5 text-[14px] font-medium text-fg transition-colors hover:border-fg/30 hover:bg-soft"
             >
               {copy.nav.explore[lang]}
             </Link>

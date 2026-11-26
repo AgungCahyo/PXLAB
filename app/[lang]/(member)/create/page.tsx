@@ -55,16 +55,16 @@ export default async function CreatePage({
 
   return (
     <div className="mx-auto w-full min-w-0 max-w-6xl px-3 py-4 sm:px-6 sm:py-6 lg:px-10">
-      <header className="relative overflow-hidden rounded-3xl border border-slate-200/80 bg-card p-5 shadow-sm sm:p-6">
+      <header className="relative border-b border-line pb-6">
         <PixelCatDecoration variant="drawing" size="lg" position="top-right" className="opacity-90" />
         <div className="relative z-[1] max-w-2xl pr-16 sm:pr-24">
-          <p className="text-[12px] font-semibold uppercase tracking-[0.16em] text-[#6355d8]">PXLB</p>
-          <h1 className="mt-2 text-[24px] font-semibold tracking-tight text-fg sm:text-[30px]">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted">PXLB</p>
+          <h1 className="mt-1.5 text-[24px] font-semibold tracking-tight text-fg sm:text-[30px]">
             {copy.createTitle[lang]}
           </h1>
           <p className="mt-2 max-w-xl text-[14px] leading-relaxed text-muted">{copy.createIntro[lang]}</p>
           <div className="mt-3">
-            <Link href={href(lang, "/dashboard")} className="text-[13px] font-medium text-[#6355d8] hover:underline">
+            <Link href={href(lang, "/dashboard")} className="text-[13px] font-medium text-[#ff4f00] hover:underline">
               {copy.createManageLink[lang]} →
             </Link>
           </div>

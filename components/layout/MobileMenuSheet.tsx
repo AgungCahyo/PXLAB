@@ -1,9 +1,9 @@
 "use client"
 
 import Link from "next/link"
+import { usePathname } from "next/navigation"
 import { useEffect, useRef, type ReactNode } from "react"
 import {
-  Analytics,
   Archive,
   Bell,
   Bookmark,
@@ -23,7 +23,7 @@ import { PwaInstall } from "@/components/pwa/PwaInstall"
 import { socialButtonClass } from "@/components/social/socialButton"
 import { copy } from "@/lib/copy"
 import { socialCopy } from "@/lib/copy-social"
-import { href, type Lang } from "@/lib/i18n"
+import { href, stripLang, type Lang } from "@/lib/i18n"
 import { loginHref } from "@/lib/paths"
 import { cn } from "@/lib/utils"
 
@@ -39,26 +39,32 @@ function RowLink({
   label,
   icon,
   badge,
+  active = false,
   onClick,
 }: {
   href: string
   label: string
   icon: ReactNode
   badge?: string
+  active?: boolean
   onClick: () => void
 }) {
   return (
     <Link
       href={to}
+      aria-current={active ? "page" : undefined}
       onClick={onClick}
-      className="flex min-h-11 items-center gap-3 rounded-xl px-3 text-[14px] font-medium text-slate-700 transition-colors hover:bg-slate-100 hover:text-fg"
+      className={cn(
+        "flex min-h-11 items-center gap-3 rounded-[2px] px-3 text-[14px] font-medium transition-colors hover:bg-soft",
+        active ? "bg-soft font-semibold text-fg" : "text-fg",
+      )}
     >
-      <span className="shrink-0 text-slate-500" aria-hidden="true">
+      <span className={cn("shrink-0", active ? "text-[#ff4f00]" : "text-muted")} aria-hidden="true">
         {icon}
       </span>
       <span className="min-w-0 truncate">{label}</span>
       {badge ? (
-        <span className="ml-auto rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-500">
+        <span className="ml-auto rounded-[2px] bg-[#ff4f00]/10 px-2 py-0.5 text-[10px] font-semibold text-[#ff4f00]">
           {badge}
         </span>
       ) : null}
@@ -68,6 +74,9 @@ function RowLink({
 
 /** Mobile navigation drawer (slides in from the side, distinct from centered modals). */
 export function MobileMenuSheet({ lang, member, open, onClose }: Props) {
+  const pathname = usePathname() ?? "/"
+  const here = stripLang(pathname)
+  const isActive = (path: string) => here === path || here.startsWith(`${path}/`)
   const t = socialCopy.nav
   const profilePath = member?.username ? `/u/${member.username}` : "/welcome"
   const name = member?.displayName?.trim() || member?.username || t.profile[lang]
@@ -97,7 +106,7 @@ export function MobileMenuSheet({ lang, member, open, onClose }: Props) {
     <div className="fixed inset-0 z-50 md:hidden" role="dialog" aria-modal="true" aria-label={t.menu[lang]}>
       {/* Backdrop overlay */}
       <div
-        className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity duration-200"
+        className="fixed inset-0 bg-black/45 backdrop-blur-xs transition-opacity duration-200"
         onClick={onClose}
         aria-hidden="true"
       />
@@ -105,16 +114,16 @@ export function MobileMenuSheet({ lang, member, open, onClose }: Props) {
       {/* Drawer panel sliding in from the right */}
       <div
         ref={drawerRef}
-        className="fixed inset-y-0 right-0 z-50 flex h-dvh w-[300px] max-w-[85vw] flex-col bg-card shadow-2xl transition-transform duration-200 ease-out"
+        className="fixed inset-y-0 right-0 z-50 flex h-dvh w-[300px] max-w-[85vw] flex-col border-l border-line bg-card shadow-lg transition-transform duration-200 ease-out"
       >
         {/* Drawer Header */}
-        <div className="flex h-14 shrink-0 items-center justify-between border-b border-slate-100 px-4">
+        <div className="flex h-14 shrink-0 items-center justify-between border-b border-line px-4">
           <p className="text-[15px] font-bold tracking-tight text-fg">{t.menu[lang]}</p>
           <button
             type="button"
             onClick={onClose}
             aria-label={copy.settingsDone[lang]}
-            className="flex h-9 w-9 items-center justify-center rounded-xl text-slate-500 transition-colors hover:bg-slate-100 hover:text-fg"
+            className="flex h-9 w-9 items-center justify-center rounded-[2px] text-muted transition-colors hover:bg-soft hover:text-fg"
           >
             <Close width={20} height={20} aria-hidden="true" />
           </button>
@@ -127,7 +136,7 @@ export function MobileMenuSheet({ lang, member, open, onClose }: Props) {
             <Link
               href={href(lang, profilePath)}
               onClick={onClose}
-              className="mb-3 flex min-w-0 items-center gap-3 rounded-2xl bg-slate-50 p-3 transition-colors hover:bg-slate-100"
+              className="mb-3 flex min-w-0 items-center gap-3 rounded-[2px] border border-line bg-soft p-3 transition-colors hover:border-fg/30"
             >
               <ProfileAvatar
                 src={member.avatarUrl}
@@ -155,20 +164,20 @@ export function MobileMenuSheet({ lang, member, open, onClose }: Props) {
 
           {/* COMMUNITIES Group */}
           <div className="mt-2">
-            <p className="px-3 pb-1 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+            <p className="px-3 pb-1 text-[11px] font-semibold uppercase tracking-wider text-muted">
               {t.communities[lang]}
             </p>
-            <div className="flex min-h-11 items-center gap-3 rounded-xl px-3 text-[14px] font-medium text-slate-400 opacity-70">
+            <div className="flex min-h-11 items-center gap-3 rounded-[2px] px-3 text-[14px] font-medium text-muted opacity-65">
               <Users width={20} height={20} className="shrink-0" aria-hidden="true" />
               <span className="truncate">{t.groups[lang]}</span>
-              <span className="ml-auto rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-500">
+              <span className="ml-auto rounded-[2px] border border-line bg-soft px-2 py-0.5 text-[10px] font-semibold text-muted">
                 {t.groupsSoon[lang]}
               </span>
             </div>
-            <div className="flex min-h-11 items-center gap-3 rounded-xl px-3 text-[14px] font-medium text-slate-400 opacity-70">
+            <div className="flex min-h-11 items-center gap-3 rounded-[2px] px-3 text-[14px] font-medium text-muted opacity-65">
               <Trophy width={20} height={20} className="shrink-0" aria-hidden="true" />
               <span className="truncate">{t.challenge[lang]}</span>
-              <span className="ml-auto rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-500">
+              <span className="ml-auto rounded-[2px] border border-line bg-soft px-2 py-0.5 text-[10px] font-semibold text-muted">
                 {t.challengeSoon[lang]}
               </span>
             </div>
@@ -177,25 +186,28 @@ export function MobileMenuSheet({ lang, member, open, onClose }: Props) {
           {/* OTHER FEEDS Group */}
           {member ? (
             <div className="mt-4">
-              <p className="px-3 pb-1 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+              <p className="px-3 pb-1 text-[11px] font-semibold uppercase tracking-wider text-muted">
                 {t.otherFeeds[lang]}
               </p>
               <RowLink
                 href={href(lang, "/saved")}
                 label={t.saved[lang]}
                 icon={<Bookmark width={20} height={20} />}
+                active={isActive("/saved")}
                 onClick={onClose}
               />
               <RowLink
                 href={href(lang, "/liked")}
                 label={t.liked[lang]}
                 icon={<Heart width={20} height={20} />}
+                active={isActive("/liked")}
                 onClick={onClose}
               />
               <RowLink
                 href={href(lang, "/archive")}
                 label={t.archive[lang]}
                 icon={<Archive width={20} height={20} />}
+                active={isActive("/archive")}
                 onClick={onClose}
               />
             </div>
@@ -204,25 +216,22 @@ export function MobileMenuSheet({ lang, member, open, onClose }: Props) {
           {/* ACTIVITY & INSIGHTS Group */}
           {member ? (
             <div className="mt-4">
-              <p className="px-3 pb-1 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+              <p className="px-3 pb-1 text-[11px] font-semibold uppercase tracking-wider text-muted">
                 {t.activity[lang]}
               </p>
               <RowLink
                 href={href(lang, "/activity")}
                 label={t.activity[lang]}
                 icon={<Bell width={20} height={20} />}
-                onClick={onClose}
-              />
-              <RowLink
-                href={href(lang, "/insights")}
-                label={t.insights[lang]}
-                icon={<Analytics width={20} height={20} />}
+                badge={member.hasResponses ? t.notificationsUnread[lang] : undefined}
+                active={isActive("/activity")}
                 onClick={onClose}
               />
               <RowLink
                 href={href(lang, "/dashboard")}
                 label={t.works[lang]}
                 icon={<Folder width={20} height={20} />}
+                active={isActive("/dashboard")}
                 onClick={onClose}
               />
             </div>
@@ -230,8 +239,8 @@ export function MobileMenuSheet({ lang, member, open, onClose }: Props) {
 
           {/* PREFERENCES & ACCOUNT Group (Edit Profile is accessed on Profile page, not here) */}
           {/* Note for backward test compatibility: href(lang, "/profile/edit") is referenced in test suite */}
-          <div className="mt-4 border-t border-slate-100 pt-3">
-            <p className="px-3 pb-1 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+          <div className="mt-4 border-t border-line pt-3">
+            <p className="px-3 pb-1 text-[11px] font-semibold uppercase tracking-wider text-muted">
               {copy.nav.account[lang]}
             </p>
             {member ? (
@@ -239,6 +248,7 @@ export function MobileMenuSheet({ lang, member, open, onClose }: Props) {
                 href={href(lang, "/settings")}
                 label={t.settings[lang]}
                 icon={<SettingsCog width={20} height={20} />}
+                active={isActive("/settings")}
                 onClick={onClose}
               />
             ) : null}
@@ -256,7 +266,7 @@ export function MobileMenuSheet({ lang, member, open, onClose }: Props) {
               <div className="mt-3 px-3">
                 <LogoutButton
                   lang={lang}
-                  className={cn(socialButtonClass({ variant: "ghost", size: "md" }), "w-full justify-start text-rose-600 hover:bg-rose-50 hover:text-rose-700")}
+                  className={cn(socialButtonClass({ variant: "ghost", size: "md" }), "w-full justify-start text-brick hover:bg-brick/10 hover:text-brick")}
                 />
               </div>
             ) : null}

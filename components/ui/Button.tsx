@@ -3,19 +3,19 @@ import { cn } from "@/lib/utils";
 
 const variants = {
   primary:
-    "border border-purple-600/50 bg-[#6355d8] text-white hover:bg-[#5245c7] shadow-sm shadow-purple-500/15",
+    "border border-[#ff4f00] bg-[#ff4f00] text-white hover:border-[#e04400] hover:bg-[#e04400]",
   secondary:
-    "border border-emerald-600/50 bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm",
+    "border border-fg bg-fg text-bg hover:opacity-90",
   outline:
-    "border border-slate-200 bg-card text-fg hover:bg-slate-50 shadow-sm",
+    "border border-line bg-card text-fg hover:border-fg/30 hover:bg-soft",
   ghost:
-    "border-transparent bg-transparent text-muted hover:bg-slate-100/80 hover:text-fg",
+    "border-transparent bg-transparent text-muted hover:bg-soft hover:text-fg",
 } as const;
 
 const sizes = {
-  sm: "min-h-9 px-3.5 text-[13px] rounded-xl",
-  md: "min-h-11 px-5 text-[14px] rounded-2xl",
-  lg: "min-h-12 px-6 text-[15px] rounded-full",
+  sm: "min-h-9 px-3.5 text-[13px] rounded-[2px]",
+  md: "min-h-11 px-5 text-[14px] rounded-[2px]",
+  lg: "min-h-12 px-6 text-[15px] rounded-[2px]",
 } as const;
 
 export type ButtonVariant = keyof typeof variants;

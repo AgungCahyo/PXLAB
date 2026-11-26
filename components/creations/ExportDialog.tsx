@@ -177,7 +177,7 @@ export function ExportDialog({ lang, open, onClose, getDocument, title }: Props)
     setDownloaded(true)
   }
 
-  const field = "min-h-10 rounded-xl border border-slate-200 bg-slate-50/70 px-3 text-[14px] text-fg focus:border-[#6355d8] focus:bg-card focus:outline-none"
+  const field = "min-h-10 rounded-xl border border-line bg-soft/70 px-3 text-[14px] text-fg focus:border-accent focus:bg-card focus:outline-none"
   const label = "text-[13px] font-semibold text-fg"
   const note = "text-[12px] text-muted"
   const frameFormats = format === "gif" ? gifSource === "layers" : format === "sheet"
@@ -220,7 +220,7 @@ export function ExportDialog({ lang, open, onClose, getDocument, title }: Props)
                 key={value}
                 type="button"
                 aria-pressed={scale === value}
-                className={`studio-control inline-flex items-center rounded-xl border px-2.5 text-[13px] font-medium transition-colors ${scale === value ? "border-[#6355d8] bg-[#f0edff] text-[#6355d8]" : "border-slate-200 bg-slate-50 text-fg hover:bg-slate-100"}`}
+                className={`studio-control inline-flex items-center rounded-xl border px-2.5 text-[13px] font-medium transition-colors ${scale === value ? "border-accent bg-primary-soft text-accent" : "border-line bg-soft text-fg hover:bg-card"}`}
                 onClick={() => setScale(value)}
               >
                 {value}×
@@ -246,7 +246,7 @@ export function ExportDialog({ lang, open, onClose, getDocument, title }: Props)
                 type="color"
                 value={bgColor}
                 aria-label={copy.exportBgColor[lang]}
-                className="h-10 w-14 rounded-xl border border-slate-200 bg-card p-0.5"
+                className="h-10 w-14 rounded-xl border border-line bg-card p-0.5"
                 onChange={(event) => setBgColor(event.target.value)}
               />
             ) : null}
@@ -317,7 +317,7 @@ export function ExportDialog({ lang, open, onClose, getDocument, title }: Props)
 
         <div className="grid gap-2" aria-live="polite">
           <span className={label}>{copy.exportPreview[lang]}</span>
-          <div className="flex min-h-40 items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 p-3 [background-image:repeating-conic-gradient(var(--color-soft,#eee)_0%_25%,transparent_0%_50%)] [background-size:16px_16px]">
+          <div className="flex min-h-40 items-center justify-center rounded-2xl border border-line bg-soft p-3 [background-image:repeating-conic-gradient(var(--color-soft,#eee)_0%_25%,transparent_0%_50%)] [background-size:16px_16px]">
             {previewUrl ? (
               // eslint-disable-next-line @next/next/no-img-element -- local object URL, pixel art needs crisp scaling
               <img src={previewUrl} alt="" className="max-h-64 max-w-full [image-rendering:pixelated]" />
@@ -354,7 +354,7 @@ export function ExportDialog({ lang, open, onClose, getDocument, title }: Props)
           {copy.exportDownload[lang]}
         </Button>
         {downloaded ? (
-          <div className="flex items-center gap-2.5 rounded-2xl border border-emerald-200 bg-emerald-50/70 px-3 py-2 text-[13px] text-emerald-900">
+          <div className="flex items-center gap-2.5 rounded-2xl border border-grass/30 bg-grass/15 px-3 py-2 text-[13px] text-fg">
             <PixelCat variant="happy" size="xs" />
             <span>{result?.file.name}</span>
           </div>

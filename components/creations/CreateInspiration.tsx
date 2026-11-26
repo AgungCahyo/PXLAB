@@ -23,7 +23,7 @@ export function CreateInspiration({
 
   return (
     <section
-      className="relative mt-8 overflow-hidden rounded-3xl border border-slate-200/80 bg-card p-5 shadow-sm sm:p-6"
+      className="relative mt-8 border-t border-line pt-6"
       aria-labelledby="create-inspiration-heading"
     >
       <PixelCatDecoration variant="looking" size="md" position="top-right" className="opacity-80" />
@@ -34,7 +34,7 @@ export function CreateInspiration({
         <p className="mt-2 text-[14px] leading-relaxed text-muted">{copy.createRemixPrompt[lang]}</p>
         <Link
           href={href(lang, "/explore")}
-          className="mt-3 inline-flex min-h-9 items-center text-[13px] font-medium text-[#6355d8] hover:underline"
+          className="mt-3 inline-flex min-h-9 items-center text-[13px] font-medium text-[#ff4f00] hover:underline"
         >
           {copy.nav.explore[lang]}
         </Link>

@@ -90,7 +90,6 @@ export default async function CreationDetailPage({
   await connection()
   const creation = await getPublishedCreation(id)
   if (!creation) notFound()
-
   const profile = await getCurrentProfile()
   const member = profile
     ? {
@@ -128,7 +127,7 @@ export default async function CreationDetailPage({
 
   const identity = (
     <>
-      <h1 className="break-words text-[17px] font-semibold leading-snug text-fg sm:text-[19px]">{title}</h1>
+      <h1 className="break-words text-[18px] font-semibold leading-snug tracking-[-0.015em] text-fg sm:text-[22px]">{title}</h1>
       {creation.source ? <RemixStrip lang={lang} items={[]} total={0} source={creation.source} /> : null}
 
       <div className="mt-3">
@@ -159,7 +158,7 @@ export default async function CreationDetailPage({
       <CreationTags lang={lang} tags={creation.tags} />
       {isPixel ? <CreationColorPalette lang={lang} usage={creation.color_usage} /> : null}
 
-      <div className="mt-5 flex flex-wrap items-center gap-1 border-y border-slate-200/80 py-2">
+      <div className="mt-5 flex flex-wrap items-center gap-1 border-y border-line py-2">
         <CreationEngagement
           lang={lang}
           creationId={creation.id}

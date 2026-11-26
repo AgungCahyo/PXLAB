@@ -6,7 +6,7 @@ import { SiteHeader } from "@/components/layout/SiteHeader"
 import { PwaInstall } from "@/components/pwa/PwaInstall"
 import { ToastProvider } from "@/components/social/Toast"
 import { PwaRegister } from "@/components/pwa/PwaRegister"
-import { hasUnseenCreationResponses } from "@/features/community/activity"
+import { hasUnseenActivityResponses } from "@/features/community/activity"
 import { getCurrentProfile } from "@/lib/auth/session"
 import type { Lang } from "@/lib/i18n"
 
@@ -42,7 +42,7 @@ export function PublicShell({
 
 async function AuthHeader({ lang }: { lang: Lang }) {
   const profile = await getCurrentProfile()
-  const hasResponses = profile ? await hasUnseenCreationResponses() : false
+  const hasResponses = profile ? await hasUnseenActivityResponses() : false
   const member = profile
     ? {
         id: profile.id,

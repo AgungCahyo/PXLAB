@@ -55,7 +55,7 @@ export function CornerBusyMark({
   return (
     <div
       className={cn(
-        "corner-busy pointer-events-none fixed z-[9999] flex h-10 w-10 items-center justify-center rounded-2xl border border-slate-200/80 bg-card shadow-xl shadow-slate-900/10 transition-opacity duration-200",
+        "corner-busy pointer-events-none fixed z-[9999] flex h-10 w-10 items-center justify-center rounded-2xl border border-line bg-card shadow-xl shadow-slate-900/10 transition-opacity duration-200",
         "right-3 bottom-[calc(4.75rem+env(safe-area-inset-bottom,0px))] md:bottom-5 md:right-5",
         visible ? "opacity-100" : "opacity-0",
         className,

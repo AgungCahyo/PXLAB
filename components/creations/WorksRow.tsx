@@ -2,39 +2,75 @@
 
 import { useEffect, useId, useRef, useState } from "react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
+import { Archive } from "pixelarticons/react"
 import { PixelArt } from "@/components/creations/PixelArt"
 import { WorksDeleteButton } from "@/components/creations/WorksDeleteButton"
+import { useToast } from "@/components/social/Toast"
 import { focusMenuItem, handleMenuKeyDown } from "@/components/ui/menuKeyboard"
 import { PixelIcon } from "@/components/ui/PixelIcon"
 import { socialButtonClass } from "@/components/social/socialButton"
+import { setArchiveStateAction } from "@/features/feeds/actions"
 import { displayTitle } from "@/lib/creations"
 import { copy } from "../../lib/copy"
+import { socialCopy } from "@/lib/copy-social"
 import { formatDayMonthYear } from "@/lib/format"
 import { href, type Lang } from "@/lib/i18n"
 import { cn } from "@/lib/utils"
 import type { CreationCard } from "@/features/creations/queries"
 import { Calendar } from "lucide-react"
 
-/** Ellipsis dropdown for secondary actions (Delete). */
+/** Ellipsis dropdown for secondary actions (Archive, Delete). */
 function WorksCardMenu({
   lang,
   creationId,
   title,
   published,
+  onArchived,
   onDeleted,
 }: {
   lang: Lang
   creationId: string
   title: string
   published: boolean
+  onArchived: () => void
   onDeleted: () => void
 }) {
   const [open, setOpen] = useState(false)
+  const [archiving, setArchiving] = useState(false)
+  const router = useRouter()
+  const toast = useToast()
   const ref = useRef<HTMLDivElement>(null)
   const triggerRef = useRef<HTMLButtonElement>(null)
   const triggerId = useId()
   const menuId = useId()
   const pendingFocusRef = useRef<"first" | "last">("first")
+
+  const handleArchive = async () => {
+    if (archiving) return
+    setArchiving(true)
+    try {
+      const formData = new FormData()
+      formData.set("creation_id", creationId)
+      formData.set("desired", "true")
+      const result = await setArchiveStateAction(null, formData)
+      if (!result || !("ok" in result)) {
+        const msg =
+          result && "error" in result && result.error === "migration_required"
+            ? socialCopy.feeds.migrationError[lang]
+            : socialCopy.feeds.actionError[lang]
+        toast(msg, "error")
+        return
+      }
+      setOpen(false)
+      onArchived()
+      router.refresh()
+    } catch {
+      toast(socialCopy.feeds.actionError[lang], "error")
+    } finally {
+      setArchiving(false)
+    }
+  }
 
   const handleBlur = (e: React.FocusEvent<HTMLDivElement>) => {
     if (!ref.current?.contains(e.relatedTarget as Node)) setOpen(false)
@@ -71,8 +107,8 @@ function WorksCardMenu({
           }
         }}
         className={cn(
-          "inline-flex h-8 w-8 items-center justify-center rounded-xl border border-slate-200/90 bg-slate-50/80 text-muted transition-colors hover:bg-slate-100 hover:text-fg",
-          open && "bg-slate-100 text-fg ring-2 ring-purple-400/30",
+          "inline-flex h-8 w-8 items-center justify-center rounded-[2px] border border-line bg-soft text-muted transition-colors hover:border-fg/30 hover:text-fg",
+          open && "border-fg bg-card text-fg",
         )}
       >
         <PixelIcon name="more" className="h-4 w-4" />
@@ -83,8 +119,19 @@ function WorksCardMenu({
           role="menu"
           aria-labelledby={triggerId}
           onKeyDown={(event) => handleMenuKeyDown(event, { onClose: closeAndFocus })}
-          className="absolute right-0 bottom-full z-50 mb-1 min-w-36 rounded-xl border border-slate-200/90 bg-card p-1 shadow-lg ring-1 ring-black/5"
+          className="absolute right-0 bottom-full z-50 mb-1 min-w-36 rounded-[2px] border border-line bg-card p-1 shadow-lg"
         >
+          <button
+            type="button"
+            role="menuitem"
+            tabIndex={-1}
+            disabled={archiving}
+            onClick={() => void handleArchive()}
+            className="flex w-full items-center gap-2 px-3 py-2 text-left text-[13px] text-fg transition-colors hover:bg-soft disabled:opacity-50"
+          >
+            <Archive width={15} height={15} className="shrink-0 text-muted" aria-hidden="true" />
+            <span>{socialCopy.feeds.archiveAction[lang]}</span>
+          </button>
           <WorksDeleteButton
             lang={lang}
             creationId={creationId}
@@ -129,52 +176,52 @@ export function WorksRow({
 
   return (
     <li className="min-w-0">
-      <article className="group flex h-full min-w-0 flex-col rounded-2xl border border-slate-200/80 bg-card p-3 shadow-sm transition-all hover:border-slate-300 hover:shadow-md">
-        {/* Thumbnail with rounded corners and subtle overlay */}
+      <article className="group flex h-full min-w-0 flex-col rounded-none border border-line bg-card transition-colors hover:border-fg/40">
+        {/* Thumbnail */}
         <Link
           href={openHref}
-          className="relative block aspect-square w-full overflow-hidden rounded-xl bg-slate-50"
+          className="relative block aspect-square w-full overflow-hidden border-b border-line bg-soft"
           aria-label={title}
           tabIndex={-1}
         >
           {cover ? (
             <PixelArt src={cover} alt="" variant="thumb" framed={false} />
           ) : (
-            <div className="pixel-thumb bg-slate-100" />
+            <div className="pixel-thumb bg-soft" />
           )}
           <div className="absolute inset-0 bg-fg/0 transition-colors group-hover:bg-fg/5" />
         </Link>
 
         {/* Card Details */}
-        <div className="mt-3 flex min-w-0 flex-1 flex-col">
+        <div className="flex min-w-0 flex-1 flex-col p-3">
           <Link href={openHref} className="block min-w-0">
-            <p className="truncate text-[14px] font-semibold leading-snug text-fg transition-colors hover:text-[#6355d8] sm:text-[15px]">
+            <p className="truncate text-[14px] font-semibold leading-snug text-fg transition-colors hover:text-[#ff4f00] sm:text-[15px]">
               {title}
             </p>
           </Link>
 
           {/* Date & Status Metadata */}
-          <div className="mt-1 flex items-center gap-1.5 text-[12px] text-muted">
+          <div className="mt-1 flex items-center gap-1.5 text-[12px] tabular-nums text-muted">
             <Calendar className="h-3.5 w-3.5 shrink-0 text-muted" aria-hidden="true" />
             <span className="min-w-0 truncate">
               {statusLabel} · {formatDayMonthYear(item.updated_at, lang)}
             </span>
           </div>
 
-          {/* Action Button Row matching Screenshot */}
+          {/* Action Button Row */}
           <div className="mt-4 flex flex-wrap items-center gap-1.5 pt-1">
             {primary === "view" ? (
               <>
                 <Link
                   href={href(lang, `/creation/${item.id}`)}
-                  className="inline-flex h-8 min-w-0 flex-1 basis-24 items-center justify-center gap-1.5 rounded-xl border border-slate-200/90 bg-slate-50/80 px-2.5 text-[12px] font-medium text-slate-700 transition-colors hover:bg-slate-100 hover:text-fg sm:flex-none sm:px-3"
+                  className="inline-flex h-8 min-w-0 flex-1 basis-24 items-center justify-center gap-1.5 rounded-[2px] border border-line bg-soft px-2.5 text-[12px] font-medium text-fg transition-colors hover:border-fg/30 hover:bg-card sm:flex-none sm:px-3"
                 >
                   <PixelIcon name="eye" className="h-3.5 w-3.5 shrink-0 text-muted" />
                   <span className="truncate">{copy.worksView[lang]}</span>
                 </Link>
                 <Link
                   href={href(lang, `/create/${item.id}`)}
-                  className="inline-flex h-8 min-w-0 flex-1 basis-24 items-center justify-center gap-1.5 rounded-xl border border-slate-200/90 bg-slate-50/80 px-2.5 text-[12px] font-medium text-slate-700 transition-colors hover:bg-slate-100 hover:text-fg sm:flex-none sm:px-3"
+                  className="inline-flex h-8 min-w-0 flex-1 basis-24 items-center justify-center gap-1.5 rounded-[2px] border border-line bg-soft px-2.5 text-[12px] font-medium text-fg transition-colors hover:border-fg/30 hover:bg-card sm:flex-none sm:px-3"
                 >
                   <PixelIcon name="pencil" className="h-3.5 w-3.5 shrink-0 text-muted" />
                   <span className="truncate">{copy.createEdit[lang]}</span>
@@ -183,7 +230,7 @@ export function WorksRow({
             ) : (
               <Link
                 href={href(lang, `/create/${item.id}`)}
-                className="inline-flex h-8 min-w-0 flex-1 basis-24 items-center justify-center gap-1.5 rounded-xl bg-[#6355d8] px-3 text-[12px] font-medium text-white shadow-sm transition-colors hover:bg-[#5245c7] sm:flex-none sm:px-3.5"
+                className="inline-flex h-8 min-w-0 flex-1 basis-24 items-center justify-center gap-1.5 rounded-[2px] bg-[#ff4f00] px-3 text-[12px] font-medium text-white transition-colors hover:bg-[#e04400] sm:flex-none sm:px-3.5"
               >
                 <PixelIcon name="pencil" className="h-3.5 w-3.5 shrink-0" />
                 <span className="truncate">{copy.worksContinue[lang]}</span>
@@ -196,6 +243,7 @@ export function WorksRow({
                 creationId={item.id}
                 title={title}
                 published={isPublished}
+                onArchived={() => setRemoved(true)}
                 onDeleted={() => setRemoved(true)}
               />
             </div>

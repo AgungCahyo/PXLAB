@@ -25,6 +25,7 @@ import { CreationTagInput } from "@/components/creations/CreationTagInput"
 import { DeleteCreationCopy } from "@/components/creations/DeleteCreationCopy"
 import { PixelArt } from "@/components/creations/PixelArt"
 import { PixelCat } from "@/components/brand/PixelCat"
+import { PxlbMark } from "@/components/layout/PxlbMark"
 import { StudioContextMenu } from "@/components/creations/StudioContextMenu"
 import { StudioInspector } from "@/components/creations/StudioInspector"
 import { StudioMinimap, type StudioMinimapHandle } from "@/components/creations/StudioMinimap"
@@ -1020,7 +1021,7 @@ export function PlaygroundForm({
                 width: Math.max(1, Math.round(Number(event.target.value) || 1)),
               })
             }
-            className="studio-control w-14 rounded-md border border-white/10 bg-[#231f35] px-1 text-center text-[12px] text-[#e8e3f8]"
+            className="studio-control w-14 rounded-[2px] border border-[var(--studio-border-color)] bg-[var(--studio-surface-2)] px-1 text-center text-[12px] text-[var(--studio-fg)]"
           />
           <input
             type="number"
@@ -1034,7 +1035,7 @@ export function PlaygroundForm({
                 height: Math.max(1, Math.round(Number(event.target.value) || 1)),
               })
             }
-            className="studio-control w-14 rounded-md border border-white/10 bg-[#231f35] px-1 text-center text-[12px] text-[#e8e3f8]"
+            className="studio-control w-14 rounded-[2px] border border-[var(--studio-border-color)] bg-[var(--studio-surface-2)] px-1 text-center text-[12px] text-[var(--studio-fg)]"
           />
         </>
       )}
@@ -1084,8 +1085,8 @@ export function PlaygroundForm({
                 if (tool === "eraser") handleToolChange("pencil", "programmatic")
               }}
               className={cn(
-                "pixel-swatch studio-hit rounded-md border",
-                color === swatch ? "border-white ring-2 ring-[#8b5cf6]" : "border-white/15",
+                "pixel-swatch studio-hit rounded-[2px] border",
+                color === swatch ? "border-white ring-2 ring-[var(--studio-accent)]" : "border-white/15",
               )}
               style={{ backgroundColor: swatch }}
             />
@@ -1474,22 +1475,8 @@ export function PlaygroundForm({
         </button>
 
         {/* PXLB Logo mark */}
-        <div
-          className="hidden shrink-0 items-center justify-center sm:flex"
-          style={{
-            width: "1.75rem", height: "1.75rem",
-            background: "var(--studio-accent-soft, rgba(139,92,246,0.15))",
-            borderRadius: "0.375rem",
-            border: "1px solid var(--studio-border-active, rgba(139,92,246,0.4))",
-          }}
-          aria-hidden="true"
-        >
-          <span
-            className="font-pixel text-[0.5rem] font-medium leading-none"
-            style={{ color: "var(--studio-accent-light, #a78bfa)" }}
-          >
-            PX
-          </span>
+        <div className="hidden shrink-0 items-center justify-center sm:flex" aria-hidden="true">
+          <PxlbMark className="h-5 w-5" />
         </div>
 
         {/* Document title + status */}
@@ -1869,7 +1856,7 @@ export function PlaygroundForm({
               ) : null}
               {tool === "fill" || tool === "selectContiguous" || tool === "selectColor" ? (
                 <div className="flex w-full items-center gap-2">
-                  <label className="shrink-0 text-[12px] font-medium text-[#e8e3f8]/80" htmlFor={fillToleranceId}>
+                  <label className="shrink-0 text-[12px] font-medium text-[var(--studio-fg)]/80" htmlFor={fillToleranceId}>
                     {tool === "fill" ? copy.pixelFillTolerance[lang] : copy.pixelSelectTolerance[lang]}
                   </label>
                   <input
@@ -1881,14 +1868,14 @@ export function PlaygroundForm({
                     value={fillTolerance}
                     aria-label={tool === "fill" ? copy.pixelFillTolerance[lang] : copy.pixelSelectTolerance[lang]}
                     onChange={(event) => setFillTolerance(clampFillTolerance(Number(event.target.value)))}
-                    className="min-w-0 flex-1 accent-[#8b5cf6]"
+                    className="min-w-0 flex-1 accent-[var(--studio-accent)]"
                   />
-                  <span className="w-8 text-right text-[12px] tabular-nums text-[#e8e3f8]">{fillTolerance}</span>
+                  <span className="w-8 text-right text-[12px] tabular-nums text-[var(--studio-fg)]">{fillTolerance}</span>
                 </div>
               ) : null}
               {tool === "fill" ? <div className="w-full">{fillPatternPanel}</div> : null}
               {tool === "selectPolygon" ? (
-                <p className="w-full text-[12px] leading-relaxed text-[#e8e3f8]/50">{copy.pixelSelectPolygonHint[lang]}</p>
+                <p className="w-full text-[12px] leading-relaxed text-[var(--studio-fg-muted)]">{copy.pixelSelectPolygonHint[lang]}</p>
               ) : null}
               {tool === "select" ? (
                 <div className="flex flex-wrap gap-1.5" role="group" aria-label={copy.pixelSelectShape[lang]}>
@@ -2087,7 +2074,7 @@ export function PlaygroundForm({
         <div className="grid gap-4">
           <button
             type="button"
-            className="studio-control inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-purple-600/50 bg-[#6355d8] px-3 text-[14px] font-medium text-white shadow-sm shadow-purple-500/15 transition-colors hover:bg-[#5245c7] disabled:opacity-40"
+            className="studio-control inline-flex w-full items-center justify-center gap-2 rounded-[2px] border border-[#ff4f00] bg-[#ff4f00] px-3 text-[14px] font-medium text-white transition-colors hover:border-[#e04400] hover:bg-[#e04400] disabled:opacity-40"
             disabled={pending || leaving}
             aria-busy={(pending && busyIntent === "publish") || undefined}
             aria-label={
@@ -2108,7 +2095,7 @@ export function PlaygroundForm({
             <div className="grid grid-cols-4 gap-1.5 sm:gap-2" role="toolbar" aria-label={copy.pixelViewControls[lang]}>
               <button
                 type="button"
-                className="studio-hit rounded-xl border border-slate-200 bg-slate-50 text-fg disabled:opacity-40"
+                className="studio-hit rounded-xl border border-line bg-soft text-fg disabled:opacity-40"
                 disabled={pending}
                 aria-label={preview ? copy.createEdit[lang] : copy.createPreview[lang]}
                 title={preview ? copy.createEdit[lang] : copy.createPreview[lang]}
@@ -2121,7 +2108,7 @@ export function PlaygroundForm({
               </button>
               <button
                 type="button"
-                className="studio-hit rounded-xl border border-slate-200 bg-slate-50 text-fg"
+                className="studio-hit rounded-xl border border-line bg-soft text-fg"
                 aria-label={copy.createDetailsMenu[lang]}
                 title={copy.createDetailsMenu[lang]}
                 onClick={() => {
@@ -2133,7 +2120,7 @@ export function PlaygroundForm({
               </button>
               <button
                 type="button"
-                className="studio-hit rounded-xl border border-slate-200 bg-slate-50 text-fg"
+                className="studio-hit rounded-xl border border-line bg-soft text-fg"
                 aria-label={copy.pixelPaletteManage[lang]}
                 title={copy.pixelPaletteManage[lang]}
                 onClick={() => {
@@ -2145,7 +2132,7 @@ export function PlaygroundForm({
               </button>
               <button
                 type="button"
-                className="studio-hit rounded-xl border border-slate-200 bg-slate-50 text-fg disabled:opacity-40"
+                className="studio-hit rounded-xl border border-line bg-soft text-fg disabled:opacity-40"
                 aria-label={copy.pixelImport[lang]}
                 title={copy.pixelImport[lang]}
                 disabled={!canAddLayer(layers)}
@@ -2161,7 +2148,7 @@ export function PlaygroundForm({
             <div className="grid grid-cols-4 gap-1.5 sm:gap-2" role="toolbar" aria-label={copy.pixelCanvasSize[lang]}>
               <button
                 type="button"
-                className="studio-hit rounded-xl border border-slate-200 bg-slate-50 text-fg"
+                className="studio-hit rounded-xl border border-line bg-soft text-fg"
                 aria-label={copy.pixelFlipH[lang]}
                 title={copy.pixelFlipH[lang]}
                 onClick={() => {
@@ -2173,7 +2160,7 @@ export function PlaygroundForm({
               </button>
               <button
                 type="button"
-                className="studio-hit rounded-xl border border-slate-200 bg-slate-50 text-fg"
+                className="studio-hit rounded-xl border border-line bg-soft text-fg"
                 aria-label={copy.pixelFlipV[lang]}
                 title={copy.pixelFlipV[lang]}
                 onClick={() => {
@@ -2185,7 +2172,7 @@ export function PlaygroundForm({
               </button>
               <button
                 type="button"
-                className="studio-hit rounded-xl border border-slate-200 bg-slate-50 text-fg"
+                className="studio-hit rounded-xl border border-line bg-soft text-fg"
                 aria-label={copy.pixelRotate90[lang]}
                 title={copy.pixelRotate90[lang]}
                 onClick={() => {
@@ -2201,7 +2188,7 @@ export function PlaygroundForm({
               </button>
               <button
                 type="button"
-                className="studio-hit rounded-xl border border-slate-200 bg-slate-50 text-fg"
+                className="studio-hit rounded-xl border border-line bg-soft text-fg"
                 aria-label={copy.pixelClearCanvas[lang]}
                 title={copy.pixelClearCanvas[lang]}
                 onClick={() => {
@@ -2223,7 +2210,7 @@ export function PlaygroundForm({
               {dirty || metadataDirty ? (
                 <button
                   type="button"
-                  className="studio-hit rounded-xl border border-slate-200 bg-slate-50 text-fg disabled:opacity-40"
+                  className="studio-hit rounded-xl border border-line bg-soft text-fg disabled:opacity-40"
                   disabled={pending || leaving}
                   aria-label={copy.pixelDiscard[lang]}
                   title={copy.pixelDiscard[lang]}
@@ -2238,7 +2225,7 @@ export function PlaygroundForm({
               {published ? (
                 <button
                   type="button"
-                  className="studio-hit rounded-xl border border-slate-200 bg-slate-50 text-fg disabled:opacity-40"
+                  className="studio-hit rounded-xl border border-line bg-soft text-fg disabled:opacity-40"
                   disabled={pending}
                   aria-busy={(pending && busyIntent === "unpublish") || undefined}
                   aria-label={
@@ -2262,7 +2249,7 @@ export function PlaygroundForm({
               {published ? (
                 <a
                   href={href(lang, `/creation/${creation.id}`)}
-                  className="studio-hit rounded-xl border border-slate-200 bg-slate-50 text-fg"
+                  className="studio-hit rounded-xl border border-line bg-soft text-fg"
                   aria-label={copy.createViewPublic[lang]}
                   title={copy.createViewPublic[lang]}
                 >
@@ -2271,7 +2258,7 @@ export function PlaygroundForm({
               ) : null}
               <button
                 type="button"
-                className="studio-hit rounded-xl border border-slate-200 bg-slate-50 !text-brick"
+                className="studio-hit rounded-xl border border-line bg-soft !text-brick"
                 aria-label={copy.createDelete[lang]}
                 title={copy.createDelete[lang]}
                 onClick={() => {
@@ -2285,7 +2272,7 @@ export function PlaygroundForm({
           </div>
           <button
             type="button"
-            className="studio-control inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-3 text-[14px] font-medium text-fg transition-colors hover:bg-slate-100"
+            className="studio-control inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-line bg-soft px-3 text-[14px] font-medium text-fg transition-colors hover:bg-card"
             onClick={() => {
               setMoreOpen(false)
               setTransformOpen(true)
@@ -2296,7 +2283,7 @@ export function PlaygroundForm({
           </button>
           <button
             type="button"
-            className="studio-control inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-3 text-[14px] font-medium text-fg transition-colors hover:bg-slate-100"
+            className="studio-control inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-line bg-soft px-3 text-[14px] font-medium text-fg transition-colors hover:bg-card"
             onClick={() => {
               setMoreOpen(false)
               setExportOpen(true)
@@ -2450,7 +2437,7 @@ export function PlaygroundForm({
                 captionRef.current = next
                 touchMetadata({ caption: next })
               }}
-              className="w-full resize-y rounded-2xl border border-slate-200 bg-slate-50/70 px-3 py-2 text-[14px] leading-snug text-fg outline-none placeholder:text-muted focus:border-[#6355d8] focus:bg-card"
+              className="w-full resize-y rounded-2xl border border-line bg-soft/70 px-3 py-2 text-[14px] leading-snug text-fg outline-none placeholder:text-muted focus:border-accent focus:bg-card"
             />
             <span className="text-[13px] text-muted">{copy.createCaptionHint[lang]}</span>
           </label>
@@ -2503,7 +2490,7 @@ export function PlaygroundForm({
             setPublishName(event.target.value)
             setNameError(false)
           }}
-          className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50/70 px-3 py-2 text-[15px] outline-none focus:border-[#6355d8] focus:bg-card"
+          className="mt-2 w-full rounded-2xl border border-line bg-soft/70 px-3 py-2 text-[15px] text-fg outline-none placeholder:text-muted focus:border-accent focus:bg-card"
         />
         {nameError ? (
           <p className="mt-2 text-[13px] text-brick">{copy.errors.title_required[lang]}</p>
@@ -2522,7 +2509,7 @@ export function PlaygroundForm({
               captionRef.current = next
               touchMetadata({ caption: next })
             }}
-            className="w-full resize-y rounded-2xl border border-slate-200 bg-slate-50/70 px-3 py-2 text-[14px] outline-none placeholder:text-muted focus:border-[#6355d8] focus:bg-card"
+            className="w-full resize-y rounded-2xl border border-line bg-soft/70 px-3 py-2 text-[14px] text-fg outline-none placeholder:text-muted focus:border-accent focus:bg-card"
           />
         </label>
         <div className="mt-4">
@@ -2589,7 +2576,7 @@ export function PlaygroundForm({
         title={copy.worksPublishDoneTitle[lang]}
         closeLabel={copy.closeMenu[lang]}
       >
-        <div className="mb-3 flex items-center gap-3 rounded-2xl border border-purple-200/70 bg-purple-50/60 p-3">
+        <div className="mb-3 flex items-center gap-3 rounded-2xl border border-accent/30 bg-primary-soft p-3">
           <PixelCat variant="celebrating" size="md" animated="bounce" />
           <p className="text-[14px] leading-relaxed text-fg">{copy.worksPublishDoneBody[lang]}</p>
         </div>

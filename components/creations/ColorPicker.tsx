@@ -424,7 +424,7 @@ export function ColorPicker({
                 }}
                 className={cn(
                   "inline-flex h-11 w-11 shrink-0 items-center justify-center border-[3px]",
-                  favorited ? "border-fg bg-coin text-fg" : "border-earth bg-card text-fg",
+                  favorited ? "border-fg bg-coin text-[#1e1b4b]" : "border-earth bg-card text-fg",
                 )}
               >
                 <PixelIcon name="star" />
@@ -538,7 +538,7 @@ export function ColorPicker({
                           <div className="flex items-start justify-between gap-2">
                             <span className="min-w-0 truncate text-[13px] font-medium text-fg">{name}</span>
                             {active ? (
-                              <span className="shrink-0 border-[2px] border-fg bg-coin px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-fg">
+                              <span className="shrink-0 border-[2px] border-fg bg-coin px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-[#1e1b4b]">
                                 {copy.pixelPaletteActive[lang]}
                               </span>
                             ) : null}

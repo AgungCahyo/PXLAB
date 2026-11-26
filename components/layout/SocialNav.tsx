@@ -4,14 +4,12 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { useEffect, useRef, useState, type ComponentType, type ReactNode, type SVGProps } from "react"
 import {
-  Analytics,
   Archive,
   Bell,
   Bookmark,
   Folder,
   Heart,
   Home,
-  Message,
   Pencil,
   Plus,
   Search,
@@ -98,21 +96,23 @@ function useItems(lang: Lang, member: NavMember): Item[] {
       group: "main",
     },
     {
-      key: "messages",
-      href: gated("/responses"),
-      label: t.messages[lang],
-      Icon: Message,
-      active: isActive("/responses"),
-      badge: Boolean(member?.hasResponses),
-      hint: member?.hasResponses ? t.notificationsUnread[lang] : t.notifications[lang],
-      group: "main",
-    },
-    {
       key: "activity",
       href: gated("/activity"),
       label: t.activity[lang],
       Icon: Bell,
       active: isActive("/activity"),
+      badge: Boolean(member?.hasResponses),
+      hint: member?.hasResponses ? t.notificationsUnread[lang] : t.activity[lang],
+      group: "main",
+    },
+    {
+      key: "works",
+      href: gated("/dashboard"),
+      label: t.works[lang],
+      Icon: Folder,
+      active: isActive("/dashboard"),
+      memberOnly: true,
+      hint: t.dashboardHint[lang],
       group: "main",
     },
     {
@@ -122,14 +122,6 @@ function useItems(lang: Lang, member: NavMember): Item[] {
       Icon: User,
       active: member ? isActive(profilePath) : false,
       avatar: true,
-      group: "main",
-    },
-    {
-      key: "insights",
-      href: gated("/insights"),
-      label: t.insights[lang],
-      Icon: Analytics,
-      active: isActive("/insights"),
       group: "main",
     },
   )
@@ -313,13 +305,13 @@ export function SocialSidebar({ lang, member }: { lang: Lang; member: NavMember 
     const ItemIcon = item.Icon
 
     const className = cn(
-      "relative flex w-full items-center gap-3 rounded-xl px-3 text-[13px] font-medium transition-colors",
+      "relative flex w-full items-center gap-3 rounded-[2px] px-3 text-[13px] font-medium transition-colors",
       item.prominent
-        ? "min-h-12 bg-[#6355d8] font-semibold text-white shadow-sm hover:bg-[#5144c4]"
+        ? "min-h-12 bg-[#ff4f00] font-semibold text-white hover:bg-[#e04400]"
         : item.secondary
-          ? "min-h-10 text-slate-600 hover:bg-slate-100 hover:text-fg"
-          : "min-h-11 text-slate-600 hover:bg-slate-100 hover:text-fg",
-      item.active && !item.prominent && "bg-purple-50 font-semibold text-[#6355d8]",
+          ? "min-h-10 text-muted hover:bg-soft hover:text-fg"
+          : "min-h-11 text-muted hover:bg-soft hover:text-fg",
+      item.active && !item.prominent && "bg-soft font-semibold text-fg",
     )
 
     const body = (
@@ -333,7 +325,7 @@ export function SocialSidebar({ lang, member }: { lang: Lang; member: NavMember 
             size="xs"
             className={cn(
               "shrink-0 border",
-              item.active ? "border-[#6355d8] ring-2 ring-purple-200" : "border-purple-200",
+              item.active ? "border-[#ff4f00] ring-1 ring-[#ff4f00]" : "border-line",
             )}
           />
         ) : (
@@ -346,8 +338,8 @@ export function SocialSidebar({ lang, member }: { lang: Lang; member: NavMember 
               item.prominent
                 ? "text-white"
                 : item.active
-                  ? "text-[#6355d8]"
-                  : "text-slate-500",
+                  ? "text-[#ff4f00]"
+                  : "text-muted",
             )}
           />
         )}
@@ -409,7 +401,7 @@ export function SocialSidebar({ lang, member }: { lang: Lang; member: NavMember 
           ;(document.activeElement as HTMLElement)?.blur()
         }
       }}
-      className="social-sidebar group/rail absolute inset-y-0 left-0 z-50 flex h-dvh w-[72px] flex-col bg-card px-3 pb-4 pt-4 shadow-[1px_0_0_0_rgba(15,23,42,0.04)] transition-[width] duration-200 ease-out hover:w-[248px] hover:shadow-xl hover:border-r hover:border-slate-200/80 focus-within:w-[248px] focus-within:shadow-xl focus-within:border-r focus-within:border-slate-200/80"
+      className="social-sidebar group/rail absolute inset-y-0 left-0 z-50 flex h-dvh w-[72px] flex-col bg-card px-3 pb-4 pt-4 transition-[width] duration-200 ease-out hover:w-[248px] hover:border-r hover:border-line hover:shadow-lg focus-within:w-[248px] focus-within:border-r focus-within:border-line focus-within:shadow-lg"
     >
       {/* 1. Header / App Identity */}
       <div className="shrink-0 mb-1">
@@ -470,16 +462,16 @@ export function SocialSidebar({ lang, member }: { lang: Lang; member: NavMember 
               <div
                 role="menu"
                 aria-label={t.settings[lang]}
-                className="absolute left-[calc(100%+8px)] bottom-0 z-50 w-60 rounded-2xl border border-slate-200/90 bg-card p-2 shadow-2xl animate-in fade-in zoom-in-95 duration-100"
+                className="absolute left-[calc(100%+8px)] bottom-0 z-50 w-60 rounded-[2px] border border-line bg-card p-1.5 shadow-lg animate-in fade-in zoom-in-95 duration-100"
               >
-                <div className="mb-1 flex items-center gap-2.5 border-b border-slate-100 px-3 py-2.5">
+                <div className="mb-1 flex items-center gap-2.5 border-b border-line px-3 py-2.5">
                   <ProfileAvatar
                     src={member.avatarUrl}
                     avatarConfig={member.avatarConfig}
                     userId={member.id}
                     alt=""
                     size="xs"
-                    className="shrink-0 border border-purple-200"
+                    className="shrink-0 border border-line"
                   />
                   <div className="min-w-0">
                     <p className="truncate text-[13px] font-semibold text-fg">
@@ -503,9 +495,9 @@ export function SocialSidebar({ lang, member }: { lang: Lang; member: NavMember 
                         setAccountMenuOpen(false)
                         handleItemClick()
                       }}
-                      className="flex min-h-10 items-center gap-2.5 rounded-xl px-3 text-[13px] font-medium text-slate-700 transition-colors hover:bg-slate-100 hover:text-fg"
+                      className="flex min-h-10 items-center gap-2.5 rounded-[2px] px-3 text-[13px] font-medium text-fg transition-colors hover:bg-soft"
                     >
-                      <ActionIcon width={18} height={18} className="shrink-0 text-slate-500" />
+                      <ActionIcon width={18} height={18} className="shrink-0 text-muted" />
                       <span className="truncate">{action.label}</span>
                     </Link>
                   )
@@ -519,21 +511,21 @@ export function SocialSidebar({ lang, member }: { lang: Lang; member: NavMember 
                       setAccountMenuOpen(false)
                       handleItemClick()
                     }}
-                    className="flex min-h-10 items-center gap-2.5 rounded-xl px-3 text-[13px] font-medium text-slate-700 transition-colors hover:bg-slate-100 hover:text-fg"
+                    className="flex min-h-10 items-center gap-2.5 rounded-[2px] px-3 text-[13px] font-medium text-fg transition-colors hover:bg-soft"
                   >
-                    <Trophy width={18} height={18} className="shrink-0 text-slate-500" />
+                    <Trophy width={18} height={18} className="shrink-0 text-muted" />
                     <span className="truncate">{copy.nav.admin[lang]}</span>
                   </Link>
                 ) : null}
 
-                <div className="my-1 border-t border-slate-100" />
+                <div className="my-1 border-t border-line" />
 
                 <form action={logoutAction} className="w-full">
                   <input type="hidden" name="lang" value={lang} />
                   <button
                     type="submit"
                     role="menuitem"
-                    className="flex min-h-10 w-full items-center gap-2.5 rounded-xl px-3 text-[13px] font-medium text-rose-600 transition-colors hover:bg-rose-50"
+                    className="flex min-h-10 w-full items-center gap-2.5 rounded-[2px] px-3 text-[13px] font-medium text-brick transition-colors hover:bg-brick/10"
                   >
                     <svg
                       width="18"
@@ -567,7 +559,7 @@ export function SocialSidebar({ lang, member }: { lang: Lang; member: NavMember 
   )
 }
 
-const TAB_ITEM_ORDER = ["home", "explore", "create", "messages", "profile"] as const
+const TAB_ITEM_ORDER = ["home", "explore", "create", "activity", "profile"] as const
 
 /** Mobile bottom bar matching modern rounded design (5 evenly distributed tabs with prominent center action) */
 export function SocialTabBar({ lang, member }: { lang: Lang; member: NavMember }) {
@@ -580,7 +572,7 @@ export function SocialTabBar({ lang, member }: { lang: Lang; member: NavMember }
   return (
     <nav
       aria-label={t.primaryAria[lang]}
-      className="app-tabbar fixed inset-x-0 bottom-0 z-40 border-t border-slate-200/80 bg-card/95 backdrop-blur-md pb-[env(safe-area-inset-bottom,0px)] md:hidden"
+      className="app-tabbar fixed inset-x-0 bottom-0 z-40 border-t border-line bg-card/95 backdrop-blur-sm pb-[env(safe-area-inset-bottom,0px)] md:hidden"
     >
       <ul className="grid grid-cols-5">
         {items.map(({ key, href: to, label, Icon, active, badge, avatar, modal, staticItem, soon }) => {
@@ -590,19 +582,19 @@ export function SocialTabBar({ lang, member }: { lang: Lang; member: NavMember }
           const className = cn(
             "relative flex min-h-14 w-full flex-col items-center justify-center gap-1 px-1 transition-colors",
             isCreate
-              ? "group text-[#6355d8]"
+              ? "group text-[#ff4f00]"
               : active
-                ? "font-semibold text-[#6355d8]"
-                : "text-slate-500 hover:text-slate-900",
+                ? "font-semibold text-fg"
+                : "text-muted hover:text-fg",
           )
           const fillClass = cn(className, "w-full")
 
           const body = isCreate ? (
             <span className="flex flex-col items-center justify-center gap-0.5">
-              <span className="flex h-8 w-11 items-center justify-center rounded-xl bg-[#6355d8] text-white shadow-sm transition-transform active:scale-95 group-hover:bg-[#5245c7]">
+              <span className="flex h-8 w-11 items-center justify-center rounded-[2px] bg-[#ff4f00] text-white transition-transform active:scale-95 group-hover:bg-[#e04400]">
                 <Plus width={20} height={20} aria-hidden="true" className="text-white" />
               </span>
-              <span className="text-[10px] font-semibold text-[#6355d8] tracking-tight">{label}</span>
+              <span className="text-[10px] font-semibold tracking-tight text-[#ff4f00]">{label}</span>
             </span>
           ) : (
             <>
@@ -615,7 +607,7 @@ export function SocialTabBar({ lang, member }: { lang: Lang; member: NavMember }
                   size="xs"
                   className={cn(
                     "transition-all",
-                    active ? "ring-2 ring-[#6355d8] border-[#6355d8]" : "border-slate-200",
+                    active ? "border-[#ff4f00] ring-1 ring-[#ff4f00]" : "border-line",
                   )}
                 />
               ) : (
@@ -623,12 +615,12 @@ export function SocialTabBar({ lang, member }: { lang: Lang; member: NavMember }
                   width={20}
                   height={20}
                   aria-hidden
-                  className={cn("transition-colors", active ? "text-[#6355d8]" : "text-slate-500")}
+                  className={cn("transition-colors", active ? "text-[#ff4f00]" : "text-muted")}
                 />
               )}
               <span className="max-w-full truncate text-[11px]">{label}</span>
               {badge ? (
-                <span className="absolute right-[calc(50%-1.15rem)] top-2 h-2 w-2 rounded-full bg-[#f43f5e]" />
+                <span className="absolute right-[calc(50%-1.15rem)] top-2 h-2 w-2 rounded-[1px] bg-[#ff4f00]" />
               ) : null}
             </>
           )

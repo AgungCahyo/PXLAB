@@ -3,7 +3,7 @@ import { ImageResponse } from "next/og"
 export const size = { width: 32, height: 32 }
 export const contentType = "image/png"
 
-/** PXLB favicon — four Classic Pixel Adventure blocks on Paper. */
+/** PXLB favicon — four PXLB pixel blocks on crisp white. */
 export default function Icon() {
   return new ImageResponse(
     (
@@ -14,7 +14,7 @@ export default function Icon() {
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          background: "#fffdf7",
+          background: "#ffffff",
         }}
       >
         <div
@@ -23,13 +23,13 @@ export default function Icon() {
             flexWrap: "wrap",
             width: 24,
             height: 24,
-            gap: 2,
+            gap: 4,
           }}
         >
-          <div style={{ width: 11, height: 11, background: "#59bceb" }} />
-          <div style={{ width: 11, height: 11, background: "#45a849" }} />
-          <div style={{ width: 11, height: 11, background: "#ffd447" }} />
-          <div style={{ width: 11, height: 11, background: "#e94b3c" }} />
+          <div style={{ width: 10, height: 10, background: "#ff4f00" }} />
+          <div style={{ width: 10, height: 10, background: "#15803d" }} />
+          <div style={{ width: 10, height: 10, background: "#d97706" }} />
+          <div style={{ width: 10, height: 10, background: "#e4002b" }} />
         </div>
       </div>
     ),

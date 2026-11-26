@@ -39,7 +39,7 @@ export function RemixStrip({
 
   return (
     <section
-      className="mt-8 border-t border-slate-200/80 pt-6"
+      className="mt-8 border-t border-line pt-6"
       aria-labelledby="remix-strip-heading"
     >
       <SectionHeader

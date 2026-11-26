@@ -57,7 +57,7 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
-  themeColor: "#fffdf7",
+  themeColor: "#ffffff",
 };
 
 export default async function LangLayout({

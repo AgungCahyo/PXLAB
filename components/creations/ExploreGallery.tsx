@@ -1,6 +1,5 @@
 import type { ReactNode } from "react"
 import Link from "next/link"
-import { PixelCatEmptyState } from "@/components/brand/PixelCatDecoration"
 import { ExploreSearch } from "@/components/creations/ExploreSearch"
 import { ExploreInfinite } from "@/components/social/ExploreInfinite"
 import { Pill, TabLink } from "@/components/social/Pill"
@@ -60,7 +59,7 @@ export function ExploreFilters({
   )
 
   return (
-    <div className="grid min-w-0 gap-3 rounded-3xl border border-slate-200/80 bg-card/80 p-3 shadow-sm backdrop-blur-sm sm:gap-4 sm:p-4">
+    <div className="grid min-w-0 gap-3 border-b border-line pb-4 sm:gap-4">
       {/* Search stays the single primary control in both contexts. */}
       <ExploreSearch key={q} lang={lang} category={category} q={q} feed={feed} scope={scope} />
 
@@ -68,7 +67,7 @@ export function ExploreFilters({
         <>
           {/* Search replaces the feed switch; never show both navigation systems. */}
           <nav aria-label={copy.searchScopeAria[lang]} className="-mx-1 min-w-0 px-1 sm:mx-0 sm:px-0">
-            <ul className="flex min-w-0 rounded-2xl bg-slate-100/80 p-1">
+            <ul className="flex min-w-0 border-b border-line">
               {scopeTabs.map((tab) => (
                 <li key={tab.id} className="min-w-0 flex-1">
                   <TabLink
@@ -109,7 +108,7 @@ export function ExploreFilters({
               </li>
             </ul>
           </nav>
-          <span className="h-5 w-px shrink-0 bg-slate-200" aria-hidden="true" />
+          <span className="h-5 w-px shrink-0 bg-line" aria-hidden="true" />
           {categoryNav}
         </div>
       )}
@@ -170,7 +169,7 @@ export function ExploreGallery({
       ) : items.length === 0 ? (
         showEmpty ? (
           <SocialEmptyState
-            className="px-4 py-10 rounded-3xl border border-dashed border-slate-200/80 bg-slate-50/40"
+            className="px-4 py-10 rounded-none border border-dashed border-line bg-soft"
             illustration={feed === "following" ? "looking" : q ? "confused" : "curious"}
             title={copy.exploreEmptyTitle[lang]}
             description={emptyDescription}

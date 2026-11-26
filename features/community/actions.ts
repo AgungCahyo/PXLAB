@@ -372,6 +372,8 @@ export async function toggleAppreciationAction(
     if (result.error) return { error: "invalid_input" }
     if (result.found === false) return { error: "not_found" }
     if (result.limited) return { error: "limit_reached" }
+    revalidatePath(href("id", "/liked"))
+    revalidatePath(href("en", "/liked"))
     return { ok: true, liked: result.liked ?? desired, count: result.count }
   }
   if (!isMissingInteractionRpc(error)) return { error: "invalid_input" }
@@ -397,6 +399,8 @@ export async function toggleAppreciationAction(
   }
 
   const summary = await getReactionSummary(creation.id, profile.id)
+  revalidatePath(href("id", "/liked"))
+  revalidatePath(href("en", "/liked"))
   return { ok: true, liked: summary.appreciated, count: summary.count }
 }
 

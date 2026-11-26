@@ -70,7 +70,7 @@ const sections: {
 function SettingsCard({ children, className }: { children: ReactNode; className?: string }) {
   return (
     <div
-      className={`overflow-hidden rounded-2xl border border-slate-200/80 bg-card shadow-sm ${className ?? ""}`}
+      className={`overflow-hidden rounded-none border border-line bg-card ${className ?? ""}`}
     >
       {children}
     </div>
@@ -89,7 +89,7 @@ function CardSection({
   separator?: boolean
 }) {
   return (
-    <div className={`px-5 py-5 sm:px-6 ${separator ? "border-t border-slate-100 first:border-t-0" : ""}`}>
+    <div className={`px-5 py-5 sm:px-6 ${separator ? "border-t border-line first:border-t-0" : ""}`}>
       {title ? (
         <div className="mb-4">
           <h3 className="text-[13px] font-semibold uppercase tracking-[0.1em] text-muted">
@@ -123,7 +123,7 @@ function SettingsRow({
   const inner = (
     <>
       {icon ? (
-        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-500">
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[2px] border border-line bg-soft text-muted">
           {icon}
         </span>
       ) : null}
@@ -143,7 +143,7 @@ function SettingsRow({
   )
 
   const cls =
-    "flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-colors hover:bg-slate-50 active:bg-slate-100"
+    "flex w-full items-center gap-3 rounded-[2px] px-3 py-2.5 text-left transition-colors hover:bg-soft"
 
   if (to) return <Link href={to} className={cls}>{inner}</Link>
   return <button type="button" onClick={onClick} className={cls}>{inner}</button>
@@ -164,15 +164,15 @@ function NavItem({
     <button
       type="button"
       onClick={onClick}
-      className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-[14px] font-medium transition-colors ${
+      className={`flex w-full items-center gap-3 rounded-[2px] px-3 py-2.5 text-left text-[14px] font-medium transition-colors ${
         active
-          ? "bg-[#6355d8]/8 text-[#6355d8]"
-          : "text-slate-600 hover:bg-slate-100 hover:text-fg"
+          ? "bg-soft font-semibold text-fg"
+          : "text-muted hover:bg-soft hover:text-fg"
       }`}
     >
       <span
-        className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl ${
-          active ? "bg-[#6355d8]/12 text-[#6355d8]" : "bg-slate-100 text-slate-500"
+        className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-[2px] ${
+          active ? "bg-[#ff4f00]/12 text-[#ff4f00]" : "bg-soft text-muted"
         }`}
       >
         {icon}
@@ -342,9 +342,9 @@ export function SettingsForm({ lang, profile }: { lang: Lang; profile: MemberPro
               <div className="space-y-1">
                 <a
                   href="#account-security"
-                  className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-colors hover:bg-slate-50"
+                  className="flex w-full items-center gap-3 rounded-[2px] px-3 py-2.5 text-left transition-colors hover:bg-soft"
                 >
-                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-500">
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[2px] border border-line bg-soft text-muted">
                     <Shield className="size-4" />
                   </span>
                   <span className="min-w-0 flex-1">
@@ -399,7 +399,7 @@ export function SettingsForm({ lang, profile }: { lang: Lang; profile: MemberPro
               </button>
             </div>
 
-            <div className="border-t border-slate-100 px-5 py-4 sm:px-6">
+            <div className="border-t border-line px-5 py-4 sm:px-6">
               <div className="space-y-1">
                 <SettingsRow
                   href={href(lang, "/profile/edit")}
@@ -448,9 +448,9 @@ export function SettingsForm({ lang, profile }: { lang: Lang; profile: MemberPro
               <div className="space-y-1">
                 <a
                   href="#account-security"
-                  className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-colors hover:bg-slate-50"
+                  className="flex w-full items-center gap-3 rounded-[2px] px-3 py-2.5 text-left transition-colors hover:bg-soft"
                 >
-                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-500">
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[2px] border border-line bg-soft text-muted">
                     <Shield className="size-4" />
                   </span>
                   <span className="min-w-0 flex-1">
@@ -468,7 +468,7 @@ export function SettingsForm({ lang, profile }: { lang: Lang; profile: MemberPro
               </div>
             </CardSection>
 
-            <div className="border-t border-slate-100 px-5 pb-5 sm:px-6">
+            <div className="border-t border-line px-5 pb-5 sm:px-6">
               <p className="mb-3 text-[13px] text-muted">{copy.settingsSignOutHint[lang]}</p>
               <LogoutButton lang={lang} />
             </div>
@@ -560,7 +560,7 @@ export function SettingsForm({ lang, profile }: { lang: Lang; profile: MemberPro
             <p className="text-[13px] leading-relaxed text-muted">
               {copy.settingsLanguageHint[lang]}
             </p>
-            <LanguageSwitch lang={lang} className="w-full rounded-xl" />
+            <LanguageSwitch lang={lang} className="w-full rounded-[2px]" />
           </div>
         ) : null}
 

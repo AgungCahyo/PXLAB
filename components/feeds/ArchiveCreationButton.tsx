@@ -1,6 +1,7 @@
 "use client"
 
 import { useCallback, useEffect, useRef, useState } from "react"
+import { useRouter } from "next/navigation"
 import { Archive } from "pixelarticons/react"
 
 import { useToast } from "@/components/social/Toast"
@@ -15,13 +16,18 @@ export function ArchiveCreationButton({
   creationId,
   initialArchived = false,
   compact = false,
+  refreshOnChange = false,
+  className,
 }: {
   lang: Lang
   creationId: string
   initialArchived?: boolean
   compact?: boolean
+  refreshOnChange?: boolean
+  className?: string
 }) {
   const t = socialCopy.feeds
+  const router = useRouter()
   const toast = useToast()
   const [archived, setArchived] = useState(initialArchived)
   const [errorCode, setErrorCode] = useState<"migration_required" | "unavailable" | null>(null)
@@ -63,6 +69,7 @@ export function ArchiveCreationButton({
           confirmedRef.current = state
           setArchived(state)
           setErrorCode(null)
+          if (refreshOnChange) router.refresh()
         },
         onDesired: (state) => {
           desiredRef.current = state
@@ -80,7 +87,7 @@ export function ArchiveCreationButton({
     } finally {
       syncingRef.current = false
     }
-  }, [creationId, lang, t.actionError, t.migrationError, toast])
+  }, [creationId, lang, refreshOnChange, router, t.actionError, t.migrationError, toast])
 
   function onToggle() {
     const next = !desiredRef.current
@@ -93,7 +100,7 @@ export function ArchiveCreationButton({
   const label = archived ? t.unarchiveAction[lang] : t.archiveAction[lang]
 
   return (
-    <div className={cn("inline-flex flex-col", compact && "items-start")}>
+    <div className={cn("inline-flex flex-col", compact && "items-start", className)}>
       <button
         type="button"
         onClick={onToggle}
@@ -101,11 +108,12 @@ export function ArchiveCreationButton({
         aria-label={label}
         title={label}
         className={cn(
-          "inline-flex items-center gap-1.5 rounded-xl border text-[13px] font-medium transition-colors",
+          "inline-flex items-center gap-1.5 rounded-[2px] border text-[13px] font-medium transition-colors",
           archived
-            ? "border-purple-200 bg-purple-50 text-[#6355d8]"
-            : "border-slate-200 bg-card text-slate-600 hover:bg-slate-50 hover:text-fg",
+            ? "border-fg bg-fg text-bg"
+            : "border-line bg-card text-muted hover:bg-soft hover:text-fg",
           compact ? "min-h-9 px-2.5" : "min-h-11 px-2.5",
+          className,
         )}
       >
         <Archive width={compact ? 18 : 20} height={compact ? 18 : 20} aria-hidden="true" />

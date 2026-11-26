@@ -9,17 +9,17 @@ export const recommendationStripItemClass = "w-[8.5rem] shrink-0 sm:w-[9.5rem] l
 export function RecommendationSkeleton({ label }: { label?: string }) {
   return (
     <div
-      className="mt-8 border-t border-slate-200/80 pt-6"
+      className="mt-8 border-t border-line pt-6"
       role="status"
       aria-busy="true"
       aria-label={label ?? "Loading"}
     >
-      <div className="h-5 w-36 rounded bg-slate-100" />
+      <div className="h-5 w-36 bg-soft" />
       <div className={recommendationStripListClass}>
         {Array.from({ length: 6 }, (_, index) => (
           <div key={index} className={recommendationStripItemClass}>
-            <div className="aspect-square rounded-2xl bg-slate-100" />
-            <div className="mt-2 h-3 w-16 rounded bg-slate-100" />
+            <div className="aspect-square border border-line bg-soft" />
+            <div className="mt-2 h-3 w-16 bg-soft" />
           </div>
         ))}
       </div>

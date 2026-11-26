@@ -200,7 +200,7 @@ export function CreationMoreMenu({
   const sizeLabel = `${out.width}×${out.height}`
   const social = variant === "detail"
   const fieldClass = social
-    ? "min-h-11 rounded-xl border border-slate-200/80 bg-slate-50 px-3 text-[14px] text-fg focus-visible:border-[#6355d8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-500/20"
+    ? "min-h-11 rounded-[2px] border border-line bg-soft px-3 text-[14px] text-fg focus-visible:border-accent focus-visible:bg-card focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent"
     : "min-h-11 border-[3px] border-earth bg-card px-3 text-[14px] text-fg"
 
   const body = (

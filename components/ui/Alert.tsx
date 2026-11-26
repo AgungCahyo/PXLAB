@@ -2,7 +2,7 @@ import type { HTMLAttributes, ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
 const tones = {
-  info: "border-earth bg-card text-fg",
+  info: "border-line bg-card text-fg",
   warning: "border-coin bg-soft text-fg",
   error: "border-brick bg-soft text-fg",
 } as const;

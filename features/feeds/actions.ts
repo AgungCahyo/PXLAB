@@ -27,7 +27,6 @@ function revalidateFeeds(creationId?: string) {
     "/liked",
     "/archive",
     "/activity",
-    "/insights",
     "/dashboard",
     ...(creationId ? [`/creation/${creationId}`] : []),
   ]

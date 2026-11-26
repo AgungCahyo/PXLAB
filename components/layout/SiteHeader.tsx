@@ -20,14 +20,13 @@ export function SiteHeader({ lang, member }: { lang: Lang; member: NavMember }) 
     <>
       <header
         className={cn(
-          "site-header fixed inset-x-0 top-0 z-50 border-b border-slate-200/80 bg-card/95 backdrop-blur-md transition-colors",
+          "site-header fixed inset-x-0 top-0 z-50 border-b border-line bg-card/95 backdrop-blur-sm transition-colors",
           member && "md:hidden",
         )}
       >
-        <div className="h-1 bg-gradient-to-r from-purple-500 via-sky to-grass" aria-hidden="true" />
         <nav
           aria-label={copy.navAria[lang]}
-          className="relative mx-auto flex h-[60px] max-w-7xl items-center justify-between px-4 sm:px-8 lg:px-16"
+          className="relative mx-auto flex h-[64px] max-w-7xl items-center justify-between px-4 sm:px-8 lg:px-16"
         >
           <Link
             href={href(lang, "/")}
@@ -47,8 +46,8 @@ export function SiteHeader({ lang, member }: { lang: Lang; member: NavMember }) 
                 aria-label={socialCopy.nav.menu[lang]}
                 aria-expanded={mobileMenuOpen}
                 className={cn(
-                  "flex h-11 w-11 items-center justify-center rounded-xl text-slate-700 transition-colors hover:bg-slate-100 hover:text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#6355d8] md:hidden",
-                  mobileMenuOpen && "bg-slate-100 text-[#6355d8]",
+                  "flex h-11 w-11 items-center justify-center rounded-[2px] text-fg transition-colors hover:bg-soft focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent md:hidden",
+                  mobileMenuOpen && "bg-soft text-accent",
                 )}
               >
                 <Menu width={22} height={22} aria-hidden="true" />
@@ -67,7 +66,7 @@ export function SiteHeader({ lang, member }: { lang: Lang; member: NavMember }) 
 
       {member ? (
         <header
-          className="site-header social-rail fixed inset-y-0 left-0 z-50 hidden w-[72px] border-r border-slate-200/80 bg-card md:block transition-[width] duration-200 ease-out hover:w-[248px] focus-within:w-[248px]"
+          className="site-header social-rail fixed inset-y-0 left-0 z-50 hidden w-[72px] border-r border-line bg-card md:block transition-[width] duration-200 ease-out hover:w-[248px] focus-within:w-[248px]"
         >
           <SocialSidebar lang={lang} member={member} />
         </header>

@@ -61,12 +61,12 @@ export function ToastProvider({ children, lang = DEFAULT_LANG }: { children: Rea
           <div
             key={item.id}
             className={cn(
-              "soc-toast pointer-events-auto flex max-w-sm items-center gap-3 px-4 py-2.5 text-[13px] font-medium shadow-[0_2px_0_0_rgb(0_0_0/0.25)]",
+              "soc-toast pointer-events-auto flex max-w-sm items-center gap-3 rounded-[2px] border px-4 py-2.5 text-[13px] font-medium",
               item.tone === "error"
-                ? "bg-brick text-fg"
+                ? "border-brick bg-brick text-white"
                 : item.tone === "info"
-                  ? "bg-fg text-bg"
-                  : "bg-grass text-fg",
+                  ? "border-fg bg-fg text-bg"
+                  : "border-grass bg-grass text-white",
             )}
           >
             <span className="min-w-0 flex-1">{item.message}</span>

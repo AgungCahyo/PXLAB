@@ -165,7 +165,7 @@ export function PixelNewForm({
       {/* Thumbnail sits inline with the title to keep the sheet short. */}
       <div className="flex min-w-0 items-end gap-3">
         <div
-          className="flex h-14 w-14 shrink-0 items-center justify-center rounded-lg border border-slate-200/80 bg-slate-50/80 p-0.5 shadow-sm"
+          className="flex h-14 w-14 shrink-0 items-center justify-center rounded-[2px] border border-line bg-soft p-0.5"
           aria-hidden="true"
         >
           <div style={{ width: thumb.width, height: thumb.height, ...groundFill(ground) }} />

@@ -2,11 +2,11 @@ import { connection } from "next/server"
 import { getCurrentProfile } from "@/lib/auth/session"
 import { createServerSupabase } from "@/lib/supabase/server"
 
-export type ResponseKind = "comment" | "reply" | "appreciate" | "remix"
+export type ActivityResponseKind = "comment" | "reply" | "appreciate" | "remix"
 
-export type CreationResponseItem = {
+export type ActivityResponseItem = {
   id: string
-  kind: ResponseKind
+  kind: ActivityResponseKind
   at: string
   creationId: string
   creationTitle: string
@@ -16,7 +16,7 @@ export type CreationResponseItem = {
 }
 
 const INBOX_LIMIT = 40
-/** History window for the Responses page (not tied to last visit). */
+/** History window for the Activity inbox (not tied to last visit). */
 const LOOKBACK_MS = 90 * 24 * 60 * 60 * 1000
 
 function usernameOf(profiles: unknown) {
@@ -32,15 +32,15 @@ function isUnseen(at: string, seenAt: string | null | undefined) {
   return Date.parse(at) > Date.parse(seenAt)
 }
 
-export async function hasUnseenCreationResponses(): Promise<boolean> {
-  const items = await listCreationResponses({ limit: 8 })
+export async function hasUnseenActivityResponses(): Promise<boolean> {
+  const items = await listActivityResponses({ limit: 8 })
   return items.some((item) => item.unseen)
 }
 
-export async function listCreationResponses(options: {
+export async function listActivityResponses(options: {
   limit?: number
   markSeen?: boolean
-} = {}): Promise<CreationResponseItem[]> {
+} = {}): Promise<ActivityResponseItem[]> {
   await connection()
   const profile = await getCurrentProfile()
   if (!profile) return []
@@ -64,7 +64,7 @@ export async function listCreationResponses(options: {
   const ownRows = own ?? []
   const ownIds = ownRows.map((row) => row.id as string)
   const titleById = new Map(ownRows.map((row) => [row.id as string, row.title as string]))
-  const items: CreationResponseItem[] = []
+  const items: ActivityResponseItem[] = []
 
   if (ownIds.length > 0) {
     const [{ data: comments }, { data: reactions }, { data: remixes }] = await Promise.all([

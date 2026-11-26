@@ -76,7 +76,7 @@ export default async function PublicProfilePage({
 
   return (
     <div className="mx-auto w-full min-w-0 max-w-5xl px-3 py-4 sm:px-6 sm:py-6 lg:px-10">
-      <header className="relative overflow-hidden rounded-3xl border border-slate-200/80 bg-card p-4 shadow-sm sm:p-6">
+      <header className="relative border-b border-line pb-6">
         <PixelCatDecoration variant="sitting" size="md" position="top-right" className="hidden opacity-80 sm:block" />
         <div className="relative z-[1] flex min-w-0 flex-col gap-4 sm:flex-row sm:items-start sm:gap-6">
           <ProfileAvatar
@@ -85,7 +85,7 @@ export default async function PublicProfilePage({
             userId={profile.id}
             alt={name}
             size="lg"
-            className="shrink-0 border border-slate-200/80"
+            className="shrink-0 border border-line"
           />
 
           <div className="min-w-0 flex-1">
@@ -109,7 +109,7 @@ export default async function PublicProfilePage({
               ) : null}
             </div>
 
-            <ul className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 text-[14px] text-muted">
+            <ul className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 text-[14px] tabular-nums text-muted">
               <li className="inline-flex items-center gap-1.5">
                 <span className="font-semibold text-fg">
                   <Suspense fallback={<Skeleton className="inline-block h-4 w-6 align-middle" />}>
@@ -144,7 +144,7 @@ export default async function PublicProfilePage({
                     href={profile.website}
                     target="_blank"
                     rel="noreferrer noopener"
-                    className="inline-flex min-w-0 items-center gap-1.5 text-[#6355d8] hover:underline"
+                    className="inline-flex min-w-0 items-center gap-1.5 text-[#ff4f00] hover:underline"
                   >
                     <ExternalLink width={14} height={14} aria-hidden="true" className="shrink-0" />
                     <span className="truncate">{copy.profileEditWebsiteLink[lang]}</span>
@@ -167,8 +167,8 @@ export default async function PublicProfilePage({
           <Link href={href(lang, "/dashboard")} className={socialButtonClass({ variant: "soft", size: "sm" })}>
             {copy.nav.dashboard[lang]}
           </Link>
-          <Link href={href(lang, "/responses")} className={socialButtonClass({ variant: "soft", size: "sm" })}>
-            {socialCopy.profile.notifications[lang]}
+          <Link href={href(lang, "/activity")} className={socialButtonClass({ variant: "soft", size: "sm" })}>
+            {socialCopy.nav.activity[lang]}
           </Link>
           <Link href={href(lang, "/create")} className={socialButtonClass({ variant: "brand", size: "sm" })}>
             {copy.nav.create[lang]}
@@ -177,7 +177,7 @@ export default async function PublicProfilePage({
       ) : null}
 
       <section className="mt-8 min-w-0" aria-labelledby="profile-works-heading">
-        <div className="flex items-center justify-between gap-3 border-b border-slate-200/80 pb-3">
+        <div className="flex items-center justify-between gap-3 border-b border-line pb-3">
           <h2
             id="profile-works-heading"
             className="inline-flex min-h-9 items-center gap-2 text-[15px] font-semibold text-fg"

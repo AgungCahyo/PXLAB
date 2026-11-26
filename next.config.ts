@@ -16,9 +16,7 @@ const indonesianRoutes = [
   "/reset-password",
   "/verify-email",
   "/dashboard",
-  "/responses",
   "/activity",
-  "/insights",
   "/saved",
   "/liked",
   "/archive",
@@ -69,6 +67,8 @@ const nextConfig: NextConfig = {
   },
   async redirects() {
     return [
+      { source: "/responses", destination: "/activity", permanent: false },
+      { source: "/en/responses", destination: "/en/activity", permanent: false },
       { source: "/id", destination: "/", permanent: true },
       { source: "/id/:path*", destination: "/:path*", permanent: true },
     ];

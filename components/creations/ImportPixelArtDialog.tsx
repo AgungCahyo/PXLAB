@@ -157,7 +157,7 @@ export function ImportPixelArtDialog({
         )}
 
         <div
-          className="flex min-h-[10rem] items-center justify-center rounded-2xl border border-slate-200 bg-[length:12px_12px] bg-[linear-gradient(45deg,#f0ebe0_25%,transparent_25%,transparent_75%,#f0ebe0_75%),linear-gradient(45deg,#f0ebe0_25%,transparent_25%,transparent_75%,#f0ebe0_75%)] bg-[position:0_0,6px_6px] bg-[#fffdf7]"
+          className="flex min-h-[10rem] items-center justify-center rounded-2xl border border-line bg-[length:12px_12px] bg-[linear-gradient(45deg,var(--soft)_25%,transparent_25%,transparent_75%,var(--soft)_75%),linear-gradient(45deg,var(--soft)_25%,transparent_25%,transparent_75%,var(--soft)_75%)] bg-[position:0_0,6px_6px] bg-bg"
           aria-busy={pending || undefined}
         >
           {previewUrl ? (
@@ -186,7 +186,7 @@ export function ImportPixelArtDialog({
                   aria-pressed={active}
                   className={cn(
                     "rounded-xl border px-2.5 py-1 text-[12px] font-medium transition-colors",
-                    active ? "border-[#6355d8] bg-[#f0edff] text-[#6355d8]" : "border-slate-200 bg-slate-50 text-muted hover:text-fg",
+                    active ? "border-accent bg-primary-soft text-accent" : "border-line bg-soft text-muted hover:text-fg",
                   )}
                   onClick={() =>
                     setSettings((prev) => ({
@@ -219,7 +219,7 @@ export function ImportPixelArtDialog({
                     return { ...prev, width, height }
                   })
                 }}
-                className="studio-control w-20 rounded-xl border border-slate-200 bg-slate-50 px-2 text-[13px] text-fg"
+                className="studio-control w-20 rounded-xl border border-line bg-soft px-2 text-[13px] text-fg"
               />
             </label>
             <label className="grid gap-1" htmlFor={heightId}>
@@ -238,7 +238,7 @@ export function ImportPixelArtDialog({
                     return { ...prev, width, height }
                   })
                 }}
-                className="studio-control w-20 rounded-xl border border-slate-200 bg-slate-50 px-2 text-[13px] text-fg"
+                className="studio-control w-20 rounded-xl border border-line bg-soft px-2 text-[13px] text-fg"
               />
             </label>
             <label className="mt-5 flex items-center gap-2 text-[13px] text-fg">

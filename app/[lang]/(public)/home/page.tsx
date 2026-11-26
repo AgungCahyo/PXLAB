@@ -2,14 +2,15 @@ import type { Metadata } from "next"
 import Link from "next/link"
 import { notFound } from "next/navigation"
 import { Suspense } from "react"
-import { PixelCatDecoration } from "@/components/brand/PixelCatDecoration"
+import { HomeExploreSidebar } from "@/components/home/HomeExploreSidebar"
+import { HomeFeedTabs } from "@/components/home/HomeFeedTabs"
 import type { FeedViewer } from "@/components/social/CommentPanel"
 import { HomeFeed } from "@/components/social/HomeFeed"
-import { TabLink } from "@/components/social/Pill"
 import { FeedSkeleton } from "@/components/social/Skeleton"
 import { SocialEmptyState } from "@/components/social/SocialEmptyState"
 import { socialButtonClass } from "@/components/social/socialButton"
 import { listFollowingIds } from "@/features/community/follows"
+import { listPopularCreationTags } from "@/features/creations/queries"
 import { listHomeFeed, type FeedKind } from "@/features/feed/queries"
 import { getCurrentProfile } from "@/lib/auth/session"
 import { socialCopy } from "@/lib/copy-social"
@@ -48,31 +49,29 @@ export default async function HomePage({
   const query = await searchParams
   const feed: FeedKind = query.feed === "following" ? "following" : "all"
   const page = Math.max(1, Math.min(500, Number.parseInt(query.page ?? "1", 10) || 1))
-  const t = socialCopy.feed
 
   return (
-    <div className="mx-auto w-full min-w-0 max-w-xl px-4 pb-10 pt-2 sm:px-0 sm:pt-6">
-      {/* <header className="relative mb-4 overflow-hidden rounded-3xl border border-slate-200/80 bg-card p-5 shadow-sm sm:p-6">
-        <PixelCatDecoration variant="waving" size="md" position="top-right" className="opacity-90" />
-        <div className="relative z-[1] pr-14 sm:pr-20">
-          <p className="text-[12px] font-semibold uppercase tracking-[0.16em] text-[#6355d8]">PXLB</p>
-          <h1 className="mt-2 text-[24px] font-semibold tracking-tight text-fg sm:text-[28px]">{t.title[lang]}</h1>
-        </div>
-      </header> */}
-      <nav aria-label={t.tabsAria[lang]} className="mb-2 flex border-b border-slate-200/80">
-        <TabLink href={href(lang, "/home")} selected={feed === "all"}>
-          {t.forYou[lang]}
-        </TabLink>
-        <TabLink href={`${href(lang, "/home")}?feed=following`} selected={feed === "following"}>
-          {t.following[lang]}
-        </TabLink>
-      </nav>
+    <div className="mx-auto w-full min-w-0 max-w-7xl px-3 pb-10 pt-2 sm:px-5 sm:pt-4 lg:px-6 xl:px-8">
+      <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_264px] lg:gap-6 xl:grid-cols-[minmax(0,1fr)_296px] xl:gap-8">
+        <div className="min-w-0">
+          <HomeFeedTabs lang={lang} feed={feed} />
 
-      <Suspense key={`${feed}-${page}`} fallback={<FeedSkeleton count={EXPLORE_PAGE_SIZE} />}>
-        <HomeResults lang={lang} feed={feed} page={page} />
-      </Suspense>
+          <Suspense key={`${feed}-${page}`} fallback={<FeedSkeleton count={EXPLORE_PAGE_SIZE} />}>
+            <HomeResults lang={lang} feed={feed} page={page} />
+          </Suspense>
+        </div>
+
+        <Suspense fallback={null}>
+          <HomeSidebarSlot lang={lang} />
+        </Suspense>
+      </div>
     </div>
   )
+}
+
+async function HomeSidebarSlot({ lang }: { lang: Lang }) {
+  const trendingTags = await listPopularCreationTags(8)
+  return <HomeExploreSidebar lang={lang} trendingTags={trendingTags} />
 }
 
 async function HomeResults({ lang, feed, page }: { lang: Lang; feed: FeedKind; page: number }) {

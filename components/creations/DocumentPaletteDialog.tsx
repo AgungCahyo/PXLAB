@@ -76,7 +76,7 @@ export function DocumentPaletteDialog({
           aria-label={copy.pixelPaletteManage[lang]}
         >
           {swatches.length === 0 ? (
-            <div className="col-span-full flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50/70 p-3">
+            <div className="col-span-full flex items-center gap-3 rounded-2xl border border-line bg-soft/70 p-3">
               <PixelCat variant="palette" size="sm" />
               <p className="text-[13px] text-muted">{copy.pixelPaletteEmpty[lang]}</p>
             </div>
@@ -97,8 +97,8 @@ export function DocumentPaletteDialog({
                 className={cn(
                   "pixel-swatch aspect-square w-full min-h-10 rounded-xl border-2 transition-transform hover:scale-105",
                   normalizePixelHex(selected) === normalizePixelHex(hex)
-                    ? "border-[#6355d8] ring-2 ring-[#6355d8]/30"
-                    : "border-slate-200",
+                    ? "border-accent ring-2 ring-accent/30"
+                    : "border-line",
                 )}
                 style={{ backgroundColor: hex }}
               />

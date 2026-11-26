@@ -99,10 +99,10 @@ export function SaveCreationButton({
         aria-label={label}
         title={label}
         className={cn(
-          "inline-flex min-h-11 items-center gap-1.5 rounded-xl border px-2.5 text-[13px] font-medium transition-colors",
+          "inline-flex min-h-11 items-center gap-1.5 rounded-[2px] border px-2.5 text-[13px] font-medium transition-colors",
           saved
-            ? "border-purple-200 bg-purple-50 text-[#6355d8]"
-            : "border-slate-200 bg-card text-slate-600 hover:bg-slate-50 hover:text-fg",
+            ? "border-[#ff4f00] bg-primary-soft text-[#ff4f00]"
+            : "border-line bg-card text-muted hover:bg-soft hover:text-fg",
         )}
       >
         <PixelBookmark filled={saved} size={20} />

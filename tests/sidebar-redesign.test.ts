@@ -29,11 +29,8 @@ describe("Threads-inspired compact sidebar", () => {
     expect(nav).toMatch(/COMMUNITIES_READY = false/)
     expect(nav).toMatch(/key: "home"/)
     expect(nav).toMatch(/key: "explore"/)
-    expect(nav).toMatch(/key: "messages"/)
     expect(nav).toMatch(/key: "activity"/)
     expect(nav).toMatch(/key: "profile"/)
-    expect(nav).toMatch(/key: "insights"/)
-    expect(nav).toMatch(/gated\("\/insights"\)/)
     expect(nav).toMatch(/key: "myWorks"/)
     expect(nav).toMatch(/href\(lang, "\/dashboard"\)/)
     expect(nav).toMatch(/key: "saved"/)
@@ -43,13 +40,12 @@ describe("Threads-inspired compact sidebar", () => {
     expect(nav).toMatch(/t\.otherFeeds\[lang\]/)
     expect(nav).not.toMatch(/href\(lang, "\/challenge"\)[\s\S]{0,160}soon: false/)
     expect(copy).toMatch(/forYou:/)
-    expect(copy).toMatch(/messages:/)
-    expect(copy).toMatch(/insights:/)
-  })
+    expect(copy).not.toMatch(/messages:/)
+    })
 
   it("puts a prominent Create button last and moves language to Settings", () => {
     expect(nav).toMatch(/prominent: true/)
-    expect(nav).toMatch(/bg-\[#6355d8\] font-semibold text-white/)
+    expect(nav).toMatch(/bg-\[#ff4f00\] font-semibold text-white/)
     expect(nav).not.toMatch(/LanguageSwitch/)
     expect(nav).toMatch(/href\(lang, "\/settings"\)/)
     expect(read("components/profiles/SettingsForm.tsx")).toMatch(/setModal\("language"\)/)
@@ -57,7 +53,6 @@ describe("Threads-inspired compact sidebar", () => {
 
   it("keeps the new destinations reachable from the mobile menu", () => {
     expect(menu).toMatch(/href\(lang, "\/activity"\)/)
-    expect(menu).toMatch(/href\(lang, "\/insights"\)/)
     expect(menu).toMatch(/href\(lang, "\/dashboard"\)/)
     expect(menu).toMatch(/href\(lang, "\/saved"\)/)
     expect(menu).toMatch(/href\(lang, "\/liked"\)/)
@@ -75,7 +70,6 @@ describe("real Saved, Liked, Archive, Activity, and Insights destinations", () =
 
   const routes = [
     ["activity", "activityTitle"],
-    ["insights", "insightsTitle"],
     ["saved", "savedTitle"],
     ["liked", "likedTitle"],
     ["archive", "archiveTitle"],
@@ -108,10 +102,10 @@ describe("real Saved, Liked, Archive, Activity, and Insights destinations", () =
     expect(queries).toMatch(/export async function listSavedCreations/)
     expect(queries).toMatch(/export async function listLikedCreations/)
     expect(queries).toMatch(/export async function listArchivedCreations/)
-    expect(queries).toMatch(/export async function listOwnActivity/)
-    expect(queries).toMatch(/export async function getInsightsSummary/)
+    expect(queries).not.toMatch(/export async function listOwnActivity/)
     expect(queries).toMatch(/from\("reactions"\)/)
-    expect(queries).toMatch(/from\("follows"\)/)
+    const activity = read("features/community/activity.ts")
+    expect(activity).toMatch(/export async function listActivityResponses/)
   })
 
   it("exposes Save and Archive controls on the creation detail page", () => {

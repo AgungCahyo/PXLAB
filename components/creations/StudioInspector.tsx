@@ -42,9 +42,9 @@ function InspectorSection({
           aria-expanded={open}
           aria-controls={bodyId}
           onClick={onToggle}
-          className="flex min-h-[var(--studio-hit-sm,2.25rem)] min-w-0 flex-1 items-center gap-2 text-left text-[12px] font-semibold uppercase tracking-[0.06em] text-[#e8e3f8]/80 transition-colors hover:text-[#a78bfa]"
+          className="flex min-h-[var(--studio-hit-sm,2.25rem)] min-w-0 flex-1 items-center gap-2 text-left text-[12px] font-semibold uppercase tracking-[0.06em] text-[var(--studio-fg)]/80 transition-colors hover:text-[var(--studio-accent-light)]"
         >
-          <PixelIcon name={open ? "minus" : "plus"} className="shrink-0 text-[#e8e3f8]/45" />
+          <PixelIcon name={open ? "minus" : "plus"} className="shrink-0 text-[var(--studio-fg-dim)]" />
           <span className="shrink-0">{title}</span>
           {summary}
         </button>
@@ -195,7 +195,7 @@ export function StudioInspector({
 
   return (
     <aside
-      className="studio-inspector hidden w-[var(--studio-inspector,17.5rem)] shrink-0 flex-col overflow-hidden border-l border-white/[0.08] bg-[#1a1829] text-[#e8e3f8] md:flex"
+      className="studio-inspector hidden w-[var(--studio-inspector,17.5rem)] shrink-0 flex-col overflow-hidden border-l border-[var(--studio-border-color)] bg-[var(--studio-surface)] text-[var(--studio-fg)] md:flex"
       aria-label={copy.pixelInspector[lang]}
     >
       <InspectorSection
@@ -207,11 +207,11 @@ export function StudioInspector({
             aria-label={`${copy.pixelColor[lang]} ${color}`}
           >
             <span
-              className="inline-block h-4 w-4 shrink-0 rounded border border-white/20 shadow-sm"
+              className="inline-block h-4 w-4 shrink-0 rounded-[2px] border border-white/20 shadow-sm"
               style={{ backgroundColor: color }}
               aria-hidden="true"
             />
-            <span className="min-w-0 truncate font-mono text-[11px] font-normal uppercase tracking-wide text-[#e8e3f8]/50">
+            <span className="min-w-0 truncate font-mono text-[11px] font-normal uppercase tracking-wide text-[var(--studio-fg-muted)]">
               {color}
             </span>
           </span>
@@ -244,9 +244,9 @@ export function StudioInspector({
                 title={swatch}
                 onClick={() => onColor(swatch)}
                 className={cn(
-                  "pixel-swatch studio-thumb !h-auto !min-h-0 !w-full !min-w-0 aspect-square rounded-md border transition-transform hover:scale-105",
+                  "pixel-swatch studio-thumb !h-auto !min-h-0 !w-full !min-w-0 aspect-square rounded-[2px] border transition-transform hover:scale-105",
                   color === swatch
-                    ? "border-white ring-2 ring-[#8b5cf6] ring-offset-1 ring-offset-[#1a1829]"
+                    ? "border-white ring-2 ring-[var(--studio-accent)] ring-offset-1 ring-offset-[var(--studio-surface)]"
                     : "border-white/15",
                 )}
                 style={{ backgroundColor: swatch }}
@@ -369,7 +369,7 @@ export function StudioInspector({
                       onChange={(event) =>
                         onShapeWidth?.(Math.max(1, Math.round(Number(event.target.value) || 1)))
                       }
-                      className="studio-control w-full rounded-md border border-white/10 bg-[#231f35] px-2 text-center text-[13px] font-medium text-[#e8e3f8]"
+                      className="studio-control w-full rounded-[2px] border border-[var(--studio-border-color)] bg-[var(--studio-surface-2)] px-2 text-center text-[13px] font-medium text-[var(--studio-fg)]"
                     />
                     <input
                       type="number"
@@ -381,7 +381,7 @@ export function StudioInspector({
                       onChange={(event) =>
                         onShapeHeight?.(Math.max(1, Math.round(Number(event.target.value) || 1)))
                       }
-                      className="studio-control w-full rounded-md border border-white/10 bg-[#231f35] px-2 text-center text-[13px] font-medium text-[#e8e3f8]"
+                      className="studio-control w-full rounded-[2px] border border-[var(--studio-border-color)] bg-[var(--studio-surface-2)] px-2 text-center text-[13px] font-medium text-[var(--studio-fg)]"
                     />
                   </div>
                 ) : null}
@@ -429,9 +429,9 @@ export function StudioInspector({
                   aria-expanded={dynamicsOpen}
                   aria-controls={dynamicsId}
                   onClick={() => setDynamicsOpen((value) => !value)}
-                  className="flex min-h-[var(--studio-hit-sm,2.25rem)] w-full items-center gap-2 text-left text-[13px] font-medium text-[#e8e3f8]/85 hover:text-[#a78bfa]"
+                  className="flex min-h-[var(--studio-hit-sm,2.25rem)] w-full items-center gap-2 text-left text-[13px] font-medium text-[var(--studio-fg)]/85 hover:text-[var(--studio-accent-light)]"
                 >
-                  <PixelIcon name={dynamicsOpen ? "minus" : "plus"} className="shrink-0 text-[#e8e3f8]/45" />
+                  <PixelIcon name={dynamicsOpen ? "minus" : "plus"} className="shrink-0 text-[var(--studio-fg-dim)]" />
                   <span className="truncate">{copy.pixelBrushOptions[lang]}</span>
                 </button>
                 <div id={dynamicsId} hidden={!dynamicsOpen} className="pt-2">
@@ -457,7 +457,7 @@ export function StudioInspector({
                   value={fillTolerance}
                   aria-label={toleranceLabel}
                   onChange={(event) => onFillTolerance?.(Number(event.target.value))}
-                  className="w-full accent-[#8b5cf6]"
+                  className="w-full accent-[var(--studio-accent)]"
                 />
                 {tool === "fill" ? fillPatternPanel : null}
                 {tool === "fill" ? (
@@ -598,7 +598,7 @@ export function StudioInspector({
                     aria-label={copy.pixelRotateAngle[lang]}
                     title={`${copy.pixelRotateAngle[lang]}: ${rotateAngle}°`}
                     onChange={(event) => setRotateAngle(Number(event.target.value))}
-                    className="min-w-0 flex-1 accent-[#8b5cf6]"
+                    className="min-w-0 flex-1 accent-[var(--studio-accent)]"
                   />
                   <input
                     type="number"
@@ -610,7 +610,7 @@ export function StudioInspector({
                     onChange={(event) =>
                       setRotateAngle(Math.max(-180, Math.min(180, Number(event.target.value) || 0)))
                     }
-                    className="studio-control w-14 rounded-md border border-white/10 bg-[#231f35] px-1 text-center text-[13px] font-medium text-[#e8e3f8]"
+                    className="studio-control w-14 rounded-[2px] border border-[var(--studio-border-color)] bg-[var(--studio-surface-2)] px-1 text-center text-[13px] font-medium text-[var(--studio-fg)]"
                   />
                   <button
                     type="button"

@@ -9,6 +9,7 @@ import { buttonClassName } from "@/components/ui/Button"
 import { focusMenuItem, handleMenuKeyDown } from "@/components/ui/menuKeyboard"
 import { PixelIcon } from "@/components/ui/PixelIcon"
 import { copy } from "../../lib/copy"
+import { socialCopy } from "@/lib/copy-social"
 import { href, stripLang, type Lang } from "@/lib/i18n"
 import { loginHref, registerHref } from "@/lib/paths"
 import { NAV_ITEMS } from "@/lib/site"
@@ -73,14 +74,14 @@ export function SiteNav({ lang, member }: { lang: Lang; member: NavMember }) {
   const itemClass = (active: boolean) =>
     cn(
       "inline-flex min-h-11 items-center px-3 text-[14px] font-medium leading-snug",
-      active ? "text-fg underline decoration-sky decoration-4 underline-offset-8" : "text-muted hover:text-fg",
+      active ? "text-fg underline decoration-[#ff4f00] decoration-2 underline-offset-8" : "text-muted hover:text-fg",
     )
 
   const profilePath = member ? `/u/${member.username}` : null
   const accountActive =
     Boolean(member) &&
     (isActive("/dashboard") ||
-      isActive("/responses") ||
+      isActive("/activity") ||
       isActive("/settings") ||
       isActive("/admin") ||
       (profilePath ? isActive(profilePath) : false))
@@ -164,7 +165,7 @@ export function SiteNav({ lang, member }: { lang: Lang; member: NavMember }) {
             {member.hasResponses ? (
               <span
                 className="absolute right-1 top-2 h-2 w-2 bg-brick"
-                aria-label={copy.responsesNavDot[lang]}
+                aria-label={socialCopy.nav.notificationsUnread[lang]}
               />
             ) : null}
           </button>
@@ -204,14 +205,14 @@ export function SiteNav({ lang, member }: { lang: Lang; member: NavMember }) {
                 {copy.nav.dashboard[lang]}
               </Link>
               <Link
-                href={href(lang, "/responses")}
+                href={href(lang, "/activity")}
                 onClick={() => setAccountOpen(false)}
                 role="menuitem"
                 tabIndex={-1}
                 className="relative flex min-h-10 items-center gap-2 rounded-xl px-3 text-[14px] text-slate-700 transition-colors hover:bg-slate-100 hover:text-fg"
               >
                 <PixelIcon name="heart" />
-                {copy.nav.responses[lang]}
+                {socialCopy.nav.activity[lang]}
                 {member.hasResponses ? (
                   <span className="ml-auto h-2 w-2 rounded-full bg-brick" aria-hidden />
                 ) : null}

@@ -28,10 +28,9 @@ export function pixelWorldSceneFromPath(pathname: string): PixelWorldScene {
   if (path.startsWith("/creation/")) return "detail"
   if (path.startsWith("/u/")) return "profile"
   if (path === "/dashboard" || path.startsWith("/dashboard/")) return "works"
-  if (path === "/responses" || path.startsWith("/responses/")) return "works"
   if (
     path === "/activity" ||
-    path === "/insights" ||
+    path.startsWith("/activity/") ||
     path === "/saved" ||
     path === "/liked" ||
     path === "/archive"

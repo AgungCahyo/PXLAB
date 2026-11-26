@@ -47,7 +47,7 @@ export const WorkTile = memo(function WorkTile({
   return (
     <article
       className={cn(
-        "group relative min-w-0 overflow-hidden rounded-2xl border border-slate-200/80 bg-card shadow-sm transition-all duration-200 hover:border-slate-300 hover:shadow-md",
+        "group relative min-w-0 overflow-hidden rounded-none border border-line bg-card transition-colors duration-150 hover:border-fg/40",
         large ? "h-full" : "aspect-square",
         className,
       )}
@@ -58,31 +58,30 @@ export const WorkTile = memo(function WorkTile({
         aria-label={
           showAuthor ? `${title} — ${socialCopy.landing.workBy[lang]} @${creation.author.username}` : title
         }
-        className="absolute inset-0 z-0 focus-visible:outline-2 focus-visible:outline-offset-[-3px] focus-visible:outline-sky"
+        className="absolute inset-0 z-0 focus-visible:outline-2 focus-visible:outline-offset-[-3px] focus-visible:outline-accent"
       />
       <div className="pointer-events-none absolute inset-0">
         {cover ? (
           <PixelArt src={cover} alt="" variant="thumb" framed={false} />
         ) : (
-          <div className="h-full w-full bg-slate-100" />
+          <div className="h-full w-full bg-soft" />
         )}
-        <div className="absolute inset-0 bg-gradient-to-t from-slate-950/10 via-transparent to-transparent opacity-0 transition-opacity duration-200 group-hover:opacity-100" />
       </div>
 
       {!large ? (
-        <div className="pointer-events-none absolute inset-x-0 top-0 z-[1] bg-gradient-to-b from-slate-950/60 to-transparent px-3 py-2.5 text-[12px] font-medium text-white opacity-100 transition-opacity duration-200 sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100">
+        <div className="pointer-events-none absolute inset-x-0 top-0 z-[1] bg-gradient-to-b from-black/65 to-transparent px-3 py-2.5 text-[12px] font-medium text-white opacity-100 transition-opacity duration-150 sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100">
           <span className="block truncate">{title}</span>
         </div>
       ) : null}
 
       {creation.isNew ? (
-        <span className="pointer-events-none absolute right-2 top-2 z-[2] rounded-full bg-[#f43f5e] px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white shadow-sm">
+        <span className="pointer-events-none absolute right-2 top-2 z-[2] rounded-[2px] bg-[#ff4f00] px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.06em] text-white">
           {t.newBadge[lang]}
         </span>
       ) : null}
 
       {showAuthor && large ? (
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 z-[2] flex items-end justify-between gap-3 rounded-b-2xl bg-slate-950/80 backdrop-blur-md px-4 py-3 text-white">
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 z-[2] flex items-end justify-between gap-3 border-t border-white/15 bg-[#111113]/85 px-4 py-3 text-white backdrop-blur-xs">
           <div className="min-w-0">
             <p className="truncate text-[15px] font-semibold leading-tight">{title}</p>
             <Link
@@ -119,7 +118,7 @@ export const WorkTile = memo(function WorkTile({
         <Link
           {...restoreScrollProps}
           href={profileHref}
-          className="absolute bottom-2 left-2 z-[2] flex max-w-[calc(100%-1rem)] items-center gap-1.5 rounded-full border border-white/20 bg-slate-950/70 backdrop-blur-sm py-1 pl-1 pr-3 text-white transition-opacity hover:bg-slate-950/90"
+          className="absolute bottom-2 left-2 z-[2] flex max-w-[calc(100%-1rem)] items-center gap-1.5 rounded-[2px] border border-white/20 bg-[#111113]/80 py-1 pl-1 pr-2.5 text-white backdrop-blur-xs transition-colors hover:bg-[#111113]"
         >
           <ProfileAvatar
             src={creation.author.avatarUrl}

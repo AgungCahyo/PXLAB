@@ -1,15 +1,16 @@
 import Link from "next/link"
+import { PxlbMark as CanonicalPxlbMark } from "@/components/layout/PxlbMark"
 import { cn } from "@/lib/utils"
 
 export type PxlbLogoSize = "xs" | "sm" | "md" | "lg" | "xl"
 export type PxlbLogoLayout = "horizontal" | "stacked" | "mark-only" | "text-only"
 
-const MARK_SIZES: Record<PxlbLogoSize, { box: number; rect: number; gap: number }> = {
-  xs: { box: 18, rect: 7, gap: 2 },
-  sm: { box: 24, rect: 9, gap: 3 },
-  md: { box: 32, rect: 12, gap: 4 },
-  lg: { box: 40, rect: 15, gap: 5 },
-  xl: { box: 52, rect: 20, gap: 6 },
+const MARK_CLASSES: Record<PxlbLogoSize, string> = {
+  xs: "h-[18px] w-[18px]",
+  sm: "h-6 w-6",
+  md: "h-8 w-8",
+  lg: "h-10 w-10",
+  xl: "h-[52px] w-[52px]",
 }
 
 const TEXT_SIZES: Record<PxlbLogoSize, string> = {
@@ -21,9 +22,7 @@ const TEXT_SIZES: Record<PxlbLogoSize, string> = {
 }
 
 /**
- * PXLB Mark: The signature 4-quadrant pixel emblem.
- * Uses PXLB's vibrant primary color palette:
- * Sky (Cyan/Blue), Grass (Green), Coin (Gold/Yellow), Brick (Coral/Red).
+ * PXLB Mark: Delegates to the canonical sharp 4-quadrant pixel mark.
  */
 export function PxlbMark({
   size = "md",
@@ -34,30 +33,15 @@ export function PxlbMark({
   className?: string
   animated?: boolean
 }) {
-  const { box, rect, gap } = MARK_SIZES[size]
-  const offset2 = rect + gap
-
   return (
-    <svg
-      viewBox={`0 0 ${box} ${box}`}
-      width={box}
-      height={box}
+    <CanonicalPxlbMark
       className={cn(
-        "pixel-deco shrink-0 select-none transition-transform duration-200",
+        "shrink-0 select-none transition-transform duration-200",
+        MARK_CLASSES[size],
         animated && "hover:scale-105 active:scale-95",
         className,
       )}
-      aria-hidden="true"
-    >
-      {/* Top-left: Sky */}
-      <rect x="0" y="0" width={rect} height={rect} rx="1.5" className="fill-[#38bdf8]" />
-      {/* Top-right: Grass */}
-      <rect x={offset2} y="0" width={rect} height={rect} rx="1.5" className="fill-[#34d399]" />
-      {/* Bottom-left: Coin */}
-      <rect x="0" y={offset2} width={rect} height={rect} rx="1.5" className="fill-[#fbbf24]" />
-      {/* Bottom-right: Brick */}
-      <rect x={offset2} y={offset2} width={rect} height={rect} rx="1.5" className="fill-[#f43f5e]" />
-    </svg>
+    />
   )
 }
 
@@ -98,7 +82,7 @@ export function PxlbLogo({
             className={cn(
               "font-sans text-fg select-none transition-colors",
               TEXT_SIZES[size],
-              animated && "group-hover:text-[#6355d8]",
+              animated && "group-hover:text-accent",
             )}
           >
             PXLB
@@ -117,8 +101,7 @@ export function PxlbLogo({
     return (
       <Link
         href={href}
-        className="inline-flex rounded-xl focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6355d8]"
-        aria-label="PXLB Home"
+        className="inline-flex rounded-[2px] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
       >
         {content}
       </Link>

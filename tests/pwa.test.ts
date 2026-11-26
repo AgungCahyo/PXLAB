@@ -23,8 +23,8 @@ describe("PWA infrastructure", () => {
     expect(manifest).toMatch(/icon-192\.png/)
     expect(manifest).toMatch(/icon-512\.png/)
     expect(manifest).toMatch(/icon-maskable-512\.png/)
-    expect(manifest).toMatch(/theme_color:\s*"#fffdf7"/)
-    expect(manifest).toMatch(/background_color:\s*"#fffdf7"/)
+    expect(manifest).toMatch(/theme_color:\s*"#ffffff"/)
+    expect(manifest).toMatch(/background_color:\s*"#ffffff"/)
   })
 
   it("provides brand icons for install surfaces", () => {

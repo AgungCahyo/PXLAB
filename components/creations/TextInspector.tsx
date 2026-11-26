@@ -188,8 +188,8 @@ export function TextInspector({ lang, text, palette, onChange }: Props) {
                 title={swatch}
                 onClick={() => onChange({ color: swatch })}
                 className={cn(
-                  "pixel-swatch !h-auto !min-h-0 !w-full !min-w-0 aspect-square rounded border",
-                  text.color === swatch ? "border-white ring-2 ring-[#8b5cf6]" : "border-white/15",
+                  "pixel-swatch !h-auto !min-h-0 !w-full !min-w-0 aspect-square rounded-[2px] border",
+                  text.color === swatch ? "border-white ring-2 ring-[var(--studio-accent)]" : "border-white/15",
                 )}
                 style={{ backgroundColor: swatch }}
               />

@@ -6,7 +6,6 @@ import { cn } from "@/lib/utils"
 export function Pill({
   href,
   selected,
-  tone = "default",
   children,
 }: {
   href: string
@@ -20,10 +19,10 @@ export function Pill({
       href={href}
       aria-current={selected ? "page" : undefined}
       className={cn(
-        "inline-flex min-h-9 items-center whitespace-nowrap rounded-full px-4 text-[13px] font-medium transition-all shadow-sm",
+        "inline-flex min-h-9 items-center whitespace-nowrap rounded-[2px] px-3.5 text-[13px] font-medium transition-colors",
         selected
-          ? "bg-[#6355d8] text-white shadow-purple-500/20"
-          : "border border-slate-200/80 bg-card text-muted hover:border-slate-300 hover:text-fg",
+          ? "border border-fg bg-fg text-bg"
+          : "border border-line bg-card text-muted hover:border-fg/40 hover:text-fg",
       )}
     >
       {children}
@@ -48,7 +47,7 @@ export function TabLink({
       className={cn(
         "inline-flex min-h-11 flex-1 items-center justify-center border-b-2 px-5 text-[14px] font-semibold transition-colors sm:flex-none",
         selected
-          ? "border-[#6355d8] text-[#6355d8]"
+          ? "border-[#ff4f00] text-fg"
           : "border-transparent text-muted hover:text-fg",
       )}
     >

@@ -76,7 +76,7 @@ export function ExploreSearch({
             placeholder={t.searchPlaceholder[lang]}
             aria-invalid={error ? true : undefined}
             aria-describedby={error ? "explore-search-error" : undefined}
-            className="min-h-12 w-full min-w-0 rounded-2xl border border-slate-200/90 bg-white py-2.5 pl-11 pr-4 text-[15px] text-fg placeholder:text-muted/60 shadow-sm transition-all focus-visible:border-[#6355d8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-500/20"
+            className="min-h-12 w-full min-w-0 rounded-[2px] border border-line bg-soft py-2.5 pl-11 pr-4 text-[15px] text-fg placeholder:text-muted/60 transition-colors focus-visible:border-accent focus-visible:bg-card focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent"
           />
         </label>
         <button
@@ -84,8 +84,8 @@ export function ExploreSearch({
           aria-label={t.searchSubmit[lang]}
           className={socialButtonClass({
             variant: "solid",
-            size: "lg",
-            className: "shrink-0 px-3 sm:px-4",
+            size: "md",
+            className: "shrink-0 px-3.5 sm:px-4",
           })}
         >
           <Search width={20} height={20} aria-hidden="true" />

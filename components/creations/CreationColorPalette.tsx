@@ -60,7 +60,7 @@ export function CreationColorPalette({
       </div>
 
       <div
-        className="mt-2 flex h-3 w-full overflow-hidden rounded-full border border-slate-200/80 sm:h-3.5"
+        className="mt-2 flex h-3 w-full overflow-hidden rounded-none border border-line sm:h-3.5"
         role="img"
         aria-label={copy.colorPaletteTitle[lang]}
       >
@@ -88,10 +88,10 @@ export function CreationColorPalette({
                 title={`${entry.hex} · ${pct}%`}
                 aria-label={copy.colorCopyHex[lang].replace("{hex}", entry.hex)}
                 onClick={() => void copyHex(entry.hex)}
-                className="grid h-9 w-9 place-items-center border-0 hover:outline hover:outline-2 hover:outline-offset-1 hover:outline-sky"
+                className="grid h-9 w-9 place-items-center border-0 hover:outline hover:outline-2 hover:outline-offset-1 hover:outline-accent"
               >
                 <span
-                  className="h-7 w-7 rounded-md border border-slate-200/80 shadow-sm"
+                  className="h-7 w-7 rounded-none border border-line"
                   style={{ backgroundColor: entry.hex }}
                   aria-hidden="true"
                 />

@@ -31,11 +31,11 @@ export function nextGroupName(lang: Lang, groups: readonly PixelGroupInfo[]) {
 }
 
 const control =
-  "studio-control min-w-0 flex-1 rounded-md border border-white/10 bg-[#231f35] px-2 text-[12px] text-[#e8e3f8]"
+  "studio-control min-w-0 flex-1 rounded-[2px] border border-[var(--studio-border-color)] bg-[var(--studio-surface-2)] px-2 text-[12px] text-[var(--studio-fg)]"
 const iconButton =
-  "inline-flex h-8 w-8 items-center justify-center rounded-md border border-white/10 bg-[#231f35] text-[#e8e3f8] hover:bg-[#2d2847] disabled:opacity-35"
+  "inline-flex h-8 w-8 items-center justify-center rounded-[2px] border border-[var(--studio-border-color)] bg-[var(--studio-surface-2)] text-[var(--studio-fg)] hover:bg-[var(--studio-surface-3)] disabled:opacity-35"
 const textButton =
-  "studio-control inline-flex max-w-full items-center gap-1.5 rounded-md border border-white/10 bg-[#231f35] px-2.5 text-[12px] font-medium text-[#e8e3f8] hover:bg-[#2d2847] disabled:opacity-35"
+  "studio-control inline-flex max-w-full items-center gap-1.5 rounded-[2px] border border-[var(--studio-border-color)] bg-[var(--studio-surface-2)] px-2.5 text-[12px] font-medium text-[var(--studio-fg)] hover:bg-[var(--studio-surface-3)] disabled:opacity-35"
 
 function GroupNameInput({
   id,
@@ -119,7 +119,7 @@ export function GroupStyleControls({
           </button>
         </div>
       ) : (
-        <p className="flex min-w-0 items-center gap-1.5 text-[13px] font-medium text-[#e8e3f8]">
+        <p className="flex min-w-0 items-center gap-1.5 text-[13px] font-medium text-[var(--studio-fg)]">
           <PixelIcon name="folder" className="shrink-0" />
           <span className="sr-only">{copy.pixelGroupProperties[lang]}: </span>
           <span className="truncate" title={group.name}>
@@ -130,10 +130,10 @@ export function GroupStyleControls({
 
       <div className="space-y-1">
         <div className="flex items-center gap-2">
-          <label className="min-w-0 flex-1 text-[12px] font-medium text-[#e8e3f8]/80" htmlFor={opacityId}>
+          <label className="min-w-0 flex-1 text-[12px] font-medium text-[var(--studio-fg)]/80" htmlFor={opacityId}>
             {copy.pixelGroupOpacity[lang]}
           </label>
-          <span className="w-12 text-right text-[12px] tabular-nums text-[#e8e3f8]">{group.opacity}%</span>
+          <span className="w-12 text-right text-[12px] tabular-nums text-[var(--studio-fg)]">{group.opacity}%</span>
         </div>
         <input
           id={opacityId}
@@ -142,13 +142,13 @@ export function GroupStyleControls({
           max={100}
           step={1}
           value={group.opacity}
-          className="w-full accent-[#8b5cf6]"
+          className="w-full accent-[var(--studio-accent)]"
           onChange={(event) => api.onStyle(group.id, { opacity: Number(event.target.value) })}
         />
       </div>
 
       <div className="flex items-center gap-2">
-        <label className="shrink-0 text-[12px] font-medium text-[#e8e3f8]/80" htmlFor={blendId}>
+        <label className="shrink-0 text-[12px] font-medium text-[var(--studio-fg)]/80" htmlFor={blendId}>
           {copy.pixelGroupBlend[lang]}
         </label>
         <select
@@ -214,7 +214,7 @@ export function LayerGroupActions({
     if (ok) onDone?.(kind)
   }
   return (
-    <div className="mt-3 grid gap-2 border-t border-slate-200 pt-3" role="group" aria-label={copy.pixelGroup[lang]}>
+    <div className="mt-3 grid gap-2 border-t border-line pt-3" role="group" aria-label={copy.pixelGroup[lang]}>
       <p className="flex items-center gap-1.5 text-[13px] font-medium text-fg">
         <PixelIcon name="folder" />
         {copy.pixelGroup[lang]}

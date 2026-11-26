@@ -151,7 +151,7 @@ export function PwaInstall({ lang, variant = "banner", className }: Props) {
       role="region"
       aria-label={copy.pwaInstallTitle[lang]}
     >
-      <div className="mx-auto flex max-w-lg items-start gap-3 rounded-2xl border border-slate-200/90 bg-card p-3.5 shadow-xl shadow-slate-900/8">
+      <div className="mx-auto flex max-w-lg items-start gap-3 rounded-[2px] border border-line bg-card p-3.5 shadow-lg">
         <div className="min-w-0 flex-1">
           <p className="text-[13px] font-medium text-fg">{copy.pwaInstallTitle[lang]}</p>
           {iosHint && !canNativeInstall ? (
@@ -175,7 +175,7 @@ export function PwaInstall({ lang, variant = "banner", className }: Props) {
         </div>
         <button
           type="button"
-          className="inline-flex size-9 shrink-0 items-center justify-center rounded-xl text-muted transition-colors hover:bg-slate-100 hover:text-fg"
+          className="inline-flex size-9 shrink-0 items-center justify-center rounded-[2px] text-muted transition-colors hover:bg-soft hover:text-fg"
           aria-label={copy.pwaDismiss[lang]}
           onClick={() => dismiss(false)}
         >

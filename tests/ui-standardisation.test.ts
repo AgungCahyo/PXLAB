@@ -15,13 +15,14 @@ function sourceFiles(dir: string): string[] {
 
 /** Source-level contract for UI standardisation phase 1 (docs/audit/UI_INTERACTION_SPEC.md). */
 describe("UI standardisation P0 contract", () => {
-  it("drives the sidebar responses badge from real state, not a hard-coded count", () => {
+  it("drives the sidebar activity badge from real state, not a hard-coded count", () => {
     const nav = read("components/layout/SocialNav.tsx")
     expect(nav).not.toMatch(/count = 3/)
     expect(nav).not.toMatch(/count=\{3\}/)
     expect(nav).not.toMatch(/3 respon baru/)
     expect(nav).toMatch(/Boolean\(member\?\.hasResponses\)/)
     expect(nav).toMatch(/notificationsUnread/)
+    expect(nav).not.toMatch(/key: "messages"/)
   })
 
   it("keeps a single mobile tab bar after removing the dead AppTabBar", () => {
@@ -107,8 +108,8 @@ describe("UI standardisation phase 2 contract", () => {
     expect(offline).toMatch(/document\.documentElement\.lang = "en"/)
     expect(offline).toMatch(/id="offline-title"/)
     expect(offline).toMatch(/id="offline-body"/)
-    expect(offline).toMatch(/--bg: #f8f9fc/)
-    expect(offline).toMatch(/--fg: #1e1b4b/)
+    expect(offline).toMatch(/--bg: #ffffff/)
+    expect(offline).toMatch(/--fg: #111113/)
     expect(offline).toMatch(/background: var\(--bg\)/)
     expect(offline).toMatch(/color: var\(--fg\)/)
     expect(offline).not.toMatch(/background: #|color: #|border: 3px solid #/)

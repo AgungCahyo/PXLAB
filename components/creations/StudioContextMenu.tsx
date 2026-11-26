@@ -77,7 +77,7 @@ export function StudioContextMenu({
       ref={ref}
       role="group"
       aria-label={copy.pixelCanvasMenu[lang]}
-      className="fixed z-[80] min-w-[12.5rem] rounded-xl border border-white/10 bg-[#1a1829] py-1.5 shadow-2xl backdrop-blur-md"
+      className="fixed z-[80] min-w-[12.5rem] rounded-[2px] border border-[var(--studio-border-color)] bg-[var(--studio-surface)] py-1.5 shadow-2xl backdrop-blur-md"
       style={{ left: x, top: y }}
     >
       {items.map((item) =>
@@ -101,7 +101,7 @@ export function StudioContextMenu({
             className={
               item.danger
                 ? "flex w-full px-3.5 py-2 text-left text-[13px] font-medium text-rose-400 transition-colors hover:bg-rose-500/15 focus-visible:bg-rose-500/15 disabled:opacity-35"
-                : "flex w-full px-3.5 py-2 text-left text-[13px] font-medium text-[#e8e3f8] transition-colors hover:bg-white/10 focus-visible:bg-white/10 disabled:opacity-35"
+                : "flex w-full px-3.5 py-2 text-left text-[13px] font-medium text-[var(--studio-fg)] transition-colors hover:bg-white/10 focus-visible:bg-white/10 disabled:opacity-35"
             }
           >
             {item.label}

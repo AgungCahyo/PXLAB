@@ -349,6 +349,40 @@ export const listPublishedCreationsByUser = cache(async function listPublishedCr
   }
 })
 
+/** Popular tags from recent published pixel works. No fake metrics — labels only. */
+export async function listPopularCreationTags(limit = 8): Promise<string[]> {
+  await connection()
+  const supabase = createPublicSupabase()
+  if (!supabase) return []
+
+  const pool = 120
+  const { data, error } = await supabase
+    .from("creations")
+    .select("tags")
+    .eq("status", "published")
+    .eq("type", "pixel")
+    .not("published_at", "is", null)
+    .order("published_at", { ascending: false })
+    .limit(pool)
+
+  if (error || !data) return []
+
+  const counts = new Map<string, number>()
+  for (const row of data as Array<{ tags: unknown }>) {
+    const tags = Array.isArray(row.tags) ? row.tags : []
+    for (const raw of tags) {
+      const tag = String(raw).trim().toLowerCase()
+      if (!tag) continue
+      counts.set(tag, (counts.get(tag) ?? 0) + 1)
+    }
+  }
+
+  return [...counts.entries()]
+    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+    .slice(0, Math.max(1, limit))
+    .map(([tag]) => tag)
+}
+
 /** Recent published pixel works that still have zero published comments. */
 export async function listQuietPublishedCreations(
   limit = 8,
@@ -714,6 +748,7 @@ export async function listOwnCreations(): Promise<CreationCard[]> {
     .from("creations")
     .select(CARD_COLUMNS)
     .eq("user_id", userId)
+    .is("archived_at", null)
     .order("updated_at", { ascending: false })
     .limit(100)
 

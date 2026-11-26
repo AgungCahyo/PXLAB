@@ -52,8 +52,8 @@ export default async function CreatorsPage({
       <BackLink href={href(lang, "/explore")} className="mb-5">
         {copy.exploreTitle[lang]}
       </BackLink>
-      <div className="relative overflow-hidden rounded-3xl border border-slate-200/80 bg-card p-5 shadow-sm sm:p-6">
-        <div className="pointer-events-none absolute right-3 top-3 hidden opacity-90 sm:block" aria-hidden="true">
+      <div className="relative border-b border-line pb-6">
+        <div className="pointer-events-none absolute right-3 top-0 hidden opacity-90 sm:block" aria-hidden="true">
           <img src="/pixel-cats/celebrating.svg" alt="" width={96} height={96} className="select-none [image-rendering:pixelated]" />
         </div>
         <div className="relative z-[1] max-w-2xl pr-0 sm:pr-24">
@@ -63,7 +63,7 @@ export default async function CreatorsPage({
 
       {result.failed ? (
         <SocialEmptyState
-          className="mt-6 px-4 py-8 sm:py-10 rounded-3xl border border-dashed border-slate-200/80 bg-slate-50/40"
+          className="mt-6 px-4 py-8 sm:py-10 rounded-none border border-dashed border-line bg-soft"
           illustration="confused"
           title={copy.exploreLoadError[lang]}
           description={copy.exploreLoadHint[lang]}
@@ -75,7 +75,7 @@ export default async function CreatorsPage({
         />
       ) : result.items.length === 0 ? (
         <SocialEmptyState
-          className="mt-6 px-4 py-8 sm:py-10 rounded-3xl border border-dashed border-slate-200/80 bg-slate-50/40"
+          className="mt-6 px-4 py-8 sm:py-10 rounded-none border border-dashed border-line bg-soft"
           illustration="peeking"
           title={copy.newCreatorsTitle[lang]}
           description={copy.newCreatorsEmpty[lang]}

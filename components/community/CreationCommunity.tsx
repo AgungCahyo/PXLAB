@@ -221,7 +221,7 @@ export function CreationCommunity({
   return (
     <section
       id="creation-conversation"
-      className="mt-8 border-t border-slate-200/80 pt-6"
+      className="mt-8 border-t border-line pt-6"
       aria-labelledby="conversation-heading"
     >
       <h2 id="conversation-heading" className="text-[15px] font-medium text-fg">
@@ -257,7 +257,7 @@ export function CreationCommunity({
       ) : (
         <ul className="mt-8">
           {thread.map((root) => (
-            <li key={root.id} id={`comment-${root.id}`} className="border-b border-slate-100 py-5 last:border-b-0">
+            <li key={root.id} id={`comment-${root.id}`} className="border-b border-line py-5 last:border-b-0">
               <ConversationNoteRow
                 lang={lang}
                 note={root}
@@ -373,7 +373,7 @@ function GuestConversationComposer({
 }) {
   const login = loginHref(lang, href(lang, `/creation/${creationId}`))
   return (
-    <div className="grid gap-3 rounded-2xl border border-slate-200/80 bg-slate-50/60 p-4">
+    <div className="grid gap-3 rounded-none border border-line bg-soft p-4">
       <p className="text-[14px] leading-relaxed text-muted">{prompt}</p>
       <Link href={login} className={cn(socialButtonClass({ variant: "solid", size: "sm" }), "w-fit")}>
         {copy.conversationGuestPrompt[lang]}
@@ -526,7 +526,7 @@ function ConversationComposer({
     return (
       <button
         type="button"
-        className="w-full rounded-2xl border border-slate-200/80 bg-slate-50/70 px-4 py-3 text-left text-[14px] text-muted transition-colors hover:border-slate-300 hover:bg-white hover:text-fg"
+        className="w-full rounded-[2px] border border-line bg-soft px-4 py-3 text-left text-[14px] text-muted transition-colors hover:border-fg/30 hover:bg-card hover:text-fg"
         onClick={() => setOpen(true)}
       >
         {rootPrompt}

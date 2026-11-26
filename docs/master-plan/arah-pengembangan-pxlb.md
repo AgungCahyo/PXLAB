@@ -8,7 +8,7 @@
 > **Open:** Go-ahead terpisah untuk A3–A5, B2–B6, dan C2–C6; status kolaborasi langsung tetap vision-only. Spec S0.4 sudah ditandatangani 2026-11-25 dan A2 selesai, tetapi tidak mengizinkan stage lain.
 > **Dependencies:** `PRODUCT-SPEC.md`, `TECHNICAL-SPEC.md`, `IMPLEMENTATION-PLAN.md`, `docs/studio/01_SYSTEM_AUDIT.md`, `docs/strategy/PXLB-Community&Growth-Strategy.md` (strategi/vision input, bukan izin implementasi), dan operator actions di `IMPLEMENTATION-PLAN.md` §14.
 > **Preparation brief:** `PREPARATION-REMIX-CHALLENGE-ASSETS.md` berisi audit status A–C, keputusan K1–K9, dan rencana bertahap; follow-up spec S0.4: `SPEC-REMIX.md`, `SPEC-CHALLENGE.md`, `SPEC-PIXEL-ASSETS.md` (SIGNED OFF). Tidak mengubah status backlog atau memberi izin implementasi.
-> **Next action:** Minta go-ahead terpisah untuk A3—jangan mulai A3–A5, B2–B6, C2–C6, atau kolaborasi langsung dari dokumen ini. A2 sudah selesai dan dibatasi pada server action + test.
+> **Next action:** Minta go-ahead terpisah untuk A3—jangan mulai A3–A5, B2–B6, C2–C6, atau kolaborasi langsung dari dokumen ini. A2 sudah selesai dan dibatasi pada server action + test. Ruang kerja persiapan A3 ada di `PREP-A3-REMIX-ENFORCEMENT.md` (PREPARATION ONLY, bukan izin implementasi).
 > **Status labels:** VERIFIED IN CODE / VERIFIED BY TEST / VERIFIED IN BROWSER / VERIFIED IN PRODUCTION / OPERATOR ACTION REQUIRED / PROPOSED — AWAITING OWNER DECISION / APPROVED — SIGNED OFF / DECIDED — PRODUCT ONLY. Bukti level source/test bukan bukti browser atau produksi.
 
 ---

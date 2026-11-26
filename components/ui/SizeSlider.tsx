@@ -28,7 +28,7 @@ export function SizeSlider({
     <div className={cn("grid gap-1", className)}>
       <label
         className={cn(
-          "font-medium text-[#e8e3f8]",
+          "font-medium text-[var(--studio-fg)]",
           showLabel ? "text-[12px] md:text-[13px]" : "sr-only",
         )}
         htmlFor={id}
@@ -46,7 +46,7 @@ export function SizeSlider({
           aria-label={label}
           title={`${label}: ${clamped}`}
           onChange={(event) => onChange(clampStrokeWidth(Number(event.target.value)))}
-          className="studio-control min-w-0 flex-1 accent-[#8b5cf6]"
+          className="studio-control min-w-0 flex-1 accent-[var(--studio-accent)]"
         />
         <input
           type="number"
@@ -61,7 +61,7 @@ export function SizeSlider({
             if (!Number.isFinite(next)) return
             onChange(clampStrokeWidth(Math.max(min, Math.min(max, next))))
           }}
-          className="studio-control w-14 rounded-md border border-white/10 bg-[#231f35] px-1 text-center text-[12px] font-medium text-[#e8e3f8] md:w-16 md:text-[13px]"
+          className="studio-control w-14 rounded-[2px] border border-[var(--studio-border-color)] bg-[var(--studio-surface-2)] px-1 text-center text-[12px] font-medium text-[var(--studio-fg)] md:w-16 md:text-[13px]"
         />
       </div>
     </div>

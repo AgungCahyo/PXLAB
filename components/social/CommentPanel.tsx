@@ -217,7 +217,7 @@ export function CommentPanel({
               rows={1}
               enterKeyHint="send"
               placeholder={t.commentPlaceholder[lang]}
-              className="block max-h-32 min-h-11 w-full resize-none border border-transparent bg-soft px-3 py-2.5 text-[14px] text-fg placeholder:text-muted focus-visible:border-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky"
+              className="block max-h-32 min-h-11 w-full resize-none rounded-[2px] border border-line bg-soft px-3 py-2.5 text-[14px] text-fg placeholder:text-muted focus-visible:border-accent focus-visible:bg-card focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent"
             />
           </label>
           <button

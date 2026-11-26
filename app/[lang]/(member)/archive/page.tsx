@@ -43,9 +43,22 @@ export default async function ArchivePage({ params }: { params: Promise<{ lang: 
       {items.length ? (
         <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
           {items.map((item) => (
-            <li key={item.id} className="min-w-0 space-y-2">
-              <CreationCard creation={item} lang={lang} showAuthor={false} />
-              <ArchiveCreationButton lang={lang} creationId={item.id} initialArchived compact />
+            <li key={item.id} className="min-w-0">
+              <CreationCard
+                creation={item}
+                lang={lang}
+                showAuthor={false}
+                footer={
+                  <ArchiveCreationButton
+                    lang={lang}
+                    creationId={item.id}
+                    initialArchived
+                    compact
+                    refreshOnChange
+                    className="w-full justify-center"
+                  />
+                }
+              />
             </li>
           ))}
         </ul>

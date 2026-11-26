@@ -24,9 +24,9 @@ export function Textarea({ className, label, hint, error, id, ...props }: Textar
         aria-invalid={error ? true : undefined}
         aria-describedby={describedBy}
         className={cn(
-          "min-h-28 w-full rounded-2xl p-4 text-[15px] text-fg placeholder:text-muted/60 transition-all",
-          "border border-slate-200 bg-slate-50/70 focus-visible:border-[#6355d8] focus-visible:bg-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-500/20",
-          error ? "border-brick ring-2 ring-brick/20" : null,
+          "min-h-28 w-full rounded-[2px] p-3.5 text-[15px] text-fg placeholder:text-muted/60 transition-colors",
+          "border border-line bg-soft focus-visible:border-accent focus-visible:bg-card focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent",
+          error ? "border-brick ring-1 ring-brick" : null,
           className,
         )}
         {...props}

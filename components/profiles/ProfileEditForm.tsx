@@ -112,7 +112,7 @@ export function ProfileEditForm({ lang, profile }: { lang: Lang; profile: Member
           hint={copy.websiteHint[lang]}
         />
 
-        <div className="flex flex-wrap items-center gap-2 border-t border-slate-200/80 pt-4">
+        <div className="flex flex-wrap items-center gap-2 border-t border-line pt-4">
           <button
             type="submit"
             disabled={pending}

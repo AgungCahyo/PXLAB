@@ -27,7 +27,7 @@ export function SocialEmptyState({
           <PixelCat variant={mascot} size="lg" animated="float" glow />
         </div>
       ) : icon ? (
-        <div className="grid h-14 w-14 place-items-center rounded-2xl bg-purple-50 text-[#6355d8]" aria-hidden="true">
+        <div className="grid h-14 w-14 place-items-center rounded-[2px] border border-line bg-soft text-fg" aria-hidden="true">
           {icon}
         </div>
       ) : null}
